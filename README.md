@@ -52,7 +52,8 @@ A Docker-based Discord bot written in Python, designed to manage and monitor you
    - Edit the `.env` file with your specific configuration:
      ```env
      DISCORD_TOKEN=your_discord_bot_token
-     ADMIN_ROLE_IDS=1234567890,0987654321
+     ADMINS=admin:1234567890
+     GUESTS=friendlyneigbor:0987654321,friend:1234567123
      TRAEFIK_API_URL=http://traefik:8080
      SECRET_KEY=your_secure_secret_key
      ENCRYPTION_KEY=your_encryption_key
@@ -70,12 +71,12 @@ A Docker-based Discord bot written in Python, designed to manage and monitor you
 | Variable | Description | Required | Security Considerations |
 |----------|-------------|----------|-------------------------|
 | `NEXTCORD_TOKEN` | Your Discord bot token | Yes | Rotate every 90 days |
-| `TRACKER_URL` | Base URL for IP tracking | Yes | Must use HTTPS |
-| `ADMIN_ROLE_IDS` | Comma-separated list of Discord role IDs with admin access | Yes | Limit to minimum required roles |
+| `TRACKER_URL` | Base URL for IP tracking | NO | Must use HTTPS |
+| `ADMINS` | Comma-separated list of Discord role IDs with admin access | Yes | Limit to minimum required roles |
 | `LOG_LEVEL` | Logging level (DEBUG, INFO, WARNING, ERROR) | No | Avoid DEBUG in production |
-| `ALERT_CHANNEL_ID` | Discord channel ID for system alerts | No | Restrict access to admins |
-| `SECRET_KEY` | Application secret key | Yes | Must be cryptographically strong |
-| `ENCRYPTION_KEY` | Encryption key for sensitive data | Yes | 256-bit minimum |
+| `DISCORD_HOMELAB_CHANNEL` | Discord channel ID for system alerts | No | Restrict access to admins |
+| `SECRET_KEY` | Application secret key | NO | Must be cryptographically strong |
+| `ENCRYPTION_KEY` | Encryption key for sensitive data | NO | 256-bit minimum |
 
 ### Docker Compose
 
