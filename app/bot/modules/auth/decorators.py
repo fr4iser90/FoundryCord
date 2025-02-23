@@ -1,6 +1,9 @@
 # modules/auth/decorators.py
+import functools
 from nextcord.ext import commands
 from modules.auth.permissions import is_admin, is_guest, is_authorized
+
+### --- PERMISSION DECORATORS --- ###
 
 def admin_only():
     """Custom Decorator für Admin-Berechtigungen."""
@@ -28,3 +31,27 @@ def authorized_only():
             return False  # Verhindert die Ausführung des Befehls
         return True
     return commands.check(predicate)
+
+### --- OUTPUT DECORATORS --- ###
+
+def respond_in_channel():
+    """Decorator: Antwortet im aktuellen Channel."""
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(ctx, *args, **kwargs):
+            response = await func(ctx, *args, **kwargs)
+            if response:
+                await ctx.send(response)
+        return wrapper
+    return decorator
+
+def respond_in_dm():
+    """Decorator: Antwortet per Direct Message (DM) an den Nutzer."""
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(ctx, *args, **kwargs):
+            response = await func(ctx, *args, **kwargs)
+            if response:
+                await ctx.author.send(response)
+        return wrapper
+    return decorator

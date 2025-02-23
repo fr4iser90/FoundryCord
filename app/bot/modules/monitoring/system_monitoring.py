@@ -4,7 +4,7 @@ from nextcord.ext import commands
 import socket
 from dotenv import load_dotenv
 import os
-from modules.auth.decorators import admin_only  # Importiere den Decorator
+from modules.auth.decorators import admin_only, respond_in_dm  # Importiere den Decorator
 
 # Load environment variables from .env file
 load_dotenv()
@@ -55,13 +55,14 @@ def setup(bot):
 
     @bot.command(name='system_status')
     @admin_only()
+    @respond_in_dm()
     async def system_status(ctx):
         """Zeigt den Systemstatus an (CPU, Speicher, Festplatte)."""
         cpu_percent = psutil.cpu_percent()
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage('/')
         
-        await ctx.send(
+        return (
             f'CPU Usage: {cpu_percent}%\n'
             f'Memory Usage: {memory.percent}%\n'
             f'Disk Usage: {disk.percent}%'
