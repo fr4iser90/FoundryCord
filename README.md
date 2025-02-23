@@ -177,6 +177,6 @@ Please report any security vulnerabilities to security@example.com
 
 MIT License
 
-Copyright (c) 2025 Your Name
+Copyright (c) 2025 fr4iser
 
 See [LICENSE](LICENSE) for full text.
