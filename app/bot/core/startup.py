@@ -3,7 +3,7 @@ import os
 import nextcord
 from modules.utilities.logger import logger 
 from modules.tasks.system_status_task import system_status_task
-from modules.tasks.cleanup_task import cleanup_task  # Importiere die neue Cleanup-Task
+from modules.tasks.cleanup_task import cleanup_task  
 
 # Liste von Startup-Aufgaben
 startup_tasks = []
