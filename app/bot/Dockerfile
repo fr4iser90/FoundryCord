@@ -2,6 +2,11 @@ FROM python:3.9-slim
 
 WORKDIR /app/bot  # Setze den Arbeitsordner auf /app/bot
 
+# Installiere systemweite Abhängigkeiten (einschließlich WireGuard-Tools)
+RUN apt-get update && apt-get install -y \
+    wireguard-tools \
+    && rm -rf /var/lib/apt/lists/*
+    
 # Kopiere den gesamten Inhalt des app-Verzeichnisses in den Container
 COPY ./app/bot/ /app/bot/
 

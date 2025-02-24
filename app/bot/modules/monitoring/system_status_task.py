@@ -1,79 +1,81 @@
 # modules/monitoring/system_status_task.py
 import nextcord
 import psutil
-import requests
+import aiohttp
 import socket
 import asyncio
 import os
 from dotenv import load_dotenv
 from config.users import ADMINS
 
-# Load environment variables from .env file
 load_dotenv()
 DOMAIN = os.getenv('DOMAIN')
 
+async def fetch_public_ip():
+    """Holt die öffentliche IP-Adresse asynchron."""
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get("https://api.ipify.org?format=json") as resp:
+                data = await resp.json()
+                return data.get("ip", "N/A")
+        except Exception as e:
+            print(f"Fehler beim Abrufen der öffentlichen IP: {e}")
+            return "N/A"
+
 async def system_status_task(bot, channel_id):
-    """Task, der alle 5 Minuten den Systemstatus in einem privaten Thread postet."""
+    """Task, der alle 30 Minuten den Systemstatus in einem privaten Thread postet."""
+    await bot.wait_until_ready()
     channel = bot.get_channel(channel_id)
+    
     if not channel:
         print(f"Kanal mit ID {channel_id} nicht gefunden.")
         return
 
-    # Nach einem bestehenden "System Status"-Thread suchen
-    thread = None
-    for t in channel.threads:
-        if t.name == "System Status":
-            thread = t
-            break
-
-    # Wenn kein Thread gefunden wurde, erstelle einen neuen
+    # Bestehenden "System Status"-Thread suchen
+    thread = next((t for t in channel.threads if t.name == "System Status"), None)
+    
     if not thread:
+        # Neuen Thread erstellen, falls keiner existiert
         thread = await channel.create_thread(
             name="System Status",
             auto_archive_duration=60,
             reason="Automatische Updates"
         )
 
-        # Admins Zugriff gewähren
-        for admin_name, admin_id in ADMINS.items():
+        # Admins nur einmalig hinzufügen
+        for admin_id in ADMINS.values():
             admin = channel.guild.get_member(int(admin_id))
             if admin:
-                await thread.add_user(admin)  # Admin zum Thread hinzufügen
-
-    # Variable zum Speichern der letzten Nachricht
-    last_message = None
+                try:
+                    await thread.add_user(admin)
+                except Exception as e:
+                    print(f"Fehler beim Hinzufügen von Admin {admin_id}: {e}")
 
     while True:
-        # Alte Nachricht löschen, falls vorhanden
-        if last_message:
-            try:
-                await last_message.delete()
-            except nextcord.NotFound:
-                print("Die letzte Nachricht wurde bereits gelöscht.")
-            except nextcord.Forbidden:
-                print("Keine Berechtigung, die Nachricht zu löschen.")
-            except nextcord.HTTPException as e:
-                print(f"Fehler beim Löschen der Nachricht: {e}")
+        # Alle Nachrichten im Thread löschen, bevor die neue gesendet wird
+        try:
+            async for msg in thread.history(limit=100):
+                await msg.delete()
+        except Exception as e:
+            print(f"Fehler beim Bereinigen des Threads: {e}")
 
-        # Statusdaten sammeln
+        # Systemstatus abrufen
         cpu = psutil.cpu_percent()
         memory = psutil.virtual_memory().percent
         disk = psutil.disk_usage('/').percent
-        
-        try:
-            public_ip = requests.get("https://api.ipify.org?format=json").json()['ip']
-        except:
-            public_ip = "N/A"
+        public_ip = await fetch_public_ip()
 
+        # Domain-IP vergleichen
         try:
             domain_ip = socket.gethostbyname(DOMAIN) if DOMAIN else "N/A"
             ip_match = "✅" if public_ip == domain_ip else "❌"
-        except:
+        except Exception as e:
+            print(f"Fehler beim Auflösen der Domain {DOMAIN}: {e}")
             domain_ip = "N/A"
             ip_match = "❌"
 
-        # Neue Nachricht senden und speichern
-        last_message = await thread.send(
+        # Neue Nachricht senden
+        await thread.send(
             f"**System Status**\n"
             f"CPU: {cpu}%\n"
             f"RAM: {memory}%\n"
@@ -82,4 +84,4 @@ async def system_status_task(bot, channel_id):
             f"Domain: {DOMAIN} ({domain_ip}) {ip_match}"
         )
 
-        await asyncio.sleep(300)  # 5 Minuten warten
+        await asyncio.sleep(1800)  # 30 Minuten warten
