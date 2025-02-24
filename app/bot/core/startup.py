@@ -3,7 +3,7 @@ import os
 import nextcord
 from modules.utilities.logger import logger 
 from modules.tasks.system_status_task import system_status_task
-from modules.tasks.cleanup_task import cleanup_homelab_channel  # Importiere die neue Cleanup-Task
+from modules.tasks.cleanup_task import cleanup_task  # Importiere die neue Cleanup-Task
 
 # Liste von Startup-Aufgaben
 startup_tasks = []
@@ -36,4 +36,4 @@ def setup_bot(bot):
 
 
 add_startup_task(system_status_task)
-add_startup_task(cleanup_homelab_channel)
+add_startup_task(cleanup_task)
