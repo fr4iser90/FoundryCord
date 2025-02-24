@@ -10,8 +10,8 @@ SERVER_DIR="/home/docker/docker/companion-management/homelab-discord-bot"
 ssh ${SERVER_USER}@${SERVER_HOST} "docker-compose -f ${SERVER_DIR}/docker-compose.yml down"
 
 # 2. Kopiere die neuen Dateien auf den Server
-scp -r ~/Documents/Git/homelab_bot/* ${SERVER_USER}@${SERVER_HOST}:${SERVER_DIR}
-scp ~/Documents/Git/homelab_bot/.env ${SERVER_USER}@${SERVER_HOST}:${SERVER_DIR}
+scp -r ~/Documents/Git/NixOsControlCenter-DiscordBot/* ${SERVER_USER}@${SERVER_HOST}:${SERVER_DIR}
+scp ~/Documents/Git/NixOsControlCenter-DiscordBot/.env ${SERVER_USER}@${SERVER_HOST}:${SERVER_DIR}
 
 # 3. Starte den Docker-Container neu
 ssh ${SERVER_USER}@${SERVER_HOST} "docker-compose -f ${SERVER_DIR}/docker-compose.yml build"
