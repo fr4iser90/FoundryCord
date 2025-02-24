@@ -14,7 +14,7 @@ services:
       - 1.1.1.1
     volumes:
       - ./app/bot/:/app/bot/
-
+      - ../../vpn-management/wireguard/config/wg_confs/:/app/bot/database/wireguard
 #  tracker:
 #    build:
 #      context: .

@@ -13,7 +13,8 @@ class LoggingMiddleware(commands.Cog):
     async def on_message(self, message):
         # Logge die eingehende Nachricht
         logging.info(f"Neue Nachricht von {message.author}: {message.content}")
-
+        return # Unterdrücke die Exception
+    
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         # Fehlerbehandlung für Berechtigungsprüfungen

@@ -19,18 +19,26 @@ async def system_status_task(bot, channel_id):
         print(f"Kanal mit ID {channel_id} nicht gefunden.")
         return
 
-    # Thread erstellen
-    thread = await channel.create_thread(
-        name="System Status",
-        auto_archive_duration=60,
-        reason="Automatische Updates"
-    )
+    # Nach einem bestehenden "System Status"-Thread suchen
+    thread = None
+    for t in channel.threads:
+        if t.name == "System Status":
+            thread = t
+            break
 
-    # Admins Zugriff gewähren
-    for admin_name, admin_id in ADMINS.items():
-        admin = channel.guild.get_member(int(admin_id))
-        if admin:
-            await thread.add_user(admin)  # Admin zum Thread hinzufügen
+    # Wenn kein Thread gefunden wurde, erstelle einen neuen
+    if not thread:
+        thread = await channel.create_thread(
+            name="System Status",
+            auto_archive_duration=60,
+            reason="Automatische Updates"
+        )
+
+        # Admins Zugriff gewähren
+        for admin_name, admin_id in ADMINS.items():
+            admin = channel.guild.get_member(int(admin_id))
+            if admin:
+                await thread.add_user(admin)  # Admin zum Thread hinzufügen
 
     # Variable zum Speichern der letzten Nachricht
     last_message = None
@@ -74,4 +82,4 @@ async def system_status_task(bot, channel_id):
             f"Domain: {DOMAIN} ({domain_ip}) {ip_match}"
         )
 
-        await asyncio.sleep(3600)  # 5 Minuten warten
+        await asyncio.sleep(300)  # 5 Minuten warten
