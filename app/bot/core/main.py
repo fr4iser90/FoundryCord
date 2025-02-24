@@ -8,7 +8,8 @@ from modules.monitoring.system_monitoring import setup as setup_system_monitorin
 from modules.tracker.ip_management import setup as setup_ip_management
 from modules.middleware.auth_middleware import setup as setup_auth_middleware
 from modules.middleware.logging_middleware import setup as setup_logging_middleware
-from modules.wireguard.config_manager import setup as setup_wireguard_config
+from modules.middleware.rate_limit_middleware import setup as setup_rate_limit_middleware  # Import der Rate Limit Middleware
+from modules.wireguard import setup as setup_wireguard 
 
 # Intents für den Bot
 intents = nextcord.Intents.default()
@@ -26,12 +27,12 @@ setup_bot(bot)
 # Set up Middleware (Auth und Logging)
 setup_auth_middleware(bot)
 setup_logging_middleware(bot)
-
+setup_rate_limit_middleware(bot)
 
 setup_system_monitoring(bot)  # Monitoring setup
 # setup_container_management(bot)  # Docker container management setup
 setup_ip_management(bot)  # IP Whitelisting setup
-setup_wireguard_config(bot)
+setup_wireguard(bot)
 
 # Bot starten
 if __name__ == '__main__':

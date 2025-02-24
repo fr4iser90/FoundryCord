@@ -16,13 +16,16 @@ def admin_only():
     return commands.check(predicate)
 
 def guest_only():
-    """Custom Decorator für Gast-Berechtigungen."""
+    """Custom Decorator für Gast-Berechtigungen, aber Admins dürfen auch teilnehmen."""
     async def predicate(ctx):
+        if is_admin(ctx.author):
+            return True  # Admins dürfen immer den Befehl ausführen
         if not is_guest(ctx.author):
             await ctx.send("You must be a guest to use this command.")
-            return False  # Verhindert die Ausführung des Befehls
+            return False  # Verhindert die Ausführung des Befehls für nicht-Gäste
         return True
     return commands.check(predicate)
+
 
 def authorized_only():
     """Custom Decorator für alle autorisierten Benutzer (Admins und Gäste)."""
