@@ -10,8 +10,8 @@ def parse_users(users_str):
     users_dict = {}
     if users_str:
         for user_entry in users_str.split(','):
-            if ':' in user_entry:
-                username, user_id = user_entry.split(':')
+            if '|' in user_entry:
+                username, user_id = user_entry.split('|')
                 users_dict[username.strip()] = user_id.strip()
     return users_dict
 
