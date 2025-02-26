@@ -6,3 +6,4 @@ flask
 PyYAML
 qrcode
 pytz
+cryptography

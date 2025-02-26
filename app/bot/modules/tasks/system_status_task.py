@@ -7,7 +7,7 @@ import asyncio
 import os
 from datetime import datetime
 from dotenv import load_dotenv
-from config.users import ADMINS, GUESTS
+from core.config.users import ADMINS, GUESTS
 
 load_dotenv()
 DOMAIN = os.getenv('DOMAIN')

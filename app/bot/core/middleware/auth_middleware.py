@@ -1,6 +1,6 @@
-# bot/modules/middleware/auth_middleware.py
+# bot/core/middleware/auth_middleware.py
 from nextcord.ext import commands
-from modules.auth.permissions import is_authorized
+from core.auth.permissions import is_authorized
 
 class AuthMiddleware(commands.Cog):
     def __init__(self, bot):

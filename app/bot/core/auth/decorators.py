@@ -1,8 +1,10 @@
-# modules/auth/decorators.py
+# core/auth/decorators.py
+import os
 import functools
+import nextcord
 from nextcord.ext import commands
-from modules.auth.permissions import is_admin, is_guest, is_authorized
-from modules.utilities.chunk_manager import chunk_message 
+from core.auth.permissions import is_admin, is_guest, is_authorized
+from core.utilities.chunk_manager import chunk_message 
 
 ### --- PERMISSION DECORATORS --- ###
 
@@ -70,6 +72,33 @@ def respond_in_dm():
         return wrapper
     return decorator
 
+def respond_encrypted_in_dm():
+    """Decorator: Sendet verschlüsselte DMs im Plugin-Format"""
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(ctx, *args, **kwargs):
+            response = await func(ctx, *args, **kwargs)
+            if response:
+                # Verschlüsseln der Nachricht
+                encryption = ctx.bot.get_cog('EncryptionMiddleware')
+                if not encryption:
+                    raise RuntimeError("Encryption middleware not loaded")
+                encrypted = await encryption.encrypt_for_plugin(response)
+                
+                # Wenn die Antwort mehr als 1800 Zeichen hat, chunkieren
+                if len(encrypted) > 1800:
+                    chunks = []
+                    async for chunk in chunk_message(encrypted):
+                        chunks.append(chunk)
+                    # Sende jeden Chunk nacheinander
+                    for chunk in chunks:
+                        await ctx.author.send(chunk)
+                else:
+                    # Wenn die Nachricht klein genug ist, einfach senden
+                    await ctx.author.send(encrypted)
+        return wrapper
+    return decorator
+
 def respond_in_dm_in_codeblock():
     """Decorator: Antwortet per Direct Message (DM) an den Nutzer und chunkiert den Inhalt mit Codeblock-Formatierung."""
     def decorator(func):
@@ -87,5 +116,36 @@ def respond_in_dm_in_codeblock():
                         # Die Antwort immer in einen Codeblock setzen
                         await ctx.author.send(f"```{response}```")
                     ctx._already_responded = True
+        return wrapper
+    return decorator
+
+def respond_encrypted_file_in_dm():
+    """Decorator: Sendet verschlüsselte Dateien per DM."""
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(ctx, *args, **kwargs):
+            # Originale Datei holen
+            file_path = await func(ctx, *args, **kwargs)
+            
+            if file_path and os.path.exists(file_path):
+                # Datei lesen und verschlüsseln
+                with open(file_path, 'rb') as f:
+                    file_data = f.read().decode('utf-8')
+                    encryption = ctx.bot.get_cog('EncryptionMiddleware')
+                    if not encryption:
+                        raise RuntimeError("Encryption middleware not loaded")
+                    encrypted_data = await encryption.encrypt_for_plugin(file_data)
+                    encrypted_data = encrypted_data.encode('utf-8')  # Convert back to bytes for file writing
+                
+                # Temporäre verschlüsselte Datei erstellen
+                encrypted_file_path = f"{file_path}.enc"
+                with open(encrypted_file_path, 'wb') as f:
+                    f.write(encrypted_data)
+                
+                # Verschlüsselte Datei senden
+                await ctx.author.send(file=nextcord.File(encrypted_file_path))
+                
+                # Temporäre Datei löschen
+                os.remove(encrypted_file_path)
         return wrapper
     return decorator

@@ -1,5 +1,5 @@
 import os
-from modules.utilities.logger import logger
+from core.utilities.logger import logger
 
 def get_user_config(config_path, username):
     user_dir = os.path.join(config_path, f"peer_{username}")

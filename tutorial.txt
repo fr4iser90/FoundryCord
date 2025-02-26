@@ -1,0 +1,91 @@
+# Sicherer Discord Bot - Tutorial
+
+## 1. Middlewares vs. Decorators
+
+### Middlewares:
+- Werden vor jedem Command ausgeführt
+- Ideal für globale Sicherheitschecks
+- Beispiele in diesem Bot:
+  * Auth Middleware: Überprüft API-Schlüssel
+  * Rate Limiting: Verhindert DDoS-Angriffe
+  * Logging: Protokolliert alle Anfragen
+
+### Decorators:
+- Werden für spezifische Commands verwendet
+- Ideal für Command-spezifische Sicherheit
+- Beispiele in diesem Bot:
+  * @admin_only: Nur für Admins
+  * @guest_only: Nur für Gäste
+  * @respond_encrypted_file_in_dm: Verschlüsselte Dateiübertragung
+
+## 2. Implementierte Sicherheitsmaßnahmen
+
+### Authentifizierung:
+- API-Schlüssel für externe Anfragen
+- Discord-Rollenbasierte Zugriffskontrolle
+- Zwei-Faktor-Authentifizierung für Admins
+
+### Verschlüsselung:
+- Ende-zu-Ende Verschlüsselung für sensible Daten
+- AES-256 Verschlüsselung für Dateiübertragungen
+- TLS für alle externen Verbindungen
+
+### Rate Limiting:
+- Maximal 5 Anfragen pro Sekunde pro Nutzer
+- IP-basierte Sperrung bei Verdacht auf Angriffe
+- Automatische Entsperrung nach 15 Minuten
+
+## 3. Empfohlene zusätzliche Middlewares
+
+### 1. Input Validation Middleware
+- Überprüft alle Benutzereingaben
+- Verhindert SQL-Injection und XSS-Angriffe
+- Whitelist für erlaubte Zeichen
+
+### 2. Session Management Middleware  
+- Verwaltet Benutzersitzungen
+- Automatische Abmeldung nach Inaktivität
+- Verhindert Session Hijacking
+
+### 3. Audit Log Middleware
+- Protokolliert alle kritischen Aktionen
+- Speichert wer, wann, was gemacht hat
+- Unveränderliches Log für forensische Analysen
+
+## 4. Best Practices für sichere Bot-Entwicklung
+
+1. Principle of Least Privilege:
+   - Jeder Command hat nur die minimal notwendigen Rechte
+   - Isolierte Umgebungen für kritische Operationen
+
+2. Defense in Depth:
+   - Mehrere Sicherheitsebenen
+   - Fail-Safe Defaults
+
+3. Regelmäßige Sicherheitsaudits:
+   - Automatisierte Sicherheitstests
+   - Manuelle Code-Reviews
+   - Penetration Testing
+
+4. Sicherheitsupdates:
+   - Automatische Updates für Abhängigkeiten
+   - Regelmäßige Sicherheitspatches
+   - Bug Bounty Programm
+
+## 5. Beispielhafter Workflow
+
+1. Anfrage kommt an
+2. Auth Middleware prüft API-Schlüssel
+3. Rate Limiting Middleware prüft Anfragehäufigkeit  
+4. Input Validation Middleware prüft Eingaben
+5. Command wird ausgeführt
+6. Decorator verarbeitet die Antwort
+7. Audit Log Middleware protokolliert die Aktion
+8. Verschlüsselte Antwort wird gesendet
+
+## 6. Weiterführende Maßnahmen
+
+- Implementierung von Web Application Firewall (WAF)
+- Integration von Security Information and Event Management (SIEM)
+- Regelmäßige Sicherheitsschulungen für Entwickler
+- Implementierung eines Intrusion Detection Systems (IDS)

@@ -1,16 +1,18 @@
 # @/app/bot/core/startup.py
 import os
 import nextcord
-from modules.utilities.logger import logger 
+from core.utilities.logger import logger 
 from modules.tasks.system_status_task import system_status_task
-from modules.tasks.cleanup_task import cleanup_task  
+from modules.tasks.cleanup_task import cleanup_task
+from modules.tasks.cleanup_dm_task import cleanup_dm_task  
 
 # Liste von Startup-Aufgaben
 startup_tasks = []
 
 def add_startup_task(task_func):
     """Fügt eine Aufgabe zur Startup-Liste hinzu."""
-    startup_tasks.append(task_func)
+    if task_func not in startup_tasks:
+        startup_tasks.append(task_func)
 
 def setup_bot(bot):
     """Setzt den Eventhandler für on_ready."""
@@ -26,9 +28,11 @@ def setup_bot(bot):
                 logger.info(f"Bot ist bereit. Starte Aufgaben für Kanal ID: {discord_homelab_channel_id}")
                 
                 # Erstelle und starte alle Aufgaben in der startup_tasks-Liste
-                for task in startup_tasks:
-                    logger.debug(f"Starte Task: {task.__name__}")
-                    bot.loop.create_task(task(bot, discord_homelab_channel_id))
+                if not hasattr(bot, '_tasks_started'):
+                    bot._tasks_started = True
+                    for task in startup_tasks:
+                        logger.debug(f"Starte Task: {task.__name__}")
+                        bot.loop.create_task(task(bot, discord_homelab_channel_id))
             else:
                 logger.error(f"Kanal mit der ID {discord_homelab_channel_id} wurde nicht gefunden.")
         else:
@@ -37,3 +41,4 @@ def setup_bot(bot):
 
 add_startup_task(system_status_task)
 add_startup_task(cleanup_task)
+add_startup_task(cleanup_dm_task)
