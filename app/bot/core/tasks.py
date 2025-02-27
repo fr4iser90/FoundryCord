@@ -14,7 +14,7 @@ def add_startup_task(task_func):
     if task_func not in startup_tasks:
         startup_tasks.append(task_func)
 
-def setup_bot(bot):
+def setup_tasks(bot):
     """Setzt den Eventhandler für on_ready."""
     @bot.event
     async def on_ready():

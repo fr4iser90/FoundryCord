@@ -2,7 +2,7 @@
 import os
 import nextcord
 from nextcord.ext import commands
-from core.startup import setup_bot
+from core.tasks import setup_tasks
 from modules.monitoring.system_monitoring import setup as setup_system_monitoring
 from modules.tracker.ip_management import setup as setup_ip_management
 from core.middleware import setup as setup_middleware 
@@ -22,7 +22,7 @@ intents.dm_reactions = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 # Set up general bot functionalities
-setup_bot(bot)
+setup_tasks(bot)
 
 # Set up Middleware (Auth und Logging)
 setup_middleware(bot)
