@@ -7,7 +7,7 @@ services:
     container_name: homelab-discord-bot
     restart: unless-stopped
     env_file:
-      - .env
+      - .env.discordbot
     networks:
       - homelab-net
     dns:
@@ -15,7 +15,18 @@ services:
     volumes:
       - ./app/bot/:/app/bot/
       - ../../vpn-management/wireguard/config/:/app/bot/database/wireguard
-#      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  postgres:
+    image: postgres:latest
+    container_name: homelab-postgres
+    restart: unless-stopped
+    env_file:
+      - .env.postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - homelab-net
+
 #  tracker:
 #    build:
 #      context: .
@@ -55,3 +66,7 @@ networks:
     driver: bridge
   proxy:
     external: true
+
+volumes:
+  postgres_data:
+    driver: local

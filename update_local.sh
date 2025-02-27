@@ -11,7 +11,8 @@ ssh ${SERVER_USER}@${SERVER_HOST} "docker-compose -f ${SERVER_DIR}/docker-compos
 
 # 2. Kopiere die neuen Dateien auf den Server
 scp -r ~/Documents/Git/NixOsControlCenter-DiscordBot/* ${SERVER_USER}@${SERVER_HOST}:${SERVER_DIR}
-scp ~/Documents/Git/NixOsControlCenter-DiscordBot/.env ${SERVER_USER}@${SERVER_HOST}:${SERVER_DIR}
+scp ~/Documents/Git/NixOsControlCenter-DiscordBot/.env.discordbot ${SERVER_USER}@${SERVER_HOST}:${SERVER_DIR}
+scp ~/Documents/Git/NixOsControlCenter-DiscordBot/.env.postgres ${SERVER_USER}@${SERVER_HOST}:${SERVER_DIR}
 
 # 3. Starte den Docker-Container neu
 ssh ${SERVER_USER}@${SERVER_HOST} "docker-compose -f ${SERVER_DIR}/docker-compose.yml build"

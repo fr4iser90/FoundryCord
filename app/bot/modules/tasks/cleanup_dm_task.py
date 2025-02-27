@@ -1,61 +1,102 @@
-# modules/tasks/cleanup_dm_task.py
 import asyncio
 import nextcord
 from core.utilities.logger import logger
 import datetime
 import pytz
+from core.config.users import ADMINS, GUESTS
 
+async def log_dm_channels(bot):
+    """Protokolliert alle privaten DM-Kanäle des Bots und vergleicht sie mit den bekannten Admins und Gästen."""
+    try:
+        logger.info("Starte DM-Kanal-Überprüfung.")
+        dms = []
+        
+        for user_id in list(ADMINS.values()) + list(GUESTS.values()):
+            try:
+                user = await bot.fetch_user(int(user_id))
+                if user.dm_channel is None:
+                    await user.create_dm()
+                if user.dm_channel:
+                    dms.append((user_id, user.name, user.dm_channel.id))
+                    logger.info(f"Gefundener DM-Kanal: {user.name} ({user_id}) - Kanal-ID: {user.dm_channel.id}")
+            except nextcord.NotFound:
+                logger.warning(f"Benutzer {user_id} nicht gefunden.")
+            except nextcord.Forbidden:
+                logger.warning(f"Kein Zugriff auf DM von Benutzer {user_id}.")
+            except Exception as e:
+                logger.error(f"Fehler beim Abrufen von DM-Kanal für {user_id}: {e}")
+        
+        return dms
+    except Exception as e:
+        logger.error(f"Fehler beim Protokollieren der DM-Kanäle: {e}")
+        return []
 
 async def cleanup_dm_messages(bot):
     """Bereinigt DM-Nachrichten, indem Nachrichten gelöscht werden, die älter als 3 Stunden sind."""
     try:
         logger.info("Starte Bereinigung der DM-Nachrichten.")
         
-        # Holen der letzten 200 DM-Nachrichten aus den Channels des Bots
-        messages = []
-        logger.debug(f"Verfügbare DM-Channels: {len(bot.private_channels)}")
+        dm_channels = await log_dm_channels(bot)
+        current_time = datetime.datetime.now(pytz.utc)
         
-        for channel in bot.private_channels:
-            if isinstance(channel, nextcord.DMChannel):
-                logger.debug(f"Verarbeite DM-Channel: {channel.id} mit {channel.recipient}")
-                if channel.me:  # Nur Channels, in denen der Bot aktiv ist
-                    channel_messages = await channel.history(limit=200).flatten()
-                    logger.debug(f"Gefundene Nachrichten in {channel.id}: {len(channel_messages)}")
-                    messages.extend(channel_messages)
+        for user_id, user_name, channel_id in dm_channels:
+            try:
+                channel = bot.get_channel(channel_id)
+                if not channel:
+                    logger.warning(f"DM-Kanal {channel_id} für {user_name} nicht gefunden, überspringe...")
+                    continue
+            except Exception as e:
+                logger.error(f"Fehler beim Zugriff auf Kanal {channel_id}: {e}")
+                continue
+                
+            try:
+                async for message in channel.history(limit=None):
+                    if message.author.id != bot.user.id:
+                        continue  # Nur eigene Nachrichten löschen
+                    message_time = message.created_at.replace(tzinfo=pytz.utc)
+                    time_difference = current_time - message_time
+                    
+                    if time_difference.total_seconds() > 10800:  # 3 Stunden in Sekunden
+                        try:
+                            await message.delete()
+                            logger.debug(f"Gelöscht: {message.id} von {message.author} - Inhalt: {message.content}")
+                            await asyncio.sleep(0.75)  # Rate-Limit-Schutz
+                        except nextcord.NotFound:
+                            logger.warning(f"Nachricht {message.id} nicht gefunden, vermutlich bereits gelöscht.")
+                            continue
+                        except nextcord.Forbidden as e:
+                            logger.error(f"Löschen verboten: {e}")
+                            break
+                        except Exception as e:
+                            logger.error(f"Fehler beim Löschen der Nachricht {message.id}: {e}")
+                            await asyncio.sleep(2)
+            except Exception as e:
+                logger.error(f"Fehler beim Durchsuchen des Kanalverlaufs: {e}")
         
-        current_time = datetime.datetime.now(pytz.utc)  # Aktuelle Zeit in UTC (offset-aware)
-
-        for message in messages:
-            # Berechne die Differenz in Stunden zwischen der Nachricht und der aktuellen Zeit
-            message_time = message.created_at.replace(tzinfo=pytz.utc)  # Sicherstellen, dass der Zeitstempel offset-aware ist
-            time_difference = current_time - message_time
-            hours_diff = time_difference.total_seconds() / 3600  # In Stunden umwandeln
-
-            if hours_diff > 3:  # Wenn die Nachricht älter als 3 Stunden ist
-                bot_user_id = bot.user.id
-                if message.author.id == bot_user_id:
-                    # Nur Nachrichten vom Bot löschen
-                    await message.delete()
-                    logger.debug(f"Gelöscht: {message.id} von {message.author} - Inhalt: {message.content}")
-
-                # Lösche Nachrichten, die mit "!" beginnen (Befehle) oder Antworten darauf
-                if message.content.startswith('!') or message.reference:
-                    await message.delete()
-                    logger.debug(f"Gelöscht: {message.id} von {message.author} - Inhalt: {message.content}")
-
         logger.info("Bereinigung der DMs abgeschlossen.")
     except Exception as e:
         logger.error(f"Fehler bei der Bereinigung der DMs: {e}")
 
-
 async def cleanup_dm_task(bot, channel_id=None):
-    """Task, der alle 30 Minuten die DM-Nachrichten bereinigt."""
-    logger.debug("Initializing cleanup_dm_task")
+    """Task, der alle 30 Minuten die DM-Nachrichten bereinigt.
+    
+    Args:
+        bot: The bot instance
+        channel_id: Optional channel ID for logging purposes
+    """
+    logger.debug("Initialisiere cleanup_dm_task")
     await bot.wait_until_ready()
-    logger.debug("Bot is ready, starting cleanup loop")
-
-    while True:
-        logger.debug("Starting cleanup cycle")
+    logger.debug("Bot ist bereit, starte Bereinigungsschleife")
+    
+    @bot.slash_command(name="cleanup_dms", description="Löst die Bereinigung der DMs manuell aus")
+    async def cleanup_dms_command(interaction: nextcord.Interaction):
+        """Manuelles Auslösen der DM-Bereinigung"""
+        await interaction.response.defer(ephemeral=True)
+        logger.info("Manuelle DM-Bereinigung über Command ausgelöst")
         await cleanup_dm_messages(bot)
-        logger.debug("Cleanup cycle completed, sleeping for 30 minutes")
-        await asyncio.sleep(1800)  # 30 Minuten warten
+        await interaction.followup.send("DM-Bereinigung abgeschlossen", ephemeral=True)
+    
+    while True:
+        await cleanup_dm_messages(bot)
+        logger.debug("Bereinigungszyklus abgeschlossen, warte 30 Minuten")
+        await asyncio.sleep(1800)
