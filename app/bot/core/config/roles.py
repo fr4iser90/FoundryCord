@@ -5,5 +5,4 @@ SERVER_ROLES = {
     "MODERATOR": ["Moderator"],  # Moderates content, but limited system access
     "USER": ["User"],  # Basic user, limited access
     "GUEST": ["Guest"],  # View-only access
-    "DEV": ["Developer"],  # Access to dev-related resources
 }
