@@ -1,15 +1,7 @@
 # modules/auth/permissions.py
 
-try:
-    from core.config.users import SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
-except ImportError as e:
-    print(f"Error importing user roles: {e}")
-    # Fallback if config cannot be imported
-    SUPER_ADMINS = {}
-    ADMINS = {}
-    MODERATORS = {}
-    USERS = {}
-    GUESTS = {}
+from core.utilities.logger import logger
+from core.config.users import SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
 
 def is_super_admin(user):
     """Check if the user is a Super Admin."""
@@ -32,16 +24,21 @@ def is_guest(user):
     return str(user.id) in GUESTS.values()
 
 def is_authorized(user):
-    """
-    Überprüft, ob der Benutzer in einer der Listen (SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS) enthalten ist.
-    """
+    """Check if the user is authorized."""
     user_id = str(user.id)
-    print(f"Checking authorization for user ID: {user_id}")  # Debugging
-    print(f"SUPER_ADMINS: {SUPER_ADMINS}")  # Debugging
-    print(f"ADMINS: {ADMINS}")  # Debugging
-    print(f"MODERATORS: {MODERATORS}")  # Debugging
-    print(f"USERS: {USERS}")  # Debugging
-    print(f"GUESTS: {GUESTS}")  # Debugging
+    # Use debug level instead of print for role checks
+    logger.debug(f"Authorization check for user ID: {user_id}")
+    
+    # Remove sensitive data from logs
+    roles_present = {
+        'super_admin': bool(SUPER_ADMINS),
+        'admin': bool(ADMINS),
+        'moderator': bool(MODERATORS),
+        'user': bool(USERS),
+        'guest': bool(GUESTS)
+    }
+    logger.debug(f"Available roles: {roles_present}")
+    
     return (
         is_super_admin(user)
         or is_admin(user)

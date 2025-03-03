@@ -7,4 +7,5 @@ PyYAML
 qrcode
 pytz
 cryptography
-psycopg2
+PyJWT
+psycopg2-binary
