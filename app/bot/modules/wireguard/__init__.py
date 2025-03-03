@@ -1,8 +1,11 @@
-from .commands.get_user_config import wireguard_get_config_from_user, wireguard_config
-from .commands.get_user_qr import wireguard_get_qr_from_user, wireguard_qr
+# app/bot/modules/wireguard/__init__.py
+
+from .cogs.get_user_config import WireguardConfigCommands
+from .cogs.get_user_qr import WireguardQRCommands
+from .utils.get_user_config import get_user_config
 
 def setup(bot):
-    bot.add_command(wireguard_get_config_from_user)
-    bot.add_command(wireguard_config)
-    bot.add_command(wireguard_get_qr_from_user)
-    bot.add_command(wireguard_qr)
+    bot.add_cog(WireguardConfigCommands(bot))
+    bot.add_cog(WireguardQRCommands(bot))
+
+__all__ = ["WireguardConfigCommands", "WireguardQRCommands", "get_user_config", "setup"]

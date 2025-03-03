@@ -1,5 +1,9 @@
 # Server-Rollenkonfiguration
 SERVER_ROLES = {
-    "ADMIN": ["Admin", "Super Admin"],
-    "MODERATOR": ["Moderator"],
+    "SUPER_ADMIN": ["Super Admin"],  # Full, unrestricted access
+    "ADMIN": ["Admin"],  # High-level control, but some restrictions
+    "MODERATOR": ["Moderator"],  # Moderates content, but limited system access
+    "USER": ["User"],  # Basic user, limited access
+    "GUEST": ["Guest"],  # View-only access
+    "DEV": ["Developer"],  # Access to dev-related resources
 }

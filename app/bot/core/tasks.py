@@ -2,9 +2,9 @@
 import os
 import nextcord
 from core.utilities.logger import logger 
-from modules.tasks.system_status_task import system_status_task
-from modules.tasks.cleanup_task import cleanup_task
-from modules.tasks.cleanup_dm_task import cleanup_dm_task  
+from tasks.system_status_task import system_status_task
+from tasks.cleanup_task import cleanup_task
+from tasks.cleanup_dm_task import cleanup_dm_task  
 
 # Liste von Startup-Aufgaben
 startup_tasks = []

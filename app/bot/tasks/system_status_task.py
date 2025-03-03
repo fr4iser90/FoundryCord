@@ -32,7 +32,7 @@ def progress_bar(percent):
 def get_system_color(cpu, memory, disk):
     """Bestimmt die Embed-Farbe basierend auf Auslastung"""
     if cpu > 80 or memory > 90 or disk > 90:
-        return 0xff0000  # Rot
+        return 0xff0000  # Rot 
     elif cpu > 60 or memory > 75 or disk > 75:
         return 0xffa500  # Orange
     return 0x00ff00      # Grün
