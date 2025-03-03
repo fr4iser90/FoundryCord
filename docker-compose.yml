@@ -3,18 +3,33 @@ services:
     build:
       context: .
       dockerfile: ./app/bot/Dockerfile
+      args:
+        - USER_ID=${PUID:-1000}
+        - GROUP_ID=${PGID:-1000}
     image: homelab-discord-bot:latest
     container_name: homelab-discord-bot
     restart: unless-stopped
     env_file:
       - .env.discordbot
+      - .env.postgres
+    environment:
+      - APP_DB_USER=${APP_DB_USER}
+      - APP_DB_PASSWORD=${APP_DB_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
     networks:
       - homelab-net
     dns:
       - 1.1.1.1
     volumes:
       - ./app/bot/:/app/bot/
+      - ./app/bot/logs:/app/bot/logs
       - ../../vpn-management/wireguard/config/:/app/bot/database/wireguard
+    depends_on:
+      postgres:
+        condition: service_healthy
+    user: ${PUID:-1000}:${PGID:-1000}
 
   postgres:
     image: postgres:latest
@@ -22,11 +37,18 @@ services:
     restart: unless-stopped
     env_file:
       - .env.postgres
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: md5
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - homelab-net
-
 #  tracker:
 #    build:
 #      context: .

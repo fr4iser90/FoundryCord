@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import os
 from core.decorators.auth import admin_or_higher
 from core.decorators.respond import respond_in_channel, respond_using_config, respond_in_dm, respond_encrypted_in_dm, respond_with_file 
+from core.utilities.http_client import http_client
 
 # Load environment variables from .env file
 load_dotenv()
@@ -29,7 +30,7 @@ def setup(bot):
         
         # Fetch Public IPv4 address
         try:
-            public_ip = requests.get("https://api.ipify.org?format=json").json()['ip']
+            public_ip = http_client.get("https://api.ipify.org?format=json").json()['ip']
         except requests.RequestException:
             public_ip = "Unable to fetch public IP"
 
@@ -74,7 +75,7 @@ def setup(bot):
     async def system_public_ip(ctx):
         """Zeigt die öffentliche IP-Adresse an."""
         try:
-            public_ip = requests.get("https://api.ipify.org?format=json").json()['ip']
+            public_ip = http_client.get("https://api.ipify.org?format=json").json()['ip']
             await ctx.send(f'Public IPv4: {public_ip}')
         except requests.RequestException:
             await ctx.send("Unable to fetch public IP.")

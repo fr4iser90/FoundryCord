@@ -1,13 +1,11 @@
 import os
-import requests
-import hashlib
-import nextcord
 from nextcord.ext import commands
+from core.utilities.http_client import http_client
 
 # Funktion, um die öffentliche IP zu erhalten
 async def get_public_bot_ip():
     try:
-        response = requests.get('https://ipinfo.io/json')
+        response = http_client.get('https://ipinfo.io/json')
         response.raise_for_status()
         return response.json()['ip']
     except requests.RequestException as e:
@@ -38,7 +36,7 @@ def setup(bot):
         tracker_url = os.getenv('TRACKER_URL')
 
         try:
-            response = requests.post(
+            response = http_client.post(
                 f'{tracker_url}/register',
                 json={'ip': ip, 'hash': unique_hash},
                 timeout=5
@@ -72,7 +70,7 @@ def setup(bot):
                 tracker_url = os.getenv('TRACKER_URL')
 
                 try:
-                    response = requests.post(
+                    response = http_client.post(
                         f'{tracker_url}/register',
                         json={'ip': ip, 'hash': unique_hash},
                         timeout=5

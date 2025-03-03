@@ -9,3 +9,6 @@ pytz
 cryptography
 PyJWT
 psycopg2-binary
+alembic
+sqlalchemy
+asyncpg
