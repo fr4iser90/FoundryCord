@@ -2,7 +2,7 @@ import os
 import nextcord
 from nextcord.ext import commands
 from core.utilities.logger import logger
-from core.decorators.auth import admin_only, guest_only
+from core.decorators.auth import admin_or_higher, user_or_higher
 from core.decorators.respond import (
     respond_in_channel,
     respond_using_config,
@@ -19,7 +19,7 @@ class WireguardConfigCommands(commands.Cog):
         self.config_path = "/app/bot/database/wireguard"
 
     @commands.command(name='wireguard_get_config_from_user')
-    @admin_only()
+    @admin_or_higher()
     @respond_encrypted_file_in_dm()
     async def wireguard_get_config_from_user(self, ctx, username: str):
         """Gibt die Konfigurationsdatei eines bestimmten WireGuard-Users zurück."""
@@ -41,8 +41,8 @@ class WireguardConfigCommands(commands.Cog):
             return None
 
     @commands.command(name='wireguard_config')
+    @user_or_higher()
     @respond_encrypted_file_in_dm()
-    @guest_only()
     async def wireguard_config(self, ctx):
         """Sendet dem Benutzer automatisch das wireguard conf file basierend auf dem Discord-Namen."""
         username = ctx.author.name  # Holt den Discord-Namen

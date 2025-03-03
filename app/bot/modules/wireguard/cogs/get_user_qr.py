@@ -2,7 +2,7 @@ import os
 import nextcord
 from nextcord.ext import commands
 from core.utilities.logger import logger
-from core.decorators.auth import admin_only, guest_only
+from core.decorators.auth import admin_or_higher, user_or_higher
 from core.decorators.respond import respond_encrypted_file_in_dm
 from modules.wireguard.utils.get_user_config import get_user_config
 
@@ -12,7 +12,7 @@ class WireguardQRCommands(commands.Cog):
         self.config_path = "/app/bot/database/wireguard"
 
     @commands.command(name='wireguard_get_qr_from_user')
-    @admin_only()
+    @admin_or_higher()
     @respond_encrypted_file_in_dm()
     async def wireguard_get_qr_from_user(self, ctx, username: str):
         """Sendet die WireGuard-Config eines bestimmten Users als QR-Code."""
@@ -35,7 +35,7 @@ class WireguardQRCommands(commands.Cog):
 
     @commands.command(name='wireguard_qr')
     @respond_encrypted_file_in_dm()
-    @guest_only()
+    @user_or_higher()
     async def wireguard_qr(self, ctx):
         """Sendet dem Benutzer automatisch seinen WireGuard-QR-Code basierend auf dem Discord-Namen."""
         username = ctx.author.name  # Holt den Discord-Namen

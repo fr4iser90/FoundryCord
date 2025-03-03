@@ -1,6 +1,6 @@
-# bot/core/middleware/auth_middleware.py
 from nextcord.ext import commands
 from core.auth.permissions import is_authorized
+from core.utilities.logger import logger
 
 class AuthMiddleware(commands.Cog):
     def __init__(self, bot):
@@ -11,12 +11,26 @@ class AuthMiddleware(commands.Cog):
         if message.author.bot:
             return
 
-        # Check authorization before command execution
-        ctx = await self.bot.get_context(message)
-        if ctx.command and not is_authorized(ctx.author):
-            await ctx.send("Du bist nicht autorisiert, diesen Befehl zu verwenden.")
-            return
+        try:
+            ctx = await self.bot.get_context(message)
+            if not ctx.command:
+                return
+
+            # Log request details
+            logger.info(f"Auth check for {ctx.command.name} by {message.author}")
+
+            # Basic authorization check
+            if not is_authorized(ctx.author):
+                logger.warning(f"Unauthorized access attempt by {message.author}")
+                await ctx.send("You are not authorized to use this command.")
+                return
+
+            # Log successful authorization
+            logger.info(f"Authorized access to {ctx.command.name} by {message.author}")
+
+        except Exception as e:
+            logger.error(f"Auth middleware error: {str(e)}")
+            await message.channel.send("An error occurred during authorization check.")
 
 def setup(bot):
     bot.add_cog(AuthMiddleware(bot))
-

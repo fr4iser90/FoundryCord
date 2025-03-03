@@ -14,8 +14,8 @@
 - Werden für spezifische Commands verwendet
 - Ideal für Command-spezifische Sicherheit
 - Beispiele in diesem Bot:
-  * @admin_only: Nur für Admins
-  * @guest_only: Nur für Gäste
+  * @admin_or_higher: Nur für Admins
+  * @user_or_higher: Nur für Gäste
   * @respond_encrypted_file_in_dm: Verschlüsselte Dateiübertragung
 
 ## 2. Implementierte Sicherheitsmaßnahmen

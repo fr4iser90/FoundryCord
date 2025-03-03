@@ -3,28 +3,30 @@ import nextcord
 from core.utilities.logger import logger
 import datetime
 import pytz
-from core.config.users import ADMINS, GUESTS
 
-async def log_dm_channels(bot):
-    """Protokolliert alle privaten DM-Kanäle des Bots und vergleicht sie mit den bekannten Admins und Gästen."""
+async def log_all_dm_channels(bot):
+    """Protokolliert alle privaten DM-Kanäle des Bots."""
     try:
-        logger.info("Starte DM-Kanal-Überprüfung.")
+        logger.info("Starte DM-Kanal-Überprüfung für alle Benutzer.")
         dms = []
         
-        for user_id in list(ADMINS.values()) + list(GUESTS.values()):
+        # Durchlaufe alle Benutzer, mit denen der Bot interagiert hat
+        for user in bot.users:
             try:
-                user = await bot.fetch_user(int(user_id))
+                if user.bot:
+                    continue  # Ignoriere andere Bots
+                
                 if user.dm_channel is None:
                     await user.create_dm()
                 if user.dm_channel:
-                    dms.append((user_id, user.name, user.dm_channel.id))
-                    logger.info(f"Gefundener DM-Kanal: {user.name} ({user_id}) - Kanal-ID: {user.dm_channel.id}")
+                    dms.append((user.id, user.name, user.dm_channel.id))
+                    logger.info(f"Gefundener DM-Kanal: {user.name} ({user.id}) - Kanal-ID: {user.dm_channel.id}")
             except nextcord.NotFound:
-                logger.warning(f"Benutzer {user_id} nicht gefunden.")
+                logger.warning(f"Benutzer {user.id} nicht gefunden.")
             except nextcord.Forbidden:
-                logger.warning(f"Kein Zugriff auf DM von Benutzer {user_id}.")
+                logger.warning(f"Kein Zugriff auf DM von Benutzer {user.id}.")
             except Exception as e:
-                logger.error(f"Fehler beim Abrufen von DM-Kanal für {user_id}: {e}")
+                logger.error(f"Fehler beim Abrufen von DM-Kanal für {user.id}: {e}")
         
         return dms
     except Exception as e:
@@ -36,7 +38,7 @@ async def cleanup_dm_messages(bot):
     try:
         logger.info("Starte Bereinigung der DM-Nachrichten.")
         
-        dm_channels = await log_dm_channels(bot)
+        dm_channels = await log_all_dm_channels(bot)
         current_time = datetime.datetime.now(pytz.utc)
         
         for user_id, user_name, channel_id in dm_channels:

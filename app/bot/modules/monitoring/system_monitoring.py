@@ -4,7 +4,7 @@ from nextcord.ext import commands
 import socket
 from dotenv import load_dotenv
 import os
-from core.decorators.auth import admin_only
+from core.decorators.auth import admin_or_higher
 from core.decorators.respond import respond_in_channel, respond_using_config, respond_in_dm, respond_encrypted_in_dm, respond_with_file 
 
 # Load environment variables from .env file
@@ -20,7 +20,7 @@ if not DOMAIN:
 def setup(bot):
     # Add status command to bot
     @bot.command(name='system_full_status')
-    @admin_only()  # Nur Admins dürfen diesen Befehl ausführen
+    @admin_or_higher()  # Nur Admins dürfen diesen Befehl ausführen
     async def status(ctx):
         # CPU, Memory, Disk usage
         cpu_percent = psutil.cpu_percent()
@@ -55,7 +55,7 @@ def setup(bot):
                        f'{DOMAIN} IP: {domain_ip} ({ip_match})')
 
     @bot.command(name='system_status')
-    @admin_only()
+    @admin_or_higher()
     @respond_in_dm()
     async def system_status(ctx):
         """Zeigt den Systemstatus an (CPU, Speicher, Festplatte)."""
@@ -70,7 +70,7 @@ def setup(bot):
         )
 
     @bot.command(name='system_public_ip')
-    @admin_only()
+    @admin_or_higher()
     async def system_public_ip(ctx):
         """Zeigt die öffentliche IP-Adresse an."""
         try:

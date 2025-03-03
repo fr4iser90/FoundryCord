@@ -62,15 +62,15 @@ def respond_encrypted_file_in_dm():
     """Decorator: Sendet verschlüsselte Dateien per DM."""
     def decorator(func):
         @functools.wraps(func)
-        async def wrapper(ctx, *args, **kwargs):
+        async def wrapper(self, ctx, *args, **kwargs):
             # Originale Datei holen
-            file_path = await func(ctx, *args, **kwargs)
+            file_path = await func(self, ctx, *args, **kwargs)
             
             if file_path and os.path.exists(file_path):
                 # Datei lesen und verschlüsseln
                 with open(file_path, 'rb') as f:
                     file_data = f.read().decode('utf-8')
-                    encryption = ctx.bot.get_cog('EncryptionMiddleware')
+                    encryption = self.bot.get_cog('EncryptionMiddleware')
                     if not encryption:
                         raise RuntimeError("Encryption middleware not loaded")
                     encrypted_data = await encryption.encrypt_for_plugin(file_data)
