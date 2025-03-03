@@ -1,11 +1,19 @@
 from sqlalchemy.ext.asyncio import AsyncEngine
 from core.database.models import Base
-from core.database.config import engine
+from core.database.config import initialize_engine, initialize_session
 import asyncio
+from core.utilities.logger import logger
 
 async def init_db():
+    engine = await initialize_engine()
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    
+    # Initialize session after engine is created
+    await initialize_session()
+    
+    logger.info("Database tables created successfully")
+    return True
 
 async def migrate_existing_users():
     """Migrate existing users from env to database"""

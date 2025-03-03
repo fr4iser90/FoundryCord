@@ -3,85 +3,44 @@ services:
     build:
       context: .
       dockerfile: ./app/bot/Dockerfile
-      args:
-        - USER_ID=${PUID:-1000}
-        - GROUP_ID=${PGID:-1000}
     image: homelab-discord-bot:latest
     container_name: homelab-discord-bot
     restart: unless-stopped
     env_file:
       - .env.discordbot
       - .env.postgres
-    environment:
-      - APP_DB_USER=${APP_DB_USER}
-      - APP_DB_PASSWORD=${APP_DB_PASSWORD}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - POSTGRES_DB=${POSTGRES_DB}
     networks:
       - homelab-net
     dns:
       - 1.1.1.1
     volumes:
       - ./app/bot/:/app/bot/
-      - ./app/bot/logs:/app/bot/logs
       - ../../vpn-management/wireguard/config/:/app/bot/database/wireguard
     depends_on:
       postgres:
         condition: service_healthy
-    user: ${PUID:-1000}:${PGID:-1000}
+    # Benutzer kann hier überschrieben werden, wenn nötig
+    # user: "1004:987"
 
   postgres:
-    image: postgres:latest
+    image: postgres:17-alpine
     container_name: homelab-postgres
     restart: unless-stopped
     env_file:
       - .env.postgres
-    environment:
-      POSTGRES_HOST_AUTH_METHOD: md5
+    command: ["postgres", "-c", "listen_addresses=*"]
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
     networks:
       - homelab-net
-#  tracker:
-#    build:
-#      context: .
-#      dockerfile: ./app/tracker/Dockerfile
-#    container_name: homelab-tracker
-#    restart: unless-stopped
-#    volumes:
-#      - ./app/tracker/:/app/tracker/
-#      - ./app/tracker/config/nginx.conf:/etc/nginx/conf.d/default.conf
-#      - ./app/tracker/backend:/usr/share/nginx/html
-#      - ./app/tracker/frontend:/usr/share/nginx/html
-#    networks:
-#      - homelab-net
-#      - proxy
-#    dns:
-#      - 1.1.1.1
-#    labels:
-      # Basis-Konfiguration
-#      - "traefik.enable=true"
-#      - "traefik.docker.network=proxy"
-      
-      # Router Konfiguration
-#      - "traefik.http.routers.tracker.entrypoints=websecure"
-#      - "traefik.http.routers.tracker.rule=Host(`tracker.${DOMAIN}`)"
-#      - "traefik.http.routers.tracker.tls=true"
-#      - "traefik.http.routers.tracker.tls.certresolver=http_resolver"
-#      
-      # Service Konfiguration
-#      - "traefik.http.services.tracker.loadbalancer.server.port=80"
-      
-      # Maximale Sicherheit
-#      - "traefik.http.routers.tracker.middlewares=default@file,admin-whitelist@file,rate-limit@docker"
-
 
 networks:
   homelab-net:

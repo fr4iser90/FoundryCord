@@ -25,8 +25,6 @@ MODERATORS = parse_users(moderators_env) if moderators_env else {}
 USERS = parse_users(users_env) if users_env else {}
 GUESTS = parse_users(guests_env) if guests_env else {}
 
-# Optional: Warnung ausgeben, wenn SUPER_ADMINS nicht gesetzt ist
-if not super_admins_env:
-    print("Warning: SUPER_ADMINS environment variable is not set. Super Admin role will be empty.")
-if not admins_env:
-    print("Warning: ADMINS environment variable is not set. Admin role will be empty.")
+if not super_admins_env and not admins_env:
+    print("Warning: Neither SUPER_ADMINS nor ADMINS environment variables are set. Both roles will be empty.")
+

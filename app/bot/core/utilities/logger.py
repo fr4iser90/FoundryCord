@@ -19,7 +19,7 @@ def setup_logger():
 
     try:
         # File handler (für persistente Logs)
-        log_dir = '/app/bot/logs'  # Absoluter Pfad statt relativer Pfad
+        log_dir = './logs'  # Absoluter Pfad statt relativer Pfad
         fh = RotatingFileHandler(
             os.path.join(log_dir, 'homelab_bot.log'),
             maxBytes=10**6,
