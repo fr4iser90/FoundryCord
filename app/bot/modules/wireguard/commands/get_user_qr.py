@@ -2,7 +2,8 @@ import os
 import nextcord
 from nextcord.ext import commands
 from core.utilities.logger import logger
-from core.auth.decorators import admin_only, guest_only, respond_encrypted_file_in_dm
+from core.decorators.auth import admin_only, guest_only
+from core.decorators.respond import respond_in_channel, respond_using_config, respond_in_dm, respond_encrypted_in_dm, respond_with_file, respond_encrypted_file_in_dm 
 from modules.wireguard.utils import get_user_config
 
 

@@ -4,7 +4,8 @@ from nextcord.ext import commands
 import socket
 from dotenv import load_dotenv
 import os
-from core.auth.decorators import admin_only, respond_in_dm
+from core.decorators.auth import admin_only
+from core.decorators.respond import respond_in_channel, respond_using_config, respond_in_dm, respond_encrypted_in_dm, respond_with_file 
 
 # Load environment variables from .env file
 load_dotenv()

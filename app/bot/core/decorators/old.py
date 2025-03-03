@@ -5,7 +5,6 @@ import nextcord
 from nextcord.ext import commands
 from core.auth.permissions import is_admin, is_guest, is_authorized
 from core.utilities.chunk_manager import chunk_message 
-from core.utilities.response_mode import ResponseMode, ACTIVE_RESPONSE_MODE
 
 ### --- PERMISSION DECORATORS --- ###
 
