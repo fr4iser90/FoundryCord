@@ -73,6 +73,9 @@ async def collect_system_data():
     data['services'] = results[6] if not isinstance(results[6], Exception) else {}
     data['disk_details'] = results[7] if not isinstance(results[7], Exception) else "Keine Festplatten gefunden"
     
+    # Entferne die Docker-Stats-Funktion vorerst
+    # Wir werden später eine bessere Lösung implementieren
+    
     return data
 
 # Hier müssen alle Hilfsfunktionen aus dem ursprünglichen system_status_task.py eingefügt werden

@@ -109,4 +109,4 @@ async def system_status_task(bot, channel_id):
             logger.error(f"Kritischer Systemfehler: {str(e)}")
             await asyncio.sleep(60)  # Kurze Pause bei Fehlern
         
-        await asyncio.sleep(1800)  # 30 Minuten Wartezeit
+        await asyncio.sleep(300)  # 5 Minuten Wartezeit
