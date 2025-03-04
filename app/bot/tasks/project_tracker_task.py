@@ -2,7 +2,7 @@
 import asyncio
 import nextcord
 from datetime import datetime
-from core.config.users import ADMINS
+from core.config.users import SUPER_ADMINS, ADMINS
 from core.utilities.logger import logger
 from modules.tracker.project_tracker import create_task_embed, load_tasks
 
@@ -27,17 +27,18 @@ async def project_tracker_task(bot, channel_id):
                 type=nextcord.ChannelType.private_thread
             )
             logger.info("Projekt Tracker Thread erstellt")
-            
-            # Admins hinzufügen
-            for admin_id in ADMINS.values():
-                try:
-                    admin = await channel.guild.fetch_member(int(admin_id))
-                    if admin:
-                        await tracker_thread.add_user(admin)
-                        logger.info(f"Admin {admin.display_name} zum Tracker hinzugefügt")
-                        await asyncio.sleep(1)  # Rate Limit vermeiden
-                except Exception as e:
-                    logger.error(f"Fehler beim Hinzufügen von Admin {admin_id}: {e}")
+        
+        # Super-Admins und Admins hinzufügen (jetzt außerhalb der if-Bedingung)
+        all_admins = {**SUPER_ADMINS, **ADMINS}  # Kombiniere beide Dictionaries
+        for admin_id in all_admins.values():
+            try:
+                admin = await channel.guild.fetch_member(int(admin_id))
+                if admin:
+                    await tracker_thread.add_user(admin)
+                    logger.info(f"Admin {admin.display_name} zum Tracker hinzugefügt")
+                    await asyncio.sleep(1)  # Rate Limit vermeiden
+            except Exception as e:
+                logger.error(f"Fehler beim Hinzufügen von Admin {admin_id}: {e}")
         
         # Thread reaktivieren falls archiviert
         if tracker_thread.archived:
