@@ -11,6 +11,7 @@ from .security import get_ssh_attempts
 from .services import check_services_status
 from .storage import get_disk_usage_all
 from .system import get_system_uptime, get_cpu_temperature
+from .hardware import get_hardware_info
 
 logger = logging.getLogger('homelab_bot')
 
@@ -43,7 +44,8 @@ async def collect_system_data():
         get_network_stats(),
         get_ssh_attempts(),
         check_services_status(),
-        get_disk_usage_all()
+        get_disk_usage_all(),
+        get_hardware_info()
     ]
     
     results = await asyncio.gather(*tasks, return_exceptions=True)

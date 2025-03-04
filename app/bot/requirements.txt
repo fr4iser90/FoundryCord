@@ -13,3 +13,7 @@ alembic
 sqlalchemy
 asyncpg
 docker
+py-cpuinfo
+gputil
+py3nvml
+speedtest-cli
