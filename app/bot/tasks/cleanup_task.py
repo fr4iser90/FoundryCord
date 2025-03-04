@@ -4,7 +4,6 @@ from core.utilities.logger import logger
 import datetime
 import pytz
 
-
 async def cleanup_homelab_channel(bot, channel_id):
     """Bereinigt den Homelab-Channel, indem Befehle und deren Antworten gelöscht werden, die älter als 3 Stunden sind."""
     try:
@@ -29,8 +28,8 @@ async def cleanup_homelab_channel(bot, channel_id):
                         await message.delete()
                         logger.debug(f"Gelöscht: {message.id} von {message.author} - Inhalt: {message.content}")
 
-                    # Lösche Nachrichten, die mit "!" beginnen (Befehle) oder Antworten darauf
-                    if message.content.startswith('!') or message.reference:
+                    # Lösche Nachrichten, die mit "!" und "/" beginnen (Befehle) oder Antworten darauf
+                    if message.content.startswith('!') or message.content.startswith('/') or message.reference:
                         await message.delete()
                         logger.debug(f"Gelöscht: {message.id} von {message.author} - Inhalt: {message.content}")
 
@@ -44,6 +43,7 @@ async def cleanup_homelab_channel(bot, channel_id):
 async def cleanup_task(bot, channel_id):
     """Task, der alle 30 Minuten den Homelab-Channel bereinigt."""
     await bot.wait_until_ready()
+    logger.info("Cleanup Task gestartet")
 
     while True:
         await cleanup_homelab_channel(bot, channel_id)

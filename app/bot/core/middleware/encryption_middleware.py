@@ -5,7 +5,8 @@ from cryptography.hazmat.backends import default_backend
 import os
 import logging
 import base64
-from typing import Union
+import tempfile
+from typing import Union, Optional
 
 class EncryptionMiddleware(commands.Cog):
 
@@ -72,6 +73,64 @@ class EncryptionMiddleware(commands.Cog):
         
         # Decrypt
         return decryptor.update(ciphertext) + decryptor.finalize()
+
+    async def encrypt_file(self, file_path: str) -> Optional[str]:
+        """Verschlüsselt eine Datei und gibt den Pfad zur verschlüsselten Datei zurück"""
+        if not os.path.exists(file_path):
+            self.logger.error(f"Datei nicht gefunden: {file_path}")
+            return None
+            
+        try:
+            # Temporäre Datei für die verschlüsselte Version erstellen
+            fd, encrypted_file_path = tempfile.mkstemp(suffix='.enc')
+            os.close(fd)
+            
+            # Originaldatei lesen
+            with open(file_path, 'rb') as f:
+                file_data = f.read()
+                
+            # Daten verschlüsseln
+            encrypted_data = self.cipher.encrypt(file_data)
+            
+            # Verschlüsselte Daten in temporäre Datei schreiben
+            with open(encrypted_file_path, 'wb') as f:
+                f.write(encrypted_data)
+                
+            self.logger.debug(f"Datei erfolgreich verschlüsselt: {file_path} -> {encrypted_file_path}")
+            return encrypted_file_path
+            
+        except Exception as e:
+            self.logger.error(f"Fehler bei der Dateiverschlüsselung: {e}")
+            return None
+            
+    async def decrypt_file(self, encrypted_file_path: str) -> Optional[str]:
+        """Entschlüsselt eine Datei und gibt den Pfad zur entschlüsselten Datei zurück"""
+        if not os.path.exists(encrypted_file_path):
+            self.logger.error(f"Verschlüsselte Datei nicht gefunden: {encrypted_file_path}")
+            return None
+            
+        try:
+            # Temporäre Datei für die entschlüsselte Version erstellen
+            fd, decrypted_file_path = tempfile.mkstemp(suffix='.dec')
+            os.close(fd)
+            
+            # Verschlüsselte Datei lesen
+            with open(encrypted_file_path, 'rb') as f:
+                encrypted_data = f.read()
+                
+            # Daten entschlüsseln
+            decrypted_data = self.cipher.decrypt(encrypted_data)
+            
+            # Entschlüsselte Daten in temporäre Datei schreiben
+            with open(decrypted_file_path, 'wb') as f:
+                f.write(decrypted_data)
+                
+            self.logger.debug(f"Datei erfolgreich entschlüsselt: {encrypted_file_path} -> {decrypted_file_path}")
+            return decrypted_file_path
+            
+        except Exception as e:
+            self.logger.error(f"Fehler bei der Dateientschlüsselung: {e}")
+            return None
 
     def __init__(self, bot):
         self.bot = bot

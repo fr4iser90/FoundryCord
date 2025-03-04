@@ -2,9 +2,11 @@
 import os
 import nextcord
 from core.utilities.logger import logger 
-from tasks.system_status_task import system_status_task
+from tasks.system_status import system_status_task
+#from tasks.system_status_task import system_status_task
 from tasks.cleanup_task import cleanup_task
 from tasks.cleanup_dm_task import cleanup_dm_task  
+from tasks.project_tracker_task import project_tracker_task
 
 # Liste von Startup-Aufgaben
 startup_tasks = []
@@ -42,3 +44,4 @@ def setup_tasks(bot):
 add_startup_task(system_status_task)
 add_startup_task(cleanup_task)
 add_startup_task(cleanup_dm_task)
+add_startup_task(project_tracker_task)

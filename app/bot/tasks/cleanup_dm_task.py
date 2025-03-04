@@ -90,14 +90,6 @@ async def cleanup_dm_task(bot, channel_id=None):
     await bot.wait_until_ready()
     logger.debug("Bot ist bereit, starte Bereinigungsschleife")
     
-    @bot.slash_command(name="cleanup_dms", description="Löst die Bereinigung der DMs manuell aus")
-    async def cleanup_dms_command(interaction: nextcord.Interaction):
-        """Manuelles Auslösen der DM-Bereinigung"""
-        await interaction.response.defer(ephemeral=True)
-        logger.info("Manuelle DM-Bereinigung über Command ausgelöst")
-        await cleanup_dm_messages(bot)
-        await interaction.followup.send("DM-Bereinigung abgeschlossen", ephemeral=True)
-    
     while True:
         await cleanup_dm_messages(bot)
         logger.debug("Bereinigungszyklus abgeschlossen, warte 30 Minuten")

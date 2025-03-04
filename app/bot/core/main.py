@@ -5,9 +5,12 @@ from nextcord.ext import commands
 from core.tasks import setup_tasks
 from modules.monitoring.system_monitoring import setup as setup_system_monitoring
 from modules.tracker.ip_management import setup as setup_ip_management
+from modules.tracker.project_tracker import setup as setup_project_tracker  
 from core.middleware import setup as setup_middleware 
 from modules.wireguard import setup as setup_wireguard
 from modules.security.encryption_commands import setup as setup_security
+from modules.maintenance.cleanup_commands import setup as setup_cleanup_commands
+
 from core.database.migrations.init_db import init_db
 from core.utilities.logger import logger
 import sys
@@ -25,6 +28,14 @@ intents.dm_reactions = True
 # Bot initialisieren
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+@bot.event
+async def on_ready():
+    logger.info(f"Bot ist online als {bot.user.name}")
+    logger.info(f"Bot-ID: {bot.user.id}")
+    logger.info(f"Slash-Commands sind aktiviert")
+    logger.info(f"Verbunden mit {len(bot.guilds)} Servern")
+
+
 # Set up general bot functionalities
 setup_tasks(bot)
 
@@ -32,10 +43,11 @@ setup_tasks(bot)
 setup_middleware(bot)
 
 setup_system_monitoring(bot)  # Monitoring setup
-# setup_container_management(bot)  # Docker container management setup
+setup_cleanup_commands(bot)
 setup_ip_management(bot)  # IP Whitelisting setup
 setup_wireguard(bot)
 setup_security(bot)
+setup_project_tracker(bot)
 
 # Bot starten
 if __name__ == '__main__':
