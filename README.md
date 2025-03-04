@@ -45,122 +45,121 @@ A Docker-based Discord bot written in Python, designed to manage and monitor you
    ```
 
 2. **Set Up Environment Variables:**
-   - Create a `.env` file by copying the example:
+   - Navigate to the compose directory and create both environment files by copying the examples:
      ```bash
-     cp .env.example .env
+     cd compose
+     cp env.discordbot.example .env.discordbot
+     cp .env.postgres.example .env.postgres
      ```
-   - Edit the `.env` file with your specific configuration:
+   - Edit the `.env.discordbot` file with your specific configuration:
      ```env
      DISCORD_TOKEN=your_discord_bot_token
-     ADMINS=admin:1234567890
-     GUESTS=friendlyneigbor:0987654321,friend:1234567123
-     TRAEFIK_API_URL=http://traefik:8080
-     SECRET_KEY=your_secure_secret_key
+     DOMAIN=your.domain.com
+     AES_KEY=your_aes_key
+     TYPE=Web,Game,File
+     AUTH_TOKEN=your_auth_token
+     DISCORD_SERVER=your_server_id
+     DISCORD_HOMELAB_CHANNEL=your_channel_id
+     TRACKER_URL=http://localhost:8081
+     SUPER_ADMINS=NAME|ID
+     ADMINS=NAME|ID
+     USERS=NAME|ID,NAME|ID,NAME|ID
      ENCRYPTION_KEY=your_encryption_key
+     JWT_SECRET_KEY=your_jwt_secret
+     SESSION_DURATION_HOURS=24
+     RATE_LIMIT_WINDOW=60
+     RATE_LIMIT_MAX_ATTEMPTS=5
+     PUID=1001
+     PGID=987
+     ```
+   - Edit the `.env.postgres` file with your database configuration:
+     ```env
+     POSTGRES_USER=postgres
+     POSTGRES_PASSWORD=secure_password
+     POSTGRES_DB=homelab
+     APP_DB_USER=app_user
+     APP_DB_PASSWORD=app_password
+     POSTGRES_HOST=postgres
+     POSTGRES_PORT=5432
      ```
 
 3. **Build and Start the Containers:**
    ```bash
-   docker-compose up -d --build
+   docker compose -f compose/docker-compose.yml up -d --build
    ```
+
+## Project Structure
+```
+.
+├── app/                    # Main application directory
+│   ├── bot/               # Discord bot implementation
+│   ├── postgres/          # Database related files
+│   ├── tracker/           # IP tracking service
+│   └── web/              # Web interface components
+├── compose/               # Docker compose and environment files
+│   ├── docker-compose.yml
+│   ├── env.discordbot.example
+│   ├── .env.postgres.example
+│   └── init-db.sh
+├── utils/                 # Utility scripts and tools
+│   ├── python-shell.nix
+│   ├── test_server.py
+│   ├── test_server.sh
+│   └── update_local.sh
+└── SECURITY.md           # Security documentation
+```
 
 ## Configuration
 
 ### Environment Variables
 
+#### Discord Bot Configuration (.env.discordbot)
+
 | Variable | Description | Required | Security Considerations |
 |----------|-------------|----------|-------------------------|
-| `NEXTCORD_TOKEN` | Your Discord bot token | Yes | Rotate every 90 days |
-| `TRACKER_URL` | Base URL for IP tracking | NO | Must use HTTPS |
-| `ADMINS` | Comma-separated list of Discord role IDs with admin access | Yes | Limit to minimum required roles |
-| `LOG_LEVEL` | Logging level (DEBUG, INFO, WARNING, ERROR) | No | Avoid DEBUG in production |
-| `DISCORD_HOMELAB_CHANNEL` | Discord channel ID for system alerts | No | Restrict access to admins |
-| `SECRET_KEY` | Application secret key | NO | Must be cryptographically strong |
-| `ENCRYPTION_KEY` | Encryption key for sensitive data | NO | 256-bit minimum |
+| `DISCORD_TOKEN` | Your Discord bot token | Yes | Rotate every 90 days |
+| `DOMAIN` | Your domain name | Yes | Must be valid domain |
+| `SUPER_ADMINS` | Discord users with full access (NAME\|ID format) | Yes | Limit to trusted users |
+| `ADMINS` | Discord users with admin access (NAME\|ID format) | Yes | Limit to minimum required |
+| `USERS` | Regular users (NAME\|ID format) | No | Review regularly |
+| `DISCORD_HOMELAB_CHANNEL` | Discord channel ID for system alerts | Yes | Restrict access |
+| `ENCRYPTION_KEY` | Encryption key for sensitive data | Yes | 256-bit minimum |
+| `JWT_SECRET_KEY` | Secret for JWT tokens | Yes | Strong random value |
+
+#### Database Configuration (.env.postgres)
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `POSTGRES_USER` | Database admin username | Yes |
+| `POSTGRES_PASSWORD` | Database admin password | Yes |
+| `POSTGRES_DB` | Database name | Yes |
+| `APP_DB_USER` | Application database user | Yes |
+| `APP_DB_PASSWORD` | Application database password | Yes |
 
 ### Docker Compose
 
-The `docker-compose.yml` file defines three services:
-
-1. **bot**: The main Discord bot service
-2. **tracker**: IP tracking service
 
 ## Security Implementation
 
 ### Authentication & Authorization
 
-- **Role-based Access Control**: Implemented through Discord roles with hierarchical permissions
-- **Two-Factor Authentication**: Required for all admin operations
-- **Session Management**: JWT tokens with short expiration and automatic rotation
-- **Rate Limiting**: Implemented at both application and network levels
+
 
 ### Data Protection
 
-- **Encryption**: AES-256 encryption for sensitive data at rest
-- **Secure Storage**: Environment variables for sensitive configuration
-- **Data Validation**: Strict input validation for all user-provided data
+
 
 ### Network Security
 
-- **HTTPS Enforcement**: All external endpoints require HTTPS
-- **IP Whitelisting**: Integrated with Traefik for network-level protection
-- **Firewall Rules**: Default deny policy with explicit allow rules
+
 
 ### Monitoring & Auditing
 
-- **Activity Logging**: Detailed logs of all security-relevant events
-- **Intrusion Detection**: Automated monitoring for suspicious patterns
-- **Vulnerability Scanning**: Regular scans of dependencies and containers
+
 
 ## Usage
 
-### Basic Commands
-
-- `!getip`: Generates a personal IP registration link for users
-- `!status`: Displays the current system status
-- `!containers`: Lists all running containers (admin access required)
-- `!logs <container>`: Shows logs for the specified container (admin access required)
-- `!restart <container>`: Restarts the specified container (admin access required)
-
-### Security Commands
-
-- `!audit`: Runs security audit (admin only)
-- `!rotatekeys`: Rotates encryption keys (admin only)
-- `!revoke <user>`: Revokes user access (admin only)
-
 ## Maintenance
-
-### Updating
-
-To update the bot:
-
-```bash
-docker-compose pull
-docker-compose up -d --build
-```
-
-### Security Updates
-
-1. **Dependency Updates**: Regularly update all dependencies
-2. **Security Patches**: Apply security patches immediately
-3. **Configuration Review**: Quarterly review of security settings
-
-### Monitoring
-
-The bot includes built-in monitoring:
-
-- System resource usage
-- Container health checks
-- Error rate tracking
-- Security event logging
-
-### Logs
-
-View logs for the bot service:
-
-```bash
-docker-compose logs -f bot
-```
 
 ## Contributing
 
@@ -171,7 +170,6 @@ docker-compose logs -f bot
 
 ### Security Reporting
 
-Please report any security vulnerabilities to security@example.com
 
 ## License
 
