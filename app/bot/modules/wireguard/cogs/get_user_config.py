@@ -19,7 +19,6 @@ class WireguardConfigCommands(commands.Cog):
         
         username = interaction.user.name
         logger.info(f"User attempting to get config: {username}")
-        logger.info(f"User roles: {[role.name for role in interaction.user.roles]}")
         
         user_dir = os.path.join(self.config_path, f"peer_{username}")
         config_file = os.path.join(user_dir, f"peer_{username}.conf")
