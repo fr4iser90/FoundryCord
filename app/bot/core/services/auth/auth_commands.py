@@ -15,7 +15,7 @@ class AuthCommands(commands.Cog):
         self, 
         interaction: nextcord.Interaction, 
         ip: str = nextcord.SlashOption(
-            description="Your public IP address (e.g. 192.168.1.1)",
+            description="Your public IP address (e.g. 95.32.13.21)",
             required=True
         )
     ):
