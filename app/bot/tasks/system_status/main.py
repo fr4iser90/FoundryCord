@@ -96,11 +96,11 @@ async def system_status_task(bot, channel_id):
             
             # Embeds erstellen
             public_embed = create_public_embed(system_data)
-            admin_embed = create_admin_embed(system_data)
+            admin_embed, admin_view = create_admin_embed(system_data)  # Hier wird nun auch die View zurückgegeben
             
             # Embeds senden
             public_success = await send_embed_with_retry(public_thread, public_embed)
-            admin_success = await send_embed_with_retry(admin_thread, admin_embed)
+            admin_success = await send_embed_with_retry(admin_thread, admin_embed, view=admin_view)
             
             if not public_success or not admin_success:
                 logger.error("Kritischer Fehler beim Senden der Statusupdates")
