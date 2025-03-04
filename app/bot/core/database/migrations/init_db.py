@@ -4,7 +4,7 @@ from core.database.config import initialize_engine, initialize_session
 import asyncio
 from core.utilities.logger import logger
 
-async def init_db():
+async def init_db(bot=None):
     engine = await initialize_engine()
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

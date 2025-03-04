@@ -7,8 +7,48 @@ import logging
 import base64
 import tempfile
 from typing import Union, Optional
+import asyncio
 
-class EncryptionMiddleware(commands.Cog):
+class EncryptionService:
+    def __init__(self, bot):
+        self.bot = bot
+        self.logger = logging.getLogger(__name__)
+        self.processed_messages = set()  # Track processed message IDs
+        self.ready = asyncio.Event()
+        
+        # Fernet Key
+        self.key = os.getenv('ENCRYPTION_KEY')
+        if not self.key:
+            raise ValueError("ENCRYPTION_KEY environment variable is required")
+        self.cipher = Fernet(self.key)
+        
+        # AES Key
+        self._setup_aes_key()
+
+    def _setup_aes_key(self):
+        """Separate method for AES key setup"""
+        aes_key_b64 = os.getenv('AES_KEY')
+        if not aes_key_b64:
+            raise ValueError("AES_KEY environment variable is required")
+        try:
+            self.aes_key_bytes = base64.urlsafe_b64decode(aes_key_b64)
+            if len(self.aes_key_bytes) != 32:
+                raise ValueError("AES_KEY must be 32 bytes long after base64 decoding")
+        except Exception as e:
+            raise ValueError(f"Invalid AES_KEY: {str(e)}")
+
+    async def initialize(self):
+        """Async initialization"""
+        try:
+            self._setup_aes_key()
+            self.ready.set()
+        except Exception as e:
+            logger.error(f"Failed to initialize encryption: {e}")
+            raise
+
+    async def wait_until_ready(self):
+        """Wait until the service is fully initialized"""
+        await self.ready.wait()
 
     async def encrypt_data(self, data: str) -> str:
         """Verschlüsselt sensible Daten mit Fernet"""
@@ -132,28 +172,6 @@ class EncryptionMiddleware(commands.Cog):
             self.logger.error(f"Fehler bei der Dateientschlüsselung: {e}")
             return None
 
-    def __init__(self, bot):
-        self.bot = bot
-        self.logger = logging.getLogger(__name__)
-        self.processed_messages = set()  # Track processed message IDs
-        
-        # Fernet Key
-        self.key = os.getenv('ENCRYPTION_KEY')
-        if not self.key:
-            raise ValueError("ENCRYPTION_KEY environment variable is required")
-        self.cipher = Fernet(self.key)
-        
-        # AES Key
-        aes_key_b64 = os.getenv('AES_KEY')
-        if not aes_key_b64:
-            raise ValueError("AES_KEY environment variable is required")
-        try:
-            self.aes_key_bytes = base64.urlsafe_b64decode(aes_key_b64)
-            if len(self.aes_key_bytes) != 32:
-                raise ValueError("AES_KEY must be 32 bytes long after base64 decoding")
-        except Exception as e:
-            raise ValueError(f"Invalid AES_KEY: {str(e)}")
-
     async def on_message(self, message):
         """Middleware-Handler für Nachrichten"""
         # Skip if message already processed
@@ -177,7 +195,6 @@ class EncryptionMiddleware(commands.Cog):
         return text
 
 def setup(bot):
-    """Fügt die EncryptionMiddleware zum Bot hinzu"""
-    encryption_middleware = EncryptionMiddleware(bot)
-    bot.add_cog(encryption_middleware)
-    bot.encryption = encryption_middleware
+    """Fügt den EncryptionService zum Bot hinzu"""
+    encryption_service = EncryptionService(bot)
+    bot.encryption = encryption_service

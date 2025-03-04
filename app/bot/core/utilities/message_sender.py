@@ -28,11 +28,11 @@ async def send_ephemeral(ctx, response):
     await ctx.send(response, ephemeral=True)
 
 async def send_encrypted_ephemeral(ctx, response):
-    encryption = ctx.bot.get_cog('EncryptionMiddleware')
+    encryption = ctx.bot.encryption
     if not encryption:
-        raise RuntimeError("Encryption middleware not loaded")
+        raise RuntimeError("Encryption service not loaded")
     
-    encrypted_response = await encryption.encrypt_for_plugin(response)
+    encrypted_response = await encryption.encrypt_data(response)
     await ctx.send(encrypted_response, ephemeral=True)
 
 async def send_file_response(ctx, file_path):
@@ -40,18 +40,18 @@ async def send_file_response(ctx, file_path):
         await ctx.send("Fehler: Datei nicht gefunden.")
         return
     
-    encryption = ctx.bot.get_cog('EncryptionMiddleware')
-    if encryption and ACTIVE_RESPONSE_MODE == ResponseMode.ENCRYPTED_EPHEMERAL:
-        with open(file_path, 'rb') as f:
-            file_data = f.read()  # Binärdaten lesen
-            encrypted_data = await encryption.encrypt_for_plugin(file_data)
-
-        encrypted_file_path = f"{file_path}.enc"
-        with open(encrypted_file_path, 'wb') as f:
-            f.write(encrypted_data)
-
-        await ctx.author.send(file=nextcord.File(encrypted_file_path))
-        os.remove(encrypted_file_path)
+    if ACTIVE_RESPONSE_MODE == ResponseMode.ENCRYPTED_EPHEMERAL:
+        encryption = ctx.bot.encryption
+        if not encryption:
+            raise RuntimeError("Encryption service not loaded")
+            
+        encrypted_file_path = await encryption.encrypt_file(file_path)
+        
+        try:
+            await ctx.author.send(file=nextcord.File(encrypted_file_path))
+        finally:
+            if os.path.exists(encrypted_file_path):
+                os.remove(encrypted_file_path)
     else:
         await ctx.author.send(file=nextcord.File(file_path))
 

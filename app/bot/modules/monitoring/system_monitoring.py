@@ -19,11 +19,13 @@ DOMAIN = os.getenv('DOMAIN')
 if not DOMAIN:
     print("Warning: DOMAIN not found in environment variables. Please check your .env file.")
 
-def setup(bot):
-    # Einzelne Slash-Commands statt Gruppen-Befehle
-    @bot.slash_command(name="system_full_status", description="Zeigt detaillierte Systeminformationen an")
+class SystemMonitoring(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @nextcord.slash_command(name="system_full_status", description="Zeigt detaillierte Systeminformationen an")
     @admin_or_higher()
-    async def system_full_status(interaction: nextcord.Interaction):
+    async def system_full_status(self, interaction: nextcord.Interaction):
         """Zeigt detaillierte Systeminformationen an"""
         logger.info(f"System full_status Befehl aufgerufen von {interaction.user.name}")
         
@@ -72,9 +74,9 @@ def setup(bot):
             logger.error(f"Fehler beim Abrufen des Systemstatus: {e}")
             await interaction.response.send_message(f"Fehler beim Abrufen des Systemstatus: {str(e)}", ephemeral=True)
 
-    @bot.slash_command(name="system_status", description="Zeigt grundlegende Systeminformationen an")
+    @nextcord.slash_command(name="system_status", description="Zeigt grundlegende Systeminformationen an")
     @admin_or_higher()
-    async def system_status(interaction: nextcord.Interaction):
+    async def system_status(self, interaction: nextcord.Interaction):
         """Zeigt den Systemstatus an (CPU, Speicher, Festplatte)."""
         logger.info(f"System status Befehl aufgerufen von {interaction.user.name}")
         
@@ -99,9 +101,9 @@ def setup(bot):
             logger.error(f"Fehler beim Abrufen des Systemstatus: {e}")
             await interaction.response.send_message(f"Fehler beim Abrufen des Systemstatus: {str(e)}", ephemeral=True)
 
-    @bot.slash_command(name="system_ip", description="Zeigt die öffentliche IP-Adresse an")
+    @nextcord.slash_command(name="system_ip", description="Zeigt die öffentliche IP-Adresse an")
     @admin_or_higher()
-    async def system_public_ip(interaction: nextcord.Interaction):
+    async def system_public_ip(self, interaction: nextcord.Interaction):
         """Zeigt die öffentliche IP-Adresse an."""
         logger.info(f"System IP Befehl aufgerufen von {interaction.user.name}")
         
@@ -114,3 +116,14 @@ def setup(bot):
         except Exception as e:
             logger.error(f"Fehler beim Abrufen der öffentlichen IP: {e}")
             await interaction.response.send_message(f"Fehler beim Abrufen der öffentlichen IP: {str(e)}", ephemeral=True)
+
+async def setup(bot):
+    """Setup function for the system monitoring module"""
+    try:
+        cog = SystemMonitoring(bot)
+        bot.add_cog(cog)  # Dies ist synchron, braucht kein await
+        logger.info("System monitoring commands initialized successfully")
+        return cog
+    except Exception as e:
+        logger.error(f"Failed to initialize system monitoring: {e}")
+        raise

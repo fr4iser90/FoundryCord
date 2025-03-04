@@ -1,7 +1,5 @@
-# modules/auth/permissions.py
-
 from core.utilities.logger import logger
-from core.config.users import SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
+from .users import SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
 
 def is_super_admin(user):
     """Check if the user is a Super Admin."""

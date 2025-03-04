@@ -1,7 +1,10 @@
 import functools
 import nextcord
 from nextcord.ext import commands
-from core.auth.permissions import is_super_admin, is_admin, is_moderator, is_user, is_guest, is_authorized
+from core.services.auth.models import (
+    is_super_admin, is_admin, is_moderator,
+    is_user, is_guest, is_authorized
+)
 
 ### --- PERMISSION DECORATORS --- ###
 

@@ -48,3 +48,4 @@ async def cleanup_task(bot, channel_id):
     while True:
         await cleanup_homelab_channel(bot, channel_id)
         await asyncio.sleep(1800)  # 30 Minuten warten
+

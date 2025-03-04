@@ -40,10 +40,15 @@ def respond_encrypted_in_dm():
     """Decorator: Responds with encrypted content in a DM."""
     def decorator(func):
         @functools.wraps(func)
-        async def wrapper(ctx, *args, **kwargs):
-            response = await func(ctx, *args, **kwargs)
+        async def wrapper(self, ctx, *args, **kwargs):
+            response = await func(self, ctx, *args, **kwargs)
             if response:
-                await send_encrypted_ephemeral(ctx, response)  # Sends the encrypted response in DM
+                # Use the encryption service instead of middleware
+                encryption = self.bot.encryption
+                if not encryption:
+                    raise RuntimeError("Encryption service not loaded")
+                encrypted_data = await encryption.encrypt_data(response)
+                await ctx.author.send(f"🔐 Encrypted message:\n```\n{encrypted_data}\n```")
         return wrapper
     return decorator
 
@@ -59,32 +64,33 @@ def respond_with_file():
     return decorator
 
 def respond_encrypted_file_in_dm():
-    """Decorator: Sendet verschlüsselte Dateien per DM."""
+    """Decorator: Sends encrypted files via DM."""
     def decorator(func):
         @functools.wraps(func)
         async def wrapper(self, ctx, *args, **kwargs):
-            # Originale Datei holen
             file_path = await func(self, ctx, *args, **kwargs)
             
             if file_path and os.path.exists(file_path):
-                # Datei lesen und verschlüsseln
+                # Use the encryption service instead of middleware
+                encryption = self.bot.encryption
+                if not encryption:
+                    raise RuntimeError("Encryption service not loaded")
+                
+                # Read and encrypt file
                 with open(file_path, 'rb') as f:
                     file_data = f.read().decode('utf-8')
-                    encryption = self.bot.get_cog('EncryptionMiddleware')
-                    if not encryption:
-                        raise RuntimeError("Encryption middleware not loaded")
-                    encrypted_data = await encryption.encrypt_for_plugin(file_data)
-                    encrypted_data = encrypted_data.encode('utf-8')  # Convert back to bytes for file writing
+                    encrypted_data = await encryption.encrypt_data(file_data)
+                    encrypted_data = encrypted_data.encode('utf-8')
                 
-                # Temporäre verschlüsselte Datei erstellen
+                # Create temporary encrypted file
                 encrypted_file_path = f"{file_path}.enc"
                 with open(encrypted_file_path, 'wb') as f:
                     f.write(encrypted_data)
                 
-                # Verschlüsselte Datei senden
+                # Send encrypted file
                 await ctx.author.send(file=nextcord.File(encrypted_file_path))
                 
-                # Temporäre Datei löschen
+                # Clean up temporary file
                 os.remove(encrypted_file_path)
         return wrapper
     return decorator

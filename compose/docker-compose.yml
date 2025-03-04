@@ -2,7 +2,7 @@ services:
   bot:
     build:
       context: .
-      dockerfile: ../app/bot/Dockerfile
+      dockerfile: ./Dockerfile
     image: homelab-discord-bot:latest
     container_name: homelab-discord-bot
     restart: unless-stopped

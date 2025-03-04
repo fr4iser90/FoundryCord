@@ -4,13 +4,12 @@ from nextcord.ext import commands
 from core.utilities.logger import logger
 from core.decorators.auth import super_admin_or_higher, user_or_higher
 from modules.wireguard.utils.get_user_config import get_user_config
-from core.middleware.encryption_middleware import EncryptionMiddleware
+import asyncio
 
 class WireguardConfigCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config_path = "/app/bot/database/wireguard"
-        self.encryption = EncryptionMiddleware(bot)
 
     @nextcord.slash_command(name="wireguard_config", description="Holt deine Wireguard-Konfigurationsdatei")
     @user_or_higher()
@@ -19,7 +18,13 @@ class WireguardConfigCommands(commands.Cog):
         await interaction.response.defer(ephemeral=True)
         
         username = interaction.user.name
-        logger.debug(f"Executing wireguard_config slash command for user: {username}")
+        logger.info(f"User attempting to get config: {username}")
+        logger.info(f"User roles: {[role.name for role in interaction.user.roles]}")
+        
+        user_dir = os.path.join(self.config_path, f"peer_{username}")
+        config_file = os.path.join(user_dir, f"peer_{username}.conf")
+        logger.info(f"Looking for config file at: {config_file}")
+        logger.info(f"Config file exists: {os.path.exists(config_file)}")
         
         user_config = get_user_config(self.config_path, username)
         
@@ -31,7 +36,7 @@ class WireguardConfigCommands(commands.Cog):
                 logger.debug(f"Using existing config file: {config_file}")
                 try:
                     # Verschlüssele die Datei
-                    encrypted_file_path = await self.encryption.encrypt_file(config_file)
+                    encrypted_file_path = await self.bot.encryption.encrypt_file(config_file)
                     
                     if encrypted_file_path:
                         with open(encrypted_file_path, 'rb') as file:
@@ -73,7 +78,7 @@ class WireguardConfigCommands(commands.Cog):
                 logger.debug(f"Using existing config file: {config_file}")
                 try:
                     # Verschlüssele die Datei
-                    encrypted_file_path = await self.encryption.encrypt_file(config_file)
+                    encrypted_file_path = await self.bot.encryption.encrypt_file(config_file)
                     
                     if encrypted_file_path:
                         with open(encrypted_file_path, 'rb') as file:
@@ -98,4 +103,7 @@ class WireguardConfigCommands(commands.Cog):
             await interaction.followup.send(f"❌ Keine Wireguard-Konfiguration für Benutzer {username} gefunden.", ephemeral=True)
 
 async def setup(bot):
+    # Warte bis encryption service verfügbar ist
+    while not hasattr(bot, 'encryption'):
+        await asyncio.sleep(1)
     await bot.add_cog(WireguardConfigCommands(bot))

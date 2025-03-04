@@ -1,5 +1,0 @@
-requests
-psutil
-python-dotenv
-flask
-PyYAML

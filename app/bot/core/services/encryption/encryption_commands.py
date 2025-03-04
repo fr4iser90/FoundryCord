@@ -2,72 +2,59 @@ from nextcord.ext import commands
 import nextcord
 import os
 import tempfile
-from core.middleware.encryption_middleware import EncryptionMiddleware
+from core.services.encryption.encryption_service import EncryptionService
 from core.utilities.logger import logger
+import asyncio
 
 class EncryptionCommands(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, encryption_service):
         self.bot = bot
-        self.encryption = EncryptionMiddleware(bot)
+        self.encryption = encryption_service
 
-def setup(bot):
-    # Einzelne Slash-Commands für Verschlüsselung
-    @bot.slash_command(name="encrypt", description="Verschlüsselt eine Nachricht (nur per DM)")
-    async def encrypt_command(interaction: nextcord.Interaction, message: str):
+    @nextcord.slash_command(name="encrypt", description="Verschlüsselt eine Nachricht (nur per DM)")
+    async def encrypt_command(self, interaction: nextcord.Interaction, message: str):
         """Verschlüsselt eine Nachricht (nur per DM)"""
         logger.info(f"Encrypt Befehl aufgerufen von {interaction.user.name}")
         
-        # Prüfen, ob der Befehl in einem Server oder per DM ausgeführt wird
         if interaction.guild:
             await interaction.response.send_message("❌ Dieser Befehl kann nur per Direktnachricht verwendet werden.", ephemeral=True)
             return
         
-        # Encryption Middleware initialisieren
-        encryption = EncryptionMiddleware(bot)
-        
         try:
-            encrypted = await encryption.encrypt_data(message)
+            encrypted = await self.encryption.encrypt_data(message)
             await interaction.response.send_message(f"🔐 Verschlüsselte Nachricht:\n```\n{encrypted}\n```")
             logger.info(f"Nachricht erfolgreich verschlüsselt für {interaction.user.name}")
         except Exception as e:
             logger.error(f"Fehler bei der Verschlüsselung: {e}")
             await interaction.response.send_message("❌ Verschlüsselung fehlgeschlagen. Bitte versuche es später erneut.")
 
-    @bot.slash_command(name="decrypt", description="Entschlüsselt eine Nachricht (nur per DM)")
-    async def decrypt_command(interaction: nextcord.Interaction, encrypted_message: str):
+    @nextcord.slash_command(name="decrypt", description="Entschlüsselt eine Nachricht (nur per DM)")
+    async def decrypt_command(self, interaction: nextcord.Interaction, encrypted_message: str):
         """Entschlüsselt eine Nachricht (nur per DM)"""
         logger.info(f"Decrypt Befehl aufgerufen von {interaction.user.name}")
         
-        # Prüfen, ob der Befehl in einem Server oder per DM ausgeführt wird
         if interaction.guild:
             await interaction.response.send_message("❌ Dieser Befehl kann nur per Direktnachricht verwendet werden.", ephemeral=True)
             return
         
-        # Encryption Middleware initialisieren
-        encryption = EncryptionMiddleware(bot)
-        
         try:
-            decrypted = await encryption.decrypt_data(encrypted_message)
+            decrypted = await self.encryption.decrypt_data(encrypted_message)
             await interaction.response.send_message(f"🔓 Entschlüsselte Nachricht:\n```\n{decrypted}\n```")
             logger.info(f"Nachricht erfolgreich entschlüsselt für {interaction.user.name}")
         except Exception as e:
             logger.error(f"Fehler bei der Entschlüsselung: {e}")
             await interaction.response.send_message("❌ Entschlüsselung fehlgeschlagen. Ungültige Nachricht oder Schlüssel.")
 
-    @bot.slash_command(name="decrypt_file", description="Entschlüsselt eine Datei (nur per DM)")
-    async def decrypt_file_command(interaction: nextcord.Interaction, attachment: nextcord.Attachment):
+    @nextcord.slash_command(name="decrypt_file", description="Entschlüsselt eine Datei (nur per DM)")
+    async def decrypt_file_command(self, interaction: nextcord.Interaction, attachment: nextcord.Attachment):
         """Entschlüsselt eine verschlüsselte Datei"""
         logger.info(f"Decrypt File Befehl aufgerufen von {interaction.user.name}")
         
-        # Prüfen, ob der Befehl in einem Server oder per DM ausgeführt wird
         if interaction.guild:
             await interaction.response.send_message("❌ Dieser Befehl kann nur per Direktnachricht verwendet werden.", ephemeral=True)
             return
             
         await interaction.response.defer()
-        
-        # Encryption Middleware initialisieren
-        encryption = EncryptionMiddleware(bot)
         
         try:
             # Temporäre Datei für den Download erstellen
@@ -78,7 +65,7 @@ def setup(bot):
             await attachment.save(temp_file_path)
             
             # Datei entschlüsseln
-            decrypted_file_path = await encryption.decrypt_file(temp_file_path)
+            decrypted_file_path = await self.encryption.decrypt_file(temp_file_path)
             
             if decrypted_file_path:
                 # Originaldateiname extrahieren (ohne .enc)
@@ -99,9 +86,10 @@ def setup(bot):
                 # Entschlüsselte Datei senden
                 with open(decrypted_file_path, 'rb') as file:
                     discord_file = nextcord.File(file, filename=original_filename)
-                    await interaction.followup.send(
+                    message = await interaction.followup.send(
                         content=f"🔓 Hier ist die entschlüsselte Datei:",
-                        file=discord_file
+                        file=discord_file,
+                        ephemeral=True
                     )
                 
                 # Temporäre Dateien löschen
@@ -109,6 +97,15 @@ def setup(bot):
                 os.remove(decrypted_file_path)
                 
                 logger.info(f"Datei erfolgreich entschlüsselt für {interaction.user.name}")
+
+                # Nach 5 Minuten die Nachricht löschen
+                try:
+                    await asyncio.sleep(300)  # 5 Minuten
+                    await message.delete()
+                    logger.info(f"Entschlüsselte Nachricht für {interaction.user.name} wurde automatisch gelöscht")
+                except Exception as e:
+                    logger.error(f"Fehler beim Löschen der Nachricht: {e}")
+
             else:
                 await interaction.followup.send("❌ Entschlüsselung fehlgeschlagen. Ungültige Datei oder Schlüssel.")
                 # Temporäre Datei löschen
