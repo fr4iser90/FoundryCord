@@ -20,18 +20,18 @@ async def check_services_status():
     ]
     
     external_services = [
+        {"name": "🎮 Pufferpanel", "url": f"https://pufferpanel.{DOMAIN}"},
         {"name": "☁️ Owncloud", "url": f"https://owncloud.{DOMAIN}"},
-        {"name": "💾 Pufferfish", "url": f"https://pufferpanel.{DOMAIN}"},
-        {"name": "💾 Vaultwarden", "url": f"https://bw.{DOMAIN}"},
-        {"name": "📊 Grafana", "url": f"https://grafana.{DOMAIN}"},
-        {"name": "📝 Nextcloud", "url": f"https://nextcloud.{DOMAIN}"},
+        {"name": "🔑 Vaultwarden", "url": f"https://bitwarden.{DOMAIN}"},
+        {"name": "📊 HONEYPOT Grafana", "url": f"https://honeypot-grafana.{DOMAIN}"},
+        {"name": "📊 HONEYPOT Prometheus", "url": f"https://honeypot-prometheus.{DOMAIN}"},
         {"name": "🔄 Portainer", "url": f"https://portainer.{DOMAIN}"},
     ]
     
     auth_required_services = [
         "🔄 Portainer",
         "📊 Grafana",
-        "💾 Vaultwarden",
+        "🔑 Vaultwarden",
     ]
 
     for service in local_services:
