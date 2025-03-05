@@ -1,4 +1,4 @@
-from core.services.factories.command_sync_service import CommandSyncService
+from core.services.sync.command_sync_service import CommandSyncService
 import asyncio
 import os
 import logging
@@ -90,7 +90,7 @@ class BotLifecycleManager:
             except Exception as e:
                 logger.error(f"Error stopping service {service['name']}: {e}")
 
-    async def setup_command_sync(self, enable_guild_sync=True, enable_global_sync=True):
+    async def setup_command_sync(self, enable_guild_sync=True, enable_global_sync=True, timeout=60):
         """Set up the command synchronization service"""
         try:
             logger.info("Setting up command sync service")

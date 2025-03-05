@@ -49,15 +49,16 @@ class CommandSyncService:
         """Sync commands to a specific guild"""
         try:
             logger.info(f"Syncing commands to guild {guild_id}")
-            guild = self.bot.get_guild(guild_id)
-            if not guild:
-                logger.error(f"Could not find guild with ID {guild_id}")
-                return
-            
-            # Use the correct method for nextcord
-            await guild.bulk_overwrite_application_commands(self.pending_commands)
-            logger.info(f"Successfully synced {len(self.pending_commands)} commands to guild")
+            await self.bot.sync_application_commands(
+                guild_id=guild_id,
+                associate_known=True,
+                delete_unknown=True,
+                update_known=True,
+                register_new=True
+            )
+            logger.info(f"Successfully synced commands to guild")
         except Exception as e:
+            logger.debug("Stack trace: ", exc_info=True)
             logger.error(f"Guild sync failed: {e}")
             raise
 
@@ -65,8 +66,14 @@ class CommandSyncService:
         """Sync commands globally"""
         try:
             logger.info("Syncing commands globally")
-            # Use the correct global sync method
-            await self.bot.sync_application_commands()
+            await self.bot.sync_all_application_commands(
+                use_rollout=True,
+                associate_known=True,
+                delete_unknown=True,
+                update_known=True,
+                register_new=True,
+                ignore_forbidden=True
+            )
             
             # Verify what was registered
             global_commands = await self.bot.fetch_global_application_commands()
