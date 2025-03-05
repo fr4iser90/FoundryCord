@@ -89,8 +89,10 @@ A Docker-based Discord bot written in Python, designed to manage and monitor you
    ```
 
 ## Project Structure
-```
-.
+
+<details>
+<summary>Click to expand</summary>
+
 ├── app/                    # Main application directory
 │   ├── bot/               # Discord bot implementation
 │   ├── postgres/          # Database related files
@@ -107,7 +109,7 @@ A Docker-based Discord bot written in Python, designed to manage and monitor you
 │   ├── test_server.sh
 │   └── update_local.sh
 └── SECURITY.md           # Security documentation
-```
+</details>
 
 ## Configuration
 
