@@ -1,5 +1,10 @@
 from core.services.logging.logging_commands import logger
 import asyncio
+import time
+import os
+
+enable_guild_sync = True
+enable_global_sync = True
 
 class BotStartup:
     def __init__(self, bot):
@@ -85,3 +90,88 @@ class BotStartup:
         """Track commands during registration"""
         self.pending_commands.extend(cog.application_commands)
         self.bot.add_cog(cog)
+        
+    async def sync_commands(self, timeout=60, batch_size=5):
+        """Synchronize commands with timing measurement, timeout and batch processing"""
+        global enable_guild_sync, enable_global_sync
+        
+        logger.info("Starting command synchronization...")
+        logger.info(f"Guild sync: {'ENABLED' if enable_guild_sync else 'DISABLED'}, Global sync: {'ENABLED' if enable_global_sync else 'DISABLED'}")
+        start_time = time.time()
+        
+        try:
+            # Collect all commands that will be synced
+            commands = await self.collect_commands()
+            
+            # Log each command being synced
+            for cmd in commands:
+                logger.info(f"Syncing command: {cmd.name}")
+            
+            # If no commands, skip sync
+            if not commands:
+                logger.info("No commands to sync")
+                return 0
+            
+            # Get guild ID if needed
+            guild_id = None
+            if enable_guild_sync:
+                guild_id = os.getenv('DISCORD_SERVER')
+                if guild_id:
+                    guild_id = int(guild_id)
+                    logger.info(f"Using guild ID: {guild_id} for guild sync")
+            
+            try:
+                # First sync to the specific guild if enabled (we'll wait for this to complete)
+                if enable_guild_sync and guild_id:
+                    logger.info(f"Syncing commands to guild {guild_id}")
+                    await asyncio.wait_for(
+                        self.bot.sync_application_commands(guild_id=guild_id),
+                        timeout=30
+                    )
+                    logger.info(f"Commands synced to guild successfully")
+                elif not enable_guild_sync:
+                    logger.info("Guild sync is disabled - skipping")
+                
+                # Then trigger global sync in the background if enabled (without waiting)
+                if enable_global_sync:
+                    logger.info("Starting global command sync in the background (this may take up to an hour)...")
+                    
+                    # Create a background task for global sync
+                    asyncio.create_task(self._global_sync_background_task())
+                    
+                    logger.info("Global sync started in background - continuing with bot startup")
+                else:
+                    logger.info("Global sync is disabled - skipping")
+                    
+            except asyncio.TimeoutError:
+                logger.warning(f"Timeout during guild command sync")
+            except Exception as e:
+                logger.error(f"Error during command sync: {e}")
+            
+            # Calculate and log the time taken
+            sync_time = time.time() - start_time
+            logger.info(f"Command sync process completed in {sync_time:.2f} seconds")
+            
+            return sync_time
+        except Exception as e:
+            sync_time = time.time() - start_time
+            logger.error(f"Command sync failed after {sync_time:.2f} seconds: {e}")
+            logger.exception("Detailed sync error:")
+            logger.info("Proceeding with bot startup despite sync error")
+            return None
+
+    async def _global_sync_background_task(self):
+        """Background task to handle global command synchronization"""
+        try:
+            logger.info("Global sync background task started")
+            start_time = time.time()
+            
+            # Sync commands globally
+            await self.bot.sync_application_commands()
+            
+            sync_time = time.time() - start_time
+            logger.info(f"Global command sync completed successfully in {sync_time:.2f} seconds")
+        except Exception as e:
+            sync_time = time.time() - start_time
+            logger.error(f"Global command sync failed after {sync_time:.2f} seconds: {e}")
+            logger.info("This won't affect commands in your server, but DM commands may not work immediately")

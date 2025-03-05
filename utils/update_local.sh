@@ -1,22 +1,42 @@
 #!/run/current-system/sw/bin/bash
 
-
-# Setze das Zielverzeichnis und Serverinformationen
+# Variables
 SERVER_USER="docker"
 SERVER_HOST="192.168.178.33"
+WATCH_CONSOLE=true
 PROJECT_ROOT_DIR="/home/docker/docker/companion-management/homelab-discord-bot"
-DOCKER_DIR="/home/docker/docker/companion-management/homelab-discord-bot/compose"
+DOCKER_DIR="${PROJECT_ROOT_DIR}/compose"
 
-# 1. Stoppe den Docker-Container
-ssh ${SERVER_USER}@${SERVER_HOST} "docker-compose -f ${DOCKER_DIR}/docker-compose.yml down"
+# Define what type of update this is
+read -p "Is this a code-only update? (y/n): " code_only
 
-# 2. Kopiere die neuen Dateien auf den Server
-scp -r ~/Documents/Git/NCC-DiscordBot/* ${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}
-scp ~/Documents/Git/NCC-DiscordBot/compose/.env.discordbot ${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}
-scp ~/Documents/Git/NCC-DiscordBot/compose/.env.postgres ${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}
+if [ "$code_only" == "y" ]; then
+    # Code-only update: copy files and restart without rebuilding
+    echo "Performing code-only update (ENVIRONMENT=development needed in .env.discordbot)..."
+    
+    # Copy Python files only
+    scp -r ~/Documents/Git/NCC-DiscordBot/app/bot/* ${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}/app/bot/
+    
+    # Restart the container without rebuilding
+    ssh ${SERVER_USER}@${SERVER_HOST} "cd ${DOCKER_DIR} && docker-compose restart bot"
+else
+    # Full update with rebuild
+    echo "Performing full update with rebuild..."
+    
+    # Stop containers
+    ssh ${SERVER_USER}@${SERVER_HOST} "cd ${DOCKER_DIR} && docker-compose down"
+    
+    # Copy all files
+    scp -r ~/Documents/Git/NCC-DiscordBot/* ${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}
+    scp ~/Documents/Git/NCC-DiscordBot/compose/.env.discordbot ${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}
+    scp ~/Documents/Git/NCC-DiscordBot/compose/.env.postgres ${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}
+    
+    # Rebuild and restart
+    if [ "$WATCH_CONSOLE" = true ]; then
+        ssh ${SERVER_USER}@${SERVER_HOST} "cd ${DOCKER_DIR} && docker-compose build && docker-compose up"
+    else
+        ssh ${SERVER_USER}@${SERVER_HOST} "cd ${DOCKER_DIR} && docker-compose build && docker-compose up -d"
+    fi
+fi
 
-# 3. Starte den Docker-Container neu
-ssh ${SERVER_USER}@${SERVER_HOST} "docker-compose -f ${DOCKER_DIR}/docker-compose.yml build"
-ssh ${SERVER_USER}@${SERVER_HOST} "docker-compose -f ${DOCKER_DIR}/docker-compose.yml up"
-
-echo "Update abgeschlossen und Container neu gestartet!"
+echo "Update completed successfully!"
