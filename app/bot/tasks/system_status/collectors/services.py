@@ -36,7 +36,7 @@ async def check_services_status(include_private=False):
         {"name": "🎮 Palworld", "port_range": (8211, 8221), "container": "palworld-server"},
         {"name": "🎮 Factorio", "port_range": (34197, 34207), "container": "pufferpanel"},
         {"name": "🎮 Satisfactory", "port_range": (7777, 7787), "container": "satisfactory-server"},
-        {"name": "🎮 CS2", "port_range": (27015, 27025), "container": "csgoserver"},
+        {"name": "🎮 CS2", "port_range": (27015, 27025), "container": "pufferpanel"},
         {"name": "🎮 Valheim", "port_range": (2456, 2466), "container": "pufferpanel"},
     ]
     
@@ -74,25 +74,48 @@ async def check_services_status(include_private=False):
                     
                 # Rest der Port-Checks nur für laufende Container
                 port_start, port_end = service["port_range"]
-                online_ports = []
+                active_ports = set()  # Set um Duplikate zu vermeiden
                 
-                networks = container.attrs['NetworkSettings']['Networks']
-                for network in networks.values():
-                    if network.get('IPAddress'):
-                        container_ip = network['IPAddress']
-                        break
-                
-                for port in range(port_start, port_end + 1):
-                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    sock.settimeout(1)
-                    result = sock.connect_ex((container_ip, port))
-                    if result == 0:
-                        online_ports.append(port)
-                    sock.close()
-                
-                # Nur die aktiven Ports anzeigen
-                if online_ports:
-                    services[service["name"]] = f"✅ Online auf Port(s): {', '.join(map(str, online_ports))}"
+                # Prüfe die exponierten Ports des Containers
+                if container.attrs.get('NetworkSettings', {}).get('Ports'):
+                    for container_port, host_bindings in container.attrs['NetworkSettings']['Ports'].items():
+                        container_port_num = int(container_port.split('/')[0])
+                        logger.debug(f"Checking port {container_port_num} for {service['name']}")
+                        logger.debug(f"Port range: {port_start}-{port_end}")
+                        
+                        if port_start <= container_port_num <= port_end and host_bindings:
+                            host_ip = host_bindings[0]['HostIp'] or 'localhost'
+                            host_port = int(host_bindings[0]['HostPort'])
+                            logger.debug(f"Found mapped port: {container_port_num} -> {host_ip}:{host_port}")
+                            
+                            # Verbesserte Port-Prüfung
+                            try:
+                                # Für 0.0.0.0 oder leere IPs, verwende localhost
+                                check_ip = '127.0.0.1' if host_ip in ('0.0.0.0', '') else host_ip
+                                
+                                # Längeres Timeout für bessere Erkennung
+                                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                                sock.settimeout(2)  # Erhöhtes Timeout
+                                result = sock.connect_ex((check_ip, host_port))
+                                sock.close()
+                                
+                                if result == 0:  # Port ist aktiv!
+                                    active_ports.add(host_port)
+                                    logger.debug(f"Port {host_port} is actually active on {check_ip}!")
+                                else:
+                                    # Wenn TCP-Verbindung fehlschlägt, könnte es UDP sein - füge es als möglichen Port hinzu
+                                    protocol = container_port.split('/')[1] if '/' in container_port else 'tcp'
+                                    if protocol == 'udp':
+                                        logger.debug(f"Port {host_port} may be active (UDP) on {check_ip}")
+                                        active_ports.add(host_port)  # Füge UDP-Ports auch hinzu
+                            except Exception as e:
+                                logger.debug(f"Socket check failed for {host_ip}:{host_port} - {str(e)}")
+
+                logger.debug(f"Service {service['name']} has {len(active_ports)} active ports: {sorted(active_ports)}")
+
+                # Zeige nur die WIRKLICH aktiven Ports
+                if active_ports:
+                    services[service["name"]] = f"✅ Online auf Port(s): {', '.join(map(str, sorted(active_ports)))}"
                 else:
                     services[service["name"]] = "❌ Keine aktiven Ports"
                     
