@@ -17,7 +17,13 @@ from core.services.logging import setup as setup_logging
 from core.services.logging import logger
 import sys
 import asyncio
-from core.startup import BotStartup
+from core.services.factories.lifecycle_manager import BotLifecycleManager
+from core.factories.bot_factory import BotComponentFactory
+from core.factories.service_factory import ServiceFactory
+from core.factories.task_factory import TaskFactory
+from core.lifecycle.lifecycle_manager import BotLifecycleManager
+from core.services.sync.command_sync_service import CommandSyncService
+
 import time
 from dotenv import load_dotenv
 
@@ -42,28 +48,34 @@ intents.dm_messages = True
 intents.guild_messages = True
 intents.dm_reactions = True
 
-# Initialize bot and startup
+# Initialize bot and factory components
 bot = commands.Bot(
     command_prefix='!!' if IS_DEVELOPMENT else '!', 
     intents=intents
 )
-bot.startup = BotStartup(bot)
-bot.environment = ENVIRONMENT  # Store environment for use throughout the app
 
-# Register critical services FIRST
-bot.startup.register_service("Logging", setup_logging)
-bot.startup.register_service("Auth", setup_auth)
-bot.startup.register_service("Database", init_db)
-bot.startup.register_service("Encryption", setup_encryption)
+# Initialize core components in correct order
+bot.lifecycle = BotLifecycleManager(bot)  # Lifecycle FIRST
+bot.service_factory = ServiceFactory(bot)  # Then factories
+bot.task_factory = TaskFactory(bot)
+bot.factory = BotComponentFactory(bot)
+
+# Create services using specialized factory
+critical_services = [
+    bot.service_factory.create("Logging", setup_logging),
+    bot.service_factory.create("Auth", setup_auth),
+    bot.service_factory.create("Database", init_db),
+    bot.service_factory.create("Encryption", setup_encryption)
+]
 
 # Register module services
-bot.startup.register_service("System Monitoring", setup_system_monitoring)
-bot.startup.register_service("IP Management", setup_ip_management)
-bot.startup.register_service("Wireguard", setup_wireguard)
-bot.startup.register_service("Project Tracker", setup_project_tracker)
-
-# Register middleware last as it depends on other services
-bot.startup.register_service("Middleware", setup_middleware)
+module_services = [
+    bot.factory.create_service("System Monitoring", setup_system_monitoring),
+    bot.factory.create_service("IP Management", setup_ip_management),
+    bot.factory.create_service("Wireguard", setup_wireguard),
+    bot.factory.create_service("Project Tracker", setup_project_tracker),
+    bot.factory.create_service("Middleware", setup_middleware)
+]
 
 # Register tasks
 from tasks.system_status import system_status_task
@@ -71,22 +83,30 @@ from tasks.cleanup_task import cleanup_task
 from tasks.cleanup_dm_task import cleanup_dm_task
 from tasks.project_tracker_task import project_tracker_task
 
-bot.startup.register_task("System Status", system_status_task, HOMELAB_CHANNEL_ID)
-bot.startup.register_task("Cleanup", cleanup_task, HOMELAB_CHANNEL_ID)
-bot.startup.register_task("DM Cleanup", cleanup_dm_task)
-bot.startup.register_task("Project Tracker", project_tracker_task, HOMELAB_CHANNEL_ID)
+# Create tasks using specialized factory
+tasks = [
+    bot.task_factory.create("System Status", system_status_task, HOMELAB_CHANNEL_ID),
+    bot.task_factory.create("Cleanup", cleanup_task, HOMELAB_CHANNEL_ID),
+    bot.task_factory.create("DM Cleanup", cleanup_dm_task),
+    bot.task_factory.create("Project Tracker", project_tracker_task, HOMELAB_CHANNEL_ID)
+]
 
 # Development mode specific services
 if IS_DEVELOPMENT:
     try:
-        from modules.maintenance.reload_commands import setup as setup_reload_commands
-        bot.startup.register_service("Reload Commands", setup_reload_commands)
+        from dev.reload_commands import setup as setup_reload_commands
+        dev_services = [
+            bot.factory.create_service("Reload Commands", setup_reload_commands)
+        ]
         logger.info(f"🔧 Running in {ENVIRONMENT.upper()} mode - Reload commands registered")
         
         # Development-specific features
         bot.dev_mode = True
     except ImportError as e:
         logger.warning(f"Failed to load development modules: {e}")
+        dev_services = []
+else:
+    dev_services = []
 
 @bot.event
 async def on_ready():
@@ -95,15 +115,40 @@ async def on_ready():
             logger.info(f"🔧 Running in {ENVIRONMENT.upper()} mode")
             await bot.change_presence(activity=nextcord.Game(name=f"🔧 {ENVIRONMENT.upper()}"))
         
-        logger.info("Starting service initialization...")
-        await bot.startup.initialize_services()
-        logger.info("Service initialization complete")
+        # Initialize command sync service
+        await bot.lifecycle.setup_command_sync(
+            enable_guild_sync=True,
+            enable_global_sync=True
+        )
         
-        # Use the sync_commands method with timeout
-        await bot.startup.sync_commands(timeout=60)
+        # Initialize critical services first
+        logger.info("Starting critical service initialization...")
+        for service in critical_services:
+            if not hasattr(bot, 'lifecycle'):
+                logger.error("Lifecycle manager not initialized!")
+                raise RuntimeError("Lifecycle manager must be initialized before services")
+            await bot.lifecycle.add_service(service)
         
-        # Start tasks regardless of sync result
-        await bot.startup.start_tasks()
+        # Initialize module services
+        logger.info("Starting module service initialization...")
+        for service in module_services:
+            await bot.lifecycle.add_service(service)
+            
+        # Initialize development services if any
+        if dev_services:
+            logger.info("Starting development service initialization...")
+            for service in dev_services:
+                await bot.lifecycle.add_service(service)
+        
+        # Sync commands in background instead of blocking
+        logger.info("Starting command synchronization in background...")
+        await bot.lifecycle.command_sync_service.start_background_sync()
+        
+        # Start tasks
+        logger.info("Starting background tasks...")
+        for task in tasks:
+            await bot.lifecycle.add_task(task)
+            
         logger.info("Startup sequence complete")
         
     except Exception as e:

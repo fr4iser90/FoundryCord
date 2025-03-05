@@ -2,7 +2,7 @@ from .auth_service import AuthService
 from .auth_commands import AuthCommands
 from core.services.logging.logging_commands import logger
 
-__all__ = ['AuthService', 'AuthCommands']
+__all__ = ['AuthService', 'AuthCommands', 'setup']
 
 async def setup(bot):
     """Central initialization of the Auth service"""
@@ -11,9 +11,14 @@ async def setup(bot):
         auth_service = AuthService(bot)
         bot.auth = auth_service
         
-        # Einfach direkt als Cog hinzufügen
+        # Add commands as cog
         commands = AuthCommands(bot, auth_service)
-        bot.add_cog(commands)
+        
+        # Use the lifecycle manager if available
+        if hasattr(bot, 'lifecycle'):
+            await bot.lifecycle.register_command(commands)
+        else:
+            bot.add_cog(commands)
         
         logger.info("Auth service and commands initialized successfully")
         return auth_service
