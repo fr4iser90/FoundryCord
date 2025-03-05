@@ -1,4 +1,4 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 from nextcord import CategoryChannel, TextChannel
 import nextcord
 from .base_factory import BaseFactory
@@ -50,3 +50,22 @@ class ChannelFactory(BaseFactory):
     def get_channel(self, name: str) -> Optional[TextChannel]:
         """Gets a channel by name"""
         return self._channels.get(name)
+
+    def create(self, name: str, **kwargs) -> Dict[str, Any]:
+        """Implementation of abstract create method from BaseFactory"""
+        channel = self.bot.loop.create_task(
+            self.get_or_create_channel(
+                kwargs.get('guild'),
+                name,
+                category_id=kwargs.get('category_id'),
+                is_private=kwargs.get('is_private', False),
+                topic=kwargs.get('topic'),
+                slowmode=kwargs.get('slowmode', 0)
+            )
+        )
+        return {
+            'name': name,
+            'channel': channel,
+            'type': 'channel',
+            'config': kwargs
+        }

@@ -1,4 +1,4 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 from nextcord import TextChannel, Thread
 import nextcord
 from .base_factory import BaseFactory
@@ -43,3 +43,21 @@ class ThreadFactory(BaseFactory):
     def get_thread(self, channel_id: int, thread_name: str) -> Optional[Thread]:
         """Gets a thread by channel ID and thread name"""
         return self._threads.get(f"{channel_id}_{thread_name}")
+
+    def create(self, name: str, **kwargs) -> Dict[str, Any]:
+        """Implementation of abstract create method from BaseFactory"""
+        thread = self.bot.loop.create_task(
+            self.get_or_create_thread(
+                kwargs.get('channel'),
+                name,
+                auto_archive_duration=kwargs.get('auto_archive_duration', 1440),
+                is_private=kwargs.get('is_private', False),
+                reason=kwargs.get('reason')
+            )
+        )
+        return {
+            'name': name,
+            'thread': thread,
+            'type': 'thread',
+            'config': kwargs
+        }

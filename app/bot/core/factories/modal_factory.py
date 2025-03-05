@@ -22,3 +22,18 @@ class ModalFactory(BaseFactory):
                         )
                     )
         return CustomModal()
+
+    def create(self, name: str, **kwargs) -> Dict[str, Any]:
+        """Implementation of abstract create method from BaseFactory"""
+        modal = self.create_input_modal(
+            title=kwargs.get('title', name),
+            custom_id=kwargs.get('custom_id', f"{name}_modal"),
+            fields=kwargs.get('fields', [])
+        )
+        
+        return {
+            'name': name,
+            'modal': modal,
+            'type': 'modal',
+            'config': kwargs
+        }

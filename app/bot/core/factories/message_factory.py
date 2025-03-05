@@ -44,3 +44,20 @@ class MessageFactory(BaseFactory):
             description=message,
             color=0xf1c40f  # Gelb
         )
+
+    def create(self, name: str, **kwargs) -> Dict[str, Any]:
+        """Implementation of abstract create method from BaseFactory"""
+        embed = self.bot.loop.create_task(
+            self.create_embed(
+                title=kwargs.get('title', name),
+                description=kwargs.get('description'),
+                color=kwargs.get('color', 0x3498db),
+                **kwargs
+            )
+        )
+        return {
+            'name': name,
+            'embed': embed,
+            'type': 'message',
+            'config': kwargs
+        }

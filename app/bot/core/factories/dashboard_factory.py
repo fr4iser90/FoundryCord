@@ -131,3 +131,21 @@ class DashboardFactory(BaseFactory):
             description="Get help and information about the bot.",
             components=components
         )
+
+    def create(self, name: str, **kwargs) -> Dict[str, Any]:
+        """Implementation of abstract create method from BaseFactory"""
+        dashboard = self.bot.loop.create_task(
+            self.create_dashboard(
+                title=kwargs.get('title', name),
+                description=kwargs.get('description', ''),
+                components=kwargs.get('components', []),
+                color=kwargs.get('color', 0x3498db),
+                timeout=kwargs.get('timeout', 600)
+            )
+        )
+        return {
+            'name': name,
+            'dashboard': dashboard,
+            'type': 'dashboard',
+            'config': kwargs
+        }
