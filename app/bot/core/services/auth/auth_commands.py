@@ -1,6 +1,6 @@
 from nextcord.ext import commands
 import nextcord
-from core.utilities.logger import logger
+from core.services.logging.logging_commands import logger
 
 class AuthCommands(commands.Cog):
     def __init__(self, bot, auth_service):

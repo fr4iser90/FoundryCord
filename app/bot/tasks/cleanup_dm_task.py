@@ -1,6 +1,6 @@
 import asyncio
 import nextcord
-from core.utilities.logger import logger
+from core.services.logging.logging_commands import logger
 import datetime
 import pytz
 

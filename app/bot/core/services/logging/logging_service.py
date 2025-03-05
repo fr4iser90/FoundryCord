@@ -1,52 +1,26 @@
-import logging
-from logging.handlers import RotatingFileHandler
-import os
-import sys
+# modules/core/logging_middleware.py
+from nextcord.ext import commands
+from .logging_commands import logger
 
-class LoggingService:
+class LoggingService(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.logger = self._setup_logger()
 
-    def _setup_logger(self):
-        # Create logger
-        logger = logging.getLogger('homelab_bot')
-        logger.setLevel(logging.DEBUG)
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        # Logge die eingehende Nachricht
+        logger.info(f"Neue Nachricht von {message.author}: {message.content}")
+        return # Unterdrücke die Exception
+    
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx, error):
+        # Fehlerbehandlung für Berechtigungsprüfungen
+        if isinstance(error, commands.CheckFailure):
+            logger.info(f"Berechtigungsprüfung fehlgeschlagen für Befehl '{ctx.command}': {ctx.author} ist nicht berechtigt.")
+            return  # Unterdrücke die Exception
 
-        # Define formatter
-        log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        # Fehlerbehandlung für andere Fehler
+        logger.error(f"Fehler im Befehl {ctx.command}: {error}")
 
-        # Console handler
-        ch = logging.StreamHandler(sys.stdout)
-        ch.setLevel(logging.DEBUG)
-        ch.setFormatter(log_formatter)
-        logger.addHandler(ch)
-
-        try:
-            # File handler
-            log_dir = './logs'
-            os.makedirs(log_dir, exist_ok=True)  # Ensure directory exists
-            fh = RotatingFileHandler(
-                os.path.join(log_dir, 'homelab_bot.log'),
-                maxBytes=10**6,
-                backupCount=5
-            )
-            fh.setLevel(logging.INFO)
-            fh.setFormatter(log_formatter)
-            logger.addHandler(fh)
-        except Exception as e:
-            logger.error(f"Konnte File Handler nicht erstellen: {e}")
-
-        return logger
-
-    def info(self, message):
-        self.logger.info(message)
-
-    def error(self, message):
-        self.logger.error(message)
-
-    def debug(self, message):
-        self.logger.debug(message)
-
-    def warning(self, message):
-        self.logger.warning(message)
+def setup(bot):
+    bot.add_cog(LoggingMiddleware(bot))  # Füge die LoggingMiddleware hinzu

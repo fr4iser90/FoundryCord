@@ -1,7 +1,7 @@
 import os
 import nextcord
 from nextcord.ext import commands
-from core.utilities.logger import logger
+from core.services.logging.logging_commands import logger
 from core.decorators.auth import super_admin_or_higher, user_or_higher
 from modules.wireguard.utils.get_user_config import get_user_config
 import asyncio

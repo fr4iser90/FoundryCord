@@ -4,7 +4,7 @@ import os
 import nextcord
 from datetime import datetime
 from core.decorators.auth import admin_or_higher
-from core.utilities.logger import logger
+from core.services.logging.logging_commands import logger
 
 # Pfad zur JSON-Datei für die Aufgaben
 TASKS_FILE = "data/project_tasks.json"

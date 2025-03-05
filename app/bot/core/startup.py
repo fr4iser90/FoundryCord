@@ -1,4 +1,4 @@
-from core.utilities.logger import logger
+from core.services.logging.logging_commands import logger
 import asyncio
 
 class BotStartup:

@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch
 
 # Import your utility modules
-from core.utilities.logger import logger
+from core.services.logging.logging_commands import logger
 
 class TestLogger:
     def test_logger_initialization(self):

@@ -1,13 +1,11 @@
 from .logging_service import LoggingService
-from .logging_events import LoggingEvents
+from .logging_commands import logger
 
-__all__ = ['LoggingService', 'LoggingEvents']
-
-def setup(bot):
-    # Initialize logging service
-    logging_service = LoggingService(bot)
-    bot.logger = logging_service  # Make logger available globally
-    
-    # Register events
-    events = LoggingEvents(bot, logging_service)
-    bot.add_cog(events)
+async def setup(bot):
+    """Initialize the Logging service"""
+    try:
+        bot.add_cog(LoggingService(bot))
+        logger.info("Logging service initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize logging service: {e}")
+        raise

@@ -7,7 +7,7 @@ from .collectors import collect_system_data
 from .admin_status import create_admin_embed
 from .public_status import create_public_embed
 from .utils import send_embed_with_retry
-from core.config.users import ADMINS, GUESTS
+from core.services.auth.models.users import ADMINS, GUESTS
 
 # Logger konfigurieren
 logger = logging.getLogger('homelab_bot')

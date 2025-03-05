@@ -1,7 +1,7 @@
 # @/app/bot/core/startup.py
 import os
 import nextcord
-from core.utilities.logger import logger 
+from core.services.logging.logging_commands import logger 
 from tasks.system_status import system_status_task
 from tasks.cleanup_task import cleanup_task
 from tasks.cleanup_dm_task import cleanup_dm_task  

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import os
 from core.decorators.auth import admin_or_higher
 from core.utilities.http_client import http_client
-from core.utilities.logger import logger
+from core.services.logging.logging_commands import logger
 
 # Load environment variables from .env file
 load_dotenv()

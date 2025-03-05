@@ -1,4 +1,4 @@
-from core.utilities.logger import logger
+from core.services.logging.logging_commands import logger
 from .users import SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
 
 def is_super_admin(user):

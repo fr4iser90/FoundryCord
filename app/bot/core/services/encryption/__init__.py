@@ -1,6 +1,6 @@
 from .encryption_service import EncryptionService
 from .encryption_commands import EncryptionCommands
-from core.utilities.logger import logger
+from core.services.logging.logging_commands import logger
 
 __all__ = ['EncryptionService', 'EncryptionCommands']
 

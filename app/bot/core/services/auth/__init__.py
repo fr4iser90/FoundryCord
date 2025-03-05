@@ -1,6 +1,6 @@
 from .auth_service import AuthService
 from .auth_commands import AuthCommands
-from core.utilities.logger import logger
+from core.services.logging.logging_commands import logger
 
 __all__ = ['AuthService', 'AuthCommands']
 

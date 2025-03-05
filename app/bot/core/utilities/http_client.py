@@ -1,7 +1,7 @@
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from core.utilities.logger import logger
+from core.services.logging.logging_commands import logger
 
 def create_http_client(retries=3, backoff_factor=0.3):
     session = requests.Session()

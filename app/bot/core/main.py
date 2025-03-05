@@ -13,7 +13,8 @@ from modules.maintenance.cleanup_commands import setup as setup_cleanup_commands
 from core.services.encryption import setup as setup_encryption
 from core.services.auth import setup as setup_auth
 from core.database.migrations.init_db import init_db
-from core.utilities.logger import logger
+from core.services.logging import setup as setup_logging
+from core.services.logging import logger
 import sys
 import asyncio
 from core.startup import BotStartup
@@ -36,10 +37,10 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 bot.startup = BotStartup(bot)
 
 # Register critical services FIRST
-bot.startup.register_service("Database", init_db)
+bot.startup.register_service("Logging", setup_logging)
 bot.startup.register_service("Auth", setup_auth)
+bot.startup.register_service("Database", init_db)
 bot.startup.register_service("Encryption", setup_encryption)
-
 
 # Register module services
 bot.startup.register_service("System Monitoring", setup_system_monitoring)

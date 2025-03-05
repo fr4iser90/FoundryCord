@@ -3,7 +3,7 @@ import nextcord
 import os
 import tempfile
 from core.services.encryption.encryption_service import EncryptionService
-from core.utilities.logger import logger
+from core.services.logging.logging_commands import logger
 import asyncio
 
 class EncryptionCommands(commands.Cog):

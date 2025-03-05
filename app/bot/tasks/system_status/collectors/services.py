@@ -21,12 +21,19 @@ async def check_services_status():
     
     external_services = [
         {"name": "☁️ Owncloud", "url": f"https://owncloud.{DOMAIN}"},
+        {"name": "💾 Pufferfish", "url": f"https://pufferpanel.{DOMAIN}"},
+        {"name": "💾 Vaultwarden", "url": f"https://bw.{DOMAIN}"},
         {"name": "📊 Grafana", "url": f"https://grafana.{DOMAIN}"},
         {"name": "📝 Nextcloud", "url": f"https://nextcloud.{DOMAIN}"},
         {"name": "🔄 Portainer", "url": f"https://portainer.{DOMAIN}"},
-        {"name": "📁 Fileserver", "url": f"https://files.{DOMAIN}"},
     ]
     
+    auth_required_services = [
+        "🔄 Portainer",
+        "📊 Grafana",
+        "💾 Vaultwarden",
+    ]
+
     for service in local_services:
         try:
             if service["port"] == 22:

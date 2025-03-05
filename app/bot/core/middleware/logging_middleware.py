@@ -1,6 +1,6 @@
 # modules/core/logging_middleware.py
 from nextcord.ext import commands
-from core.utilities.logger import logger
+from core.services.logging.logging_commands import logger
 
 class LoggingMiddleware(commands.Cog):
     def __init__(self, bot):

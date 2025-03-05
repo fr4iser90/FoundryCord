@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from core.database.models import Base
 from core.database.config import initialize_engine, initialize_session
 import asyncio
-from core.utilities.logger import logger
+from core.services.logging.logging_commands import logger
 
 async def init_db(bot=None):
     engine = await initialize_engine()
@@ -17,7 +17,7 @@ async def init_db(bot=None):
 
 async def migrate_existing_users():
     """Migrate existing users from env to database"""
-    from core.config.users import SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
+    from core.services.auth.models.users import SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
     from core.database.models import User
     from core.database.config import async_session
     

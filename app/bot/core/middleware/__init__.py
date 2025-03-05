@@ -1,6 +1,6 @@
-from core.utilities.logger import logger
+from core.services.logging.logging_commands import logger
 
-from .logging_middleware import LoggingMiddleware
+#from .logging_middleware import LoggingMiddleware
 from .rate_limit_middleware import RateLimitMiddleware
 
 async def setup(bot):
@@ -9,7 +9,7 @@ async def setup(bot):
         
         # Andere Middleware initialisieren...
         bot.add_cog(RateLimitMiddleware(bot))
-        bot.add_cog(LoggingMiddleware(bot))
+        #bot.add_cog(LoggingMiddleware(bot))
 
         
         logger.info("Middleware initialized successfully")

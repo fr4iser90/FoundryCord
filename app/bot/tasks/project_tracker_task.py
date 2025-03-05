@@ -2,8 +2,8 @@
 import asyncio
 import nextcord
 from datetime import datetime
-from core.config.users import SUPER_ADMINS, ADMINS
-from core.utilities.logger import logger
+from core.services.auth.models.users import SUPER_ADMINS, ADMINS
+from core.services.logging.logging_commands import logger
 from modules.tracker.project_tracker import create_task_embed, load_tasks
 
 async def project_tracker_task(bot, channel_id):

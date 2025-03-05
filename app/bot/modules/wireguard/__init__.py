@@ -1,6 +1,6 @@
 # app/bot/modules/wireguard/__init__.py
 
-from core.utilities.logger import logger
+from core.services.logging.logging_commands import logger
 from .cogs.get_user_config import WireguardConfigCommands
 from .cogs.get_user_qr import WireguardQRCommands
 
