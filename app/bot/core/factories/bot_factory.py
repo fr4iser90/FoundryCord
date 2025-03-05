@@ -2,6 +2,14 @@ import logging
 from typing import Any, Callable, Dict, List, Optional
 from .service_factory import ServiceFactory
 from .task_factory import TaskFactory
+from .channel_factory import ChannelFactory
+from .thread_factory import ThreadFactory
+from .message_factory import MessageFactory
+from .button_factory import ButtonFactory
+from .view_factory import ViewFactory
+from .menu_factory import MenuFactory
+from .modal_factory import ModalFactory
+from .dashboard_factory import DashboardFactory
 from core.services.logging.logging_commands import logger
 
 logger = logging.getLogger(__name__)
@@ -11,7 +19,15 @@ class BotComponentFactory:
         self.bot = bot
         self.factories: Dict[str, Any] = {
             'service': ServiceFactory(bot),
-            'task': TaskFactory(bot)
+            'task': TaskFactory(bot),
+            'channel': ChannelFactory(bot),
+            'thread': ThreadFactory(bot),
+            'message': MessageFactory(bot),
+            'button': ButtonFactory(bot),
+            'view': ViewFactory(bot),
+            'menu': MenuFactory(bot),
+            'modal': ModalFactory(bot),
+            'dashboard': DashboardFactory(bot)
         }
         self._component_creators = {}  # Stores dynamically registered component creators
         
