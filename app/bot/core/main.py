@@ -17,7 +17,6 @@ from core.services.logging import setup as setup_logging
 from core.services.logging import logger
 import sys
 import asyncio
-from core.services.factories.lifecycle_manager import BotLifecycleManager
 from core.factories.bot_factory import BotComponentFactory
 from core.factories.service_factory import ServiceFactory
 from core.factories.task_factory import TaskFactory
@@ -36,6 +35,8 @@ IS_DEVELOPMENT = ENVIRONMENT == 'development'
 IS_PRODUCTION = ENVIRONMENT == 'production'
 IS_TESTING = ENVIRONMENT == 'testing'
 
+# Environment Configuration
+GUILD_ID = int(os.getenv('DISCORD_SERVER'))
 HOMELAB_CHANNEL_ID = int(os.getenv('DISCORD_HOMELAB_CHANNEL'))
 
 # Intents für den Bot
@@ -118,7 +119,8 @@ async def on_ready():
         # Initialize command sync service
         await bot.lifecycle.setup_command_sync(
             enable_guild_sync=True,
-            enable_global_sync=True
+            enable_global_sync=True,
+            timeout=180
         )
         
         # Initialize critical services first

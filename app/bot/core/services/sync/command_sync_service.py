@@ -45,22 +45,21 @@ class CommandSyncService:
         logger.info(f"Collected {len(self.pending_commands)} commands for sync")
         return all_commands
 
-    async def sync_to_guild(self, guild_id):
+    async def sync_to_guild(self, guild_id: int):
         """Sync commands to a specific guild"""
         try:
             logger.info(f"Syncing commands to guild {guild_id}")
-            guild = nextcord.Object(id=guild_id)
+            guild = self.bot.get_guild(guild_id)
+            if not guild:
+                logger.error(f"Could not find guild with ID {guild_id}")
+                return
             
-            # Use the correct sync method for nextcord
-            await self.bot.sync_application_commands(guild_id=guild_id)
-            
-            # Verify
-            guild_commands = await self.bot.fetch_guild_application_commands(guild_id)
-            logger.info(f"Verified {len(guild_commands)} commands in guild: {[cmd.name for cmd in guild_commands]}")
-            return guild_commands
+            # Use the correct method for nextcord
+            await guild.bulk_overwrite_application_commands(self.pending_commands)
+            logger.info(f"Successfully synced {len(self.pending_commands)} commands to guild")
         except Exception as e:
             logger.error(f"Guild sync failed: {e}")
-            return []
+            raise
 
     async def sync_globally(self):
         """Sync commands globally"""
