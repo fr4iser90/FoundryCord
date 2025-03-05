@@ -5,11 +5,26 @@ from .base_factory import BaseFactory
 class DashboardFactory(BaseFactory):
     def __init__(self, bot):
         super().__init__(bot)
-        self.view_factory = bot.component_factory.factories['view']
-        self.message_factory = bot.component_factory.factories['message']
-        self.button_factory = bot.component_factory.factories['button']
-        self.menu_factory = bot.component_factory.factories['menu']
-        self.modal_factory = bot.component_factory.factories['modal']
+        
+    @property
+    def view_factory(self):
+        return self.bot.component_factory.factories['view']
+        
+    @property
+    def message_factory(self):
+        return self.bot.component_factory.factories['message']
+        
+    @property
+    def button_factory(self):
+        return self.bot.component_factory.factories['button']
+        
+    @property
+    def menu_factory(self):
+        return self.bot.component_factory.factories['menu']
+        
+    @property
+    def modal_factory(self):
+        return self.bot.component_factory.factories['modal']
 
     async def create_dashboard(self,
         title: str,
