@@ -1,3 +1,4 @@
+```plaintext
 app/
 ├── bot/
 │   ├── core/                      # Kern-Komponenten
@@ -54,3 +55,4 @@ app/
     ├── unit/
     ├── integration/
     └── e2e/
+```
