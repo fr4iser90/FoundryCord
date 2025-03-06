@@ -76,7 +76,7 @@ class CommandSyncService:
             )
             
             # Verify what was registered
-            global_commands = await self.bot.fetch_global_application_commands()
+            global_commands = await self.bot.get_all_application_commands()
             logger.info(f"Verified {len(global_commands)} commands globally: {[cmd.name for cmd in global_commands]}")
             return global_commands
         except Exception as e:
@@ -86,7 +86,18 @@ class CommandSyncService:
     async def verify_commands(self):
         """Verify commands are properly registered"""
         try:
-            registered = await self.bot.fetch_application_commands()
+            # Get global commands
+            global_commands = await self.bot.get_all_application_commands(guild_id=None)
+            
+            # Get guild commands if guild sync is enabled
+            guild_commands = []
+            if self.enable_guild_sync:
+                guild_id = os.getenv('DISCORD_SERVER')
+                if guild_id:
+                    guild_id = int(guild_id)
+                    guild_commands = await self.bot.get_all_application_commands(guild_id=guild_id)
+            
+            registered = global_commands + guild_commands
             logger.info(f"Verification: {len(registered)} commands are registered")
             logger.info(f"Registered commands: {[cmd.name for cmd in registered]}")
             return registered

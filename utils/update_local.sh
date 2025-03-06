@@ -8,18 +8,9 @@ PROJECT_ROOT_DIR="/home/docker/docker/companion-management/homelab-discord-bot"
 DOCKER_DIR="${PROJECT_ROOT_DIR}/compose"
 
 # Define what type of update this is
-read -p "Is this a code-only update? (y/n): " code_only
+read -p "Do you want to perform a full update with rebuild? (y/n): " full_update
 
-if [ "$code_only" == "y" ]; then
-    # Code-only update: copy files and restart without rebuilding
-    echo "Performing code-only update (ENVIRONMENT=development needed in .env.discordbot)..."
-    
-    # Copy Python files only
-    scp -r ~/Documents/Git/NCC-DiscordBot/app/bot/* ${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}/app/bot/
-    
-    # Restart the container without rebuilding
-    ssh ${SERVER_USER}@${SERVER_HOST} "cd ${DOCKER_DIR} && docker-compose restart bot"
-else
+if [ "$full_update" == "y" ]; then
     # Full update with rebuild
     echo "Performing full update with rebuild..."
     
@@ -33,11 +24,19 @@ else
     
     # Rebuild and restart
     if [ "$WATCH_CONSOLE" = true ]; then
-        #ssh ${SERVER_USER}@${SERVER_HOST} "cd ${DOCKER_DIR} && docker-compose build  && docker-compose up"
         ssh ${SERVER_USER}@${SERVER_HOST} "cd ${DOCKER_DIR} && docker-compose build --no-cache && docker-compose up"
     else
         ssh ${SERVER_USER}@${SERVER_HOST} "cd ${DOCKER_DIR} && docker-compose build && docker-compose up -d"
     fi
+else
+    # Code-only update: copy files and restart without rebuilding
+    echo "Performing code-only update (ENVIRONMENT=development needed in .env.discordbot)..."
+    
+    # Copy Python files only
+    scp -r ~/Documents/Git/NCC-DiscordBot/app/bot/* ${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}/app/bot/
+    
+    # Restart the container without rebuilding
+    ssh ${SERVER_USER}@${SERVER_HOST} "cd ${DOCKER_DIR} && docker-compose restart bot"
 fi
 
 echo "Update completed successfully!"

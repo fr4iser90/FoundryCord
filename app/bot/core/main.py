@@ -2,19 +2,21 @@
 import os
 import nextcord
 from nextcord.ext import commands
-from core.tasks import setup_tasks
 from modules.monitoring.system_monitoring import setup as setup_system_monitoring
 from modules.tracker.ip_management import setup as setup_ip_management
 from modules.tracker.project_tracker import setup as setup_project_tracker  
-from core.middleware import setup as setup_middleware 
 from modules.wireguard import setup as setup_wireguard
 from modules.security import setup as setup_security
 from modules.maintenance.cleanup_commands import setup as setup_cleanup_commands
 from core.services.encryption import setup as setup_encryption
-from core.services.auth import setup as setup_auth
+# Comment out the old auth import
+#from core.services.auth import setup as setup_auth
+# Add new auth service imports
+from services.auth import setup as setup_auth
 from core.database.migrations.init_db import init_db
 from core.services.logging import setup as setup_logging
 from core.services.logging import logger
+from core.services.rate_limiting import setup as setup_rate_limiting
 import sys
 import asyncio
 from core.factories.bot_factory import BotComponentFactory
@@ -66,7 +68,8 @@ critical_services = [
     bot.service_factory.create("Logging", setup_logging),
     bot.service_factory.create("Auth", setup_auth),
     bot.service_factory.create("Database", init_db),
-    bot.service_factory.create("Encryption", setup_encryption)
+    bot.service_factory.create("Encryption", setup_encryption),
+    bot.service_factory.create("RateLimiting", setup_rate_limiting)  # Add this line
 ]
 
 # Register module services
@@ -75,7 +78,6 @@ module_services = [
     bot.factory.create_service("IP Management", setup_ip_management),
     bot.factory.create_service("Wireguard", setup_wireguard),
     bot.factory.create_service("Project Tracker", setup_project_tracker),
-    bot.factory.create_service("Middleware", setup_middleware)
 ]
 
 # Register tasks
