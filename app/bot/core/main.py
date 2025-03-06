@@ -13,7 +13,7 @@ from core.services.encryption import setup as setup_encryption
 #from core.services.auth import setup as setup_auth
 # Add new auth service imports
 from services.auth import setup as setup_auth
-from core.database.migrations.init_db import init_db
+from infrastructure.database.migrations.init_db import init_db
 from core.services.logging import setup as setup_logging
 from core.services.logging import logger
 from core.services.rate_limiting import setup as setup_rate_limiting

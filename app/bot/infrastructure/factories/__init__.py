@@ -1,6 +1,6 @@
 # Export composite factories for top-level import
 from .composite.bot_factory import BotComponentFactory
-from .composite.dashboard_factory import DashboardFactory
+from .discord_ui.dashboard_factory import DashboardFactory
 
 # Allow direct access to specific factories if needed
 from .service.service_factory import ServiceFactory

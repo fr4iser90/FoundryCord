@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncEngine
-from core.database.models import Base
-from core.database.config import initialize_engine, initialize_session
+from ..models.models import Base
+from ..models.config import initialize_engine, initialize_session
 import asyncio
 from core.services.logging.logging_commands import logger
 from sqlalchemy import select
@@ -19,8 +19,8 @@ async def init_db(bot=None):
 async def migrate_existing_users():
     """Migrate existing users from env to database"""
     from domain.auth.models import SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
-    from core.database.models import User
-    from core.database.config import async_session
+    from ..models.models import User
+    from ..models.config import async_session
     
     async with async_session() as session:
         for role_group, role_name in [
