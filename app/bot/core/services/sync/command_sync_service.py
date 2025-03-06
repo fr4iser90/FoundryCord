@@ -66,7 +66,8 @@ class CommandSyncService:
         """Sync commands globally"""
         try:
             logger.info("Syncing commands globally")
-            await self.bot.sync_all_application_commands(
+            # Check if the method returns a coroutine or executes directly
+            sync_method = self.bot.sync_all_application_commands(
                 use_rollout=True,
                 associate_known=True,
                 delete_unknown=True,
@@ -74,6 +75,10 @@ class CommandSyncService:
                 register_new=True,
                 ignore_forbidden=True
             )
+            
+            # If it's awaitable, await it
+            if hasattr(sync_method, '__await__'):
+                await sync_method
             
             # Verify what was registered
             global_commands = await self.bot.get_all_application_commands()
