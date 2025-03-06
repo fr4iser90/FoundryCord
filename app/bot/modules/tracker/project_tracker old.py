@@ -3,7 +3,7 @@ import json
 import os
 import nextcord
 from datetime import datetime
-from core.decorators.auth import admin_or_higher
+from utils.decorators.auth import admin_or_higher
 from core.services.logging.logging_commands import logger
 
 # Pfad zur JSON-Datei für die Aufgaben

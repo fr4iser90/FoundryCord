@@ -1,7 +1,7 @@
 import importlib
 import sys
 from nextcord.ext import commands
-from core.decorators.auth import super_admin_or_higher, admin_or_higher
+from utils.decorators.auth import super_admin_or_higher, admin_or_higher
 import nextcord
 import os
 

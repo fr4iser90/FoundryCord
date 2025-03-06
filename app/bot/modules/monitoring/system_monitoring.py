@@ -5,7 +5,7 @@ from nextcord.ext import commands
 import socket
 from dotenv import load_dotenv
 import os
-from core.decorators.auth import admin_or_higher
+from utils.decorators.auth import admin_or_higher
 from core.utilities.http_client import http_client
 from core.services.logging.logging_commands import logger
 

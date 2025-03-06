@@ -1,4 +1,4 @@
-from .base_factory import BaseFactory
+from ..base.base_factory import BaseFactory
 from typing import Callable, Dict, Any
 
 class TaskFactory(BaseFactory):

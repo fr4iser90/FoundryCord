@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any
 from nextcord import TextChannel, Thread
 import nextcord
-from .base_factory import BaseFactory
+from ..base.base_factory import BaseFactory
 
 class ThreadFactory(BaseFactory):
     def __init__(self, bot):

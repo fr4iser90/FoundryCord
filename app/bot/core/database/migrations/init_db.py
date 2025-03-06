@@ -18,7 +18,7 @@ async def init_db(bot=None):
 
 async def migrate_existing_users():
     """Migrate existing users from env to database"""
-    from core.services.auth.models.users import SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
+    from domain.auth.models import SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
     from core.database.models import User
     from core.database.config import async_session
     

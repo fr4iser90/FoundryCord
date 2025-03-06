@@ -1,6 +1,6 @@
 from typing import List, Optional, Callable, Dict, Any
 import nextcord
-from .base_factory import BaseFactory
+from ..base.base_factory import BaseFactory
 from .button_factory import ButtonFactory
 
 class ViewFactory(BaseFactory):

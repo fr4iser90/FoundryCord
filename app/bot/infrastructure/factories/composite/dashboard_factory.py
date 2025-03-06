@@ -1,6 +1,6 @@
 from typing import List, Dict, Any, Optional
 import nextcord
-from .base_factory import BaseFactory
+from ..base.base_factory import BaseFactory
 
 class DashboardFactory(BaseFactory):
     def __init__(self, bot):

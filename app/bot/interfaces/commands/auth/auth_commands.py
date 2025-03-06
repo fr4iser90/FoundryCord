@@ -3,9 +3,10 @@ import nextcord
 from core.services.logging.logging_commands import logger
 
 class AuthCommands(commands.Cog):
-    def __init__(self, bot, auth_service):
+    def __init__(self, bot, auth_service, authorization_service=None):
         self.bot = bot
-        self.auth = auth_service
+        self.auth = auth_service  # AuthenticationService
+        self.authorization = authorization_service  # AuthorizationService
 
     @nextcord.slash_command(
         name="login_ip",
@@ -99,13 +100,14 @@ class AuthCommands(commands.Cog):
             if rate_limiter and not await rate_limiter.check_rate_limit(ctx, 'auth'):
                 return
 
-            if not await self.auth.check_authorization(ctx.author):
+            # Use authorization service for permission checks
+            if self.authorization and not await self.authorization.check_authorization(ctx.author):
                 sanitized_author = f"User_{hash(str(message.author.id))}"
                 logger.warning(f"Unauthorized access attempt by {sanitized_author}")
                 await ctx.send("You are not authorized to use this command.")
                 return
 
-            # Create session if needed
+            # Create session if needed using authentication service
             if str(ctx.author.id) not in self.auth.active_sessions:
                 await self.auth.create_session(ctx.author.id)
 

@@ -1,14 +1,14 @@
 import logging
 from typing import Any, Callable, Dict, List, Optional
-from .service_factory import ServiceFactory
-from .task_factory import TaskFactory
-from .channel_factory import ChannelFactory
-from .thread_factory import ThreadFactory
-from .message_factory import MessageFactory
-from .button_factory import ButtonFactory
-from .view_factory import ViewFactory
-from .menu_factory import MenuFactory
-from .modal_factory import ModalFactory
+from ..service.service_factory import ServiceFactory
+from ..service.task_factory import TaskFactory
+from ..discord.channel_factory import ChannelFactory
+from ..discord.thread_factory import ThreadFactory
+from ..discord_ui.message_factory import MessageFactory
+from ..discord_ui.button_factory import ButtonFactory
+from ..discord_ui.view_factory import ViewFactory
+from ..discord_ui.menu_factory import MenuFactory
+from ..discord_ui.modal_factory import ModalFactory
 from .dashboard_factory import DashboardFactory
 from core.services.logging.logging_commands import logger
 

@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any
 from nextcord import CategoryChannel, TextChannel
 import nextcord
-from .base_factory import BaseFactory
+from ..base.base_factory import BaseFactory
 
 class ChannelFactory(BaseFactory):
     def __init__(self, bot):

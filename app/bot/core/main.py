@@ -19,11 +19,11 @@ from core.services.logging import logger
 from core.services.rate_limiting import setup as setup_rate_limiting
 import sys
 import asyncio
-from core.factories.bot_factory import BotComponentFactory
-from core.factories.service_factory import ServiceFactory
-from core.factories.task_factory import TaskFactory
+from infrastructure.factories import BotComponentFactory, ServiceFactory, TaskFactory
 from core.lifecycle.lifecycle_manager import BotLifecycleManager
 from core.services.sync.command_sync_service import CommandSyncService
+# Add command imports after services
+from interfaces.commands.auth import setup as setup_auth_commands
 
 import time
 from dotenv import load_dotenv
@@ -143,6 +143,10 @@ async def on_ready():
             logger.info("Starting development service initialization...")
             for service in dev_services:
                 await bot.lifecycle.add_service(service)
+        
+        # Initialize auth commands explicitly
+        auth_commands_service = bot.factory.create_service("Auth Commands", setup_auth_commands)
+        await bot.lifecycle.add_service(auth_commands_service)
         
         # Sync commands in background instead of blocking
         logger.info("Starting command synchronization in background...")
