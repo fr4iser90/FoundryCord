@@ -1,6 +1,8 @@
 # @/app/bot/core/main.py
 import os
 import nextcord
+import sys
+import asyncio
 from nextcord.ext import commands
 from modules.monitoring.system_monitoring import setup as setup_system_monitoring
 from modules.tracker.ip_management import setup as setup_ip_management
@@ -8,20 +10,15 @@ from modules.tracker.project_tracker import setup as setup_project_tracker
 from modules.wireguard import setup as setup_wireguard
 from modules.security import setup as setup_security
 from modules.maintenance.cleanup_commands import setup as setup_cleanup_commands
-from core.services.encryption import setup as setup_encryption
-# Comment out the old auth import
-#from core.services.auth import setup as setup_auth
-# Add new auth service imports
+from infrastructure.encryption import setup as setup_encryption
 from services.auth import setup as setup_auth
 from infrastructure.database.migrations.init_db import init_db
-from core.services.logging import setup as setup_logging
-from core.services.logging import logger
-from core.services.rate_limiting import setup as setup_rate_limiting
-import sys
-import asyncio
+from infrastructure.logging import setup as setup_logging
+from infrastructure.logging import logger
+from infrastructure.rate_limiting import setup as setup_rate_limiting
 from infrastructure.factories import BotComponentFactory, ServiceFactory, TaskFactory
 from core.lifecycle.lifecycle_manager import BotLifecycleManager
-from core.services.sync.command_sync_service import CommandSyncService
+from infrastructure.discord.command_sync_service import CommandSyncService
 # Add command imports after services
 from interfaces.commands.auth import setup as setup_auth_commands
 

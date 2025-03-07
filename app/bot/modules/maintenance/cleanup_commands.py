@@ -1,5 +1,5 @@
 import nextcord
-from core.services.logging.logging_commands import logger
+from infrastructure.logging import logger
 from utils.decorators.auth import admin_or_higher
 from tasks.cleanup_task import cleanup_homelab_channel
 from tasks.cleanup_dm_task import cleanup_dm_messages

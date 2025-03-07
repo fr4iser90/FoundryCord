@@ -2,7 +2,7 @@ import nextcord
 from nextcord.ext import commands
 from infrastructure.database.models.models import User, AuditLog
 from datetime import datetime
-from core.services.logging.logging_commands import logger
+from infrastructure.logging import logger
 from utils.decorators.auth import admin_or_higher
 
 class SecurityCommands(commands.Cog):

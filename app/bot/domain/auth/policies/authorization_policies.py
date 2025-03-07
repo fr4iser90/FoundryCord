@@ -1,4 +1,4 @@
-from core.services.logging.logging_commands import logger
+from infrastructure.logging import logger
 from ..models.role import Role, SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
 
 def is_super_admin(user):

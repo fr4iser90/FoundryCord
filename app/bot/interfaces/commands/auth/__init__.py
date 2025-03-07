@@ -1,6 +1,6 @@
 from services.auth import AuthenticationService , AuthorizationService
 from .auth_commands import AuthCommands
-from core.services.logging.logging_commands import logger
+from infrastructure.logging import logger
 
 __all__ = ['AuthCommands', 'setup']
 

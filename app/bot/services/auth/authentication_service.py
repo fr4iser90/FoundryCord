@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import jwt as PyJWT
 import os
-from core.services.logging.logging_commands import logger
+from infrastructure.logging import logger
 
 class AuthenticationService:
     def __init__(self, bot):

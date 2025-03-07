@@ -1,4 +1,4 @@
-from core.services.logging.logging_commands import logger
+from infrastructure.logging import logger
 from domain.auth.models import User, Role, Permission
 from domain.auth.policies import is_authorized
 # OR if you moved to domain services:

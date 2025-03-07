@@ -10,7 +10,7 @@ from ..discord_ui.view_factory import ViewFactory
 from ..discord_ui.menu_factory import MenuFactory
 from ..discord_ui.modal_factory import ModalFactory
 from ..discord_ui.dashboard_factory import DashboardFactory
-from core.services.logging.logging_commands import logger
+from infrastructure.logging import logger
 
 logger = logging.getLogger(__name__)
 

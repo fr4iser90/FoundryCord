@@ -1,7 +1,7 @@
 # app/bot/services/auth/__init__.py
 from .authentication_service import AuthenticationService
 from .authorization_service import AuthorizationService
-from core.services.logging.logging_commands import logger
+from infrastructure.logging import logger
 
 __all__ = [
     'AuthenticationService',

@@ -6,8 +6,8 @@ import socket
 from dotenv import load_dotenv
 import os
 from utils.decorators.auth import admin_or_higher
-from core.utilities.http_client import http_client
-from core.services.logging.logging_commands import logger
+from utils.http_client import http_client
+from infrastructure.logging import logger
 
 # Load environment variables from .env file
 load_dotenv()

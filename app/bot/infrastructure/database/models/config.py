@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text  # Add this import
 import os
-from core.services.logging.logging_commands import logger
+from infrastructure.logging import logger
 import asyncio
 
 # Debug-Logging für Datenbankverbindung

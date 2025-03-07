@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from ..models.models import Base
 from ..models.config import initialize_engine, initialize_session
 import asyncio
-from core.services.logging.logging_commands import logger
+from infrastructure.logging import logger
 from sqlalchemy import select
 
 async def init_db(bot=None):

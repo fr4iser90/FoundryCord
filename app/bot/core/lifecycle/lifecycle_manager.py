@@ -1,4 +1,4 @@
-from core.services.sync.command_sync_service import CommandSyncService
+from infrastructure.discord.command_sync_service import CommandSyncService
 import asyncio
 import os
 import logging
