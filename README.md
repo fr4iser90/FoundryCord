@@ -177,8 +177,8 @@ A Docker-based Discord bot written in Python, designed to manage and monitor you
 
 ## License
 
-MIT License
+[MIT License](LICENSE)
 
-Copyright (c) 2025 fr4iser
+## Disclaimer
 
-See [LICENSE](LICENSE) for full text.
+Please read our [disclaimer](DISCLAIMER.md) for important information about using this software.

@@ -40,3 +40,15 @@ class MonitoringDashboardService:
         except Exception as e:
             logger.error(f"Error collecting system status: {e}")
             raise
+
+async def setup(bot):
+    """Setup function for the Monitoring Dashboard service"""
+    try:
+        dashboard_factory = bot.dashboard_factory
+        service = MonitoringDashboardService(bot, dashboard_factory)
+        await service.initialize()
+        logger.info("Monitoring Dashboard service initialized successfully")
+        return service
+    except Exception as e:
+        logger.error(f"Failed to initialize Monitoring Dashboard service: {e}")
+        raise

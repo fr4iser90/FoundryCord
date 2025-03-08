@@ -60,3 +60,15 @@ class GeneralDashboardService(commands.Cog):
             'latency': 0.0,
             'bandwidth': {'up': 0.0, 'down': 0.0}
         }
+
+async def setup(bot):
+    """Setup function for the General Dashboard service"""
+    try:
+        service = GeneralDashboardService(bot)
+        await service.initialize()
+        bot.add_cog(service)
+        logger.info("General Dashboard service initialized successfully")
+        return service
+    except Exception as e:
+        logger.error(f"Failed to initialize General Dashboard service: {e}")
+        raise

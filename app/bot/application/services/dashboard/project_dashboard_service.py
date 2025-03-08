@@ -110,3 +110,15 @@ class ProjectDashboardService(commands.Cog):
         except Exception as e:
             logger.error(f"Error getting all projects: {e}")
             return []
+
+async def setup(bot):
+    """Setup function for the Project Dashboard service"""
+    try:
+        service = ProjectDashboardService(bot)
+        await service.initialize()
+        bot.add_cog(service)
+        logger.info("Project Dashboard service initialized successfully")
+        return service
+    except Exception as e:
+        logger.error(f"Failed to initialize Project Dashboard service: {e}")
+        raise

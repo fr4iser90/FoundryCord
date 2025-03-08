@@ -76,3 +76,15 @@ class WelcomeDashboardService(commands.Cog):
         except Exception as e:
             logger.error(f"Error updating welcome message: {e}")
             raise
+
+async def setup(bot):
+    """Setup function for the Welcome Dashboard service"""
+    try:
+        service = WelcomeDashboardService(bot)
+        await service.initialize()
+        bot.add_cog(service)
+        logger.info("Welcome Dashboard service initialized successfully")
+        return service
+    except Exception as e:
+        logger.error(f"Failed to initialize Welcome Dashboard service: {e}")
+        raise
