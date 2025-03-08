@@ -1,11 +1,18 @@
 from typing import Optional
 import nextcord
+from .base_dashboard import BaseDashboardUI
+from interfaces.dashboards.components.views.welcome_view import WelcomeView
 
-class WelcomeDashboardUI:
-    def __init__(self, bot):
-        self.bot = bot
-        self.dashboard_factory = bot.component_factory.factories['dashboard']
-
+class WelcomeDashboardUI(BaseDashboardUI):
+    """UI class for displaying the welcome dashboard"""
+    
+    DASHBOARD_TYPE = "welcome"
+    TITLE_IDENTIFIER = "Welcome"
+    
+    async def initialize(self):
+        """Initialize the welcome dashboard UI"""
+        return await super().initialize(channel_config_key='welcome')
+    
     async def create(self, channel, member_count: int):
         """Creates the welcome dashboard with all components"""
         
@@ -66,3 +73,32 @@ class WelcomeDashboardUI:
         roles = interaction.data["values"]
         await interaction.response.send_message(f"Selected roles: {', '.join(roles)}", ephemeral=True)
         # Logic for role assignment
+
+    def create_view(self) -> nextcord.ui.View:
+        view = WelcomeView(guild_name=self.channel.guild.name)
+        self.register_callbacks(view)
+        return view.create()
+    
+    async def on_rules_accept(self, interaction: nextcord.Interaction):
+        await interaction.response.send_message("Rules accepted!", ephemeral=True)
+        # Logic for rule acceptance
+    
+    async def on_role_select(self, interaction: nextcord.Interaction):
+        roles = interaction.data["values"]
+        await interaction.response.send_message(f"Selected roles: {', '.join(roles)}", ephemeral=True)
+        # Logic for role assignment
+    
+    async def on_server_info(self, interaction: nextcord.Interaction):
+        await interaction.response.send_message(
+            f"Server Info for {interaction.guild.name}\n"
+            f"Members: {interaction.guild.member_count}\n"
+            f"Created: {interaction.guild.created_at.strftime('%d.%m.%Y')}", 
+            ephemeral=True
+        )
+    
+    async def register_callbacks(self, view):
+        """Register callbacks for the view"""
+        view.set_callback("accept_rules", self.on_rules_accept)
+        view.set_callback("select_roles", self.on_role_select)
+        view.set_callback("server_info", self.on_server_info)
+        # Register other callbacks

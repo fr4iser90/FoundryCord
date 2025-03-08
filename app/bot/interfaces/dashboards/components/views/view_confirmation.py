@@ -1,7 +1,8 @@
 import nextcord
 from infrastructure.logging import logger
+from .base_view import BaseView
 
-class ConfirmationView(nextcord.ui.View):
+class ConfirmationView(BaseView):
     def __init__(self, title: str = "Bestätigung", timeout: int = 60):
         super().__init__(timeout=timeout)
         self.value = None

@@ -1,7 +1,8 @@
 import nextcord
 from infrastructure.logging import logger
+from .base_view import BaseView
 
-class StatusSelectView(nextcord.ui.View):
+class StatusSelectView(BaseView):
     def __init__(self, project, status_emojis, status_names):
         super().__init__(timeout=60)
         self.project = project

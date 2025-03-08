@@ -1,5 +1,7 @@
 from .base_view import BaseView
 from .dashboard_view import DashboardView
+from .welcome_view import WelcomeView
+from .monitoring_view import MonitoringView
 from .project_dashboard_view import ProjectDashboardView
 from .project_thread_view import ProjectThreadView
 from .project_details_view import ProjectDetailsView

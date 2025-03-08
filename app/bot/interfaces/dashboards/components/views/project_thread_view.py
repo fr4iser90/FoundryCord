@@ -1,24 +1,28 @@
 import nextcord
 from typing import Callable, Optional
 from infrastructure.logging import logger
+from .base_view import BaseView
 
-class ProjectThreadView(nextcord.ui.View):
+class ProjectThreadView(BaseView):
     def __init__(self, project_id: int):
         super().__init__(timeout=None)  # Persistent view
         self.project_id = project_id
-        self.callbacks = {}
-        
-    def set_callback(self, action: str, callback: Callable):
-        """Set callback for a specific action"""
-        self.callbacks[action] = callback
-        
+    
     async def _handle_callback(self, interaction: nextcord.Interaction, action: str):
-        """Generic handler for button callbacks"""
-        if action in self.callbacks:
-            await self.callbacks[action](interaction, self.project_id)
-        else:
+        """Generic handler for button callbacks with project_id"""
+        try:
+            if action in self.callbacks:
+                await self.callbacks[action](interaction, self.project_id)
+            else:
+                logger.warning(f"No callback registered for action: {action}")
+                await interaction.response.send_message(
+                    "Diese Aktion ist nicht verfügbar",
+                    ephemeral=True
+                )
+        except Exception as e:
+            logger.error(f"Error in view callback: {e}")
             await interaction.response.send_message(
-                f"No callback registered for action: {action}", 
+                "Ein Fehler ist aufgetreten",
                 ephemeral=True
             )
     

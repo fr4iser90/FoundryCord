@@ -1,7 +1,8 @@
 import nextcord
 from infrastructure.logging import logger
+from .base_view import BaseView
 
-class TaskListView(nextcord.ui.View):
+class TaskListView(BaseView):
     def __init__(self, project, dashboard):
         super().__init__(timeout=None)
         self.project = project

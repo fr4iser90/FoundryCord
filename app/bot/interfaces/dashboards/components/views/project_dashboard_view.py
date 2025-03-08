@@ -1,26 +1,12 @@
 import nextcord
 from typing import Callable, Optional
 from infrastructure.logging import logger
+from .base_view import BaseView
 
-class ProjectDashboardView(nextcord.ui.View):
+class ProjectDashboardView(BaseView):
     def __init__(self):
         super().__init__(timeout=None)  # Persistent view
-        self.callbacks = {}
         
-    def set_callback(self, action: str, callback: Callable):
-        """Set callback for a specific action"""
-        self.callbacks[action] = callback
-        
-    async def _handle_callback(self, interaction: nextcord.Interaction, action: str):
-        """Generic handler for button callbacks"""
-        if action in self.callbacks:
-            await self.callbacks[action](interaction)
-        else:
-            await interaction.response.send_message(
-                f"No callback registered for action: {action}", 
-                ephemeral=True
-            )
-    
     def create(self):
         """Create the view with all buttons"""
         # Refresh button

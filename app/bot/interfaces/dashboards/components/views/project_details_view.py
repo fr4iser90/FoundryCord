@@ -1,8 +1,9 @@
 import nextcord
 from datetime import datetime
 from infrastructure.logging import logger
+from .base_view import BaseView
 
-class ProjectDetailsView(nextcord.ui.View):
+class ProjectDetailsView(BaseView):
     def __init__(self, project, dashboard):
         super().__init__(timeout=None)
         self.project = project
