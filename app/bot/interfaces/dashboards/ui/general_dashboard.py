@@ -59,14 +59,24 @@ class GeneralDashboardUI:
             embed.add_field(
                 name="🖥️ Server Status",
                 value=f"```\n"
-                      f"CPU: {cpu:.1f}% | RAM: {memory['used']:.1f}GB/{memory['total']:.1f}GB\n"
+                      f"CPU: {cpu:.1f}% | RAM: {memory['percent']:.1f}%\n"
+                      f"RAM: {memory['used']:.1f}GB/{memory['total']:.1f}GB\n"
                       f"Storage: {disk['used']:.1f}GB/{disk['total']:.1f}TB\n"
                       f"Network: {'🟢 Online' if network['up'] else '🔴 Offline'} | "
                       f"Latenz: {network['latency']:.1f}ms```",
                 inline=False
             )
             
-            # Aktive Services
+            # Domain und IP-Informationen
+            domain_info = (
+                f"Domain: {system_status['domain']}\n"
+                f"Public IP: {system_status['public_ip']}\n"
+                f"Domain IP: {system_status['domain_ip']}\n"
+                f"IP Match: {'✅' if system_status['ip_match'] else '❌'}"
+            )
+            embed.add_field(name="🌐 Domain Status", value=domain_info, inline=False)
+            
+            # Aktive Services - Diese könnten dynamisch aus einem Service-Monitor kommen
             embed.add_field(
                 name="🚀 Aktive Services",
                 value="• **Gameserver**: 2/3 online\n"
@@ -75,12 +85,12 @@ class GeneralDashboardUI:
                 inline=True
             )
             
-            # Quick Links
+            # Quick Links - Diese sollten auf echte Channels verweisen
             embed.add_field(
                 name="🔗 Quick Links",
-                value="• [Projekt Dashboard]()\n"
-                      "• [Service Status]()\n"
-                      "• [Wiki]()",
+                value=f"• [Projekt Dashboard](https://discord.com/channels/{self.bot.env_config.SERVER_ID}/{await ChannelConfig.get_channel_id('projects')})\n"
+                      f"• [Service Status](https://discord.com/channels/{self.bot.env_config.SERVER_ID}/{await ChannelConfig.get_channel_id('services')})\n"
+                      f"• [Monitoring](https://discord.com/channels/{self.bot.env_config.SERVER_ID}/{await ChannelConfig.get_channel_id('monitoring')})",
                 inline=True
             )
             
