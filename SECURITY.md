@@ -1,5 +1,5 @@
 # Security Documentation
-
+## ⚠️ Experimental Project – JUST A HOBBY ⚠️
 ## Overview
 This document outlines the security measures implemented in the Discord bot, including authentication, encryption, and logging mechanisms.
 

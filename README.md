@@ -1,5 +1,5 @@
 # Homelab Assistant Discord Bot (Python-based)
-⚠️ Experimental Project ⚠️
+## ⚠️ Experimental Project – JUST A HOBBY ⚠️
 
 A Docker-based Discord bot written in Python, designed to manage and monitor your homelab. It includes features for getting domain and IP, IP whitelisting, container management, system monitoring, user authentication, and security enhancements.
 
