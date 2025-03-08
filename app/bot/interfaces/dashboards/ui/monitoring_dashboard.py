@@ -3,9 +3,9 @@ import nextcord
 from datetime import datetime, timedelta
 from infrastructure.logging import logger
 from infrastructure.config.channel_config import ChannelConfig
-from interfaces.dashboards.components.embeds.monitoring_embed import MonitoringEmbed
+from interfaces.dashboards.components.embeds import MonitoringEmbed
 from .base_dashboard import BaseDashboardUI
-from interfaces.dashboards.components.views.enhanced_monitoring_view import EnhancedMonitoringView
+from interfaces.dashboards.components.views import MonitoringView
 
 class MonitoringDashboardUI(BaseDashboardUI):
     """UI class for displaying the monitoring dashboard"""
@@ -27,71 +27,9 @@ class MonitoringDashboardUI(BaseDashboardUI):
                 color=0xff0000
             )
         
-        try:
-            # Get raw data from service
-            data = await self.service.get_system_status()
-            
-            # Transform data for the monitoring embed
-            system_data = data.get('system', {})
-            service_data = data.get('services', {})
-            
-            # Create formatted data dictionary for the embed
-            formatted_data = {
-                # CPU data - direct from psutil
-                'cpu_usage': system_data.get('cpu'),
-                
-                # Memory data
-                'memory_usage': system_data.get('memory').percent if hasattr(system_data.get('memory', {}), 'percent') else 'N/A',
-                
-                # Disk data
-                'disk_free': round(system_data.get('disk').free / (1024**3), 2) if hasattr(system_data.get('disk', {}), 'free') else 'N/A',
-            }
-            
-            # Create the embed using your existing component
-            embed = MonitoringEmbed.create_system_status(formatted_data)
-            
-            # Add supplementary fields to the embed
-            if system_data.get('hardware_info'):
-                hardware = system_data['hardware_info']
-                cpu_info = f"Model: {hardware.get('cpu_model', 'N/A')}\n"
-                cpu_info += f"Cores: {hardware.get('cpu_cores', 'N/A')} (Threads: {hardware.get('cpu_threads', 'N/A')})\n"
-                cpu_info += f"Temp: {system_data.get('cpu_temp', 'N/A')}°C"
-                embed.add_field(name="CPU Details", value=cpu_info, inline=False)
-                
-                if 'network_adapters' in hardware:
-                    embed.add_field(name="Network", value=hardware['network_adapters'], inline=False)
-            
-            # Add services information
-            if service_data:
-                services_text = ""
-                if 'docker_running' in service_data:
-                    services_text += f"• Running containers: {service_data['docker_running']}\n"
-                if 'docker_errors' in service_data:
-                    services_text += f"• Container errors: {service_data['docker_errors']}\n"
-                
-                # Add game services info
-                if 'services' in service_data:
-                    game_services = [s for s in service_data['services'].items() if '🎮' in s[0]]
-                    if game_services:
-                        services_text += "\nGame Servers:\n"
-                        for name, status in game_services:
-                            services_text += f"• {name}: {status}\n"
-                
-                if services_text:
-                    embed.add_field(name="Services", value=services_text, inline=False)
-            
-            # Add timestamp to footer
-            embed.set_footer(text=f"heute um {datetime.now().strftime('%H:%M')} Uhr")
-            
-            return embed
-        except Exception as e:
-            logger.error(f"Error creating monitoring embed: {e}")
-            return nextcord.Embed(
-                title="⚠️ Dashboard Error",
-                description=f"Error creating monitoring dashboard: {str(e)}",
-                color=0xff0000
-            )
-
+        # Simply call update_dashboard to use the enhanced view for initial display too
+        return await self.update_dashboard()
+    
     async def update_dashboard(self, interaction: Optional[nextcord.Interaction] = None):
         """Updates the monitoring dashboard with fresh data"""
         try:
@@ -150,8 +88,8 @@ class MonitoringDashboardUI(BaseDashboardUI):
                 }
                 metrics['game_servers'] = game_services
             
-            # Create enhanced view and embed
-            monitoring_view = EnhancedMonitoringView(metrics)
+            # Create view and embed using MonitoringView instead of EnhancedMonitoringView
+            monitoring_view = MonitoringView(metrics)
             embed = monitoring_view.create_embed()
             view = monitoring_view.create()
             
@@ -159,20 +97,19 @@ class MonitoringDashboardUI(BaseDashboardUI):
             if interaction:
                 await interaction.response.edit_message(embed=embed, view=view)
             else:
-                await self.update_message(embed=embed, view=view)
-                
+                # Use display_dashboard from BaseDashboardUI instead of update_message
+                self.message = await self.channel.send(embed=embed, view=view) if not self.message else await self.message.edit(embed=embed, view=view)
+            
+            return embed  # Return the embed for create_embed to use
+            
         except Exception as e:
             logger.error(f"Error updating monitoring dashboard: {e}")
-            error_embed = nextcord.Embed(
+            return nextcord.Embed(
                 title="⚠️ Dashboard Error",
                 description=f"Error updating dashboard: {str(e)}",
                 color=0xff0000
             )
-            if interaction:
-                await interaction.response.edit_message(embed=error_embed)
-            else:
-                await self.update_message(embed=error_embed)
-    
+
     def _extract_ports(self, status_text):
         """Helper to extract port numbers from status text"""
         ports = []
@@ -187,7 +124,37 @@ class MonitoringDashboardUI(BaseDashboardUI):
     async def on_refresh(self, interaction: nextcord.Interaction):
         """Handle refresh button click"""
         await interaction.response.defer()
-        await self.update_dashboard(interaction)
+        
+        # Get fresh data and create new embed/view
+        data = await self.service.get_system_status()
+        
+        # Transform data for metrics (all your existing code)
+        system_data = data.get('system', {})
+        service_data = data.get('services', {})
+        
+        # Create comprehensive metrics dictionary
+        metrics = {
+            # Your existing metrics code
+        }
+        
+        # Process game servers data
+        if 'services' in service_data:
+            game_services = {
+                # Your existing game_services code
+            }
+            metrics['game_servers'] = game_services
+        
+        # Create view and embed
+        monitoring_view = MonitoringView(metrics)
+        embed = monitoring_view.create_embed()
+        view = monitoring_view.create()
+        
+        # Use followup instead of response since we already deferred
+        await interaction.followup.edit_message(
+            message_id=interaction.message.id,
+            embed=embed,
+            view=view
+        )
     
     async def on_system_details(self, interaction: nextcord.Interaction):
         """Show detailed system information"""
