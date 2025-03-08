@@ -66,8 +66,8 @@ class CommandSyncService:
         """Sync commands globally"""
         try:
             logger.info("Syncing commands globally")
-            # Call the sync method - it returns a set of commands, not a coroutine
-            result = self.bot.sync_all_application_commands(
+            
+            result = await self.bot.sync_all_application_commands(
                 use_rollout=True,
                 associate_known=True,
                 delete_unknown=True,

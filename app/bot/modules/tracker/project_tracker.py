@@ -1,39 +1,11 @@
 # modules/tracker/project_tracker.py
-import json
-import os
 import nextcord
 from datetime import datetime
 from utils.decorators.auth import admin_or_higher
 from infrastructure.logging import logger
-
-# Pfad zur JSON-Datei für die Aufgaben
-TASKS_FILE = "data/project_tasks.json"
-
-# Sicherstellen, dass der Ordner existiert
-os.makedirs(os.path.dirname(TASKS_FILE), exist_ok=True)
-
-# Hilfsfunktionen
-def load_tasks():
-    """Lädt die Aufgaben aus der JSON-Datei"""
-    if os.path.exists(TASKS_FILE):
-        try:
-            with open(TASKS_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except Exception as e:
-            logger.error(f"Fehler beim Laden der Aufgaben: {e}")
-            return {"projects": {}}
-    else:
-        return {"projects": {}}
-
-def save_tasks(tasks):
-    """Speichert die Aufgaben in der JSON-Datei"""
-    try:
-        with open(TASKS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(tasks, f, indent=4, ensure_ascii=False)
-        return True
-    except Exception as e:
-        logger.error(f"Fehler beim Speichern der Aufgaben: {e}")
-        return False
+from infrastructure.database.models.config import get_session
+from infrastructure.database.repositories.project_repository import ProjectRepository
+from infrastructure.database.repositories.task_repository import TaskRepository
 
 def create_task_embed(tasks_data):
     """Erstellt ein Embed mit allen Projekten und Aufgaben"""
@@ -69,6 +41,40 @@ def create_task_embed(tasks_data):
     embed.set_footer(text="Verwende /project_* und /task_* Befehle zum Verwalten")
     return embed
 
+async def get_projects_data():
+    """Lädt die Projekte und Aufgaben aus der Datenbank"""
+    async for session in get_session():
+        project_repo = ProjectRepository(session)
+        task_repo = TaskRepository(session)
+        
+        projects = await project_repo.get_all()
+        
+        # Format für die bestehende Logik beibehalten
+        projects_data = {"projects": {}}
+        
+        for project in projects:
+            tasks = await task_repo.get_by_project_id(project.id)
+            
+            tasks_list = []
+            for task in tasks:
+                tasks_list.append({
+                    "id": task.id,
+                    "title": task.title,
+                    "description": task.description,
+                    "priority": task.priority,
+                    "completed": task.status == "completed",
+                    "created_at": task.created_at.isoformat(),
+                    "created_by": task.created_by
+                })
+            
+            projects_data["projects"][project.name] = {
+                "created_at": project.created_at.isoformat(),
+                "created_by": project.created_by,
+                "tasks": tasks_list
+            }
+        
+        return projects_data
+
 async def setup(bot):
     """Setup function for the project tracker module"""
     try:
@@ -94,25 +100,26 @@ async def setup(bot):
             if not await check_tracker_thread(interaction):
                 return
             
-            tasks_data = load_tasks()
-            
-            if name in tasks_data["projects"]:
-                await interaction.response.send_message(f"Projekt '{name}' existiert bereits!", ephemeral=True)
-                return
-            
-            tasks_data["projects"][name] = {
-                "created_at": datetime.now().isoformat(),
-                "created_by": str(interaction.user.id),
-                "tasks": []
-            }
-            
-            if save_tasks(tasks_data):
-                await interaction.response.send_message(f"Projekt '{name}' erfolgreich erstellt!", ephemeral=True)
+            async for session in get_session():
+                project_repo = ProjectRepository(session)
                 
-                # Tracker aktualisieren
-                await update_tracker_thread(bot, interaction.channel_id)
-            else:
-                await interaction.response.send_message("Fehler beim Speichern des Projekts.", ephemeral=True)
+                # Prüfen, ob Projekt bereits existiert
+                existing_project = await project_repo.get_by_name(name)
+                if existing_project:
+                    await interaction.response.send_message(f"Projekt '{name}' existiert bereits!", ephemeral=True)
+                    return
+                
+                # Projekt erstellen
+                await project_repo.create(
+                    name=name,
+                    description="",
+                    created_by=str(interaction.user.id)
+                )
+            
+            await interaction.response.send_message(f"Projekt '{name}' erfolgreich erstellt!", ephemeral=True)
+            
+            # Tracker aktualisieren
+            await update_tracker_thread(bot, interaction.channel_id)
         
         @bot.slash_command(name="project_delete", description="Löscht ein Projekt")
         @admin_or_higher()
@@ -121,41 +128,54 @@ async def setup(bot):
             if not await check_tracker_thread(interaction):
                 return
             
-            tasks_data = load_tasks()
-            
-            if name not in tasks_data["projects"]:
-                await interaction.response.send_message(f"Projekt '{name}' existiert nicht!", ephemeral=True)
-                return
-            
-            del tasks_data["projects"][name]
-            
-            if save_tasks(tasks_data):
-                await interaction.response.send_message(f"Projekt '{name}' erfolgreich gelöscht!", ephemeral=True)
+            async for session in get_session():
+                project_repo = ProjectRepository(session)
+                task_repo = TaskRepository(session)
                 
-                # Tracker aktualisieren
-                await update_tracker_thread(bot, interaction.channel_id)
-            else:
-                await interaction.response.send_message("Fehler beim Löschen des Projekts.", ephemeral=True)
+                # Prüfen, ob Projekt existiert
+                project = await project_repo.get_by_name(name)
+                if not project:
+                    await interaction.response.send_message(f"Projekt '{name}' existiert nicht!", ephemeral=True)
+                    return
+                
+                # Alle Tasks des Projekts löschen
+                tasks = await task_repo.get_by_project_id(project.id)
+                for task in tasks:
+                    await task_repo.delete(task)
+                
+                # Projekt löschen
+                await project_repo.delete(project)
+            
+            await interaction.response.send_message(f"Projekt '{name}' erfolgreich gelöscht!", ephemeral=True)
+            
+            # Tracker aktualisieren
+            await update_tracker_thread(bot, interaction.channel_id)
         
         @bot.slash_command(name="project_list", description="Zeigt alle Projekte an")
         @admin_or_higher()
         async def list_projects(interaction: nextcord.Interaction):
-            tasks_data = load_tasks()
-            
-            if not tasks_data["projects"]:
-                await interaction.response.send_message("Keine Projekte vorhanden.", ephemeral=True)
-                return
-            
-            projects_list = "\n".join([f"📋 **{name}** ({len(project['tasks'])} Aufgaben)" 
-                                      for name, project in tasks_data["projects"].items()])
-            
-            embed = nextcord.Embed(
-                title="Projekte",
-                description=projects_list,
-                color=0x3498db
-            )
-            
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            async for session in get_session():
+                project_repo = ProjectRepository(session)
+                task_repo = TaskRepository(session)
+                
+                projects = await project_repo.get_all()
+                
+                if not projects:
+                    await interaction.response.send_message("Keine Projekte vorhanden.", ephemeral=True)
+                    return
+                
+                projects_list = []
+                for project in projects:
+                    tasks = await task_repo.get_by_project_id(project.id)
+                    projects_list.append(f"📋 **{project.name}** ({len(tasks)} Aufgaben)")
+                
+                embed = nextcord.Embed(
+                    title="Projekte",
+                    description="\n".join(projects_list),
+                    color=0x3498db
+                )
+                
+                await interaction.response.send_message(embed=embed, ephemeral=True)
         
         # Slash-Commands für Aufgaben
         @bot.slash_command(name="task_add", description="Fügt eine neue Aufgabe zu einem Projekt hinzu")
@@ -171,31 +191,33 @@ async def setup(bot):
                 default="medium"
             )
         ):
-            tasks_data = load_tasks()
-            
-            if project not in tasks_data["projects"]:
-                await interaction.response.send_message(f"Projekt '{project}' existiert nicht!", ephemeral=True)
+            # Thread-Check
+            if not await check_tracker_thread(interaction):
                 return
             
-            new_task = {
-                "id": len(tasks_data["projects"][project]["tasks"]) + 1,
-                "title": title,
-                "description": description or "",
-                "priority": priority,
-                "completed": False,
-                "created_at": datetime.now().isoformat(),
-                "created_by": str(interaction.user.id)
-            }
-            
-            tasks_data["projects"][project]["tasks"].append(new_task)
-            
-            if save_tasks(tasks_data):
-                await interaction.response.send_message(f"Aufgabe '{title}' zu Projekt '{project}' hinzugefügt!", ephemeral=True)
+            async for session in get_session():
+                project_repo = ProjectRepository(session)
+                task_repo = TaskRepository(session)
                 
-                # Tracker aktualisieren
-                await update_tracker_thread(bot, interaction.channel_id)
-            else:
-                await interaction.response.send_message("Fehler beim Speichern der Aufgabe.", ephemeral=True)
+                # Prüfen, ob Projekt existiert
+                project_obj = await project_repo.get_by_name(project)
+                if not project_obj:
+                    await interaction.response.send_message(f"Projekt '{project}' existiert nicht!", ephemeral=True)
+                    return
+                
+                # Task erstellen
+                await task_repo.create(
+                    project_id=project_obj.id,
+                    title=title,
+                    description=description or "",
+                    priority=priority,
+                    created_by=str(interaction.user.id)
+                )
+            
+            await interaction.response.send_message(f"Aufgabe '{title}' zu Projekt '{project}' hinzugefügt!", ephemeral=True)
+            
+            # Tracker aktualisieren
+            await update_tracker_thread(bot, interaction.channel_id)
         
         @bot.slash_command(name="task_complete", description="Markiert eine Aufgabe als erledigt")
         @admin_or_higher()
@@ -204,31 +226,35 @@ async def setup(bot):
             project: str,
             task_id: int
         ):
-            tasks_data = load_tasks()
-            
-            if project not in tasks_data["projects"]:
-                await interaction.response.send_message(f"Projekt '{project}' existiert nicht!", ephemeral=True)
+            # Thread-Check
+            if not await check_tracker_thread(interaction):
                 return
             
-            task_found = False
-            for task in tasks_data["projects"][project]["tasks"]:
-                if task["id"] == task_id:
-                    task["completed"] = not task["completed"]
-                    status = "erledigt" if task["completed"] else "offen"
-                    task_found = True
-                    break
-            
-            if not task_found:
-                await interaction.response.send_message(f"Aufgabe mit ID {task_id} nicht gefunden!", ephemeral=True)
-                return
-            
-            if save_tasks(tasks_data):
-                await interaction.response.send_message(f"Aufgabe als '{status}' markiert!", ephemeral=True)
+            async for session in get_session():
+                project_repo = ProjectRepository(session)
+                task_repo = TaskRepository(session)
                 
-                # Tracker aktualisieren
-                await update_tracker_thread(bot, interaction.channel_id)
-            else:
-                await interaction.response.send_message("Fehler beim Aktualisieren der Aufgabe.", ephemeral=True)
+                # Prüfen, ob Projekt existiert
+                project_obj = await project_repo.get_by_name(project)
+                if not project_obj:
+                    await interaction.response.send_message(f"Projekt '{project}' existiert nicht!", ephemeral=True)
+                    return
+                
+                # Prüfen, ob Task existiert
+                task = await task_repo.get_by_id(task_id)
+                if not task or task.project_id != project_obj.id:
+                    await interaction.response.send_message(f"Aufgabe mit ID {task_id} nicht gefunden!", ephemeral=True)
+                    return
+                
+                # Task-Status umschalten
+                is_completed = task.status == "completed"
+                await task_repo.update_status(task_id, not is_completed)
+                new_status = "offen" if is_completed else "erledigt"
+            
+            await interaction.response.send_message(f"Aufgabe als '{new_status}' markiert!", ephemeral=True)
+            
+            # Tracker aktualisieren
+            await update_tracker_thread(bot, interaction.channel_id)
         
         @bot.slash_command(name="task_delete", description="Löscht eine Aufgabe")
         @admin_or_higher()
@@ -237,28 +263,36 @@ async def setup(bot):
             project: str,
             task_id: int
         ):
-            tasks_data = load_tasks()
-            
-            if project not in tasks_data["projects"]:
-                await interaction.response.send_message(f"Projekt '{project}' existiert nicht!", ephemeral=True)
+            # Thread-Check
+            if not await check_tracker_thread(interaction):
                 return
             
-            tasks = tasks_data["projects"][project]["tasks"]
-            task_index = next((i for i, task in enumerate(tasks) if task["id"] == task_id), None)
-            
-            if task_index is None:
-                await interaction.response.send_message(f"Aufgabe mit ID {task_id} nicht gefunden!", ephemeral=True)
-                return
-            
-            deleted_task = tasks.pop(task_index)
-            
-            if save_tasks(tasks_data):
-                await interaction.response.send_message(f"Aufgabe '{deleted_task['title']}' gelöscht!", ephemeral=True)
+            async for session in get_session():
+                project_repo = ProjectRepository(session)
+                task_repo = TaskRepository(session)
                 
-                # Tracker aktualisieren
-                await update_tracker_thread(bot, interaction.channel_id)
-            else:
-                await interaction.response.send_message("Fehler beim Löschen der Aufgabe.", ephemeral=True)
+                # Prüfen, ob Projekt existiert
+                project_obj = await project_repo.get_by_name(project)
+                if not project_obj:
+                    await interaction.response.send_message(f"Projekt '{project}' existiert nicht!", ephemeral=True)
+                    return
+                
+                # Prüfen, ob Task existiert
+                task = await task_repo.get_by_id(task_id)
+                if not task or task.project_id != project_obj.id:
+                    await interaction.response.send_message(f"Aufgabe mit ID {task_id} nicht gefunden!", ephemeral=True)
+                    return
+                
+                # Task speichern für Rückmeldung
+                task_title = task.title
+                
+                # Task löschen
+                await task_repo.delete(task)
+            
+            await interaction.response.send_message(f"Aufgabe '{task_title}' gelöscht!", ephemeral=True)
+            
+            # Tracker aktualisieren
+            await update_tracker_thread(bot, interaction.channel_id)
 
         async def update_tracker_thread(bot, channel_id):
             """Aktualisiert den Tracker-Thread mit den neuesten Daten"""
@@ -286,7 +320,8 @@ async def setup(bot):
                             break
                 
                 if tracker_thread:
-                    tasks_data = load_tasks()
+                    # Daten aus Datenbank laden
+                    tasks_data = await get_projects_data()
                     embed = create_task_embed(tasks_data)
                     
                     try:

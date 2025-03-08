@@ -36,3 +36,42 @@ def load_user_groups() -> Dict[str, Dict[str, str]]:
         'users': parse_users(users_env),
         'guests': parse_users(guests_env)
     }
+
+def load_typed_env_var(name: str, var_type, default=None):
+    """Lädt eine Umgebungsvariable und konvertiert sie in den angegebenen Typ"""
+    value = os.getenv(name)
+    if value is None:
+        return default
+        
+    if var_type == bool:
+        return value.lower() in ('true', 'yes', '1', 'y')
+    return var_type(value)
+
+def load_int_env_var(name: str, default: int = 0) -> int:
+    """Lädt eine Umgebungsvariable als Integer"""
+    return load_typed_env_var(name, int, default)
+
+def load_bool_env_var(name: str, default: bool = False) -> bool:
+    """Lädt eine Umgebungsvariable als Boolean"""
+    return load_typed_env_var(name, bool, default)
+
+def load_list_env_var(name: str, separator: str = ',', default: list = None) -> list:
+    """Lädt eine durch Separator getrennte Umgebungsvariable als Liste"""
+    value = os.getenv(name, '')
+    if not value and default is not None:
+        return default
+    return [item.strip() for item in value.split(separator) if item.strip()]
+
+def load_required_env_var(name: str) -> str:
+    """Lädt eine obligatorische Umgebungsvariable oder wirft einen Fehler"""
+    value = os.getenv(name)
+    if value is None:
+        raise ValueError(f"Required environment variable '{name}' is not set")
+    return value
+
+def get_channel_config():
+    """Lädt die für Channel-Setup relevanten Umgebungsvariablen"""
+    return {
+        'server_id': load_int_env_var('DISCORD_SERVER'),
+        'HOMELAB_CATEGORY_ID': load_int_env_var('HOMELAB_CATEGORY_ID'),
+    }

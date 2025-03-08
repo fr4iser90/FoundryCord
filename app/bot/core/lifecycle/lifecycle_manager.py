@@ -14,12 +14,15 @@ class BotLifecycleManager:
         self.ready_event = asyncio.Event()
         self.command_sync_service = None
         self.pending_commands = []  # Track commands during registration
+        self.channel_setup = None
         
     async def _initialize_service(self, service):
         """Initialize a service"""
         try:
             logger.info(f"Initializing service: {service['name']}")
-            await service['setup'](self.bot)
+            service_instance = await service['setup'](self.bot)
+            # Speichere den Service im Bot für späteren Zugriff
+            setattr(self.bot, f"{service['name'].lower().replace(' ', '_')}_service", service_instance)
             logger.info(f"Service initialized: {service['name']}")
         except Exception as e:
             logger.error(f"Failed to initialize service {service['name']}: {e}")
@@ -147,3 +150,48 @@ class BotLifecycleManager:
         except Exception as e:
             logger.error(f"Background command synchronization failed: {e}")
             return False
+
+    async def initialize(self, critical_services=None, module_services=None, tasks=None, channel_setup=None, dashboards=None):
+        """Initialize all components"""
+        try:
+            logger.info("Starting initialization sequence")
+            
+            # Warte bis der Bot bereit ist
+            if not self.bot.is_ready():
+                logger.info("Waiting for bot to be ready...")
+                await self.bot.wait_until_ready()
+                
+            # Initialize channel setup FIRST
+            if channel_setup:
+                logger.info("Initializing channel setup...")
+                self.channel_setup = await channel_setup['setup'](self.bot)
+                # WICHTIG: Erst Mappings erstellen, dann Channels
+                await self.channel_setup.initialize()  # Erstellt Mappings
+                await self.channel_setup.setup()      # Erstellt Channels und setzt IDs
+            
+            # Initialize critical services first
+            if critical_services:
+                for service in critical_services:
+                    await self._initialize_service(service)
+            
+            # Initialize module services BEFORE dashboards
+            if module_services:
+                for service in module_services:
+                    await self._initialize_service(service)
+                    
+            # Initialize dashboards AFTER services
+            if dashboards:
+                logger.info("Initializing dashboards...")
+                await dashboards['setup'](self.bot)
+            
+            # Start background tasks
+            if tasks:
+                for task in tasks:
+                    await self._start_task(task)
+                    
+            logger.info("Initialization sequence completed")
+            self.ready_event.set()
+            
+        except Exception as e:
+            logger.error(f"Initialization failed: {e}")
+            raise

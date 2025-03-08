@@ -1,5 +1,6 @@
-from sqlalchemy import Column, BigInteger, String, DateTime, ForeignKey, Boolean, JSON
+from sqlalchemy import Column, BigInteger, String, DateTime, ForeignKey, Boolean, JSON, Integer
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 from datetime import datetime
 
 Base = declarative_base()
@@ -19,7 +20,7 @@ class Session(Base):
     
     id = Column(BigInteger, primary_key=True)
     user_id = Column(String, ForeignKey('users.discord_id'))
-    token = Column(String)
+    token = Column(String) 
     expires_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -41,3 +42,41 @@ class AuditLog(Base):
     action = Column(String)
     details = Column(JSON)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+class ChannelMapping(Base):
+    __tablename__ = 'channel_mappings'
+    
+    id = Column(Integer, primary_key=True)
+    channel_name = Column(String, nullable=False)
+    channel_id = Column(BigInteger, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+class Project(Base):
+    __tablename__ = 'projects'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    description = Column(String)
+    status = Column(String, default="planning")
+    priority = Column(String, default="medium")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    due_date = Column(DateTime, nullable=True)
+    created_by = Column(String, ForeignKey('users.discord_id'), nullable=True)
+    
+    tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
+    creator = relationship("User", foreign_keys=[created_by])
+
+class Task(Base):
+    __tablename__ = 'tasks'
+    
+    id = Column(Integer, primary_key=True)
+    project_id = Column(Integer, ForeignKey('projects.id', ondelete='CASCADE'))
+    title = Column(String, nullable=False)
+    description = Column(String)
+    status = Column(String, default="open")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    due_date = Column(DateTime, nullable=True)
+    
+    project = relationship("Project", back_populates="tasks")

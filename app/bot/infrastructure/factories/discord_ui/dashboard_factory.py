@@ -1,6 +1,9 @@
 from typing import List, Dict, Any, Optional
 import nextcord
 from ..base.base_factory import BaseFactory
+import logging
+
+logger = logging.getLogger(__name__)
 
 class DashboardFactory(BaseFactory):
     def __init__(self, bot):
@@ -149,18 +152,35 @@ class DashboardFactory(BaseFactory):
 
     def create(self, name: str, **kwargs) -> Dict[str, Any]:
         """Implementation of abstract create method from BaseFactory"""
-        dashboard = self.bot.loop.create_task(
-            self.create_dashboard(
-                title=kwargs.get('title', name),
-                description=kwargs.get('description', ''),
-                components=kwargs.get('components', []),
-                color=kwargs.get('color', 0x3498db),
-                timeout=kwargs.get('timeout', 600)
+        from application.dashboards.project_dashboard import ProjectDashboard
+        
+        if name == 'project':
+            # Dashboard erstellen
+            dashboard = ProjectDashboard(self.bot)
+            
+            # Service aus dem Bot holen (wurde bereits durch DashboardConfig initialisiert)
+            service = getattr(self.bot, 'project_dashboard_service', None)
+            if service:
+                dashboard.set_service(service)
+            else:
+                logger.error("ProjectDashboardService not found in bot instance")
+            
+            return {
+                'name': name,
+                'dashboard': dashboard,
+                'type': 'dashboard'
+            }
+        else:
+            # Fallback auf generisches Dashboard
+            dashboard = self.bot.loop.create_task(
+                self.create_dashboard(
+                    title=kwargs.get('title', name),
+                    description=kwargs.get('description', ''),
+                    components=kwargs.get('components', [])
+                )
             )
-        )
-        return {
-            'name': name,
-            'dashboard': dashboard,
-            'type': 'dashboard',
-            'config': kwargs
-        }
+            return {
+                'name': name,
+                'dashboard': dashboard,
+                'type': 'dashboard'
+            }
