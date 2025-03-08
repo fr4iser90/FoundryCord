@@ -2,6 +2,7 @@ from infrastructure.discord.command_sync_service import CommandSyncService
 import asyncio
 import os
 import logging
+from infrastructure.managers.dashboard_manager import DashboardManager
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,7 @@ class BotLifecycleManager:
         self.command_sync_service = None
         self.pending_commands = []  # Track commands during registration
         self.channel_setup = None
+        self.dashboard_manager = DashboardManager(bot)
         
     async def _initialize_service(self, service):
         """Initialize a service"""
@@ -169,20 +171,23 @@ class BotLifecycleManager:
                 await self.channel_setup.initialize()  # Erstellt Mappings
                 await self.channel_setup.setup()      # Erstellt Channels und setzt IDs
             
-            # Initialize critical services first
+            # Alte Dashboards aufräumen BEVOR neue erstellt werden
+            for guild in self.bot.guilds:
+                await self.dashboard_manager.cleanup_old_dashboards(guild)
+            
+            # Initialize critical services
             if critical_services:
                 for service in critical_services:
                     await self._initialize_service(service)
             
-            # Initialize module services BEFORE dashboards
+            # Initialize module services
             if module_services:
                 for service in module_services:
                     await self._initialize_service(service)
                     
-            # Initialize dashboards AFTER services
+            # Initialize dashboard services (jetzt wie andere Services)
             if dashboards:
-                logger.info("Initializing dashboards...")
-                await dashboards['setup'](self.bot)
+                await self._initialize_service(dashboards)
             
             # Start background tasks
             if tasks:

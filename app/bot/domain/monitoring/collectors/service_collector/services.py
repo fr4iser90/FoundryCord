@@ -2,10 +2,10 @@
 import logging
 import asyncio
 
-from .service_config.game_services import get_pufferpanel_services, get_standalone_services
-from .service_config.web_services import get_public_services, get_private_services
-from .checkers.game_service_checker import check_pufferpanel_games, check_standalone_games
-from .checkers.web_service_checker import check_web_services
+from ..service_config.game_services import get_pufferpanel_services, get_standalone_services
+from ..service_config.web_services import get_public_services, get_private_services
+from ..checkers.game_service_checker import check_pufferpanel_games, check_standalone_games
+from ..checkers.web_service_checker import check_web_services
 
 logger = logging.getLogger('homelab_bot')
 

@@ -5,7 +5,7 @@ from infrastructure.database.models.config import get_session
 from infrastructure.database.repositories.project_repository import ProjectRepository
 from infrastructure.database.repositories.task_repository import TaskRepository
 from domain.tracker.services.project_service import get_projects_data
-from interfaces.dashboards.templates.project_dashboard import create_task_embed
+from interfaces.dashboards.ui.project_dashboard import create_task_embed
 
 async def check_tracker_thread(interaction):
     """Überprüft, ob der Befehl im Projekt-Tracker-Thread ausgeführt wird"""

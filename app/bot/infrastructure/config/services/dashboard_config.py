@@ -1,30 +1,33 @@
 from typing import Dict
-from application.services.project_dashboard_service import ProjectDashboardService
+from application.services.dashboard.project_dashboard_service import ProjectDashboardService
+from application.services.dashboard.general_dashboard_service import GeneralDashboardService
 from infrastructure.logging import logger
 
 class DashboardConfig:
     @staticmethod
     def register(bot) -> Dict:
-        # Erstelle den Service mit bot Parameter
-        dashboard_service = ProjectDashboardService(bot)
+        dashboard_services = {
+            'project': ProjectDashboardService(bot),
+            'general': GeneralDashboardService(bot)
+        }
         
         async def setup(bot):
             try:
-                # Initialisiere den Service
-                await dashboard_service.initialize()
-                
-                # Als Cog UND als Service registrieren
-                bot.add_cog(dashboard_service)
-                setattr(bot, 'project_dashboard_service', dashboard_service)
-                
-                logger.info("Dashboard service setup completed")
-                return dashboard_service
+                for name, service in dashboard_services.items():
+                    # Service initialisieren
+                    await service.initialize()
+                    # Als Service registrieren
+                    setattr(bot, f"{name}_dashboard_service", service)
+                    # Als Cog registrieren
+                    bot.add_cog(service)
+                    
+                logger.info("Dashboard services initialized")
+                return dashboard_services
             except Exception as e:
-                logger.error(f"Failed to setup dashboard service: {e}")
+                logger.error(f"Failed to setup dashboard services: {e}")
                 raise
         
         return {
-            "name": "Project Dashboard",
-            "setup": setup,
-            "service": dashboard_service
+            "name": "Dashboard Services",
+            "setup": setup
         }

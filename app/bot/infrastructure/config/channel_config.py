@@ -226,7 +226,10 @@ class ChannelConfig:
     async def get_dashboard_channels(cls) -> Dict[str, Optional[int]]:
         """Returns IDs of all dashboard-relevant channels"""
         return {
-            'project_dashboard': await cls.get_channel_id('projects'),
+            'general': await cls.get_channel_id('general'),
+            'projects': await cls.get_channel_id('projects'),
+            'monitoring': await cls.get_channel_id('monitoring'),
+            # Weitere Dashboard-Kanäle hier hinzufügen
         }
 
     @classmethod

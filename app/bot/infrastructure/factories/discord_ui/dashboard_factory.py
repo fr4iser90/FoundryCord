@@ -150,37 +150,32 @@ class DashboardFactory(BaseFactory):
             components=components
         )
 
-    def create(self, name: str, **kwargs) -> Dict[str, Any]:
+    async def create(self, name: str, **kwargs) -> Dict[str, Any]:
         """Implementation of abstract create method from BaseFactory"""
-        from application.dashboards.project_dashboard import ProjectDashboard
+        from interfaces.dashboards.ui.project_dashboard import ProjectDashboardUI
+        from interfaces.dashboards.ui.general_dashboard import GeneralDashboardUI
         
-        if name == 'project':
-            # Dashboard erstellen
-            dashboard = ProjectDashboard(self.bot)
+        dashboard_types = {
+            'project': (ProjectDashboardUI, 'project_dashboard_service'),
+            'general': (GeneralDashboardUI, 'general_dashboard_service')
+        }
+        
+        if name in dashboard_types:
+            DashboardClass, service_name = dashboard_types[name]
+            dashboard = DashboardClass(self.bot)
             
-            # Service aus dem Bot holen (wurde bereits durch DashboardConfig initialisiert)
-            service = getattr(self.bot, 'project_dashboard_service', None)
+            # Service aus dem Bot holen
+            service = getattr(self.bot, service_name, None)
             if service:
                 dashboard.set_service(service)
             else:
-                logger.error("ProjectDashboardService not found in bot instance")
+                logger.error(f"{service_name} not found in bot instance")
             
             return {
                 'name': name,
                 'dashboard': dashboard,
                 'type': 'dashboard'
             }
-        else:
-            # Fallback auf generisches Dashboard
-            dashboard = self.bot.loop.create_task(
-                self.create_dashboard(
-                    title=kwargs.get('title', name),
-                    description=kwargs.get('description', ''),
-                    components=kwargs.get('components', [])
-                )
-            )
-            return {
-                'name': name,
-                'dashboard': dashboard,
-                'type': 'dashboard'
-            }
+            
+        # Fallback auf generisches Dashboard
+        return await self.create_generic_dashboard(**kwargs)
