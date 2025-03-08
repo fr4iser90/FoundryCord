@@ -3,6 +3,7 @@ from nextcord.ext import commands
 from infrastructure.logging import logger
 from infrastructure.factories.discord_ui.dashboard_factory import DashboardFactory
 from domain.monitoring.collectors import system_collector, service_collector
+from interfaces.dashboards.ui.monitoring_dashboard import MonitoringDashboardUI
 
 class MonitoringDashboardService:
     """Service für das Monitoring Dashboard"""
@@ -11,13 +12,19 @@ class MonitoringDashboardService:
         self.bot = bot
         self.dashboard_factory = dashboard_factory
         self.initialized = False
+        self.dashboard_ui = None
         
     async def initialize(self) -> None:
         """Initialisiert den Service"""
         try:
-            # Collectors über Factory erstellen
-            self.system_collector = await self.dashboard_factory.create_system_collector()
-            self.service_collector = await self.dashboard_factory.create_service_collector()
+            # Direkt die Collector-Module verwenden statt Factory-Methoden
+            self.system_collector = system_collector
+            self.service_collector = service_collector
+            
+            # Initialize UI component
+            self.dashboard_ui = MonitoringDashboardUI(self.bot).set_service(self)
+            await self.dashboard_ui.initialize()
+            
             self.initialized = True
             logger.info("Monitoring Dashboard Service initialized")
         except Exception as e:
@@ -30,8 +37,11 @@ class MonitoringDashboardService:
             await self.initialize()
             
         try:
-            system_data = await self.system_collector.collect()
-            service_data = await self.service_collector.collect()
+            logger.debug("Collecting system data for monitoring dashboard")
+            system_data = await system_collector.collect_system_data()
+            
+            logger.debug("Collecting service data for monitoring dashboard")
+            service_data = await service_collector.collect_service_data()
             
             return {
                 'system': system_data,
@@ -40,6 +50,14 @@ class MonitoringDashboardService:
         except Exception as e:
             logger.error(f"Error collecting system status: {e}")
             raise
+            
+    async def display_dashboard(self) -> None:
+        """Display the dashboard using the UI component"""
+        if not self.dashboard_ui:
+            logger.error("Dashboard UI not initialized")
+            return
+            
+        await self.dashboard_ui.display_dashboard()
 
 async def setup(bot):
     """Setup function for the Monitoring Dashboard service"""
@@ -47,6 +65,10 @@ async def setup(bot):
         dashboard_factory = bot.dashboard_factory
         service = MonitoringDashboardService(bot, dashboard_factory)
         await service.initialize()
+        
+        # Display the dashboard after initialization
+        await service.display_dashboard()
+        
         logger.info("Monitoring Dashboard service initialized successfully")
         return service
     except Exception as e:

@@ -1,7 +1,7 @@
 from typing import Dict, Any
 from infrastructure.logging import logger
 from infrastructure.config.constants.dashboard_constants import DASHBOARD_MAPPINGS
-from infrastructure.factories.discord_ui import DashboardFactory
+from infrastructure.factories.service.service_resolver import ServiceResolver
 from .base_workflow import BaseWorkflow
 
 class DashboardWorkflow(BaseWorkflow):
@@ -15,13 +15,26 @@ class DashboardWorkflow(BaseWorkflow):
             logger.debug("Starting dashboard workflow initialization")
             dashboards = {}
             
+            # Dynamically resolve and initialize dashboards using the factory pattern
             for channel_name, config in DASHBOARD_MAPPINGS.items():
                 if config['auto_create']:
                     try:
+                        # Resolve setup function through service resolver (factory pattern)
+                        setup_func = await ServiceResolver.resolve_dashboard_setup(
+                            self.bot, 
+                            config['dashboard_type']
+                        )
+                        
+                        if not setup_func:
+                            logger.error(f"No setup function found for dashboard {channel_name}")
+                            continue
+                            
+                        # Create through factory
                         dashboard = self.bot.factory.create_service(
                             f"Dashboard_{channel_name}",
-                            config['setup']
+                            setup_func
                         )
+                        
                         if dashboard:
                             dashboards[channel_name] = dashboard
                             await self.bot.lifecycle._initialize_service(dashboard)

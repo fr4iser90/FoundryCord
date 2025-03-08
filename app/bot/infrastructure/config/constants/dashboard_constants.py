@@ -14,11 +14,6 @@ DASHBOARD_MAPPINGS = {
         'auto_create': True,
         'refresh_interval': 60
     },
-    'general': {
-        'dashboard_type': 'general',
-        'auto_create': True,
-        'refresh_interval': 300
-    }
 }
 
 DASHBOARD_SERVICES = {
