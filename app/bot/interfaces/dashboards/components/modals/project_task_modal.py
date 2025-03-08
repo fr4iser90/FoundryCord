@@ -2,35 +2,31 @@ from typing import Optional
 import nextcord
 from infrastructure.logging import logger
 from infrastructure.database.models.models import Task
+from .base_modal import BaseModal
 
-class TaskModal(nextcord.ui.Modal):
-    def __init__(self, project_id: int, task: Optional[Task] = None):
-        super().__init__(title="Task bearbeiten" if task else "Neuer Task")
+class TaskModal(BaseModal):
+    """Modal for task creation/editing"""
+    
+    def __init__(self, title: str = "Neue Aufgabe"):
+        super().__init__(title=title)
         
-        self.project_id = project_id
-        
-        # Felder erstellen und hinzufügen
-        self.title = nextcord.ui.TextInput(
+        self.title_input = nextcord.ui.TextInput(
             label="Titel",
-            placeholder="Task-Titel",
-            default_value=task.title if task else "",
+            placeholder="Titel der Aufgabe",
+            min_length=3,
+            max_length=100,
             required=True
         )
-        self.add_item(self.title)
+        self.add_item(self.title_input)
         
         self.description = nextcord.ui.TextInput(
             label="Beschreibung",
+            placeholder="Aufgabenbeschreibung",
             style=nextcord.TextInputStyle.paragraph,
-            placeholder="Task-Beschreibung",
-            default_value=task.description if task else "",
             required=False
         )
         self.add_item(self.description)
-        
-        self.status = nextcord.ui.TextInput(
-            label="Status",
-            placeholder="open, in_progress, done",
-            default_value=task.status if task else "open",
-            required=True
-        )
-        self.add_item(self.status)
+
+    async def handle_submit(self, interaction: nextcord.Interaction):
+        """Handle form submission"""
+        await interaction.response.defer()

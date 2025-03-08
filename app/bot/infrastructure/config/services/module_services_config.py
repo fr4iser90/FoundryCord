@@ -1,7 +1,7 @@
 from typing import List
-from modules.monitoring.system_monitoring import setup as setup_system_monitoring
+from application.services.monitoring.system_monitoring import setup as setup_system_monitoring
 from modules.tracker.ip_management import setup as setup_ip_management
-from modules.wireguard import setup as setup_wireguard
+from application.services.wireguard import setup as setup_wireguard
 from infrastructure.logging import logger
 
 class ModuleServicesConfig:

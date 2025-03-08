@@ -1,74 +1,42 @@
-import psutil
-import socket
-import os
-import asyncio
-from datetime import datetime
-import requests
+from typing import Dict, Any
+from nextcord.ext import commands
 from infrastructure.logging import logger
-from utils.http_client import http_client
+from infrastructure.factories.discord_ui.dashboard_factory import DashboardFactory
+from domain.monitoring.collectors import system_collector, service_collector
 
 class MonitoringDashboardService:
-    def __init__(self, bot):
+    """Service für das Monitoring Dashboard"""
+    
+    def __init__(self, bot, dashboard_factory: DashboardFactory):
         self.bot = bot
-        self.domain = os.getenv('DOMAIN', 'Nicht konfiguriert')
-
-    async def get_system_status(self):
-        """Holt die Systemdaten für das Dashboard"""
+        self.dashboard_factory = dashboard_factory
+        self.initialized = False
+        
+    async def initialize(self) -> None:
+        """Initialisiert den Service"""
         try:
-            # CPU, Memory, Disk usage
-            cpu_percent = psutil.cpu_percent()
-            memory = psutil.virtual_memory()
-            disk = psutil.disk_usage('/')
+            # Collectors über Factory erstellen
+            self.system_collector = await self.dashboard_factory.create_system_collector()
+            self.service_collector = await self.dashboard_factory.create_service_collector()
+            self.initialized = True
+            logger.info("Monitoring Dashboard Service initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize Monitoring Dashboard Service: {e}")
+            raise
+
+    async def get_system_status(self) -> Dict[str, Any]:
+        """Holt den System-Status über die Collectors"""
+        if not self.initialized:
+            await self.initialize()
             
-            # Netzwerkstatus prüfen
-            network_status = {
-                'up': True,
-                'latency': 0
-            }
-            
-            try:
-                # Ping-Test (vereinfacht)
-                start_time = datetime.now()
-                requests.get('https://google.com', timeout=2)
-                end_time = datetime.now()
-                network_status['latency'] = (end_time - start_time).total_seconds() * 1000
-            except:
-                network_status['up'] = False
-                network_status['latency'] = 999
-            
-            # Public IP
-            try:
-                public_ip = http_client.get("https://api.ipify.org?format=json").json()['ip']
-            except:
-                public_ip = "Nicht verfügbar"
-            
-            # Domain-IP prüfen
-            try:
-                domain_ip = socket.gethostbyname(self.domain)
-                ip_match = public_ip == domain_ip
-            except:
-                domain_ip = "Nicht auflösbar"
-                ip_match = False
+        try:
+            system_data = await self.system_collector.collect()
+            service_data = await self.service_collector.collect()
             
             return {
-                'cpu_usage': cpu_percent,
-                'memory_usage': {
-                    'percent': memory.percent,
-                    'used': memory.used / (1024**3),  # GB
-                    'total': memory.total / (1024**3)  # GB
-                },
-                'disk_usage': {
-                    'percent': disk.percent,
-                    'used': disk.used / (1024**3),  # GB
-                    'total': disk.total / (1024**4)  # TB
-                },
-                'network_status': network_status,
-                'public_ip': public_ip,
-                'domain': self.domain,
-                'domain_ip': domain_ip,
-                'ip_match': ip_match,
-                'timestamp': datetime.now()
+                'system': system_data,
+                'services': service_data,
             }
         except Exception as e:
-            logger.error(f"Fehler beim Abrufen des Systemstatus: {e}")
+            logger.error(f"Error collecting system status: {e}")
             raise

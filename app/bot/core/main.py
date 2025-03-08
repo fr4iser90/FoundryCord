@@ -4,7 +4,7 @@ import nextcord
 import sys
 import asyncio
 from nextcord.ext import commands
-from infrastructure.config import EnvConfig, ServiceConfig, TaskConfig, ChannelConfig, DashboardConfig
+from infrastructure.config import EnvConfig, ServiceConfig, TaskConfig, ChannelConfig, DashboardConfig, ModuleServicesConfig
 from infrastructure.logging import logger
 from infrastructure.factories import BotComponentFactory, ServiceFactory, TaskFactory, DashboardFactory
 from core.lifecycle.lifecycle_manager import BotLifecycleManager
@@ -27,33 +27,29 @@ async def initialize_bot():
     # Initialize database first
     await init_db()
 
-    # Initialize core components
+    # Initialize core components and factories first
     bot.lifecycle = BotLifecycleManager(bot)
-    bot.service_factory = ServiceFactory(bot)
-    bot.task_factory = TaskFactory(bot)
-    bot.dashboard_factory = DashboardFactory(bot)
-    bot.factory = BotComponentFactory(bot)
-
-    # Load configurations AFTER database is initialized
-    critical_services = ServiceConfig.register_critical_services(bot)
-    module_services = ServiceConfig.register_module_services(bot)
-    tasks = TaskConfig.register_tasks(bot)
-    channel_setup = ChannelConfig.register(bot)
-    dashboards = DashboardConfig.register(bot)
-
-    return critical_services, module_services, tasks, channel_setup, dashboards
+    bot.factory = BotComponentFactory(bot)  # Main factory
+    
+    # IMPORTANT: Set all factory references BEFORE registering configurations
+    bot.component_factory = bot.factory     # For dashboards and UI components
+    bot.service_factory = bot.factory.factories['service']  # For service creation
+    bot.task_factory = bot.factory.factories['task']        # For task creation
+    bot.dashboard_factory = bot.factory.factories['dashboard']  # For dashboard creation
+    
+    # NOW register configurations
+    bot.channel_config = ChannelConfig.register(bot)
+    bot.critical_services = ServiceConfig.register_critical_services(bot)
+    bot.module_services = ModuleServicesConfig.register(bot)
+    bot.tasks = TaskConfig.register_tasks(bot)
+    
+    # Initialize through lifecycle manager
+    await bot.lifecycle.initialize()
 
 @bot.event
 async def on_ready():
     try:
-        critical_services, module_services, tasks, channel_setup, dashboards = await initialize_bot()
-        await bot.lifecycle.initialize(
-            critical_services=critical_services,
-            channel_setup=channel_setup,
-            dashboards=dashboards,
-            module_services=module_services,
-            tasks=tasks,
-        )
+        await initialize_bot()
     except Exception as e:
         logger.error(f"Startup error: {e}")
         raise

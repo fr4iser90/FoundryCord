@@ -2,6 +2,8 @@ from typing import List, Dict, Any, Optional
 import nextcord
 from ..base.base_factory import BaseFactory
 import logging
+from infrastructure.config.constants.dashboard_constants import DASHBOARD_SERVICES
+from infrastructure.logging import logger
 
 logger = logging.getLogger(__name__)
 
@@ -150,32 +152,28 @@ class DashboardFactory(BaseFactory):
             components=components
         )
 
-    async def create(self, name: str, **kwargs) -> Dict[str, Any]:
-        """Implementation of abstract create method from BaseFactory"""
-        from interfaces.dashboards.ui.project_dashboard import ProjectDashboardUI
-        from interfaces.dashboards.ui.general_dashboard import GeneralDashboardUI
-        
-        dashboard_types = {
-            'project': (ProjectDashboardUI, 'project_dashboard_service'),
-            'general': (GeneralDashboardUI, 'general_dashboard_service')
-        }
-        
-        if name in dashboard_types:
-            DashboardClass, service_name = dashboard_types[name]
-            dashboard = DashboardClass(self.bot)
+    async def create(self, dashboard_type: str, **kwargs) -> Dict[str, Any]:
+        """Creates a dashboard instance based on type"""
+        try:
+            # Dynamic service import
+            service_name = DASHBOARD_SERVICES.get(dashboard_type)
+            if not service_name:
+                logger.warning(f"Unknown dashboard type: {dashboard_type}, skipping")
+                return None
+                
+            module = f"application.services.dashboard.{dashboard_type.lower()}_dashboard_service"
+            service_class = getattr(__import__(module, fromlist=[service_name]), service_name)
             
-            # Service aus dem Bot holen
-            service = getattr(self.bot, service_name, None)
-            if service:
-                dashboard.set_service(service)
-            else:
-                logger.error(f"{service_name} not found in bot instance")
+            # Create dashboard instance
+            dashboard = service_class(self.bot, self)  # Pass dashboard factory
+            await dashboard.initialize()
             
             return {
-                'name': name,
+                'name': dashboard_type,
                 'dashboard': dashboard,
                 'type': 'dashboard'
             }
             
-        # Fallback auf generisches Dashboard
-        return await self.create_generic_dashboard(**kwargs)
+        except Exception as e:
+            logger.error(f"Failed to create dashboard {dashboard_type}: {e}")
+            return None  # Return None instead of raising to allow other dashboards to initialize

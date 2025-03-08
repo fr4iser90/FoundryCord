@@ -1,7 +1,7 @@
 from typing import Optional
 import nextcord
 
-class WelcomeDashboard:
+class WelcomeDashboardUI:
     def __init__(self, bot):
         self.bot = bot
         self.dashboard_factory = bot.component_factory.factories['dashboard']

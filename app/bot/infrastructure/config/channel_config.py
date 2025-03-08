@@ -4,141 +4,37 @@ from nextcord import TextChannel
 from infrastructure.discord.channel_setup_service import ChannelSetupService
 from infrastructure.database.models.models import ChannelMapping
 from infrastructure.database.models.config import get_session
+from infrastructure.config.constants.channel_constants import CHANNELS
+from infrastructure.config.constants.dashboard_constants import DASHBOARD_MAPPINGS
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 
-
 class ChannelConfig:
+    # Konstanten aus channel_constants.py als Klassenattribute
+    CHANNELS = CHANNELS
+    DASHBOARD_MAPPINGS = DASHBOARD_MAPPINGS
+    
     # Channel IDs werden aus EnvConfig geladen
     HOMELAB_CATEGORY_ID = None
     SERVER_ID = None
     
-    # Channel-Struktur
-    CHANNELS = {
-            # Allgemeine Channels
-            'general': {
-                'name': 'general',
-                'topic': 'General Information',
-                'is_private': False
-            },
-            'gameservers': {
-                'name': 'gameservers',
-                'topic': 'Gameserver Overview',
-                'is_private': False,
-                'threads': [
-                    {'name': 'status-overview', 'is_private': False},
-                    {'name': 'announcements', 'is_private': False}
-                ]
-            },
-            'services': {
-                'name': 'services',
-                'topic': 'Service Overview',
-                'is_private': True,
-                'threads': [
-                    {'name': 'status', 'is_private': True},
-                    {'name': 'maintenance', 'is_private': True}
-                ]
-            },
-            'infrastructure': {
-                'name': 'infrastructure',
-                'topic': 'Infrastructure Management',
-                'is_private': True,
-                'threads': [
-                    {'name': 'network', 'is_private': True},
-                    {'name': 'hardware', 'is_private': True},
-                    {'name': 'updates', 'is_private': True}
-                ]
-            },
-            'projects': {
-                'name': 'projects',
-                'topic': 'Project Management',
-                'is_private': True,
-                'threads': [
-                    {'name': 'planning', 'is_private': True},
-                    {'name': 'tasks', 'is_private': True},
-                ]
-            },
-            'backups': {
-                'name': 'backups',
-                'topic': 'Backup Management',
-                'is_private': True,
-                'threads': [
-                    {'name': 'schedule', 'is_private': True},
-                    {'name': 'logs', 'is_private': True},
-                    {'name': 'status', 'is_private': True}
-                ]
-            },
-            'server-management': {
-                'name': 'server-management',
-                'topic': 'Server Administration',
-                'is_private': True,
-                'threads': [
-                    {'name': 'commands', 'is_private': True},
-                    {'name': 'updates', 'is_private': True},
-                    {'name': 'maintenance', 'is_private': True}
-                ]
-            },
-            'logs': {
-                'name': 'logs',
-                'topic': 'System Logs',
-                'is_private': True,
-                'threads': [
-                    {'name': 'system-logs', 'is_private': True},
-                    {'name': 'error-logs', 'is_private': True},
-                    {'name': 'access-logs', 'is_private': True}
-                ]
-            },
-            'monitoring': {
-                'name': 'monitoring',
-                'topic': 'System Monitoring',
-                'is_private': True,
-                'threads': [
-                    {'name': 'system-status', 'is_private': False},
-                    {'name': 'performance', 'is_private': True},
-                    {'name': 'alerts', 'is_private': True}
-                ]
-            },
-            'bot-control': {
-                'name': 'bot-control',
-                'topic': 'Bot Management',
-                'is_private': True,
-                'threads': [
-                    {'name': 'commands', 'is_private': True},
-                    {'name': 'logs', 'is_private': True},
-                    {'name': 'updates', 'is_private': True}
-                ]
-            },
-            'alerts': {
-                'name': 'alerts',
-                'topic': 'System Alerts',
-                'is_private': True,
-                'threads': [
-                    {'name': 'critical', 'is_private': True},
-                    {'name': 'warnings', 'is_private': True},
-                    {'name': 'notifications', 'is_private': True}
-                ]
-            }
-    }
-    
     @classmethod
-    async def create_channel_setup(cls, bot) -> ChannelSetupService:
+    async def create_channel_setup(cls, bot) -> 'ChannelSetupService':
         """Creates and configures the channel setup service"""
         try:
             # Load from bot.env_config
             cls.HOMELAB_CATEGORY_ID = bot.env_config.HOMELAB_CATEGORY_ID
             cls.SERVER_ID = bot.env_config.guild_id
             
+            # Import hier um zirkuläre Imports zu vermeiden
+            from infrastructure.discord.channel_setup_service import ChannelSetupService
+            
             # Load existing channel mappings from database
             async for session in get_session():
-                # Get all existing mappings
                 result = await session.execute(select(ChannelMapping))
                 mappings = result.scalars().all()
-                
-                # Log found mappings
                 logger.info(f"Found {len(mappings)} channel mappings in database")
-                
-                # Initialize any missing channels in database
                 await cls._initialize_channel_mappings(session, mappings)
             
             channel_setup = ChannelSetupService(bot)
@@ -226,7 +122,7 @@ class ChannelConfig:
     async def get_dashboard_channels(cls) -> Dict[str, Optional[int]]:
         """Returns IDs of all dashboard-relevant channels"""
         return {
-            'general': await cls.get_channel_id('general'),
+            'welcome': await cls.get_channel_id('welcome'),
             'projects': await cls.get_channel_id('projects'),
             'monitoring': await cls.get_channel_id('monitoring'),
             # Weitere Dashboard-Kanäle hier hinzufügen
@@ -294,3 +190,21 @@ class ChannelConfig:
             "name": "Channel Setup",
             "setup": setup
         }
+
+    @classmethod
+    async def setup_channel_dashboards(cls, bot) -> None:
+        """Creates/updates dashboards for all channels"""
+        for channel_name, dashboard_config in cls.DASHBOARD_MAPPINGS.items():
+            if dashboard_config['auto_create']:
+                channel_id = await cls.get_channel_id(channel_name)
+                if channel_id:
+                    try:
+                        dashboard = await bot.dashboard_factory.create(
+                            dashboard_config['dashboard_type'],
+                            channel_id=channel_id,
+                            refresh_interval=dashboard_config['refresh_interval']
+                        )
+                        if dashboard:
+                            await dashboard['dashboard'].setup()
+                    except Exception as e:
+                        logger.error(f"Failed to setup dashboard for {channel_name}: {e}")

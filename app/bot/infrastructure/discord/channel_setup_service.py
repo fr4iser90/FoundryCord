@@ -2,6 +2,7 @@ from typing import Dict, Optional
 from nextcord import TextChannel, Guild
 from infrastructure.logging import logger
 from infrastructure.factories.discord import ChannelFactory, ThreadFactory
+from infrastructure.config.constants.channel_constants import CHANNELS
 import asyncio
 
 class ChannelSetupService:
@@ -12,59 +13,45 @@ class ChannelSetupService:
         self.thread_factory = ThreadFactory(bot)
         
     async def initialize(self):
-        """Initialize the channel setup service"""
-        # Warte bis der Bot bereit ist
-        if not self.bot.is_ready():
-            logger.info("Waiting for bot to be ready...")
-            await self.bot.wait_until_ready()
-            
-        # Versuche mehrmals die Guild zu bekommen
-        retries = 3
-        for attempt in range(retries):
-            self.guild = self.bot.get_guild(self.bot.env_config.guild_id)
-            if self.guild:
-                break
-            logger.warning(f"Guild not found, attempt {attempt + 1}/{retries}")
-            await asyncio.sleep(1)
-            
-        if not self.guild:
-            raise ValueError(f"Guild with ID {self.bot.env_config.guild_id} not found after {retries} attempts")
-            
+        """Initialize service with guild"""
+        if not self.bot.guilds:
+            raise ValueError("Bot is not connected to any guilds")
+        self.guild = self.bot.guilds[0]
         logger.info(f"Successfully connected to guild: {self.guild.name}")
-        return self
         
     async def setup(self):
-        """Setup all channels according to config"""
-        from infrastructure.config.channel_config import ChannelConfig
-        
+        """Setup all channels and their threads"""
         try:
             if not self.guild:
                 await self.initialize()
                 
-            for channel_name, config in ChannelConfig.CHANNELS.items():
+            for channel_name, config in CHANNELS.items():
                 logger.info(f"Setting up channel: {channel_name}")
                 
-                channel_result = self.channel_factory.create(
-                    **ChannelConfig.get_channel_factory_config(channel_name, self.guild)
+                # Channel-Konfiguration bereinigen
+                channel_config = config.copy()
+                channel_config.pop('name', None)
+                threads = channel_config.pop('threads', [])  # Threads separat speichern
+                
+                # Channel erstellen
+                channel = await self.channel_factory.create_channel(
+                    guild=self.guild,
+                    name=channel_name,
+                    **channel_config
                 )
-                channel = await channel_result['channel']
                 
-                # Speichere Channel-ID
-                await ChannelConfig.set_channel_id(channel_name, channel.id)
-                
-                if 'threads' in config:
-                    for thread_config in config['threads']:
-                        thread_result = self.thread_factory.create(
-                            **ChannelConfig.get_thread_factory_config(channel, thread_config['name'])
+                # Threads für den Channel erstellen
+                if channel and threads:
+                    for thread_config in threads:
+                        thread_name = thread_config.pop('name')  # Name separat
+                        await self.thread_factory.create_thread(
+                            channel=channel,
+                            name=thread_name,
+                            **thread_config
                         )
-                        thread = await thread_result['thread']
-                        
-                        # Speichere Thread-ID
-                        thread_name = f"{channel_name}.{thread_config['name']}"
-                        await ChannelConfig.set_channel_id(thread_name, thread.id)
-                            
-            logger.info("Channel setup completed successfully")
+            
+            logger.info("Channel setup completed")
             
         except Exception as e:
-            logger.error(f"Channel setup failed: {e}")
+            logger.error(f"Setup failed: {e}")
             raise 

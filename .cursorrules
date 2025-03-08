@@ -1,0 +1,9 @@
+{
+  "default-rules": {
+    "project-guidelines": {
+      "description": "Follow HomeLab Discord Bot Development Protocol",
+      "require-consistency": true,
+      "files": ["docs/cursorrules/*.py", "docs/cursorrules/*.md"]
+    }
+  }
+}

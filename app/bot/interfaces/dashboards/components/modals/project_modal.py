@@ -1,44 +1,40 @@
 from typing import Optional
 import nextcord
 from infrastructure.logging import logger
-from infrastructure.database.models.models import Project
+from .base_modal import BaseModal
 
-class ProjectModal(nextcord.ui.Modal):
-    def __init__(self, project: Optional[Project] = None):
-        super().__init__(
-            title="Projekt bearbeiten" if project else "Neues Projekt"
-        )
+class ProjectModal(BaseModal):
+    """Modal for project creation/editing"""
+    
+    def __init__(self, title: str = "Neues Projekt"):
+        super().__init__(title=title)
         
-        # Felder erstellen und hinzufügen
         self.name = nextcord.ui.TextInput(
-            label="Name",
-            placeholder="Projektname",
-            default_value=project.name if project else "",
+            label="Projektname",
+            placeholder="Name des Projekts",
+            min_length=3,
+            max_length=100,
             required=True
         )
         self.add_item(self.name)
         
         self.description = nextcord.ui.TextInput(
             label="Beschreibung",
-            style=nextcord.TextInputStyle.paragraph,
             placeholder="Projektbeschreibung",
-            default_value=project.description if project else "",
-            required=True
+            style=nextcord.TextInputStyle.paragraph,
+            required=False
         )
         self.add_item(self.description)
         
-        self.status = nextcord.ui.TextInput(
-            label="Status",
-            placeholder="planning, in_progress, completed, on_hold",
-            default_value=project.status if project else "planning",
-            required=True
-        )
-        self.add_item(self.status)
-        
         self.priority = nextcord.ui.TextInput(
             label="Priorität",
-            placeholder="high, medium, low",
-            default_value=project.priority if project else "medium",
+            placeholder="high/medium/low",
+            min_length=3,
+            max_length=6,
             required=True
         )
         self.add_item(self.priority)
+
+    async def handle_submit(self, interaction: nextcord.Interaction):
+        """Handle form submission"""
+        await interaction.response.defer()

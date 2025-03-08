@@ -1,6 +1,7 @@
 from typing import Dict
 from application.services.dashboard.project_dashboard_service import ProjectDashboardService
-from application.services.dashboard.general_dashboard_service import GeneralDashboardService
+from application.services.dashboard.monitoring_dashboard_service import MonitoringDashboardService
+from application.services.dashboard.welcome_dashboard_service import WelcomeDashboardService
 from infrastructure.logging import logger
 
 class DashboardConfig:
@@ -8,7 +9,8 @@ class DashboardConfig:
     def register(bot) -> Dict:
         dashboard_services = {
             'project': ProjectDashboardService(bot),
-            'general': GeneralDashboardService(bot)
+            'monitoring': MonitoringDashboardService(bot),
+            'welcome': WelcomeDashboardService(bot)
         }
         
         async def setup(bot):

@@ -1,5 +1,6 @@
 from typing import Dict, Any
 from infrastructure.logging import logger
+from infrastructure.config.constants.dashboard_constants import DASHBOARD_MAPPINGS
 
 class DashboardConfig:
     @staticmethod
@@ -7,22 +8,23 @@ class DashboardConfig:
         """Registriert alle Dashboards"""
         async def setup(bot):
             try:
-                logger.debug("Starting dashboards setup in DashboardConfig")
+                logger.debug("Starting dashboards setup")
                 dashboards = {}
                 
-                # Project Dashboard
-                project_result = await bot.dashboard_factory.create('project')
-                if project_result:
-                    project_dashboard = project_result['dashboard']
-                    dashboards['project'] = project_dashboard
-                    await project_dashboard.setup()
-                
-                # General Dashboard
-                general_result = await bot.dashboard_factory.create('general')
-                if general_result:
-                    general_dashboard = general_result['dashboard']
-                    dashboards['general'] = general_dashboard
-                    await general_dashboard.setup()
+                # Setup all configured dashboards
+                for channel_name, config in DASHBOARD_MAPPINGS.items():
+                    if config['auto_create']:
+                        try:
+                            dashboard = await bot.dashboard_factory.create(
+                                config['dashboard_type'],
+                                channel_name=channel_name,
+                                refresh_interval=config['refresh_interval']
+                            )
+                            if dashboard:
+                                dashboards[channel_name] = dashboard['dashboard']
+                                await dashboard['dashboard'].setup()
+                        except Exception as e:
+                            logger.error(f"Failed to setup dashboard for {channel_name}: {e}")
                 
                 return dashboards
                 

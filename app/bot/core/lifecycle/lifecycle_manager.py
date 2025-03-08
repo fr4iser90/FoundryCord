@@ -3,6 +3,10 @@ import asyncio
 import os
 import logging
 from infrastructure.managers.dashboard_manager import DashboardManager
+from core.workflows.channel_workflow import ChannelWorkflow
+from core.workflows.service_workflow import ServiceWorkflow
+from core.workflows.dashboard_workflow import DashboardWorkflow
+from core.workflows.task_workflow import TaskWorkflow
 
 logger = logging.getLogger(__name__)
 
@@ -153,47 +157,31 @@ class BotLifecycleManager:
             logger.error(f"Background command synchronization failed: {e}")
             return False
 
-    async def initialize(self, critical_services=None, module_services=None, tasks=None, channel_setup=None, dashboards=None):
-        """Initialize all components"""
+    async def initialize(self, critical_services=None, module_services=None, tasks=None):
+        """Initialize all components through workflows"""
         try:
             logger.info("Starting initialization sequence")
             
-            # Warte bis der Bot bereit ist
+            # Wait for bot ready
             if not self.bot.is_ready():
-                logger.info("Waiting for bot to be ready...")
                 await self.bot.wait_until_ready()
+            
+            # Initialize through workflows
+            workflows = [
+                ('channel', ChannelWorkflow(self.bot)),
+                ('service', ServiceWorkflow(self.bot)),
+                ('dashboard', DashboardWorkflow(self.bot)),
+                ('task', TaskWorkflow(self.bot))
+            ]
+            
+            for name, workflow in workflows:
+                try:
+                    logger.info(f"Initializing {name} workflow")
+                    await workflow.initialize()
+                except Exception as e:
+                    logger.error(f"{name} workflow initialization failed: {e}")
+                    raise
                 
-            # Initialize channel setup FIRST
-            if channel_setup:
-                logger.info("Initializing channel setup...")
-                self.channel_setup = await channel_setup['setup'](self.bot)
-                # WICHTIG: Erst Mappings erstellen, dann Channels
-                await self.channel_setup.initialize()  # Erstellt Mappings
-                await self.channel_setup.setup()      # Erstellt Channels und setzt IDs
-            
-            # Alte Dashboards aufräumen BEVOR neue erstellt werden
-            for guild in self.bot.guilds:
-                await self.dashboard_manager.cleanup_old_dashboards(guild)
-            
-            # Initialize critical services
-            if critical_services:
-                for service in critical_services:
-                    await self._initialize_service(service)
-            
-            # Initialize module services
-            if module_services:
-                for service in module_services:
-                    await self._initialize_service(service)
-                    
-            # Initialize dashboard services (jetzt wie andere Services)
-            if dashboards:
-                await self._initialize_service(dashboards)
-            
-            # Start background tasks
-            if tasks:
-                for task in tasks:
-                    await self._start_task(task)
-                    
             logger.info("Initialization sequence completed")
             self.ready_event.set()
             

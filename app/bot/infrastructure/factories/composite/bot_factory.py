@@ -10,6 +10,7 @@ from ..discord_ui.view_factory import ViewFactory
 from ..discord_ui.menu_factory import MenuFactory
 from ..discord_ui.modal_factory import ModalFactory
 from ..discord_ui.dashboard_factory import DashboardFactory
+from ..discord_ui.embed_factory import EmbedFactory
 from infrastructure.logging import logger
 
 logger = logging.getLogger(__name__)
@@ -18,16 +19,22 @@ class BotComponentFactory:
     def __init__(self, bot):
         self.bot = bot
         self.factories: Dict[str, Any] = {
-            'service': ServiceFactory(bot),
-            'task': TaskFactory(bot),
+            # Discord Core
             'channel': ChannelFactory(bot),
             'thread': ThreadFactory(bot),
-            'message': MessageFactory(bot),
+            
+            # Discord UI
             'button': ButtonFactory(bot),
-            'view': ViewFactory(bot),
+            'dashboard': DashboardFactory(bot),
+            'embed': EmbedFactory(bot),
             'menu': MenuFactory(bot),
+            'message': MessageFactory(bot),
             'modal': ModalFactory(bot),
-            'dashboard': DashboardFactory(bot)
+            'view': ViewFactory(bot),
+            
+            # Services
+            'service': ServiceFactory(bot),
+            'task': TaskFactory(bot)
         }
         self._component_creators = {}  # Stores dynamically registered component creators
         
