@@ -5,20 +5,26 @@ from infrastructure.logging import logger
 from infrastructure.database.models.models import Project
 
 # Importieren Sie die vorhandenen Komponenten
-from interfaces.dashboards.components.buttons.project_buttons import ProjectActionButtons
-from interfaces.dashboards.components.buttons.project_task_buttons import TaskActionButtons
-from interfaces.dashboards.components.modals.project_modal import ProjectModal
-from interfaces.dashboards.components.modals.project_task_modal import TaskModal
-from interfaces.dashboards.components.views.project_dashboard_view import ProjectDashboardView
-from interfaces.dashboards.components.views.project_details_view import ProjectDetailsView
-from interfaces.dashboards.components.views.project_task_list_view import TaskListView
-from interfaces.dashboards.components.views.project_thread_view import ProjectThreadView
-from interfaces.dashboards.components.views.view_confirmation import ConfirmationView
-from interfaces.dashboards.components.views.status_select_view import StatusSelectView
+from interfaces.dashboards.components.channels.projects.buttons.project_buttons import ProjectActionButtons
+from interfaces.dashboards.components.channels.projects.buttons.project_task_buttons import TaskActionButtons
+from interfaces.dashboards.components.channels.projects.modals.project_modal import ProjectModal
+from interfaces.dashboards.components.channels.projects.modals.project_task_modal import TaskModal
+from interfaces.dashboards.components.channels.projects.views.project_dashboard_view import ProjectDashboardView
+from interfaces.dashboards.components.channels.projects.views.project_details_view import ProjectDetailsView
+from interfaces.dashboards.components.channels.projects.views.project_task_list_view import TaskListView
+from interfaces.dashboards.components.channels.projects.views.project_thread_view import ProjectThreadView
+from interfaces.dashboards.components.common.views.confirmation_view import ConfirmationView
+from interfaces.dashboards.components.channels.projects.views.status_select_view import StatusSelectView
+from interfaces.dashboards.ui.base_dashboard import BaseDashboardUI
 
-class ProjectDashboardUI:
+class ProjectDashboardUI(BaseDashboardUI):
+    """UI class for displaying the project dashboard"""
+    
+    DASHBOARD_TYPE = "project"
+    TITLE_IDENTIFIER = "Project Dashboard"
+
     def __init__(self, bot):
-        self.bot = bot
+        super().__init__(bot)
         self.service = None
         self.status_emojis = {
             "planning": "🔵",
@@ -46,13 +52,30 @@ class ProjectDashboardUI:
         logger.debug("Service injected into ProjectDashboardUI")
     
     def create_dashboard_embed(self, projects_by_status: Dict[str, List]) -> nextcord.Embed:
-        """Erstellt das Embed für das Project Dashboard"""
+        """Erstellt das Embed für das Project Dashboard mit konsistenter Formatierung"""
         embed = nextcord.Embed(
             title="📊 Project Dashboard",
             description="Übersicht aller aktuellen Projekte im Homelab",
             color=0x3498db,
             timestamp=datetime.now()
         )
+        
+        # Statistik-Feld hinzufügen
+        total_projects = sum(len(projects) for projects in projects_by_status.values())
+        active_projects = len(projects_by_status.get('in_progress', []))
+        completed_projects = len(projects_by_status.get('completed', []))
+        
+        # Statistik-Balken erstellen
+        if total_projects > 0:
+            completion_rate = (completed_projects / total_projects) * 100
+            stats_bar = self._create_progress_bar(completion_rate, 100)
+            
+            stats = (
+                f"**Gesamt:** {total_projects} Projekte\n"
+                f"**Fortschritt:** {stats_bar} {completion_rate:.1f}%\n"
+                f"**Aktiv:** {active_projects} | **Abgeschlossen:** {completed_projects}"
+            )
+            embed.add_field(name="📈 Statistik", value=stats, inline=False)
         
         # Felder für jeden Status erstellen
         for status, status_projects in projects_by_status.items():
@@ -61,7 +84,28 @@ class ProjectDashboardUI:
             
             status_text = ""
             for project in status_projects:
-                status_text += self.create_project_field(project)
+                # Progress bar erstellen wenn Fortschritt vorhanden
+                progress = getattr(project, 'progress', 0) 
+                progress_bar = self._create_progress_bar(progress, 100) if hasattr(project, 'progress') else ""
+                progress_text = f"{progress_bar} {progress}%" if progress_bar else ""
+                
+                # Priority emoji
+                priority = getattr(project, 'priority', 'medium')
+                priority_emoji = {
+                    'high': '🔴',
+                    'medium': '🟡',
+                    'low': '🟢'
+                }.get(priority, '⚪')
+                
+                status_text += f"{priority_emoji} **{project.name}**\n"
+                
+                if progress_text:
+                    status_text += f"└ {progress_text}\n"
+                    
+                if hasattr(project, 'description') and project.description:
+                    description = project.description[:80] + "..." if len(project.description) > 80 else project.description
+                    status_text += f"└ {description}\n"
+                    
                 status_text += "\n"  # Abstand zwischen Projekten
             
             if status_text:
@@ -80,8 +124,22 @@ class ProjectDashboardUI:
                 inline=False
             )
         
-        embed.set_footer(text="Letztes Update")
+        embed.set_footer(text=f"Letztes Update • {datetime.now().strftime('%H:%M:%S')}")
         return embed
+    
+    def _create_progress_bar(self, value: float, max_value: float, length: int = 10) -> str:
+        """Creates a visual progress bar with emojis"""
+        filled_blocks = int((value / max_value) * length)
+        
+        if filled_blocks <= length * 0.33:
+            filled = "🟢" * filled_blocks
+        elif filled_blocks <= length * 0.66:
+            filled = "🟡" * filled_blocks
+        else:
+            filled = "🔴" * filled_blocks
+            
+        empty = "⚫" * (length - filled_blocks)
+        return filled + empty
     
     async def create_dashboard_view(self, dashboard=None) -> nextcord.ui.View:
         """Creates the view for the dashboard with proper row management"""
@@ -251,11 +309,10 @@ class ProjectDashboardUI:
                 logger.error("Project channel not found")
                 return
             
-            # Dashboard anzeigen
-            projects_by_status = await self.service.get_projects_by_status()
-            embed = self.create_dashboard_embed(projects_by_status)
-            view = await self.create_dashboard_view()
-            await self.channel.send(embed=embed, view=view)
+            # Initialize and use base class display method
+            self.projects_data = await self.service.get_projects_by_status()
+            self.initialized = True
+            await self.display_dashboard()
             logger.info("Project Dashboard setup completed")
             
         except Exception as e:
@@ -307,7 +364,7 @@ class ProjectDashboardUI:
             )
             
             # Refresh dashboard
-            await self.refresh_dashboard(interaction)
+            await self.refresh()
         except Exception as e:
             logger.error(f"Error creating project: {e}", exc_info=True)
             await interaction.followup.send("Fehler beim Erstellen des Projekts.", ephemeral=True)
@@ -322,27 +379,6 @@ class ProjectDashboardUI:
             is_private=False
         )
         return channel
-
-    async def on_refresh(self, interaction: nextcord.Interaction):
-        """Handler for the Refresh button"""
-        await self.refresh()
-        await interaction.response.send_message("Dashboard wurde aktualisiert!", ephemeral=True)
-
-    async def refresh(self):
-        """Aktualisiert das Dashboard"""
-        try:
-            projects_by_status = await self.service.get_projects_by_status()
-            embed = self.create_dashboard_embed(projects_by_status)
-            view = await self.create_dashboard_view()
-            
-            if hasattr(self, 'message') and self.message:
-                await self.message.edit(embed=embed, view=view)
-            else:
-                self.message = await self.channel.send(embed=embed, view=view)
-            
-            logger.debug("Project dashboard refreshed")
-        except Exception as e:
-            logger.error(f"Error refreshing project dashboard: {e}")
 
     async def create_project_thread(self, project: Project, channel) -> nextcord.Thread:
         """Creates or gets a thread for a specific project"""
@@ -540,3 +576,19 @@ class ProjectDashboardUI:
         except Exception as e:
             logger.error(f"Error editing project: {e}", exc_info=True)
             await interaction.response.send_message("Fehler beim Bearbeiten des Projekts", ephemeral=True)
+
+    async def create_embed(self) -> nextcord.Embed:
+        """Required by base dashboard - creates project dashboard embed"""
+        if not self.service:
+            return nextcord.Embed(
+                title="⚠️ Dashboard Error",
+                description="Project service not available",
+                color=0xff0000
+            )
+        
+        # Get data if not already retrieved
+        if not hasattr(self, 'projects_data') or not self.projects_data:
+            self.projects_data = await self.service.get_projects_by_status()
+        
+        # Use existing method
+        return self.create_dashboard_embed(self.projects_data)

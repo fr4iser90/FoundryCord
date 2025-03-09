@@ -1,26 +1,15 @@
-from .embeds import BaseEmbed, WelcomeEmbed, MonitoringEmbed
-from .buttons import BaseButton, RefreshButton
-from .views import BaseView, DashboardView
-from .modals import BaseModal
-from .selectors import BaseSelector
+# Import from the new structure
+from .common import *
+from .channels import *
+from .factories import UIComponentFactory
+from .ui import UnicodeTableBuilder, MiniGraph
 
+# Export everything for backward compatibility
 __all__ = [
-    # Embeds
-    'BaseEmbed',
-    'WelcomeEmbed',
-    'MonitoringEmbed',
-    
-    # Buttons
-    'BaseButton',
-    'RefreshButton',
-    
-    # Views
-    'BaseView',
-    'DashboardView',
-    
-    # Modals
-    'BaseModal',
-    
-    # Selectors
-    'BaseSelector'
-] 
+    'common',
+    'channels',
+    'factories',
+    'UIComponentFactory',
+    'UnicodeTableBuilder',
+    'MiniGraph'
+]

@@ -9,6 +9,7 @@ from infrastructure.logging import logger
 from infrastructure.factories import BotComponentFactory, ServiceFactory, TaskFactory, DashboardFactory
 from core.lifecycle.lifecycle_manager import BotLifecycleManager
 from infrastructure.database.migrations.init_db import init_db
+from infrastructure.managers.dashboard_manager import DashboardManager
 
 # Load environment configuration
 env_config = EnvConfig()
@@ -30,6 +31,9 @@ async def initialize_bot():
     # Initialize core components and factories first
     bot.lifecycle = BotLifecycleManager(bot)
     bot.factory = BotComponentFactory(bot)  # Main factory
+    
+    # IMPORTANT: Initialize dashboard manager and attach it to bot directly
+    bot.dashboard_manager = await DashboardManager.setup(bot)
     
     # IMPORTANT: Set all factory references BEFORE registering configurations
     bot.component_factory = bot.factory     # For dashboards and UI components

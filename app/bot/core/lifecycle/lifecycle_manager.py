@@ -20,7 +20,7 @@ class BotLifecycleManager:
         self.command_sync_service = None
         self.pending_commands = []  # Track commands during registration
         self.channel_setup = None
-        self.dashboard_manager = DashboardManager(bot)
+        #self.dashboard_manager = DashboardManager(bot)
         
     async def _initialize_service(self, service):
         """Initialize a service"""
@@ -166,6 +166,11 @@ class BotLifecycleManager:
             if not self.bot.is_ready():
                 await self.bot.wait_until_ready()
             
+            # First, ensure dashboard manager exists
+            if not hasattr(self.bot, 'dashboard_manager'):
+                logger.info("Creating dashboard manager")
+                self.bot.dashboard_manager = await DashboardManager.setup(self.bot)
+
             # Initialize through workflows
             workflows = [
                 ('channel', ChannelWorkflow(self.bot)),

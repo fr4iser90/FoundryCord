@@ -153,27 +153,39 @@ class DashboardFactory(BaseFactory):
         )
 
     async def create(self, dashboard_type: str, **kwargs) -> Dict[str, Any]:
-        """Creates a dashboard instance based on type"""
         try:
-            # Dynamic service import
+            # Ensure dashboard manager exists
+            if not hasattr(self.bot, 'dashboard_manager'):
+                from infrastructure.managers.dashboard_manager import DashboardManager
+                logger.warning("Dashboard manager not initialized, creating now")
+                self.bot.dashboard_manager = await DashboardManager.setup(self.bot)
+            
+            # Check for existing dashboard instance first
+            existing = self.bot.dashboard_manager.get_dashboard(dashboard_type)
+            if existing:
+                logger.info(f"Reusing existing dashboard instance for {dashboard_type}")
+                return {
+                    'name': dashboard_type,
+                    'dashboard': existing,
+                    'type': 'dashboard'
+                }
+            
+            # Create new if doesn't exist
             service_name = DASHBOARD_SERVICES.get(dashboard_type)
             if not service_name:
-                logger.warning(f"Unknown dashboard type: {dashboard_type}, skipping")
+                logger.warning(f"Unknown dashboard type: {dashboard_type}")
                 return None
-                
-            module = f"application.services.dashboard.{dashboard_type.lower()}_dashboard_service"
-            service_class = getattr(__import__(module, fromlist=[service_name]), service_name)
             
-            # Create dashboard instance
-            dashboard = service_class(self.bot, self)  # Pass dashboard factory
+            # Create and register new dashboard
+            dashboard = service_class(self.bot, self)
             await dashboard.initialize()
+            self.bot.dashboard_manager.register_dashboard(dashboard_type, dashboard)
             
             return {
                 'name': dashboard_type,
                 'dashboard': dashboard,
                 'type': 'dashboard'
             }
-            
         except Exception as e:
             logger.error(f"Failed to create dashboard {dashboard_type}: {e}")
-            return None  # Return None instead of raising to allow other dashboards to initialize
+            return None

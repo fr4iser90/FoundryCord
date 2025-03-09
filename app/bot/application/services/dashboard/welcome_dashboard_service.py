@@ -2,20 +2,25 @@ from typing import Dict, List, Optional, Any
 from infrastructure.logging import logger
 from nextcord.ext import commands
 import nextcord
-from nextcord import Message  # Fehlender Import
+from nextcord import Message
+from interfaces.dashboards.ui.welcome_dashboard import WelcomeDashboardUI
 
-class WelcomeDashboardService(commands.Cog):
+class WelcomeDashboardService:
     """Service für die Geschäftslogik des Welcome Dashboards"""
     
     def __init__(self, bot):
         self.bot = bot
         self.initialized = False
         self.embed_factory = bot.component_factory.factories['embed']
-        super().__init__()
+        self.dashboard_ui = None
     
     async def initialize(self) -> None:
         """Initialisiert den Service"""
         try:
+            # Initialize UI component
+            self.dashboard_ui = WelcomeDashboardUI(self.bot).set_service(self)
+            await self.dashboard_ui.initialize()
+            
             self.initialized = True
             logger.info("Welcome Dashboard Service initialized successfully")
         except Exception as e:
@@ -77,12 +82,28 @@ class WelcomeDashboardService(commands.Cog):
             logger.error(f"Error updating welcome message: {e}")
             raise
 
+    async def display_dashboard(self) -> None:
+        """Displays the welcome dashboard in the configured channel"""
+        try:
+            if not self.dashboard_ui:
+                logger.error("Dashboard UI not initialized")
+                return
+            
+            await self.dashboard_ui.display_dashboard()
+            
+            logger.info("Welcome dashboard displayed successfully")
+        except Exception as e:
+            logger.error(f"Error displaying welcome dashboard: {e}")
+
 async def setup(bot):
     """Setup function for the Welcome Dashboard service"""
     try:
         service = WelcomeDashboardService(bot)
         await service.initialize()
-        bot.add_cog(service)
+        
+        # Display the dashboard after initialization
+        await service.display_dashboard()
+        
         logger.info("Welcome Dashboard service initialized successfully")
         return service
     except Exception as e:

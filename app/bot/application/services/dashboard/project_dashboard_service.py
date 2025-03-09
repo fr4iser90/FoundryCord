@@ -5,30 +5,40 @@ from infrastructure.database.models.models import Project, Task
 from infrastructure.database.repositories.project_repository import ProjectRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 from infrastructure.database.models.config import get_session
-from nextcord.ext import commands
 import nextcord
+from interfaces.dashboards.ui.project_dashboard import ProjectDashboardUI
 
-class ProjectDashboardService(commands.Cog):
-    """Service für die Geschäftslogik des Project Dashboards"""
+class ProjectDashboardService:
+    """Service for the Project Dashboard business logic"""
     
     def __init__(self, bot):
         self.bot = bot
         self.initialized = False
         self.project_repo = None  # Wird in initialize() gesetzt
-        super().__init__()
+        self.embed_factory = bot.component_factory.factories.get('embed')
+        self.dashboard_ui = None
+        self.db_service = None  # Will reference database service
     
     async def initialize(self) -> None:
-        """Initialisiert den Service"""
+        """Initialize the service"""
         try:
-            # Initialisiere Repository mit Session
-            async for session in get_session():
-                self.project_repo = ProjectRepository(session)
-                await self.project_repo.get_all()  # Test query
-                
-            self.initialized = True
-            logger.info("Project Dashboard Service initialized successfully")
+            # Get database service if needed
+            self.db_service = self.bot.service_factory.get_service('Database')
+            
+            # Initialize UI component - make sure we're creating a new instance
+            self.dashboard_ui = ProjectDashboardUI(self.bot)
+            # Important: set_service must return self for method chaining
+            self.dashboard_ui.set_service(self)
+            
+            # Only call initialize if dashboard_ui is not None
+            if self.dashboard_ui:
+                await self.dashboard_ui.initialize()
+                self.initialized = True
+                logger.info("Project Dashboard Service initialized")
+            else:
+                logger.error("Failed to create dashboard UI")
         except Exception as e:
-            logger.error(f"Failed to initialize Project Dashboard Service: {e}")
+            logger.error(f"Error initializing Project Dashboard Service: {e}")
             raise
     
     async def get_projects_by_status(self) -> Dict[str, List[Project]]:
@@ -111,14 +121,38 @@ class ProjectDashboardService(commands.Cog):
             logger.error(f"Error getting all projects: {e}")
             return []
 
+    async def display_dashboard(self) -> None:
+        """Display the project dashboard"""
+        try:
+            if not self.dashboard_ui:
+                logger.error("Dashboard UI not initialized")
+                return
+                
+            await self.dashboard_ui.display_dashboard()
+            logger.info("Project dashboard displayed successfully")
+        except Exception as e:
+            logger.error(f"Error displaying project dashboard: {e}")
+
 async def setup(bot):
     """Setup function for the Project Dashboard service"""
     try:
+        logger.debug("Creating Project Dashboard Service")
         service = ProjectDashboardService(bot)
+        
+        logger.debug("Initializing Project Dashboard Service")
         await service.initialize()
-        bot.add_cog(service)
+        
+        # Only display if initialization worked
+        if service.initialized:
+            logger.debug("Displaying Project Dashboard")
+            try:
+                await service.display_dashboard()
+            except Exception as display_error:
+                logger.error(f"Error displaying Project Dashboard: {display_error}")
+        
         logger.info("Project Dashboard service initialized successfully")
-        return service
+        return service  # Return service object
     except Exception as e:
         logger.error(f"Failed to initialize Project Dashboard service: {e}")
-        raise
+        # Don't raise - return None so service factory can continue
+        return None

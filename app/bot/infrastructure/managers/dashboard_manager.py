@@ -2,12 +2,19 @@
 import asyncio
 import logging
 from typing import List, Optional
+from interfaces.dashboards.ui.base_dashboard import BaseDashboardUI
+from infrastructure.logging import logger
+from infrastructure.database.models.models import DashboardMessage
+from infrastructure.database.models.config import get_session
+from sqlalchemy import select
+import nextcord
 
 logger = logging.getLogger(__name__)
 
 class DashboardManager:
     def __init__(self, bot):
         self.bot = bot
+        self._dashboards = {}
         
     async def get_dashboard_channels(self) -> List[str]:
         """Holt die Dashboard-Kanäle dynamisch aus der Konfiguration"""
@@ -61,3 +68,89 @@ class DashboardManager:
             logger.info("Dashboard cleanup completed")
         except Exception as e:
             logger.error(f"Error during dashboard cleanup: {e}")
+
+    def register_dashboard(self, dashboard_type: str, dashboard: BaseDashboardUI):
+        """Register a dashboard instance"""
+        self._dashboards[dashboard_type] = dashboard
+        
+    def get_dashboard(self, dashboard_type: str) -> Optional[BaseDashboardUI]:
+        """Get existing dashboard instance"""
+        return self._dashboards.get(dashboard_type)
+        
+    async def track_message(self, dashboard_type: str, message_id: int, channel_id: int):
+        """Track a dashboard message in the database"""
+        try:
+            async for session in get_session():
+                # Check if entry exists
+                result = await session.execute(
+                    select(DashboardMessage).where(DashboardMessage.dashboard_type == dashboard_type)
+                )
+                dashboard_msg = result.scalars().first()
+                
+                if dashboard_msg:
+                    # Update existing entry
+                    dashboard_msg.message_id = message_id
+                    dashboard_msg.channel_id = channel_id
+                    logger.debug(f"Updated dashboard message record for {dashboard_type}")
+                else:
+                    # Create new entry
+                    dashboard_msg = DashboardMessage(
+                        dashboard_type=dashboard_type,
+                        message_id=message_id,
+                        channel_id=channel_id
+                    )
+                    session.add(dashboard_msg)
+                    logger.debug(f"Created new dashboard message record for {dashboard_type}")
+                
+                await session.commit()
+                logger.info(f"Saved dashboard message for {dashboard_type} to database")
+        except Exception as e:
+            logger.error(f"Error tracking dashboard message in database: {e}")
+        
+    async def get_tracked_message(self, dashboard_type: str) -> Optional[nextcord.Message]:
+        """Retrieve tracked message from database"""
+        try:
+            async for session in get_session():
+                result = await session.execute(
+                    select(DashboardMessage).where(DashboardMessage.dashboard_type == dashboard_type)
+                )
+                dashboard_msg = result.scalars().first()
+                
+                if not dashboard_msg:
+                    logger.debug(f"No database record found for dashboard type: {dashboard_type}")
+                    return None
+                    
+                channel = self.bot.get_channel(dashboard_msg.channel_id)
+                if not channel:
+                    logger.warning(f"Channel {dashboard_msg.channel_id} not found for dashboard {dashboard_type}")
+                    return None
+                
+                try:
+                    return await channel.fetch_message(dashboard_msg.message_id)
+                except nextcord.NotFound:
+                    logger.warning(f"Message {dashboard_msg.message_id} not found in channel {dashboard_msg.channel_id}")
+                    # Clean up stale record
+                    await session.delete(dashboard_msg)
+                    await session.commit()
+                    return None
+                except Exception as e:
+                    logger.error(f"Error fetching message: {e}")
+                    return None
+        except Exception as e:
+            logger.error(f"Error retrieving dashboard message from database: {e}")
+            return None
+
+    @staticmethod
+    async def setup(bot):
+        """Setup and attach a dashboard manager to the bot"""
+        logger.info("Setting up Dashboard Manager")
+        
+        # Check if dashboard manager already exists
+        if hasattr(bot, 'dashboard_manager'):
+            logger.info("Dashboard Manager already exists")
+            return bot.dashboard_manager
+        
+        # Create new dashboard manager and attach to bot
+        bot.dashboard_manager = DashboardManager(bot)
+        logger.info("Dashboard Manager initialized successfully")
+        return bot.dashboard_manager

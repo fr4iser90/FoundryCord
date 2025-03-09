@@ -20,12 +20,6 @@ class SystemMonitoringCommands(commands.Cog):
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
     
-    # Add other commands...
-    
-    def _create_full_status_embed(self, data):
-        # Create embed with the data
-        # Similar to your current implementation
-        pass
 
 async def setup(bot):
     await bot.add_cog(SystemMonitoringCommands(bot))

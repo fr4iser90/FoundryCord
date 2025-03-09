@@ -208,3 +208,50 @@ class ChannelConfig:
                             await dashboard['dashboard'].setup()
                     except Exception as e:
                         logger.error(f"Failed to setup dashboard for {channel_name}: {e}")
+
+    @classmethod
+    async def validate_channel_id(cls, channel_name: str, bot) -> bool:
+        """Validates if a channel ID exists and is accessible"""
+        try:
+            channel_id = await cls.get_channel_id(channel_name)
+            if not channel_id:
+                return False
+                
+            channel = bot.get_channel(channel_id)
+            return channel is not None
+        except Exception as e:
+            logger.error(f"Error validating channel {channel_name}: {e}")
+            return False
+
+    @classmethod
+    async def repair_channel_mapping(cls, channel_name: str, bot) -> bool:
+        """Attempts to repair a channel mapping if the channel doesn't exist"""
+        try:
+            logger.info(f"Attempting to repair channel mapping for {channel_name}")
+            channel_id = await cls.get_channel_id(channel_name)
+            
+            # Get channel config
+            channel_config = cls.CHANNELS.get(channel_name, {})
+            if not channel_config:
+                logger.error(f"No configuration found for channel {channel_name}")
+                return False
+            
+            # Create channel through factory
+            channel_factory = bot.component_factory.factories['channel']
+            guild = bot.guilds[0] if bot.guilds else None
+            if not guild:
+                logger.error("No guild available to recreate channel")
+                return False
+            
+            new_channel = await channel_factory.create_channel(
+                guild=guild,
+                name=channel_name,
+                is_private=channel_config.get('is_private', False),
+                topic=channel_config.get('topic', None),
+                slowmode=channel_config.get('slowmode', 0)
+            )
+            
+            return new_channel is not None
+        except Exception as e:
+            logger.error(f"Error repairing channel mapping: {e}")
+            return False 
