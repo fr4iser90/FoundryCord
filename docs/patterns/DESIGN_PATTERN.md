@@ -27,24 +27,39 @@ class PermissionService:
 
 ### 2. Application Layer
 **Purpose**: Orchestrates domain objects to fulfill user requirements
-- **Application Services**: `ProjectDashboardService`, `MonitoringApplicationService`
+- **Application Services**: `ProjectDashboardService`, `SystemMonitoringService`
 - **Command Handlers**: Process user commands by delegating to domain services
 
 **Example**:
 ```python
-# Application service orchestrating domain services
-class MonitoringApplicationService:
-    def __init__(self, metric_service, alert_service):
-        self.metric_service = metric_service
-        self.alert_service = alert_service
+# Application service orchestrating domain logic
+class SystemMonitoringService:
+    def __init__(self, bot):
+        self.bot = bot
     
     async def get_full_system_status(self):
-        # Collect metrics using domain service
-        metrics = await self.metric_service.collect_and_store_metrics()
-        # Check for alerts using domain service
-        alerts = await self.alert_service.check_metrics_for_alerts(metrics)
-        # Format for presentation
-        return self._format_data_for_ui(metrics, alerts)
+        try:
+            # CPU, Memory, Disk usage
+            cpu_percent = psutil.cpu_percent()
+            memory = psutil.virtual_memory()
+            disk = psutil.disk_usage('/')
+            
+            # Fetch Public IPv4 address
+            try:
+                public_ip = http_client.get("https://api.ipify.org?format=json").json()['ip']
+            except requests.RequestException:
+                public_ip = "Unable to fetch public IP"
+                
+            return {
+                "cpu_percent": cpu_percent,
+                "memory": memory,
+                "disk": disk,
+                "public_ip": public_ip,
+                # Additional fields omitted for brevity
+            }
+        except Exception as e:
+            logger.error(f"Error retrieving system status: {e}")
+            raise
 ```
 
 ### 3. Infrastructure Layer
@@ -241,7 +256,7 @@ dashboard_ui.set_service(monitoring_service)
 ┌──────────────┴───────────────────────────┴───────────────────────┐
 │                         Domain Layer                             │
 │  ┌─────────┐   ┌────────────────┐   ┌────────────────────────┐   │
-│  │ Models  │   │ Domain Services │   │    Domain Policies    │   │
+│  │ Models  │   │ Domain Services│   │    Domain Policies     │   │
 └──┴─────────┴───┴────────────────┴───┴────────────────────────┴───┘
                ▲                ▲                 ▲
                │                │                 │

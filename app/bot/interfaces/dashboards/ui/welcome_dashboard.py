@@ -57,7 +57,7 @@ class WelcomeDashboardUI(BaseDashboardUI):
         embed.add_field(
             name="🖥️ Homelab Resources",
             value=(
-                "• Use `/monitoring` to check system status\n"
+                "• Use `/homelab monitoring status` to check system status\n"
                 "• Check out <#projects> for ongoing projects\n"
                 "• Join <#infrastructure> for documentation\n"
                 "• Ask for help in <#support>"
@@ -225,12 +225,10 @@ class WelcomeDashboardUI(BaseDashboardUI):
     async def on_help_request(self, interaction: nextcord.Interaction):
         """Handler for help button"""
         help_text = (
-            "# 🔍 Getting Help\n\n"
-            "## Commands\n"
-            "• `/help` - Display all available commands\n"
-            "• `/monitoring` - View system status\n"
-            "• `/project` - Manage projects\n"
-            "• `/server` - Server management\n\n"
+            "## Available Commands\n"
+            "• `/homelab monitoring status` - View system status\n"
+            "• `/homelab projects list` - Manage projects\n" 
+            "• `/homelab servers status` - Server management\n\n"
             "## Support\n"
             "If you need assistance, ask in <#support> or tag the @Admin role."
         )

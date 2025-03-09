@@ -1,11 +1,8 @@
 import psutil
 import requests
-import nextcord
-from nextcord.ext import commands
 import socket
 from dotenv import load_dotenv
 import os
-from utils.decorators.auth import admin_or_higher
 from utils.http_client import http_client
 from infrastructure.logging import logger
 
@@ -19,16 +16,14 @@ DOMAIN = os.getenv('DOMAIN')
 if not DOMAIN:
     print("Warning: DOMAIN not found in environment variables. Please check your .env file.")
 
-class SystemMonitoring(commands.Cog):
+class SystemMonitoringService:
+    """Service class for system monitoring operations"""
+    
     def __init__(self, bot):
         self.bot = bot
 
-    @nextcord.slash_command(name="system_full_status", description="Zeigt detaillierte Systeminformationen an")
-    @admin_or_higher()
-    async def system_full_status(self, interaction: nextcord.Interaction):
-        """Zeigt detaillierte Systeminformationen an"""
-        logger.info(f"System full_status Befehl aufgerufen von {interaction.user.name}")
-        
+    async def get_full_system_status(self):
+        """Gets detailed system information"""
         try:
             # CPU, Memory, Disk usage
             cpu_percent = psutil.cpu_percent()
@@ -53,77 +48,56 @@ class SystemMonitoring(commands.Cog):
             except socket.gaierror:
                 domain_ip = "Unable to resolve domain"
                 ip_match = "N/A"
-
-            # Erstelle ein Embed für bessere Darstellung
-            embed = nextcord.Embed(
-                title="🖥️ System Status",
-                description="Detaillierte Systeminformationen",
-                color=0x00ff00 if cpu_percent < 70 else 0xff0000
-            )
-            
-            embed.add_field(name="CPU", value=f"{cpu_percent}%", inline=True)
-            embed.add_field(name="Memory", value=f"{memory.percent}%", inline=True)
-            embed.add_field(name="Disk", value=f"{disk.percent}%", inline=True)
-            embed.add_field(name="Public IPv4", value=public_ip, inline=False)
-            embed.add_field(name="Domain", value=f"{DOMAIN} ({domain_ip})", inline=False)
-            embed.add_field(name="IP Match", value=ip_match, inline=False)
-            
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            logger.info(f"System-Status abgerufen von {interaction.user.name}")
+                
+            return {
+                "cpu_percent": cpu_percent,
+                "memory": memory,
+                "disk": disk,
+                "public_ip": public_ip,
+                "domain": DOMAIN,
+                "domain_ip": domain_ip,
+                "ip_match": ip_match
+            }
         except Exception as e:
             logger.error(f"Fehler beim Abrufen des Systemstatus: {e}")
-            await interaction.response.send_message(f"Fehler beim Abrufen des Systemstatus: {str(e)}", ephemeral=True)
+            raise
 
-    @nextcord.slash_command(name="system_status", description="Zeigt grundlegende Systeminformationen an")
-    @admin_or_higher()
-    async def system_status(self, interaction: nextcord.Interaction):
-        """Zeigt den Systemstatus an (CPU, Speicher, Festplatte)."""
-        logger.info(f"System status Befehl aufgerufen von {interaction.user.name}")
-        
+    async def get_basic_system_status(self):
+        """Gets basic system information (CPU, memory, disk)"""
         try:
             cpu_percent = psutil.cpu_percent()
             memory = psutil.virtual_memory()
             disk = psutil.disk_usage('/')
             
-            # Erstelle ein Embed für bessere Darstellung
-            embed = nextcord.Embed(
-                title="🖥️ System Status",
-                color=0x00ff00 if cpu_percent < 70 else 0xff0000
-            )
-            
-            embed.add_field(name="CPU", value=f"{cpu_percent}%", inline=True)
-            embed.add_field(name="Memory", value=f"{memory.percent}%", inline=True)
-            embed.add_field(name="Disk", value=f"{disk.percent}%", inline=True)
-            
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            logger.info(f"Basis-System-Status abgerufen von {interaction.user.name}")
+            return {
+                "cpu_percent": cpu_percent,
+                "memory": memory,
+                "disk": disk
+            }
         except Exception as e:
             logger.error(f"Fehler beim Abrufen des Systemstatus: {e}")
-            await interaction.response.send_message(f"Fehler beim Abrufen des Systemstatus: {str(e)}", ephemeral=True)
+            raise
 
-    @nextcord.slash_command(name="system_ip", description="Zeigt die öffentliche IP-Adresse an")
-    @admin_or_higher()
-    async def system_public_ip(self, interaction: nextcord.Interaction):
-        """Zeigt die öffentliche IP-Adresse an."""
-        logger.info(f"System IP Befehl aufgerufen von {interaction.user.name}")
-        
+    async def get_public_ip(self):
+        """Gets the public IP address"""
         try:
             public_ip = http_client.get("https://api.ipify.org?format=json").json()['ip']
-            await interaction.response.send_message(f'Public IPv4: {public_ip}', ephemeral=True)
-            logger.info(f"Öffentliche IP abgerufen von {interaction.user.name}")
+            return public_ip
         except requests.RequestException:
-            await interaction.response.send_message("Unable to fetch public IP.", ephemeral=True)
+            logger.error("Unable to fetch public IP")
+            raise
         except Exception as e:
             logger.error(f"Fehler beim Abrufen der öffentlichen IP: {e}")
-            await interaction.response.send_message(f"Fehler beim Abrufen der öffentlichen IP: {str(e)}", ephemeral=True)
+            raise
 
 async def setup(bot):
-    """Setup function for the system monitoring module"""
+    """Setup function for the system monitoring service"""
     try:
-        cog = SystemMonitoring(bot)
-        bot.add_cog(cog)  # Dies ist synchron, braucht kein await
-        logger.info("System monitoring commands initialized successfully")
-        return cog
+        service = SystemMonitoringService(bot)
+        # Register the service on the bot so commands can access it
+        bot.system_monitoring_service = service
+        logger.info("System monitoring service initialized successfully")
+        return service
     except Exception as e:
-        logger.error(f"Failed to initialize system monitoring: {e}")
+        logger.error(f"Failed to initialize system monitoring service: {e}")
         raise

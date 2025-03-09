@@ -10,10 +10,16 @@ from infrastructure.factories import BotComponentFactory, ServiceFactory, TaskFa
 from core.lifecycle.lifecycle_manager import BotLifecycleManager
 from infrastructure.database.migrations.init_db import init_db
 from infrastructure.managers.dashboard_manager import DashboardManager
+from infrastructure.config.command_config import CommandConfig
+from infrastructure.config.security.env_init import init_env
 
 # Load environment configuration
 env_config = EnvConfig()
-env_config.load()
+
+# Try loading from encrypted environment first
+if not init_env(env_config):
+    # If that fails, load from regular environment variables
+    env_config.load()
 
 # Initialize bot with environment settings
 bot = commands.Bot(
@@ -46,7 +52,8 @@ async def initialize_bot():
     bot.critical_services = ServiceConfig.register_critical_services(bot)
     bot.module_services = ModuleServicesConfig.register(bot)
     bot.tasks = TaskConfig.register_tasks(bot)
-    
+    bot.command_modules = CommandConfig.register_commands(bot)
+
     # Initialize through lifecycle manager
     await bot.lifecycle.initialize()
 

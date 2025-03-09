@@ -7,8 +7,8 @@ from core.workflows.channel_workflow import ChannelWorkflow
 from core.workflows.service_workflow import ServiceWorkflow
 from core.workflows.dashboard_workflow import DashboardWorkflow
 from core.workflows.task_workflow import TaskWorkflow
-
-logger = logging.getLogger(__name__)
+from core.workflows.slash_commands_workflow import SlashCommandsWorkflow
+from infrastructure.logging import logger
 
 class BotLifecycleManager:
     def __init__(self, bot):
@@ -143,15 +143,15 @@ class BotLifecycleManager:
             logger.error(f"Command verification failed: {e}")
             return False
 
-    async def sync_commands_background(self):
-        """Start command synchronization in background"""
+    async def sync_commands_background(self, initial_delay=10):
+        """Start command synchronization in background with a delay"""
         if not self.command_sync_service:
             logger.warning("Command sync service not initialized, setting up now")
             await self.setup_command_sync()
             
         try:
-            logger.info("Starting background command synchronization")
-            await self.command_sync_service.start_background_sync()
+            logger.info(f"Starting background command synchronization (first sync in {initial_delay}s)")
+            await self.command_sync_service.start_background_sync(initial_delay=initial_delay)
             return True
         except Exception as e:
             logger.error(f"Background command synchronization failed: {e}")
@@ -176,6 +176,7 @@ class BotLifecycleManager:
                 ('channel', ChannelWorkflow(self.bot)),
                 ('service', ServiceWorkflow(self.bot)),
                 ('dashboard', DashboardWorkflow(self.bot)),
+                ('slash_commands', SlashCommandsWorkflow(self.bot)),
                 ('task', TaskWorkflow(self.bot))
             ]
             

@@ -41,8 +41,10 @@ class SecurityCommands(commands.Cog):
 async def setup(bot):
     """Setup function for the security module"""
     try:
-        await bot.add_cog(SecurityCommands(bot))
+        security_commands = SecurityCommands(bot)
+        bot.add_cog(security_commands)
         logger.info("Security commands initialized successfully")
+        return security_commands
     except Exception as e:
         logger.error(f"Failed to initialize security: {e}")
         raise

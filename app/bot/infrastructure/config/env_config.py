@@ -2,6 +2,7 @@ import os
 import nextcord
 from typing import Dict
 from infrastructure.logging import logger
+from infrastructure.config.security.env_security import decrypt_data, generate_encryption_key
 
 class EnvConfig:
     def __init__(self):
@@ -82,4 +83,41 @@ class EnvConfig:
                     users_dict[username.strip()] = user_id.strip()
         return users_dict
     
+    def load_from_encrypted(self, master_password=None):
+        """Load configuration from encrypted storage"""
+        try:
+            # If no password provided, try to prompt
+            if not master_password:
+                import getpass
+                master_password = getpass.getpass("Enter master password to decrypt environment variables: ")
+            
+            # Find the .env.encrypted file relative to project root
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+            encrypted_path = os.path.join(base_dir, ".env.encrypted")
+            
+            if not os.path.exists(encrypted_path):
+                logger.warning("No encrypted environment file found.")
+                return False
+            
+            with open(encrypted_path, "r") as f:
+                encrypted_data = f.read()
+            
+            key = generate_encryption_key(master_password)
+            env_vars = decrypt_data(encrypted_data, key)
+            
+            if not env_vars:
+                logger.error("Failed to decrypt environment variables.")
+                return False
+            
+            # Set environment variables
+            for var_name, value in env_vars.items():
+                os.environ[var_name] = value
+            
+            # Now load normally
+            self.load()
+            logger.info("Environment loaded from encrypted storage")
+            return True
+        except Exception as e:
+            logger.error(f"Error loading encrypted environment: {e}")
+            return False
 

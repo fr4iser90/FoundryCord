@@ -1,5 +1,6 @@
 from .config_commands import WireguardConfigCommands
 from .qr_commands import WireguardQRCommands
+from infrastructure.logging import logger
 
 async def setup(bot):
     """Setup function for the WireGuard commands"""
@@ -17,8 +18,11 @@ async def setup(bot):
         bot.add_cog(config_commands)
         bot.add_cog(qr_commands)
         
-        logger.info("WireGuard commands initialized successfully")
-        return True
+        # Return command instances in a dictionary 
+        return {
+            'config_commands': config_commands,
+            'qr_commands': qr_commands
+        }
     except Exception as e:
         logger.error(f"Failed to initialize WireGuard commands: {e}")
         raise

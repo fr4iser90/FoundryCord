@@ -17,7 +17,7 @@ class ChannelConfig:
     
     # Channel IDs werden aus EnvConfig geladen
     HOMELAB_CATEGORY_ID = None
-    SERVER_ID = None
+    DISCORD_SERVER = None
     
     @classmethod
     async def create_channel_setup(cls, bot) -> 'ChannelSetupService':
@@ -25,7 +25,7 @@ class ChannelConfig:
         try:
             # Load from bot.env_config
             cls.HOMELAB_CATEGORY_ID = bot.env_config.HOMELAB_CATEGORY_ID
-            cls.SERVER_ID = bot.env_config.guild_id
+            cls.DISCORD_SERVER = bot.env_config.guild_id
             
             # Import hier um zirkuläre Imports zu vermeiden
             from infrastructure.discord.channel_setup_service import ChannelSetupService
