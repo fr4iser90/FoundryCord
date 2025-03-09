@@ -14,10 +14,16 @@ DASHBOARD_MAPPINGS = {
         'auto_create': True,
         'refresh_interval': 60
     },
+    'gameservers': {
+        'dashboard_type': 'gameservers',
+        'auto_create': True,
+        'refresh_interval': 60
+    },
 }
 
 DASHBOARD_SERVICES = {
     'welcome': 'WelcomeDashboardService',
     'project': 'ProjectDashboardService',
     'monitoring': 'MonitoringDashboardService',
+    'gameservers': 'GameServerDashboardService',
 }

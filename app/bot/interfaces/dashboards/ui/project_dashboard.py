@@ -297,21 +297,21 @@ class ProjectDashboardUI(BaseDashboardUI):
         
         return view
 
+    async def initialize(self) -> None:
+        """Initialize the project dashboard UI"""
+        logger.debug("Initializing Project Dashboard UI")
+        return await super().initialize(channel_config_key='projects')
+
     async def setup(self):
         """Initialisiert das Dashboard"""
         try:
-            # Channel aus der Config holen
-            from infrastructure.config.channel_config import ChannelConfig
-            channel_id = await ChannelConfig.get_channel_id('projects')
-            self.channel = self.bot.get_channel(channel_id)
-            
-            if not self.channel:
-                logger.error("Project channel not found")
+            # Initialize the dashboard properly
+            if not await self.initialize():
+                logger.error("Failed to initialize project dashboard")
                 return
             
-            # Initialize
+            # Get project data
             self.projects_data = await self.service.get_projects_by_status()
-            self.initialized = True
             
             # Display dashboard with our custom implementation
             await self.display_dashboard()

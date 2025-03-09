@@ -4,7 +4,6 @@ from .service_config import ServiceConfig
 from .task_config import TaskConfig
 from .channel_config import ChannelConfig
 from .services import *
-from .channels import *
 
 __all__ = [
     'EnvConfig',
@@ -13,7 +12,5 @@ __all__ = [
     'ChannelConfig',
     'CriticalServicesConfig',
     'ModuleServicesConfig',
-    'DashboardServiceConfig',
-    'MinecraftGameServerChannelConfig',
     'DashboardConfig'
 ]

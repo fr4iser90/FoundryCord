@@ -1,9 +1,56 @@
 {
   "default-rules": {
-    "project-guidelines": {
+    "development-protocol": {
       "description": "Follow HomeLab Discord Bot Development Protocol",
       "require-consistency": true,
-      "files": ["docs/cursorrules/*.py", "docs/cursorrules/*.md"]
+      "active": true,
+      "files": [
+        "docs/core/PROTOCOL.md"
+      ]
+    },
+    "architecture-guidelines": {
+      "description": "Follow HomeLab Discord Bot Architecture Guidelines",
+      "require-consistency": true,
+      "active": true,
+      "files": [
+        "docs/core/ARCHITECTURE.md",
+        "docs/patterns/DESIGN_PATTERN.md"
+      ]
+    },
+    "coding-standards": {
+      "description": "Follow HomeLab Discord Bot Coding Conventions",
+      "require-consistency": true,
+      "active": true,
+      "files": [
+        "docs/core/CONVENTIONS.md"
+      ]
+    },
+    "implementation-patterns": {
+      "description": "Follow HomeLab Discord Bot Implementation Patterns",
+      "require-consistency": true,
+      "active": true,
+      "files": [
+        "docs/patterns/DASHBOARD_PATTERN.md"
+      ]
+    },
+    "current-priorities": {
+      "description": "Align with current project priorities",
+      "require-consistency": false,
+      "active": false,
+      "files": [
+        "docs/planning/ACTION_PLAN.md"
+      ]
+    },
+    "role-definitions": {
+      "description": "Follow HomeLab Discord Bot Role Definitions",
+      "require-consistency": true,
+      "active": true,
+      "files": [
+        "docs/roles/BOT_FRAMEWORK_DEVELOPER.md",
+        "docs/roles/SYSTEM_MONITORING_DEVELOPER.md",
+        "docs/roles/SECURITY_SPECIALIST.md",
+        "docs/roles/UI_UX_DESIGNER.md"
+      ]
     }
   }
 }

@@ -22,8 +22,10 @@ class ProjectDashboardService:
     async def initialize(self) -> None:
         """Initialize the service"""
         try:
-            # Get database service if needed
-            self.db_service = self.bot.service_factory.get_service('Database')
+            # Initialize project repository directly instead of getting DB service
+            async for session in get_session():
+                self.project_repo = ProjectRepository(session)
+                break  # Just need one session to create the repository
             
             # Initialize UI component - make sure we're creating a new instance
             self.dashboard_ui = ProjectDashboardUI(self.bot)
