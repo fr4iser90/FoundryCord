@@ -90,26 +90,22 @@ All other necessary configuration will be auto-generated at startup!
 
 #### Discord Bot Configuration (.env.discordbot)
 
-| Variable | Description | Required | Security Considerations |
-|----------|-------------|----------|-------------------------|
-| `DISCORD_TOKEN` | Your Discord bot token | Yes | Rotate every 90 days |
-| `DOMAIN` | Your domain name | Yes | Must be valid domain |
-| `SUPER_ADMINS` | Discord users with full access (NAME\|ID format) | Yes | Limit to trusted users |
-| `ADMINS` | Discord users with admin access (NAME\|ID format) | Yes | Limit to minimum required |
-| `USERS` | Regular users (NAME\|ID format) | No | Review regularly |
-| `DISCORD_HOMELAB_CHANNEL` | Discord channel ID for system alerts | Yes | Restrict access |
-| `ENCRYPTION_KEY` | Encryption key for sensitive data | Yes | 256-bit minimum |
-| `JWT_SECRET_KEY` | Secret for JWT tokens | Yes | Strong random value |
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DISCORD_TOKEN` | Your Discord bot token | Yes |
+| `DISCORD_SERVER` | Your Discord server ID | Yes |
+| `SUPER_ADMINS` | Discord users with full access (NAME\|ID format) | Yes |
+
+All other variables have sensible defaults and will be auto-generated if needed.
 
 #### Database Configuration (.env.postgres)
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `POSTGRES_USER` | Database admin username | Yes |
 | `POSTGRES_PASSWORD` | Database admin password | Yes |
-| `POSTGRES_DB` | Database name | Yes |
-| `APP_DB_USER` | Application database user | Yes |
 | `APP_DB_PASSWORD` | Application database password | Yes |
+
+All other database variables use appropriate defaults.
 
 ### Docker Compose
 
@@ -145,6 +141,36 @@ All other necessary configuration will be auto-generated at startup!
 
 ### Security Reporting
 
+## Documentation
+
+This project includes comprehensive documentation to help you understand and use the bot effectively.
+
+### Core Documentation
+- [Development Protocol](docs/core/PROTOCOL.md): Our methodical development workflow
+- [Architecture](docs/core/ARCHITECTURE.md): High-level system architecture
+- [Coding Conventions](docs/core/CONVENTIONS.md): Code standards and practices
+- [Security Policy](docs/core/SECURITY_POLICY.md): Security practices and guidelines
+- [Environment Variables](docs/core/VARIABLES.md): Configuration variables reference
+
+### Implementation Guides
+- **Patterns**:
+  - [Design Patterns](docs/development/patterns/DESIGN_PATTERN.md): Architecture patterns
+  - [Dashboard Implementation](docs/development/patterns/DASHBOARD_PATTERN.md): Dashboard UI patterns
+  - [Slash Command Pattern](docs/development/patterns/SLASHCOMMAND_PATTERN.md): Command implementation
+- **Development Roles**:
+  - [Bot Framework Developer](docs/development/roles/BOT_FRAMEWORK_DEVELOPER.md): Core bot development
+  - [Security Specialist](docs/development/roles/SECURITY_SPECIALIST.md): Security implementation
+  - [System Monitoring Developer](docs/development/roles/SYSTEM_MONITORING_DEVELOPER.py): Monitoring features
+  - [Slash Command Developer](docs/development/roles/SLASH_COMMAND_DEVELOPER.py): Command implementation
+  - [UI/UX Designer](docs/development/roles/UI_UX_DESIGNER.py): Dashboard and UI development
+
+### Project Planning
+- [Current Action Plan](docs/planning/ACTION_PLAN.md): Tasks in progress
+- [Roadmap](docs/planning/ROADMAP.md): Future development plans
+- [Milestones](docs/planning/MILESTONES.md): Project progress tracking
+
+### Templates
+- [Role Definition Template](docs/development/template/ROLE_DEFINITION.md): Template for defining roles
 
 ## License
 

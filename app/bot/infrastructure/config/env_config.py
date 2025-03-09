@@ -50,7 +50,10 @@ class EnvConfig:
             # Load required variables
             self.discord_token = self.load_required_env_var('DISCORD_TOKEN')
             self.guild_id = self.load_int_env_var('DISCORD_SERVER')
-            self.HOMELAB_CATEGORY_ID = self.load_int_env_var('HOMELAB_CATEGORY_ID')
+            
+            # HOMELAB_CATEGORY_ID is now optional with special handling
+            category_id = os.getenv('HOMELAB_CATEGORY_ID', 'auto')
+            self.HOMELAB_CATEGORY_ID = int(category_id) if category_id.isdigit() else None
             
             # Load user groups
             self.user_groups = self._load_user_groups()

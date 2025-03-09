@@ -26,9 +26,18 @@ class CategorySetupService:
         self.guild = self.bot.guilds[0]
         logger.info(f"Category service connected to guild: {self.guild.name}")
         
-        # Get category ID from config
+        # Get category ID from config - can be None or an integer
         self.category_id = self.bot.env_config.HOMELAB_CATEGORY_ID
-        logger.info(f"Configured category ID: {self.category_id}")
+        
+        # Check if we should auto-create (either None or specifically set to "auto")
+        category_env_value = os.environ.get('HOMELAB_CATEGORY_ID', 'auto')
+        auto_create = self.category_id is None or category_env_value == 'auto'
+        
+        if auto_create:
+            logger.info("HOMELAB_CATEGORY_ID not provided or set to 'auto', will create automatically")
+            await self.initialize_categories()
+        else:
+            logger.info(f"Using configured category ID: {self.category_id}")
         
     async def verify_category(self, category_key: str) -> bool:
         """Verify if configured category exists in Discord"""

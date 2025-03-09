@@ -9,17 +9,19 @@ This directory contains comprehensive documentation for the HomeLab Discord Bot 
 - [**ARCHITECTURE.md**](core/ARCHITECTURE.md): High-level architecture overview
 - [**SECURITY_POLICY.md**](core/SECURITY_POLICY.md): Security practices and policies
 - [**CONVENTIONS.md**](core/CONVENTIONS.md): Coding standards and conventions
+- [**VARIABLES.md**](core/VARIABLES.md): Environment variables reference
 
 ### Implementation Guides
 - **Patterns**:
-  - [**DESIGN_PATTERN.md**](guides/patterns/DESIGN_PATTERN.md): Architecture and design patterns
-  - [**DASHBOARD_PATTERN.md**](guides/patterns/DASHBOARD_PATTERN.md): Dashboard implementation patterns
-- **Development Workflows**:
-  - [**SETUP_GUIDE.md**](guides/development/SETUP_GUIDE.md): Development environment setup
-  - [**TESTING_GUIDE.md**](guides/development/TESTING_GUIDE.md): Testing procedures
-- **Module-specific**:
-  - [**MONITORING_GUIDE.md**](guides/modules/MONITORING_GUIDE.md): System monitoring implementation
-  - [**AUTH_GUIDE.md**](guides/modules/AUTH_GUIDE.md): Authentication system
+  - [**DESIGN_PATTERN.md**](development/patterns/DESIGN_PATTERN.md): Architecture and design patterns
+  - [**DASHBOARD_PATTERN.md**](development/patterns/DASHBOARD_PATTERN.md): Dashboard implementation patterns
+  - [**SLASHCOMMAND_PATTERN.md**](development/patterns/SLASHCOMMAND_PATTERN.md): Slash command implementation
+- **Development Roles**:
+  - [**BOT_FRAMEWORK_DEVELOPER.md**](development/roles/BOT_FRAMEWORK_DEVELOPER.md): Core bot development
+  - [**SECURITY_SPECIALIST.md**](development/roles/SECURITY_SPECIALIST.md): Security implementation
+  - [**SYSTEM_MONITORING_DEVELOPER.py**](development/roles/SYSTEM_MONITORING_DEVELOPER.py): Monitoring features
+  - [**SLASH_COMMAND_DEVELOPER.py**](development/roles/SLASH_COMMAND_DEVELOPER.py): Command implementation
+  - [**UI_UX_DESIGNER.py**](development/roles/UI_UX_DESIGNER.py): Dashboard and UI development
 
 ### Project Planning
 - [**ACTION_PLAN.md**](planning/ACTION_PLAN.md): Current tasks and priorities
@@ -40,7 +42,7 @@ This directory contains comprehensive documentation for the HomeLab Discord Bot 
   - [**MODULE_GUIDE_TEMPLATE.md**](templates/docs/MODULE_GUIDE_TEMPLATE.md): Template for module guides
   - [**FEATURE_REQUEST.md**](templates/docs/FEATURE_REQUEST.md): Template for feature requests
 - **Role Templates**:
-  - [**ROLE_DEFINITION.md**](templates/roles/ROLE_DEFINITION.md): Template for defining roles
+  - [**ROLE_DEFINITION.md**](development/template/ROLE_DEFINITION.md): Template for defining roles
 
 ## How to Use These Files with AI Assistants
 

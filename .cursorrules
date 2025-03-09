@@ -14,7 +14,7 @@
       "active": true,
       "files": [
         "docs/core/ARCHITECTURE.md",
-        "docs/patterns/DESIGN_PATTERN.md"
+        "docs/development/patterns/DESIGN_PATTERN.md"
       ]
     },
     "coding-standards": {
@@ -30,8 +30,8 @@
       "require-consistency": true,
       "active": true,
       "files": [
-        "docs/patterns/DASHBOARD_PATTERN.md",
-        "docs/patterns/SLASHCOMMAND_PATTERN.md"
+        "docs/development/patterns/DASHBOARD_PATTERN.md",
+        "docs/development/patterns/SLASHCOMMAND_PATTERN.md"
       ]
     },
     "current-priorities": {
@@ -47,11 +47,11 @@
       "require-consistency": true,
       "active": true,
       "files": [
-        "docs/roles/BOT_FRAMEWORK_DEVELOPER.md",
-        //"docs/roles/SYSTEM_MONITORING_DEVELOPER.md",
-        //"docs/roles/SECURITY_SPECIALIST.md",
-        "docs/roles/UI_UX_DESIGNER.md",
-        //"docs/roles/SLASH_COMMAND_DEVELOPER.md"
+        "docs/development/roles/BOT_FRAMEWORK_DEVELOPER.md",
+        //"docs/development/roles/SYSTEM_MONITORING_DEVELOPER.py",
+        //"docs/development/roles/SECURITY_SPECIALIST.md",
+        "docs/development/roles/UI_UX_DESIGNER.py",
+        //"docs/development/roles/SLASH_COMMAND_DEVELOPER.py"
       ]
     }
   }
