@@ -11,15 +11,10 @@ from core.lifecycle.lifecycle_manager import BotLifecycleManager
 from infrastructure.database.migrations.init_db import init_db
 from infrastructure.managers.dashboard_manager import DashboardManager
 from infrastructure.config.command_config import CommandConfig
-from infrastructure.config.security.env_init import init_env
 
 # Load environment configuration
 env_config = EnvConfig()
-
-# Try loading from encrypted environment first
-if not init_env(env_config):
-    # If that fails, load from regular environment variables
-    env_config.load()
+env_config.load()
 
 # Initialize bot with environment settings
 bot = commands.Bot(

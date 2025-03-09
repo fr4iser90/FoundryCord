@@ -36,57 +36,28 @@ A Docker-based Discord bot written in Python, designed to manage and monitor you
 - Discord Bot Token
 - Python 3.8+ (Ensure you have the latest version for optimal performance)
 
-## Setup
+## Quick Setup
 
-1. **Clone the Repository:**
+1. **Create a minimal .env.discordbot file**:
    ```bash
-   git clone https://github.com/yourusername/homelab-bot.git
-   cd homelab-bot
+   cd compose
+   mv .env.discordbot.example .env.discordbot
+   nano .env.discordbot
    ```
 
-2. **Set Up Environment Variables:**
-   - Navigate to the compose directory and create both environment files by copying the examples:
-     ```bash
-     cd compose
-     cp env.discordbot.example .env.discordbot
-     cp .env.postgres.example .env.postgres
-     ```
-   - Edit the `.env.discordbot` file with your specific configuration:
-     ```env
-     DISCORD_TOKEN=your_discord_bot_token
-     DOMAIN=your.domain.com
-     AES_KEY=your_aes_key
-     TYPE=Web,Game,File
-     AUTH_TOKEN=your_auth_token
-     DISCORD_SERVER=your_server_id
-     DISCORD_HOMELAB_CHANNEL=your_channel_id
-     TRACKER_URL=http://localhost:8081
-     SUPER_ADMINS=NAME|ID
-     ADMINS=NAME|ID
-     USERS=NAME|ID,NAME|ID,NAME|ID
-     ENCRYPTION_KEY=your_encryption_key
-     JWT_SECRET_KEY=your_jwt_secret
-     SESSION_DURATION_HOURS=24
-     RATE_LIMIT_WINDOW=60
-     RATE_LIMIT_MAX_ATTEMPTS=5
-     PUID=1001
-     PGID=987
-     ```
-   - Edit the `.env.postgres` file with your database configuration:
-     ```env
-     POSTGRES_USER=postgres
-     POSTGRES_PASSWORD=secure_password
-     POSTGRES_DB=homelab
-     APP_DB_USER=app_user
-     APP_DB_PASSWORD=app_password
-     POSTGRES_HOST=postgres
-     POSTGRES_PORT=5432
-     ```
-
-3. **Build and Start the Containers:**
+2. **Create a minimal .env.postgres file**:
    ```bash
-   docker compose -f compose/docker-compose.yml up -d --build
+   cd compose
+   mv .env.postgres.example .env.postgres
+   nano .env.postgres
    ```
+
+3. **Start the containers**:
+   ```bash
+   docker compose up -d --build
+   ```
+
+All other necessary configuration will be auto-generated at startup!
 
 ## Project Structure
 

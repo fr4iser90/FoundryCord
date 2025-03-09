@@ -21,21 +21,20 @@ def parse_users(users_str: str) -> Dict[str, str]:
 
 def load_user_groups() -> Dict[str, Dict[str, str]]:
     """Load all user groups from environment variables"""
-    # Load environment variables
-    super_admins_env = load_env_var('SUPER_ADMINS')
-    admins_env = load_env_var('ADMINS')
-    moderators_env = load_env_var('MODERATORS')
-    users_env = load_env_var('USERS')
-    guests_env = load_env_var('GUESTS')
+    from infrastructure.config.constants.role_constants import DEFAULT_USER_GROUPS
     
-    # Parse into dictionaries
-    return {
-        'super_admins': parse_users(super_admins_env),
-        'admins': parse_users(admins_env),
-        'moderators': parse_users(moderators_env),
-        'users': parse_users(users_env),
-        'guests': parse_users(guests_env)
-    }
+    # Start with default empty groups
+    result = DEFAULT_USER_GROUPS.copy()
+    
+    # Parse user groups from environment
+    for group_name in DEFAULT_USER_GROUPS.keys():
+        env_name = group_name.upper().replace('_', '')  # super_admins -> SUPERADMINS
+        env_value = os.environ.get(env_name, '')
+        
+        if env_value:
+            result[group_name] = parse_users(env_value)
+    
+    return result
 
 def load_typed_env_var(name: str, var_type, default=None):
     """Lädt eine Umgebungsvariable und konvertiert sie in den angegebenen Typ"""

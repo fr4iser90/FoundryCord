@@ -91,3 +91,22 @@ async def get_session():
         raise
     finally:
         logger.debug("Database session closed")
+
+async def get_async_session():
+    """Create and return a new async session for isolated processes"""
+    # Erstellt eine isolierte Session mit eigener Verbindung
+    engine = create_async_engine(
+        DATABASE_URL,
+        echo=False,
+        future=True,
+        pool_pre_ping=True  # Prüft, ob die Verbindung noch funktioniert
+    )
+    
+    # Eigene Session-Factory pro Aufruf
+    session_factory = sessionmaker(
+        engine, 
+        class_=AsyncSession, 
+        expire_on_commit=False
+    )
+    
+    return session_factory()

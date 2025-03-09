@@ -33,11 +33,17 @@ async def init_db(bot=None):
 
 async def migrate_existing_users():
     """Migrate existing users from env to database"""
-    from domain.auth.models import SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
+    # Import innerhalb der Funktion, um zirkuläre Importe zu vermeiden
+    from infrastructure.config.constants.user_groups import (
+        SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
+    )
     from ..models.models import User
-    from ..models.config import async_session
+    from ..models.config import get_async_session
+
+    # Neue Session für diesen spezifischen Prozess erstellen
+    async_session = await get_async_session()
     
-    async with async_session() as session:
+    try:
         for role_group, role_name in [
             (SUPER_ADMINS, 'super_admin'),
             (ADMINS, 'admin'),
@@ -47,7 +53,7 @@ async def migrate_existing_users():
         ]:
             for username, discord_id in role_group.items():
                 # Prüfen ob Benutzer bereits existiert
-                existing_user = await session.execute(
+                existing_user = await async_session.execute(
                     select(User).where(User.discord_id == discord_id)
                 )
                 existing_user = existing_user.scalar_one_or_none()
@@ -59,14 +65,25 @@ async def migrate_existing_users():
                         username=username,
                         role=role_name
                     )
-                    session.add(user)
+                    async_session.add(user)
                     logger.info(f"Added new user: {username} with role {role_name}")
                 else:
                     logger.debug(f"User {username} already exists, skipping")
         
-        await session.commit()
+        await async_session.commit()
         logger.info("User migration completed successfully")
+    finally:
+        # Session am Ende ordnungsgemäß schließen
+        await async_session.close()
 
+# Wrapper für den Migrations-Code um einen eigenen Event-Loop zu verwenden
+def run_migration():
+    """Run the migration in a separate event loop"""
+    # Verwende einen komplett isolierten Prozess für die Migration
+    try:
+        asyncio.run(migrate_existing_users())
+    except Exception as e:
+        logger.error(f"Migration failed: {e}")
+        
 if __name__ == "__main__":
-    asyncio.run(init_db())
-    asyncio.run(migrate_existing_users())
+    run_migration()

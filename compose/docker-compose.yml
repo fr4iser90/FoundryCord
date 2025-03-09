@@ -9,6 +9,14 @@ services:
     env_file:
       - .env.discordbot
       - .env.postgres
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - TYPE=${TYPE:-Web,Game,File}
+      - SESSION_DURATION_HOURS=${SESSION_DURATION_HOURS:-24}
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-60}
+      - RATE_LIMIT_MAX_ATTEMPTS=${RATE_LIMIT_MAX_ATTEMPTS:-5}
+      - PUID=${PUID:-1001}
+      - PGID=${PGID:-987}
     networks:
       - homelab-net
     dns:
@@ -17,11 +25,10 @@ services:
       - ../app/bot/:/app/bot/
       - ../../../vpn-management/wireguard/config/:/app/bot/database/wireguard
       - /var/run/docker.sock:/var/run/docker.sock
+      - bot_config:/app/bot/config
     depends_on:
       postgres:
         condition: service_healthy
-    # Benutzer kann hier überschrieben werden, wenn nötig
-    # user: "1004:987"
 
   postgres:
     image: postgres:17-alpine
@@ -29,6 +36,11 @@ services:
     restart: unless-stopped
     env_file:
       - .env.postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-homelab}
+      - POSTGRES_HOST=${POSTGRES_HOST:-homelab-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
     command: ["postgres", "-c", "listen_addresses=*"]
     ports:
       - "5432:5432"
@@ -51,4 +63,6 @@ networks:
 
 volumes:
   postgres_data:
+    driver: local
+  bot_config:
     driver: local

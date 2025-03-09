@@ -1,6 +1,7 @@
 # .env.*
 .env.discordbot
 .env.postgres
+.env.secret
 
 # cache
 __pycache__

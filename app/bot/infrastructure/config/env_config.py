@@ -1,8 +1,10 @@
 import os
 import nextcord
+import secrets
+import base64
+from cryptography.fernet import Fernet
 from typing import Dict
 from infrastructure.logging import logger
-from infrastructure.config.security.env_security import decrypt_data, generate_encryption_key
 
 class EnvConfig:
     def __init__(self):
@@ -11,14 +13,37 @@ class EnvConfig:
         self.is_production = False
         self.discord_token = None
         self.guild_id = None
-        self.HOMELAB_CATEGORY_ID= None
+        self.HOMELAB_CATEGORY_ID = None
         self.user_groups = {}
+        
+        # Auto-generate values if they don't exist
+        self._ensure_secure_keys()
+
+    def _ensure_secure_keys(self):
+        """Ensure all security keys are set, generating if needed"""
+        # Check AES_KEY
+        if not os.getenv('AES_KEY'):
+            generated_key = base64.urlsafe_b64encode(os.urandom(32)).decode()
+            os.environ['AES_KEY'] = generated_key
+            logger.warning(f"Generated missing AES_KEY: {generated_key[:5]}...")
+            
+        # Check ENCRYPTION_KEY  
+        if not os.getenv('ENCRYPTION_KEY'):
+            generated_key = Fernet.generate_key().decode()
+            os.environ['ENCRYPTION_KEY'] = generated_key
+            logger.warning(f"Generated missing ENCRYPTION_KEY: {generated_key[:5]}...")
+            
+        # Check JWT_SECRET_KEY
+        if not os.getenv('JWT_SECRET_KEY'):
+            generated_key = base64.urlsafe_b64encode(os.urandom(24)).decode()
+            os.environ['JWT_SECRET_KEY'] = generated_key
+            logger.warning(f"Generated missing JWT_SECRET_KEY: {generated_key[:5]}...")
 
     def load(self) -> None:
-        """Load all environment variables"""
+        """Load all environment variables with smart defaults"""
         try:
             # Load basic environment settings
-            self.environment = os.getenv('ENVIRONMENT', 'production').lower()
+            self.environment = os.getenv('ENVIRONMENT', 'development').lower()
             self.is_development = self.environment == 'development'
             self.is_production = self.environment == 'production'
             
@@ -30,10 +55,32 @@ class EnvConfig:
             # Load user groups
             self.user_groups = self._load_user_groups()
             
+            # Fill in missing optional values with defaults
+            self._load_defaults()
+            
             logger.info(f"Environment configuration loaded successfully: {self.environment}")
         except Exception as e:
             logger.error(f"Failed to load environment configuration: {e}")
             raise
+            
+    def _load_defaults(self):
+        """Apply default values to missing optional variables"""
+        # Define default values for optional variables
+        defaults = {
+            "DOMAIN": "localhost",
+            "TYPE": "Web,Game,File",
+            "SESSION_DURATION_HOURS": "24",
+            "RATE_LIMIT_WINDOW": "60",
+            "RATE_LIMIT_MAX_ATTEMPTS": "5",
+            "PUID": "1001",
+            "PGID": "987",
+        }
+        
+        # Apply defaults if variables aren't set
+        for key, default_value in defaults.items():
+            if not os.getenv(key):
+                os.environ[key] = default_value
+                logger.debug(f"Using default value for {key}: {default_value}")
 
     def get_intents(self) -> nextcord.Intents:
         intents = nextcord.Intents.default()
@@ -83,41 +130,4 @@ class EnvConfig:
                     users_dict[username.strip()] = user_id.strip()
         return users_dict
     
-    def load_from_encrypted(self, master_password=None):
-        """Load configuration from encrypted storage"""
-        try:
-            # If no password provided, try to prompt
-            if not master_password:
-                import getpass
-                master_password = getpass.getpass("Enter master password to decrypt environment variables: ")
-            
-            # Find the .env.encrypted file relative to project root
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-            encrypted_path = os.path.join(base_dir, ".env.encrypted")
-            
-            if not os.path.exists(encrypted_path):
-                logger.warning("No encrypted environment file found.")
-                return False
-            
-            with open(encrypted_path, "r") as f:
-                encrypted_data = f.read()
-            
-            key = generate_encryption_key(master_password)
-            env_vars = decrypt_data(encrypted_data, key)
-            
-            if not env_vars:
-                logger.error("Failed to decrypt environment variables.")
-                return False
-            
-            # Set environment variables
-            for var_name, value in env_vars.items():
-                os.environ[var_name] = value
-            
-            # Now load normally
-            self.load()
-            logger.info("Environment loaded from encrypted storage")
-            return True
-        except Exception as e:
-            logger.error(f"Error loading encrypted environment: {e}")
-            return False
 
