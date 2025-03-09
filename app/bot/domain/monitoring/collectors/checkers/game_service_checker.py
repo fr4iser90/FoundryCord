@@ -7,8 +7,7 @@ import aiohttp
 from .docker_utils import get_container_ip, get_all_containers
 from .port_checker import check_tcp_port
 from infrastructure.logging import logger
-
-
+from domain.gameservers.collectors.minecraft.minecraft_server_collector import MinecraftServerFetcher
 
 async def get_public_ip():
     """Get the public IP address of the server"""
@@ -192,24 +191,26 @@ async def check_pufferpanel_games(services_list):
                             logger.debug(f"TCP port {host_port} is accessible from outside at {public_ip}")
                         else:
                             logger.debug(f"TCP port {host_port} is NOT accessible from outside")
-                    except Exception as e:
-                        logger.debug(f"External TCP check failed for {public_ip}:{host_port}: {str(e)}")
-                    
-                    # For UDP-based games or games that use both protocols
-                    if port['protocol'] == 'udp' or service.get("protocol") in ["udp", "both"]:
-                        # Only add UDP ports if the corresponding TCP port was accessible
-                        # or if we have other evidence the server is running
-                        if check_tcp_port(public_ip, host_port, timeout=2.0):
-                            logger.debug(f"TCP port {host_port} is accessible, assuming UDP is available too")
-                            active_ports.add(host_port)
-                        else:
-                            # For Minecraft specifically, try to check if the server responds
-                            if "Minecraft" in service["name"] and host_port == 25565:
-                                # Try a simple check for the primary Minecraft port
-                                if await check_minecraft_server(public_ip, host_port):
-                                    logger.debug(f"Minecraft server detected on port {host_port}")
+                            
+                            # Special check for UDP ports that might be open
+                            protocol = port['protocol']
+                            if protocol == 'udp':
+                                logger.debug(f"UDP port {host_port} - assuming it might be open")
+                                # Try TCP on the same port as a fallback check
+                                # or if we have other evidence the server is running
+                                if check_tcp_port(public_ip, host_port, timeout=2.0):
+                                    logger.debug(f"TCP port {host_port} is accessible, assuming UDP is available too")
                                     active_ports.add(host_port)
-                                    break  # One confirmed port is enough for Minecraft
+                                else:
+                                    # For Minecraft specifically, try to check if the server responds
+                                    if "Minecraft" in service["name"] and host_port == 25565:
+                                        # Try a simple check for the primary Minecraft port
+                                        if await check_minecraft_server(public_ip, host_port):
+                                            logger.debug(f"Minecraft server detected on port {host_port}")
+                                            active_ports.add(host_port)
+                                            break  # One confirmed port is enough for Minecraft
+                    except Exception as e:
+                        logger.debug(f"Error checking port {host_port}: {str(e)}")
             
             # Final determination based on external checks
             if active_ports:
@@ -249,7 +250,6 @@ async def check_pufferpanel_games(services_list):
             logger.debug(f"Fehler bei {service['name']}: {str(e)}")
             results[service["name"]] = "⚠️ Fehler"
     
-    # Log the final results
     logger.debug(f"Final PufferPanel game server results: {results}")
     logger.debug(f"======== FINISHED PUFFERPANEL GAMES CHECK ========")
     return results
@@ -310,4 +310,6 @@ async def check_standalone_games(services_list):
             logger.debug(f"Fehler bei {service['name']}: {str(e)}")
             results[service["name"]] = "⚠️ Fehler"
             
+    logger.debug(f"Final standalone game server results: {results}")
+    logger.debug(f"======== FINISHED STANDALONE GAMES CHECK ========")
     return results

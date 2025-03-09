@@ -86,7 +86,9 @@ class SpeedTestManager:
         """Holt Speed Test Ergebnisse (cached oder neu)"""
         cached = await self._load_results()
         if cached:
+            logger.info("Using cached speed test results from %s", cached['timestamp'])
             return cached
+        logger.info("No valid cached results found, performing new speed test")
         return await self.perform_speed_test()
 
     async def _test_download(self, session: aiohttp.ClientSession) -> float:

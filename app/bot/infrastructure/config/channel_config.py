@@ -2,7 +2,7 @@ from typing import Dict, Optional, List
 from infrastructure.logging import logger
 from nextcord import TextChannel
 from infrastructure.discord.channel_setup_service import ChannelSetupService
-from infrastructure.database.models.models import ChannelMapping
+from infrastructure.database.models import ChannelMapping
 from infrastructure.database.models.config import get_session
 from infrastructure.config.constants.channel_constants import CHANNELS
 from infrastructure.config.constants.dashboard_constants import DASHBOARD_MAPPINGS

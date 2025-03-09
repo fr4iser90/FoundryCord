@@ -1,7 +1,7 @@
 from typing import Optional
 import nextcord
 from infrastructure.logging import logger
-from infrastructure.database.models.models import Task
+from infrastructure.database.models import Task
 from interfaces.dashboards.components.common.modals import BaseModal
 
 class TaskModal(BaseModal):

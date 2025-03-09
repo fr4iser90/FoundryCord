@@ -3,6 +3,16 @@ set -e
 
 echo "===== Homelab Discord Bot Initialization ====="
 
+# Direct loading of environment variables from .env.discordbot
+ENV_FILE="/.env.discordbot"
+if [ -f "$ENV_FILE" ]; then
+  echo "Loading environment directly from $ENV_FILE"
+  # Source the file directly to get exact values
+  source "$ENV_FILE"
+else
+  echo "WARNING: $ENV_FILE not found, using passed environment variables"
+fi
+
 # Function to generate random keys
 generate_key() {
   key_type=$1
@@ -122,10 +132,10 @@ apply_variables() {
   echo "Checking environment variables..."
   
   # Only log the current values without overriding them
-  echo "ENVIRONMENT: ${ENVIRONMENT:-development}"
-  echo "DOMAIN: ${DOMAIN:-localhost}"
-  echo "OFFLINE_MODE: ${OFFLINE_MODE:-false}"
-  echo "ENABLED_SERVICES: ${ENABLED_SERVICES:-Web,Game,File}"
+  echo "ENVIRONMENT: ${ENVIRONMENT}"
+  echo "DOMAIN: ${DOMAIN}"
+  echo "OFFLINE_MODE: ${OFFLINE_MODE}"
+  echo "ENABLED_SERVICES: ${ENABLED_SERVICES}"
   
   # Add specific debug output for OFFLINE_MODE value
   echo "DEBUG: OFFLINE_MODE value is '${OFFLINE_MODE}'"
@@ -142,8 +152,8 @@ show_configuration_summary() {
   echo "===== Configuration Summary ====="
   echo "Environment: $ENVIRONMENT"
   
-  # The issue might be with string comparison in bash
-  if [[ "$OFFLINE_MODE" == "false" ]]; then
+  # Use simple negation to handle all non-true values as false
+  if [[ "$OFFLINE_MODE" != "true" ]]; then
     echo "Mode: ONLINE MODE (using real domain)"
     echo "Domain: $DOMAIN"
     
@@ -186,7 +196,15 @@ initialize() {
   # Create database tables - skip if DB_INIT_DISABLE is set
   if [ "$DB_INIT_DISABLE" != "true" ]; then
     echo "Initializing database..."
-    python -m infrastructure.database.migrations.init_db
+    if [ "$USE_ALEMBIC" = "true" ]; then
+      echo "Running Alembic migrations..."
+      cd /app/bot
+      alembic upgrade head
+    else
+      # Default to SQLAlchemy create_all
+      echo "Using SQLAlchemy for database initialization..."
+      python -m infrastructure.database.migrations.init_db
+    fi
   fi
   
   echo "Initialization complete."

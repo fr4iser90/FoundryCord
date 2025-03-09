@@ -7,6 +7,8 @@ from infrastructure.factories.discord_ui.dashboard_factory import DashboardFacto
 from domain.monitoring.collectors import service_collector
 from domain.gameservers.models.gameserver_metrics import GameServersMetrics
 from interfaces.dashboards.ui.gameserver_dashboard import GameServerDashboardUI
+from domain.gameservers.collectors.minecraft.minecraft_server_collector import MinecraftServerFetcher
+
 
 class GameServerDashboardService:
     """Service for the Game Server Dashboard"""
@@ -57,6 +59,39 @@ class GameServerDashboardService:
                     }
             except Exception as e:
                 logger.warning(f"Could not fetch system information: {e}")
+            
+            # Prioritize API data for Minecraft servers
+            minecraft_servers = []
+            for service_name, status in service_data.items():
+                if "minecraft" in service_name.lower() and "online" in status.lower():
+                    # Extract server info from your config
+                    server_info = next((s for s in service_config if s["name"] == service_name), None)
+                    if server_info:
+                        minecraft_servers.append((server_info["ip"], server_info["port"]))
+            
+            # Fetch and update with API data
+            if minecraft_servers:
+                try:
+                    mc_api_data = await MinecraftServerFetcher.fetch_multiple_servers(minecraft_servers)
+                    # Update service_data with the API information
+                    for service_name, status in service_data.items():
+                        if "minecraft" in service_name.lower():
+                            server_info = next((s for s in service_config if s["name"] == service_name), None)
+                            if server_info:
+                                service_key = f"{server_info['ip']}:{server_info['port']}"
+                                if service_key in mc_api_data and mc_api_data[service_key].get("online", False):
+                                    api_result = mc_api_data[service_key]
+                                    player_count = api_result.get("players", {}).get("online", 0)
+                                    max_players = api_result.get("players", {}).get("max", 0)
+                                    player_list = api_result.get("players", {}).get("list", [])
+                                    
+                                    if player_count > 0 and player_list:
+                                        player_names = ", ".join([p.get("name_clean", "Unknown") for p in player_list])
+                                        service_data[service_name] = f"✅ Online ({player_count}/{max_players}) Players: {player_names}"
+                                    else:
+                                        service_data[service_name] = f"✅ Online ({player_count}/{max_players})"
+                except Exception as e:
+                    logger.error(f"Error fetching Minecraft API data: {e}")
             
             # Return combined data
             return {

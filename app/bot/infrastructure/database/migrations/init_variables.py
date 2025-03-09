@@ -22,7 +22,7 @@ args = parser.parse_args()
 ESSENTIAL_VARS = {
     "DISCORD_TOKEN": "Your Discord bot token from Discord Developer Portal",
     "DISCORD_SERVER": "Your Discord server/guild ID",
-    "HOMELAB_CATEGORY_ID": "Category ID for Homelab channels",
+    #"HOMELAB_CATEGORY_ID": "Category ID for Homelab channels",
     "SUPER_ADMINS": "Discord user IDs for super admins (format: NAME|ID)",
 }
 
@@ -33,6 +33,8 @@ AUTO_GENERATE = {
     "JWT_SECRET_KEY": lambda: base64.urlsafe_b64encode(os.urandom(24)).decode(),
     "POSTGRES_PASSWORD": lambda: secrets.token_hex(16),
     "APP_DB_PASSWORD": lambda: secrets.token_hex(16),
+    "HOMELAB_CATEGORY_ID": lambda: "auto",  # Will be created during bot startup
+    "GAMESERVERS_CATEGORY_ID": lambda: "auto",  # Will be created during bot startup
 }
 
 # Default values for optional variables

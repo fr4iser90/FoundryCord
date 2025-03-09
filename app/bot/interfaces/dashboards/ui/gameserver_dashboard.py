@@ -6,14 +6,21 @@ from infrastructure.logging import logger
 from infrastructure.config.channel_config import ChannelConfig
 from .base_dashboard import BaseDashboardUI
 from interfaces.dashboards.components.channels.gameservers.views import GameServerView
-from domain.gameservers.models.gameserver_metrics import GameServersMetrics
 from interfaces.dashboards.components.ui.table_builder import UnicodeTableBuilder
+from domain.gameservers.collectors.minecraft.minecraft_server_collector import MinecraftServerFetcher
+from domain.gameservers.models.gameserver_metrics import GameServersMetrics
+
 
 class GameServerDashboardUI(BaseDashboardUI):
     """UI class for displaying the game server dashboard"""
     
     DASHBOARD_TYPE = "gameservers"
     TITLE_IDENTIFIER = "Game Servers Status"
+    
+    def __init__(self, bot):
+        super().__init__(bot)
+        self.minecraft_collector = MinecraftServerFetcher()
+        self.metrics = GameServersMetrics()  # Domain model
     
     async def initialize(self):
         """Initialize the game server dashboard UI"""
@@ -296,3 +303,69 @@ class GameServerDashboardUI(BaseDashboardUI):
         view.set_callback("player_list", self.on_player_list)
         view.set_callback("server_logs", self.on_server_logs)
         view.set_callback("connection_details", self.on_connection_details)
+
+    async def refresh_data(self):
+        """Fetch all game server data and update metrics"""
+        # Get base metrics from your existing source
+        base_data = await self.service.get_game_servers_status()
+        self.metrics = GameServersMetrics.from_raw_data(base_data)
+        
+        # Fetch and integrate Minecraft-specific data
+        domain = self.metrics.domain or "fr4iser.com"
+        minecraft_servers = [(domain, 25570)]  # Use correct port 25570
+        
+        try:
+            logger.debug(f"🎮 GameServerDashboardUI: Fetching Minecraft data for {minecraft_servers}")
+            minecraft_data = await MinecraftServerFetcher.fetch_multiple_servers(minecraft_servers)
+            
+            # Add detailed logging
+            logger.debug(f"==== RAW MINECRAFT API RESPONSE ====")
+            for server_key, server_data in minecraft_data.items():
+                logger.debug(f"Server {server_key}:")
+                logger.debug(f"  Online: {server_data.get('online')}")
+                logger.debug(f"  Player count: {server_data.get('player_count')}")
+                logger.debug(f"  Max players: {server_data.get('max_players')}")
+                logger.debug(f"  Player list: {server_data.get('players', [])}")
+            
+            # Update metrics with Minecraft data
+            self.metrics.update_with_minecraft_data(minecraft_data)
+            
+            # Log the processed data
+            logger.debug("==== PROCESSED MINECRAFT DATA ====")
+            for name, server in self.metrics.servers.items():
+                if "minecraft" in name.lower():
+                    logger.debug(f"Server {name}:")
+                    logger.debug(f"  Online: {server.online}")
+                    logger.debug(f"  Player count: {server.player_count}")
+                    logger.debug(f"  Max players: {server.max_players}")
+                    logger.debug(f"  Player list: {server.players}")
+            
+            # Update last_metrics for UI to use
+            self.last_metrics = self.metrics.to_dict()
+            
+            logger.info(f"Updated metrics with Minecraft data for {len(minecraft_data)} servers")
+        except Exception as e:
+            logger.error(f"Failed to fetch Minecraft data: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+        
+        # Create a view with the updated metrics
+        view = GameServerView(self.metrics.to_dict())
+        view.create()  # Make sure to call create to set up the buttons
+        return view
+    
+    async def on_refresh(self, interaction: nextcord.Interaction):
+        """Handler for the refresh button"""
+        await interaction.response.defer(ephemeral=True)
+        
+        # Fetch and refresh data
+        await self.create_embed()
+        await self.refresh_data()
+        
+        # Critical: Update the dashboard message with new data
+        await self.display_dashboard()
+        
+        await interaction.followup.send(
+            "Game Server Dashboard updated with latest data!", 
+            ephemeral=True
+        )

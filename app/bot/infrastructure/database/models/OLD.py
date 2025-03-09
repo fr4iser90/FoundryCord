@@ -93,3 +93,16 @@ class DashboardMessage(Base):
     
     def __repr__(self):
         return f"<DashboardMessage(dashboard_type='{self.dashboard_type}', message_id={self.message_id})>"
+
+class CategoryMapping(Base):
+    __tablename__ = 'category_mappings'
+    
+    id = Column(Integer, primary_key=True)
+    guild_id = Column(String, unique=True, index=True)
+    category_id = Column(String)
+    category_name = Column(String)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    def __repr__(self):
+        return f"<CategoryMapping(guild={self.guild_id}, category={self.category_id})>"

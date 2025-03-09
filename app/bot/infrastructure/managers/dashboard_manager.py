@@ -4,7 +4,7 @@ import logging
 from typing import List, Optional
 from interfaces.dashboards.ui.base_dashboard import BaseDashboardUI
 from infrastructure.logging import logger
-from infrastructure.database.models.models import DashboardMessage
+from infrastructure.database.models import DashboardMessage
 from infrastructure.database.models.config import get_session
 from sqlalchemy import select
 import nextcord

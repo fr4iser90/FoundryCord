@@ -1,6 +1,6 @@
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from ..models.models import RateLimit
+from ..models import RateLimit
 from typing import Optional, List
 from datetime import datetime
 

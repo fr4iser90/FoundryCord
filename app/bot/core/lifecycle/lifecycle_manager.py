@@ -3,12 +3,14 @@ import asyncio
 import os
 import logging
 from infrastructure.managers.dashboard_manager import DashboardManager
+from core.workflows.category_workflow import CategoryWorkflow
 from core.workflows.channel_workflow import ChannelWorkflow
 from core.workflows.service_workflow import ServiceWorkflow
 from core.workflows.dashboard_workflow import DashboardWorkflow
 from core.workflows.task_workflow import TaskWorkflow
 from core.workflows.slash_commands_workflow import SlashCommandsWorkflow
 from infrastructure.logging import logger
+
 
 class BotLifecycleManager:
     def __init__(self, bot):
@@ -173,6 +175,7 @@ class BotLifecycleManager:
 
             # Initialize through workflows
             workflows = [
+                ('category', CategoryWorkflow(self.bot)),
                 ('channel', ChannelWorkflow(self.bot)),
                 ('service', ServiceWorkflow(self.bot)),
                 ('dashboard', DashboardWorkflow(self.bot)),

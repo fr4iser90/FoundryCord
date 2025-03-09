@@ -48,10 +48,10 @@
       "active": true,
       "files": [
         "docs/roles/BOT_FRAMEWORK_DEVELOPER.md",
-        "docs/roles/SYSTEM_MONITORING_DEVELOPER.md",
-        "docs/roles/SECURITY_SPECIALIST.md",
+        //"docs/roles/SYSTEM_MONITORING_DEVELOPER.md",
+        //"docs/roles/SECURITY_SPECIALIST.md",
         "docs/roles/UI_UX_DESIGNER.md",
-        "docs/roles/SLASH_COMMAND_DEVELOPER.md"
+        //"docs/roles/SLASH_COMMAND_DEVELOPER.md"
       ]
     }
   }

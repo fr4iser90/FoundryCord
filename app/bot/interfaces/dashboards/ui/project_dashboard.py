@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Any
 import nextcord
 from datetime import datetime
 from infrastructure.logging import logger
-from infrastructure.database.models.models import Project
+from infrastructure.database.models import Project
 
 # Importieren Sie die vorhandenen Komponenten
 from interfaces.dashboards.components.channels.projects.buttons.project_buttons import ProjectActionButtons

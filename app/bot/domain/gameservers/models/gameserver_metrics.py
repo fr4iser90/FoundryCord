@@ -1,6 +1,7 @@
 # app/bot/domain/gameservers/models/gameserver_metrics.py
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+from infrastructure.logging import logger
 
 class GameServerStatus:
     """Status of a game server"""
@@ -91,14 +92,85 @@ class GameServersMetrics:
         return ports
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary format for UI consumption"""
+        """Convert all metrics to dictionary format"""
+        server_dict = {}
+        online_count = 0
+        total_players = 0
+        
+        # Process each server
+        for name, server in self.servers.items():
+            server_dict[name] = server.to_dict()
+            if server.online:
+                online_count += 1
+                total_players += server.player_count
+        
+        # Log the server_dict for debugging
+        for name, data in server_dict.items():
+            if "minecraft" in name.lower():
+                logger.debug(f"Server {name} in to_dict(): {data}")
+                logger.debug(f"  Player count: {data.get('player_count')}")
+                logger.debug(f"  Players: {data.get('players')}")
+        
         return {
-            'servers': {name: server.to_dict() for name, server in self.servers.items()},
+            'servers': server_dict,
+            'online_servers': online_count,
             'total_servers': len(self.servers),
-            'online_servers': sum(1 for server in self.servers.values() if server.online),
-            'total_players': sum(server.player_count for server in self.servers.values()),
-            'timestamp': self.timestamp.strftime('%H:%M:%S'),
+            'total_players': total_players,
+            'timestamp': self.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
             'public_ip': self.public_ip,
             'domain': self.domain,
             'ip_match': self.ip_match
         }
+
+    def update_with_minecraft_data(self, minecraft_data: Dict[str, Any]) -> None:
+        """Update metrics with data from Minecraft server collector"""
+        logger.debug(f"�� GameServersMetrics: Starting Minecraft data update with {len(minecraft_data)} servers")
+        
+        for server_key, data in minecraft_data.items():
+            addr, port = server_key.split(':')
+            port_num = int(port)
+            
+            # Determine server name - use existing if found by port, or create new
+            server_name = None
+            for name, server in self.servers.items():
+                if port_num in server.ports and "minecraft" in name.lower():
+                    server_name = name
+                    break
+            
+            if not server_name:
+                server_name = "Minecraft"
+            
+            # Get player data
+            player_list = data.get('players', [])
+            player_count = data.get('player_count', 0)
+            max_players = data.get('max_players', 0)
+            
+            logger.debug(f"🎮 GameServersMetrics: Processing server '{server_name}'")
+            logger.debug(f"  - Player count: {player_count}")
+            logger.debug(f"  - Max players: {max_players}")
+            logger.debug(f"  - Player list: {player_list}")
+            
+            # Create or update the server status
+            if server_name in self.servers:
+                # Update existing server
+                server = self.servers[server_name]
+                logger.debug(f"�� GameServersMetrics: Updating existing server: {server_name}")
+                server.online = data.get('online', False)
+                server.players = player_list
+                server.player_count = player_count
+                server.max_players = max_players
+                server.version = data.get('version', 'Unknown')
+                server.last_check = datetime.now()
+            else:
+                # Create new server entry
+                logger.debug(f"🎮 GameServersMetrics: Creating new server: {server_name}")
+                server = GameServerStatus(
+                    name=server_name,
+                    status=data.get('online', False),
+                    ports=[port_num],
+                    players=player_list,
+                    version=data.get('version', 'Unknown')
+                )
+                server.max_players = max_players
+                server.player_count = player_count
+                self.servers[server_name] = server

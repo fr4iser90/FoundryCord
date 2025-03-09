@@ -4,7 +4,7 @@ import nextcord
 import sys
 import asyncio
 from nextcord.ext import commands
-from infrastructure.config import EnvConfig, ServiceConfig, TaskConfig, ChannelConfig, DashboardConfig, ModuleServicesConfig
+from infrastructure.config import EnvConfig, ServiceConfig, TaskConfig, ChannelConfig, CategoryConfig, DashboardConfig, ModuleServicesConfig
 from infrastructure.logging import logger
 from infrastructure.factories import BotComponentFactory, ServiceFactory, TaskFactory, DashboardFactory
 from core.lifecycle.lifecycle_manager import BotLifecycleManager
@@ -43,6 +43,7 @@ async def initialize_bot():
     bot.dashboard_factory = bot.factory.factories['dashboard']  # For dashboard creation
     
     # NOW register configurations
+    bot.category_config = CategoryConfig.register(bot)  # Add this line
     bot.channel_config = ChannelConfig.register(bot)
     bot.critical_services = ServiceConfig.register_critical_services(bot)
     bot.module_services = ModuleServicesConfig.register(bot)
