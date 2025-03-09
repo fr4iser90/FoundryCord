@@ -1,18 +1,22 @@
 import aiohttp
 import psutil
 import logging
+from infrastructure.config.feature_flags import OFFLINE_MODE
 
 logger = logging.getLogger('homelab_bot')
 
 async def fetch_public_ip():
-    """Holt die öffentliche IP-Adresse asynchron."""
+    """Gets the public IP address asynchronously."""
+    if OFFLINE_MODE:
+        return "127.0.0.1 (Offline Mode)"
+        
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get("https://api.ipify.org?format=json") as resp:
                 data = await resp.json()
                 return data.get("ip", "N/A")
         except Exception as e:
-            logger.error(f"Fehler beim Abrufen der öffentlichen IP: {e}")
+            logger.error(f"Error fetching public IP: {e}")
             return "N/A"
 
 async def get_network_stats():

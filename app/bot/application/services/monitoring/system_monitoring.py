@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import os
 from utils.http_client import http_client
 from infrastructure.logging import logger
+from infrastructure.config.feature_flags import DOMAIN, OFFLINE_MODE, ENABLE_DOMAIN_CHECKS
 
 # Load environment variables from .env file
 load_dotenv()
@@ -30,24 +31,26 @@ class SystemMonitoringService:
             memory = psutil.virtual_memory()
             disk = psutil.disk_usage('/')
             
-            # Fetch Public IPv4 address
-            try:
-                public_ip = http_client.get("https://api.ipify.org?format=json").json()['ip']
-            except requests.RequestException:
-                public_ip = "Unable to fetch public IP"
+            # Fetch Public IPv4 address (only if not in offline mode)
+            if not OFFLINE_MODE:
+                try:
+                    public_ip = http_client.get("https://api.ipify.org?format=json").json()['ip']
+                except requests.RequestException:
+                    public_ip = "Unable to fetch public IP"
+            else:
+                public_ip = "127.0.0.1 (Offline Mode)"
 
-            # Check if the public IP matches the domain (simplified check)
-            try:
-                if DOMAIN:
-                    # Get the IP of the domain
+            # Domain checks only if enabled
+            if ENABLE_DOMAIN_CHECKS:
+                try:
                     domain_ip = socket.gethostbyname(DOMAIN)
                     ip_match = "matches" if public_ip == domain_ip else "does not match"
-                else:
-                    domain_ip = "No DOMAIN configured"
+                except socket.gaierror:
+                    domain_ip = "Unable to resolve domain"
                     ip_match = "N/A"
-            except socket.gaierror:
-                domain_ip = "Unable to resolve domain"
-                ip_match = "N/A"
+            else:
+                domain_ip = "Domain checks disabled"
+                ip_match = "N/A (Offline Mode)"
                 
             return {
                 "cpu_percent": cpu_percent,

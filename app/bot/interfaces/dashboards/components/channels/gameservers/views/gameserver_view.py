@@ -32,6 +32,22 @@ class GameServerView(BaseView):
         total_count = self.metrics.get('total_servers', 0)
         player_count = self.metrics.get('total_players', 0)
         
+        # Connection information
+        public_ip = self.metrics.get('public_ip', 'Unknown')
+        domain = self.metrics.get('domain', 'Unknown')
+        ip_match = self.metrics.get('ip_match', None)
+        
+        # Add connection information with indicator when there's a mismatch
+        if ip_match is not None:
+            connection_warning = "" if ip_match else "⚠️ Domain and IP don't match! Check DNS settings."
+            connection_color = 0x2ecc71 if ip_match else 0xf1c40f  # Green or amber
+            connection_info = (
+                f"**Connect via:** {domain}\n"
+                f"**Public IP:** {public_ip}\n"
+                f"{connection_warning}"
+            )
+            embed.add_field(name="🔌 Connection", value=connection_info, inline=False)
+        
         # Summary field
         summary = (
             f"**Servers:** {online_count}/{total_count} online\n"
@@ -96,7 +112,7 @@ class GameServerView(BaseView):
         details_button = nextcord.ui.Button(
             style=nextcord.ButtonStyle.primary,
             label="Server Details",
-            emoji="🖥️",
+            emoji="ℹ️",
             custom_id="server_details",
             row=0
         )
@@ -125,4 +141,21 @@ class GameServerView(BaseView):
         logs_button.callback = lambda i: self._handle_callback(i, "server_logs")
         self.add_item(logs_button)
         
+        # Connection info button
+        conn_button = nextcord.ui.Button(
+            style=nextcord.ButtonStyle.secondary,
+            label="Connection Info",
+            emoji="🔌",
+            custom_id="connection_details",
+            row=1
+        )
+        conn_button.callback = lambda i: self._handle_callback(i, "connection_details")
+        self.add_item(conn_button)
+        
         return self
+    
+    def _handle_callback(self, interaction: nextcord.Interaction, action: str):
+        """Handle button callbacks through the callback registry"""
+        # This will be handled by the set_callback mechanism
+        logger.debug(f"Button {action} pressed, delegating to registered callback")
+        pass

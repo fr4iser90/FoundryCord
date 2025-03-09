@@ -40,11 +40,28 @@ class GameServerDashboardService:
             
         try:
             logger.debug("Collecting game server data for game server dashboard")
+            
+            # Get service data
             service_data = await service_collector.collect_service_data()
             
-            # Transform using domain model
+            # Get system information
+            system_info = {}
+            try:
+                # If SystemMonitoringService is available, get public IP and domain info
+                if hasattr(self.bot, 'system_monitoring_service'):
+                    system_data = await self.bot.system_monitoring_service.get_full_system_status()
+                    system_info = {
+                        'public_ip': system_data.get('public_ip'),
+                        'domain': system_data.get('domain'),
+                        'domain_ip': system_data.get('domain_ip')
+                    }
+            except Exception as e:
+                logger.warning(f"Could not fetch system information: {e}")
+            
+            # Return combined data
             return {
-                'services': service_data
+                'services': service_data,
+                'system': system_info
             }
         except Exception as e:
             logger.error(f"Error collecting game server status: {e}")

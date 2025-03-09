@@ -40,6 +40,9 @@ class GameServersMetrics:
     def __init__(self):
         self.servers: Dict[str, GameServerStatus] = {}
         self.timestamp = datetime.now()
+        self.public_ip = None
+        self.domain = None
+        self.ip_match = None
     
     @classmethod
     def from_raw_data(cls, data: Dict[str, Any]) -> 'GameServersMetrics':
@@ -49,6 +52,15 @@ class GameServersMetrics:
         # Get game server data from monitoring data
         game_servers = data.get('services', {}).get('services', {})
         
+        # Extract connection information if available
+        if 'system' in data:
+            metrics.public_ip = data.get('system', {}).get('public_ip')
+            metrics.domain = data.get('system', {}).get('domain')
+            if metrics.public_ip and metrics.domain:
+                domain_ip = data.get('system', {}).get('domain_ip')
+                metrics.ip_match = metrics.public_ip == domain_ip
+        
+        # Process game servers data
         for name, status_text in game_servers.items():
             if '🎮' not in name:
                 continue
@@ -85,5 +97,8 @@ class GameServersMetrics:
             'total_servers': len(self.servers),
             'online_servers': sum(1 for server in self.servers.values() if server.online),
             'total_players': sum(server.player_count for server in self.servers.values()),
-            'timestamp': self.timestamp.strftime('%H:%M:%S')
+            'timestamp': self.timestamp.strftime('%H:%M:%S'),
+            'public_ip': self.public_ip,
+            'domain': self.domain,
+            'ip_match': self.ip_match
         }

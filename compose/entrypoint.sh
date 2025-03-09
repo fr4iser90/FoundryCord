@@ -118,27 +118,49 @@ generate_optional_keys() {
 }
 
 # Apply defaults for other optional variables
-apply_defaults() {
-  echo "Applying defaults for optional variables..."
+apply_variables() {
+  echo "Checking environment variables..."
   
-  # Define defaults
-  declare -A defaults
-  defaults["ENVIRONMENT"]="development"
-  defaults["DOMAIN"]="localhost"
-  defaults["TYPE"]="Web,Game,File"
-  defaults["SESSION_DURATION_HOURS"]="24"
-  defaults["RATE_LIMIT_WINDOW"]="60"
-  defaults["RATE_LIMIT_MAX_ATTEMPTS"]="5"
-  defaults["PUID"]="1001"
-  defaults["PGID"]="987"
+  # Only log the current values without overriding them
+  echo "ENVIRONMENT: ${ENVIRONMENT:-development}"
+  echo "DOMAIN: ${DOMAIN:-localhost}"
+  echo "OFFLINE_MODE: ${OFFLINE_MODE:-false}"
+  echo "ENABLED_SERVICES: ${ENABLED_SERVICES:-Web,Game,File}"
   
-  # Apply defaults if not set
-  for key in "${!defaults[@]}"; do
-    if [ -z "${!key}" ]; then
-      export "$key"="${defaults[$key]}"
-      echo "Set default for $key: ${defaults[$key]}"
+  # Add specific debug output for OFFLINE_MODE value
+  echo "DEBUG: OFFLINE_MODE value is '${OFFLINE_MODE}'"
+  
+  # Legacy variable support - TYPE was renamed to ENABLED_SERVICES
+  if [ -n "$TYPE" ] && [ -z "$ENABLED_SERVICES" ]; then
+    export ENABLED_SERVICES="$TYPE"
+    echo "Using legacy TYPE variable value for ENABLED_SERVICES: $TYPE"
+  fi
+}
+
+# Show configuration summary
+show_configuration_summary() {
+  echo "===== Configuration Summary ====="
+  echo "Environment: $ENVIRONMENT"
+  
+  # The issue might be with string comparison in bash
+  if [[ "$OFFLINE_MODE" == "false" ]]; then
+    echo "Mode: ONLINE MODE (using real domain)"
+    echo "Domain: $DOMAIN"
+    
+    # Warn if domain is localhost but offline mode is false
+    if [ "$DOMAIN" = "localhost" ] && [ "$OFFLINE_MODE" = "false" ]; then
+      echo "WARNING: Domain set to localhost but OFFLINE_MODE is false. This may cause issues."
+      echo "Consider setting OFFLINE_MODE=true or providing a real domain."
     fi
-  done
+  else
+    echo "Mode: OFFLINE MODE (running with minimal internet connectivity)"
+    echo "Domain checks: DISABLED"
+    echo "Public IP checks: DISABLED"
+    echo "Service URLs: Using local ports"
+  fi
+  
+  echo "Enabled services: $ENABLED_SERVICES"
+  echo "============================="
 }
 
 # Main initialization function
@@ -150,7 +172,10 @@ initialize() {
   generate_optional_keys
   
   # Apply defaults
-  apply_defaults
+  apply_variables
+  
+  # Show configuration summary
+  show_configuration_summary
   
   # Wait for PostgreSQL if needed
   if [ "$WAIT_FOR_DB" = "true" ]; then

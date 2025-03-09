@@ -56,48 +56,27 @@ class GameServerDashboardUI(BaseDashboardUI):
                 color=0xff0000
             )
     
-    async def update_dashboard(self, interaction: Optional[nextcord.Interaction] = None):
-        """Updates the game server dashboard with fresh data"""
+    async def display_dashboard(self) -> nextcord.Message:
+        """Display the game server dashboard"""
         try:
-            # Force cleanup before updating
-            await self.cleanup_old_dashboards(keep_count=1)
+            embed = await self.create_embed()
             
-            # Get fresh data from service
-            data = await self.service.get_game_servers_status()
+            # Create the view with buttons
+            view = GameServerView(self.last_metrics).create()
             
-            # Transform data using domain model
-            game_metrics = GameServersMetrics.from_raw_data(data)
-            
-            # Convert to dictionary for the view
-            metrics = game_metrics.to_dict()
-            
-            # Store metrics for button handlers to use
-            self.last_metrics = metrics
-            self.game_metrics = game_metrics
-            
-            # Create view and embed
-            gameserver_view = GameServerView(metrics)
-            embed = gameserver_view.create_embed()
-            view = gameserver_view.create()
-            
-            # Register button callbacks
+            # Register callbacks for the buttons
             await self.register_callbacks(view)
             
-            # Update the dashboard
-            if interaction:
-                await interaction.response.edit_message(embed=embed, view=view)
+            # Send or update the message
+            if self.message:
+                await self.message.edit(embed=embed, view=view)
             else:
-                self.message = await self.channel.send(embed=embed, view=view) if not self.message else await self.message.edit(embed=embed, view=view)
+                self.message = await self.channel.send(embed=embed, view=view)
             
-            return embed
-            
+            return self.message
         except Exception as e:
-            logger.error(f"Error updating game server dashboard: {e}")
-            return nextcord.Embed(
-                title="⚠️ Dashboard Error",
-                description=f"Error updating dashboard: {str(e)}",
-                color=0xff0000
-            )
+            logger.error(f"Error displaying game server dashboard: {e}")
+            raise
     
     async def on_server_details(self, interaction: nextcord.Interaction):
         """Show detailed server information for a specific server"""
@@ -272,9 +251,48 @@ class GameServerDashboardUI(BaseDashboardUI):
             logger.error(f"Error displaying server logs: {e}")
             await interaction.followup.send(f"Error displaying server logs: {str(e)}", ephemeral=True)
     
+    async def on_connection_details(self, interaction: nextcord.Interaction):
+        """Show detailed connection information"""
+        await interaction.response.defer()
+        
+        try:
+            # Get domain and IP information
+            public_ip = self.last_metrics.get('public_ip', 'Unknown')
+            domain = self.last_metrics.get('domain', 'Unknown')
+            ip_match = self.last_metrics.get('ip_match', None)
+            
+            # Create a table with connection details
+            conn_table = UnicodeTableBuilder("Game Server Connection Details", width=50)
+            conn_table.add_header_row("Property", "Value")
+            conn_table.add_row("Domain", domain)
+            conn_table.add_row("Public IP", public_ip)
+            
+            # Check if domain resolves to public IP
+            status = "🟢 Correct" if ip_match else "🔴 Mismatch" if ip_match is not None else "⚠️ Unknown"
+            conn_table.add_row("DNS Status", status)
+            
+            # Add connection instructions
+            servers = self.last_metrics.get('servers', {})
+            online_servers = {name: data for name, data in servers.items() if data.get('online', False)}
+            
+            if online_servers:
+                conn_table.add_header_row("Server", "Connection Address")
+                for name, data in online_servers.items():
+                    ports = data.get('ports', [])
+                    if ports:
+                        port_str = ports[0]  # Use first port for connection
+                        conn_table.add_row(name, f"{domain}:{port_str}")
+            
+            await interaction.followup.send(conn_table.build(), ephemeral=True)
+            
+        except Exception as e:
+            logger.error(f"Error displaying connection details: {e}")
+            await interaction.followup.send(f"Error displaying connection details: {str(e)}", ephemeral=True)
+    
     async def register_callbacks(self, view):
         """Register callbacks for the view's buttons"""
         view.set_callback("refresh", self.on_refresh)
         view.set_callback("server_details", self.on_server_details)
         view.set_callback("player_list", self.on_player_list)
         view.set_callback("server_logs", self.on_server_logs)
+        view.set_callback("connection_details", self.on_connection_details)
