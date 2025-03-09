@@ -34,7 +34,7 @@ class WelcomeDashboardUI(BaseDashboardUI):
         
         # Create the main embed with homelab branding
         embed = nextcord.Embed(
-            title=f"🏠 Welcome to the {guild.name if guild else 'Homelab'} Server",
+            title=f"🏠 {self.TITLE_IDENTIFIER} - {guild.name if guild else 'Homelab'} Server",
             description=(
                 f"👋 **Welcome to our Homelab Community!**\n\n"
                 f"This is a place for homelab enthusiasts, self-hosting fans, and tech tinkerers."
@@ -251,6 +251,9 @@ class WelcomeDashboardUI(BaseDashboardUI):
                 logger.error("No channel configured for welcome dashboard")
                 return
             
+            # Clean up old dashboards first
+            await self.cleanup_old_dashboards(keep_count=1)
+            
             # Create embed and view
             embed = await self.create_embed()
             view = self.create_view()
@@ -273,7 +276,7 @@ class WelcomeDashboardUI(BaseDashboardUI):
                 self.message = message
                 
                 # Track in dashboard manager
-                await self.bot.dashboard_manager.track_dashboard(
+                await self.bot.dashboard_manager.track_message(
                     dashboard_type=self.DASHBOARD_TYPE,
                     message_id=message.id,
                     channel_id=self.channel.id

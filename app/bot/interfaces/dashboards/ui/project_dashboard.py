@@ -309,9 +309,11 @@ class ProjectDashboardUI(BaseDashboardUI):
                 logger.error("Project channel not found")
                 return
             
-            # Initialize and use base class display method
+            # Initialize
             self.projects_data = await self.service.get_projects_by_status()
             self.initialized = True
+            
+            # Display dashboard with our custom implementation
             await self.display_dashboard()
             logger.info("Project Dashboard setup completed")
             
@@ -592,3 +594,48 @@ class ProjectDashboardUI(BaseDashboardUI):
         
         # Use existing method
         return self.create_dashboard_embed(self.projects_data)
+
+    async def display_dashboard(self) -> None:
+        """Displays the project dashboard in the configured channel"""
+        try:
+            if not self.channel:
+                logger.error("No channel configured for project dashboard")
+                return
+            
+            # Clean up old dashboards first
+            await self.cleanup_old_dashboards(keep_count=1)
+            
+            # Get fresh project data
+            self.projects_data = await self.service.get_projects_by_status()
+            
+            # Create embed and view
+            embed = self.create_dashboard_embed(self.projects_data)
+            view = await self.create_dashboard_view()
+            
+            # If we have an existing message, update it
+            if self.message and hasattr(self.message, 'edit'):
+                try:
+                    await self.message.edit(embed=embed, view=view)
+                    logger.info(f"Updated existing project dashboard in {self.channel.name}")
+                    return
+                except Exception as e:
+                    logger.warning(f"Couldn't update existing message: {e}, creating new")
+            
+            # Otherwise send a new message
+            try:
+                message = await self.channel.send(embed=embed, view=view)
+                self.message = message
+                
+                # Track in dashboard manager
+                await self.bot.dashboard_manager.track_message(
+                    dashboard_type=self.DASHBOARD_TYPE,
+                    message_id=message.id,
+                    channel_id=self.channel.id
+                )
+                
+                logger.info(f"Project dashboard displayed in channel {self.channel.name}")
+            except Exception as e:
+                logger.error(f"Error sending project dashboard: {e}")
+            
+        except Exception as e:
+            logger.error(f"Error displaying project dashboard: {e}")

@@ -7,6 +7,7 @@ from interfaces.dashboards.components.channels.monitoring.embeds import Monitori
 from interfaces.dashboards.components.ui.table_builder import UnicodeTableBuilder
 from .base_dashboard import BaseDashboardUI
 from interfaces.dashboards.components.channels.monitoring.views import MonitoringView
+from domain.monitoring.models.metric import SystemMetrics
 
 class MonitoringDashboardUI(BaseDashboardUI):
     """UI class for displaying the monitoring dashboard"""
@@ -27,72 +28,33 @@ class MonitoringDashboardUI(BaseDashboardUI):
                 color=0xff0000
             )
         
-        # Get data DIRECTLY
-        data = await self.service.get_system_status()
-        
-        # Transform data for the monitoring embed
-        system_data = data.get('system', {})
-        service_data = data.get('services', {})
-        
-        # Create comprehensive metrics dictionary for enhanced view
-        metrics = {
-            # CPU metrics
-            'cpu_usage': system_data.get('cpu', 0),
-            'cpu_model': system_data.get('hardware_info', {}).get('cpu_model', 'Unknown'),
-            'cpu_cores': system_data.get('hardware_info', {}).get('cpu_cores', '?'),
-            'cpu_threads': system_data.get('hardware_info', {}).get('cpu_threads', '?'),
-            'cpu_temp': system_data.get('cpu_temp', 0),
+        try:
+            # Get raw data from service
+            data = await self.service.get_system_status()
             
-            # Memory metrics
-            'memory_used': system_data.get('memory', {}).percent if hasattr(system_data.get('memory', {}), 'percent') else 0,
-            'memory_total': round(system_data.get('memory', {}).total / (1024**3), 1) if hasattr(system_data.get('memory', {}), 'total') else 0,
+            # Transform data using domain model
+            system_metrics = SystemMetrics.from_raw_data(data)
             
-            # Disk metrics
-            'disk_free': round(system_data.get('disk', {}).free / (1024**3), 2) if hasattr(system_data.get('disk', {}), 'free') else 0,
-            'disk_total': round(system_data.get('disk', {}).total / (1024**3), 2) if hasattr(system_data.get('disk', {}), 'total') else 0,
+            # Convert to dictionary for the view
+            metrics = system_metrics.to_dict()
             
-            # Network metrics
-            'net_download': getattr(system_data.get('network', {}), 'download_speed', 0),
-            'net_upload': getattr(system_data.get('network', {}), 'upload_speed', 0),
-            'net_ping': getattr(system_data.get('network', {}), 'ping', 0),
+            # Store metrics for button handlers to use
+            self.last_metrics = metrics
+            self.system_metrics = system_metrics  # Store the domain object too
             
-            # If you have LAN metrics
-            'lan_max': getattr(system_data.get('network', {}), 'max_speed', '?'),
-            'lan_up': getattr(system_data.get('network', {}), 'lan_upload', '?'),
-            'lan_down': getattr(system_data.get('network', {}), 'lan_download', '?'),
+            # Create view and embed using MonitoringView
+            monitoring_view = MonitoringView(metrics)
+            embed = monitoring_view.create_embed()
             
-            # Docker/container metrics
-            'containers_running': service_data.get('docker_running', 0),
-            'containers_total': service_data.get('docker_total', 0),
-            'containers_errors': service_data.get('docker_errors', 0),
+            return embed
             
-            # Game servers
-            'game_servers': {},
-            
-            # Add hardware info for detailed views
-            'hardware_info': system_data.get('hardware_info', {})
-        }
-        
-        # Process game servers data
-        if 'services' in service_data:
-            game_services = {
-                name.replace('🎮 ', ''): {
-                    'online': 'Online' in status or '✅' in status,
-                    'ports': self._extract_ports(status)
-                }
-                for name, status in service_data.get('services', {}).items() 
-                if '🎮' in name
-            }
-            metrics['game_servers'] = game_services
-        
-        # Store metrics for button handlers to use
-        self.last_metrics = metrics
-        
-        # Create view and embed using MonitoringView
-        monitoring_view = MonitoringView(metrics)
-        embed = monitoring_view.create_embed()
-        
-        return embed
+        except Exception as e:
+            logger.error(f"Error creating monitoring embed: {e}")
+            return nextcord.Embed(
+                title="⚠️ Dashboard Error",
+                description=f"Error creating dashboard: {str(e)}",
+                color=0xff0000
+            )
     
     async def update_dashboard(self, interaction: Optional[nextcord.Interaction] = None):
         """Updates the monitoring dashboard with fresh data"""
@@ -103,63 +65,15 @@ class MonitoringDashboardUI(BaseDashboardUI):
             # Get raw data from service
             data = await self.service.get_system_status()
             
-            # Transform data for the monitoring embed
-            system_data = data.get('system', {})
-            service_data = data.get('services', {})
+            # Transform data using domain model
+            system_metrics = SystemMetrics.from_raw_data(data)
             
-            # Create comprehensive metrics dictionary for enhanced view
-            metrics = {
-                # CPU metrics
-                'cpu_usage': system_data.get('cpu', 0),
-                'cpu_model': system_data.get('hardware_info', {}).get('cpu_model', 'Unknown'),
-                'cpu_cores': system_data.get('hardware_info', {}).get('cpu_cores', '?'),
-                'cpu_threads': system_data.get('hardware_info', {}).get('cpu_threads', '?'),
-                'cpu_temp': system_data.get('cpu_temp', 0),
-                
-                # Memory metrics
-                'memory_used': system_data.get('memory', {}).percent if hasattr(system_data.get('memory', {}), 'percent') else 0,
-                'memory_total': round(system_data.get('memory', {}).total / (1024**3), 1) if hasattr(system_data.get('memory', {}), 'total') else 0,
-                
-                # Disk metrics
-                'disk_free': round(system_data.get('disk', {}).free / (1024**3), 2) if hasattr(system_data.get('disk', {}), 'free') else 0,
-                'disk_total': round(system_data.get('disk', {}).total / (1024**3), 2) if hasattr(system_data.get('disk', {}), 'total') else 0,
-                
-                # Network metrics
-                'net_download': getattr(system_data.get('network', {}), 'download_speed', 0),
-                'net_upload': getattr(system_data.get('network', {}), 'upload_speed', 0),
-                'net_ping': getattr(system_data.get('network', {}), 'ping', 0),
-                
-                # If you have LAN metrics
-                'lan_max': getattr(system_data.get('network', {}), 'max_speed', '?'),
-                'lan_up': getattr(system_data.get('network', {}), 'lan_upload', '?'),
-                'lan_down': getattr(system_data.get('network', {}), 'lan_download', '?'),
-                
-                # Docker/container metrics
-                'containers_running': service_data.get('docker_running', 0),
-                'containers_total': service_data.get('docker_total', 0),
-                'containers_errors': service_data.get('docker_errors', 0),
-                
-                # Game servers
-                'game_servers': {},
-                
-                # Add hardware info for detailed views
-                'hardware_info': system_data.get('hardware_info', {})
-            }
-            
-            # Process game servers data
-            if 'services' in service_data:
-                game_services = {
-                    name.replace('🎮 ', ''): {
-                        'online': 'Online' in status or '✅' in status,
-                        'ports': self._extract_ports(status)
-                    }
-                    for name, status in service_data.get('services', {}).items() 
-                    if '🎮' in name
-                }
-                metrics['game_servers'] = game_services
+            # Convert to dictionary for the view
+            metrics = system_metrics.to_dict()
             
             # Store metrics for button handlers to use
             self.last_metrics = metrics
+            self.system_metrics = system_metrics  # Store the domain object too
             
             # Create view and embed using MonitoringView
             monitoring_view = MonitoringView(metrics)

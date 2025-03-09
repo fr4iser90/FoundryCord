@@ -55,15 +55,26 @@ class DashboardManager:
                 if not channel:
                     continue
                 
+                # Hole alle getrackte Nachrichten für diesen Kanal
+                tracked_messages = []
+                async for session in get_session():
+                    result = await session.execute(
+                        select(DashboardMessage).where(DashboardMessage.channel_id == channel_id)
+                    )
+                    tracked_msgs = result.scalars().all()
+                    tracked_messages = [msg.message_id for msg in tracked_msgs]
+                
                 # Suche nach Nachrichten vom Bot in den letzten 100 Nachrichten
                 async for message in channel.history(limit=100):
+                    # Überspringe getrackte Nachrichten
+                    if message.id in tracked_messages:
+                        continue
+                        
                     if message.author.id == self.bot.user.id and message.embeds:
-                        # Prüfe, ob es sich um ein Dashboard handelt
-                        for embed in message.embeds:
-                            if embed.title and ("Dashboard" in embed.title or "Übersicht" in embed.title):
-                                await message.delete()
-                                logger.debug(f"Deleted old dashboard message {message.id} in {channel_name}")
-                                await asyncio.sleep(0.5)
+                        # Lösche alle Bot-Nachrichten mit Embeds, die nicht getrackt sind
+                        await message.delete()
+                        logger.debug(f"Deleted old dashboard message {message.id} in {channel_name}")
+                        await asyncio.sleep(0.5)
                                 
             logger.info("Dashboard cleanup completed")
         except Exception as e:

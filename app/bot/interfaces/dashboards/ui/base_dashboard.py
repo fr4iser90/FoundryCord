@@ -203,3 +203,27 @@ class BaseDashboardUI:
             f"{self.DASHBOARD_TYPE.capitalize()} Dashboard wurde aktualisiert!", 
             ephemeral=True
         )
+
+    async def setup(self):
+        """Initialisiert das Dashboard"""
+        try:
+            # Channel aus der Config holen
+            from infrastructure.config.channel_config import ChannelConfig
+            channel_id = await ChannelConfig.get_channel_id('projects')
+            self.channel = self.bot.get_channel(channel_id)
+            
+            if not self.channel:
+                logger.error("Project channel not found")
+                return
+            
+            # Initialize
+            self.projects_data = await self.service.get_projects_by_status()
+            self.initialized = True
+            
+            # Display dashboard with our custom implementation
+            await self.display_dashboard()
+            logger.info("Project Dashboard setup completed")
+            
+        except Exception as e:
+            logger.error(f"Error in Project Dashboard setup: {e}")
+            raise
