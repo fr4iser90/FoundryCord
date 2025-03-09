@@ -7,7 +7,7 @@ DOMAIN = os.getenv('DOMAIN')
 
 def get_public_services():
     return [
-        {"name": "🎮 Pufferpanel", "url": f"https://pufferpanel.{DOMAIN}"},
+        {"name": "⚙️ Pufferpanel", "url": f"https://pufferpanel.{DOMAIN}"},
         {"name": "☁️ Owncloud", "url": f"https://owncloud.{DOMAIN}"},
         {"name": "🔑 Vaultwarden", "url": f"https://bitwarden.{DOMAIN}"},
     ]

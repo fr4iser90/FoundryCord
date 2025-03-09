@@ -13,3 +13,8 @@ def get_standalone_services():
         {"name": "🎮 Palworld", "port_range": (8211, 8221), "container": "palworld-server", "protocol": "both"},
         {"name": "🎮 Satisfactory", "port_range": (7777, 7787), "container": "satisfactory-server", "protocol": "both"},
     ]
+
+
+def get_all_game_services():
+    """Alle Spiele-Server (für Dashboard-Anzeige)"""
+    return get_pufferpanel_services() + get_standalone_services()
