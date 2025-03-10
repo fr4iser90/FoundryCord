@@ -1,7 +1,7 @@
-from .models import User, Role, Permission
-from .models import SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS, SERVER_ROLES
-from .policies import is_super_admin, is_admin, is_moderator, is_user, is_guest, is_authorized
-from .services import PermissionService
+from domain.auth.models import User, Role, Permission
+from domain.auth.models import SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS, SERVER_ROLES
+from domain.auth.policies import is_super_admin, is_admin, is_moderator, is_user, is_guest, is_authorized
+from domain.auth.services import PermissionService
 
 __all__ = [
     # Models

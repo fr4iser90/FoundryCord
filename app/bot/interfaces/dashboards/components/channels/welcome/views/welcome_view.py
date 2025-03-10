@@ -50,6 +50,17 @@ class WelcomeView(BaseView):
         info_button.callback = lambda i: self._handle_callback(i, "server_info")
         self.add_item(info_button)
         
+        # Bot info button
+        bot_info_button = nextcord.ui.Button(
+            style=nextcord.ButtonStyle.primary,
+            label="Bot Info",
+            emoji="🤖",
+            custom_id="bot_info",
+            row=0
+        )
+        bot_info_button.callback = lambda i: self._handle_callback(i, "bot_info")
+        self.add_item(bot_info_button)
+        
         # homelab-tech-specific roles select
         tech_select = nextcord.ui.StringSelect(
             placeholder="Select your tech interests...",

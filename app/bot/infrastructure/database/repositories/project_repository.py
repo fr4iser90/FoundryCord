@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from ..models import Project, Task
+from infrastructure.database.models import Project, Task
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 

@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import List
 from dotenv import load_dotenv
 
-from ..models.metric import Metric
+from infrastructure.database.models import MetricModel
 from .system_collector.base import collect_system_data
 
 logger = logging.getLogger('homelab_bot')
@@ -15,8 +15,8 @@ logger = logging.getLogger('homelab_bot')
 load_dotenv()
 DOMAIN = os.getenv('DOMAIN')
 
-async def collect_all() -> List[Metric]:
-    """Converts system data into Metric objects"""
+async def collect_all() -> List[MetricModel]:
+    """Converts system data into MetricModel objects"""
     logger.info("Collecting system metrics...")
     
     # Get raw data from your existing collector
@@ -26,7 +26,7 @@ async def collect_all() -> List[Metric]:
     metrics = []
     
     # CPU metrics
-    metrics.append(Metric(
+    metrics.append(MetricModel(
         name="cpu_usage",
         value=data['cpu'],
         unit="percent",
@@ -35,19 +35,19 @@ async def collect_all() -> List[Metric]:
     
     # Memory metrics
     memory = data['memory']
-    metrics.append(Metric(
+    metrics.append(MetricModel(
         name="memory_used",
         value=memory.used,
         unit="bytes",
         metadata={"type": "system", "component": "memory"}
     ))
-    metrics.append(Metric(
+    metrics.append(MetricModel(
         name="memory_total",
         value=memory.total,
         unit="bytes",
         metadata={"type": "system", "component": "memory"}
     ))
-    metrics.append(Metric(
+    metrics.append(MetricModel(
         name="memory_percent",
         value=memory.percent,
         unit="percent",
@@ -56,13 +56,13 @@ async def collect_all() -> List[Metric]:
     
     # Swap metrics
     swap = data['swap']
-    metrics.append(Metric(
+    metrics.append(MetricModel(
         name="swap_used",
         value=swap.used,
         unit="bytes",
         metadata={"type": "system", "component": "memory"}
     ))
-    metrics.append(Metric(
+    metrics.append(MetricModel(
         name="swap_total",
         value=swap.total,
         unit="bytes",
@@ -71,7 +71,7 @@ async def collect_all() -> List[Metric]:
     
     # Disk metrics
     disk = data['disk']
-    metrics.append(Metric(
+    metrics.append(MetricModel(
         name="disk_percent",
         value=disk.percent,
         unit="percent",
@@ -80,21 +80,21 @@ async def collect_all() -> List[Metric]:
     
     # Other metrics
     if data['public_ip'] != "N/A":
-        metrics.append(Metric(
+        metrics.append(MetricModel(
             name="public_ip",
             value=data['public_ip'],
             metadata={"type": "system", "component": "network"}
         ))
     
     if data['uptime'] != "N/A":
-        metrics.append(Metric(
+        metrics.append(MetricModel(
             name="uptime_text",
             value=data['uptime'],
             metadata={"type": "system", "component": "os"}
         ))
     
     if data['cpu_temp'] != "N/A":
-        metrics.append(Metric(
+        metrics.append(MetricModel(
             name="cpu_temperature",
             value=data['cpu_temp'],
             unit="celsius",
@@ -104,13 +104,13 @@ async def collect_all() -> List[Metric]:
     # Process disk details if available
     if isinstance(data['disk_details'], dict):
         for path, details in data['disk_details'].items():
-            metrics.append(Metric(
+            metrics.append(MetricModel(
                 name="disk_used",
                 value=details.get("used", 0),
                 unit="bytes",
                 metadata={"type": "system", "component": "storage", "path": path}
             ))
-            metrics.append(Metric(
+            metrics.append(MetricModel(
                 name="disk_total", 
                 value=details.get("total", 0),
                 unit="bytes",

@@ -1,5 +1,4 @@
-from ..models.metric import Metric
-from ..models.alert import Alert
+from infrastructure.database.models import MetricModel, AlertModel
 from ..collectors import system_collector, service_collector
 from ..repositories.monitoring_repository import MonitoringRepository
 import logging

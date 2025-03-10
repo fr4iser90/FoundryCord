@@ -7,6 +7,7 @@ from .audit_models import AuditLog
 from .discord_models import ChannelMapping, CategoryMapping
 from .dashboard_models import DashboardMessage
 from .project_models import Project, Task
+from .monitoring_models import MetricModel, AlertModel
 
 # Export all models for convenient imports elsewhere
 __all__ = [
@@ -19,5 +20,7 @@ __all__ = [
     'CategoryMapping',
     'DashboardMessage',
     'Project',
-    'Task'
+    'Task',
+    'MetricModel',
+    'AlertModel'
 ]

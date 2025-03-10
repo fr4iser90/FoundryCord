@@ -3,6 +3,7 @@ from infrastructure.logging import logger
 from infrastructure.config.constants.dashboard_constants import DASHBOARD_MAPPINGS
 from infrastructure.factories.service.service_resolver import ServiceResolver
 from .base_workflow import BaseWorkflow
+from application.services.dashboard import dynamic_minecraft_setup
 
 class DashboardWorkflow(BaseWorkflow):
     def __init__(self, bot):
@@ -61,3 +62,22 @@ class DashboardWorkflow(BaseWorkflow):
                         logger.error(f"Error cleaning up dashboard {name}: {e}")
         except Exception as e:
             logger.error(f"Dashboard cleanup failed: {e}")
+
+    async def execute(self) -> None:
+        """Initialize all dashboard services"""
+        try:
+            logger.info("Initializing dashboard services...")
+            
+            # Initialize existing dashboard services
+            self.bot.welcome_dashboard_service = await welcome_setup(self.bot)
+            self.bot.monitoring_dashboard_service = await monitoring_setup(self.bot)
+            self.bot.project_dashboard_service = await project_setup(self.bot)
+            self.bot.gameservers_dashboard_service = await gameservers_setup(self.bot)
+            
+            # Initialize your new service
+            self.bot.dynamic_minecraft_dashboard_service = await dynamic_minecraft_setup(self.bot)
+            
+            logger.info("Dashboard services initialized")
+        except Exception as e:
+            logger.error(f"Error initializing dashboard services: {e}")
+            raise

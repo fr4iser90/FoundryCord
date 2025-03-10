@@ -2,7 +2,7 @@ from ..policies.authorization_policies import (
     is_authorized, is_super_admin, is_admin, 
     is_moderator, is_user, is_guest
 )
-from ..models.permission import Permission
+from domain.auth.models import Permission
 
 class PermissionService:
     """Domain service for permission-related operations"""

@@ -1,5 +1,5 @@
 from infrastructure.logging import logger
-from ..models.role import Role, SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
+from domain.auth.models import Role, SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
 
 def is_super_admin(user):
     """Check if the user is a Super Admin."""

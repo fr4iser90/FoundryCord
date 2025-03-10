@@ -1,7 +1,7 @@
 from typing import Optional, List
 import nextcord
 from .base_dashboard import BaseDashboardUI
-from interfaces.dashboards.components.channels.welcome.views import WelcomeView
+from interfaces.dashboards.components.channels.welcome.views import WelcomeView, BotInfoView
 from infrastructure.logging import logger
 
 class WelcomeDashboardUI(BaseDashboardUI):
@@ -235,11 +235,191 @@ class WelcomeDashboardUI(BaseDashboardUI):
         
         await interaction.response.send_message(help_text, ephemeral=True)
     
+    async def on_bot_info(self, interaction: nextcord.Interaction):
+        """Handler for bot info button"""
+        try:
+            # Create bot info embed
+            bot_info_embed = nextcord.Embed(
+                title=f"🤖 HomeLab Bot Information",
+                description="Your comprehensive homelab management assistant",
+                color=0x3498db
+            )
+            
+            # Add bot version and status info
+            bot_info_embed.add_field(
+                name="ℹ️ Basic Information",
+                value=(
+                    f"**Version:** 1.0.0\n"
+                    f"**Status:** Online\n"
+                    f"**Uptime:** {self.get_bot_uptime()}\n"
+                    f"**Prefix:** `/`"
+                ),
+                inline=False
+            )
+            
+            # Add bot capabilities overview
+            bot_info_embed.add_field(
+                name="🔧 Core Features",
+                value=(
+                    "• System monitoring and alerts\n"
+                    "• Game server status tracking\n"
+                    "• Project management dashboard\n"
+                    "• WireGuard VPN configuration\n"
+                    "• Security and authentication\n"
+                    "• Interactive dashboards"
+                ),
+                inline=False
+            )
+            
+            # Create and configure the bot info view
+            bot_info_view = BotInfoView(bot_name="HomeLab Bot", bot_version="1.0.0")
+            view = bot_info_view.create()
+            
+            # Register feature detail callbacks
+            view.set_callback("system_features", self.on_system_features)
+            view.set_callback("dashboard_features", self.on_dashboard_features)
+            view.set_callback("gameserver_features", self.on_gameserver_features)
+            view.set_callback("project_features", self.on_project_features)
+            view.set_callback("security_features", self.on_security_features)
+            view.set_callback("close_info", self.on_close_info)
+            
+            await interaction.response.send_message(embed=bot_info_embed, view=view, ephemeral=True)
+            
+        except Exception as e:
+            logger.error(f"Error displaying bot info: {e}")
+            await interaction.response.send_message("Error displaying bot information.", ephemeral=True)
+
+    def get_bot_uptime(self):
+        """Helper to calculate bot uptime - implement as needed"""
+        # This would ideally use the bot's startup timestamp
+        # For now returning a placeholder
+        return "3 days, 7 hours"
+
+    # Add these additional methods to handle each feature button
+    async def on_system_features(self, interaction: nextcord.Interaction):
+        """Display system monitoring capabilities"""
+        embed = nextcord.Embed(
+            title="🖥️ System Monitoring Features",
+            description="Comprehensive system monitoring capabilities",
+            color=0x3498db
+        )
+        
+        embed.add_field(
+            name="Available Metrics",
+            value=(
+                "• CPU usage and temperature\n"
+                "• Memory utilization\n" 
+                "• Disk space and I/O\n"
+                "• Network bandwidth\n"
+                "• Service status\n"
+                "• Docker container monitoring"
+            ),
+            inline=False
+        )
+        
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    async def on_dashboard_features(self, interaction: nextcord.Interaction):
+        """Display dashboard capabilities"""
+        embed = nextcord.Embed(
+            title="📊 Dashboard Features",
+            description="Interactive Discord dashboards",
+            color=0x3498db
+        )
+        
+        embed.add_field(
+            name="Available Dashboards",
+            value=(
+                "• Welcome Dashboard\n"
+                "• System Monitoring Dashboard\n"
+                "• Game Server Status Dashboard\n"
+                "• Project Management Dashboard\n"
+                "• Minecraft Server Dashboard"
+            ),
+            inline=False
+        )
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    async def on_gameserver_features(self, interaction: nextcord.Interaction):
+        """Display game server capabilities"""
+        embed = nextcord.Embed(
+            title="🎮 Game Server Features",
+            description="Game server management and monitoring",
+            color=0x3498db
+        )
+        
+        embed.add_field(
+            name="Supported Game Servers",
+            value=(
+                "• Minecraft (Java & Bedrock)\n"
+                "• Valheim\n"
+                "• ARK: Survival Evolved\n"
+                "• Team Fortress 2\n"
+                "• Counter-Strike: GO\n"
+                "• And many more..."
+            ),
+            inline=False
+        )
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    async def on_project_features(self, interaction: nextcord.Interaction):
+        """Display project management capabilities"""
+        embed = nextcord.Embed(
+            title="📋 Project Management Features",
+            description="Track and manage homelab projects",
+            color=0x3498db
+        )
+        
+        embed.add_field(
+            name="Project Features",
+            value=(
+                "• Create and assign tasks\n"
+                "• Set priorities and deadlines\n"
+                "• Track project progress\n"
+                "• Categorize by project type\n"
+                "• Thread-based discussions"
+            ),
+            inline=False
+        )
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    async def on_security_features(self, interaction: nextcord.Interaction):
+        """Display security capabilities"""
+        embed = nextcord.Embed(
+            title="🔒 Security Features",
+            description="Security and access control",
+            color=0x3498db
+        )
+        
+        embed.add_field(
+            name="Security Capabilities",
+            value=(
+                "• Role-based permissions\n"
+                "• WireGuard VPN configuration\n"
+                "• Encryption for sensitive data\n"
+                "• Audit logging\n"
+                "• Rate limiting protection"
+            ),
+            inline=False
+        )
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    async def on_close_info(self, interaction: nextcord.Interaction):
+        """Close the bot info view"""
+        await interaction.response.defer()
+        # The view will close automatically
+
     async def register_callbacks(self, view):
         """Register callbacks for the view components"""
         view.set_callback("accept_rules", self.on_rules_accept)
         view.set_callback("welcome_help", self.on_help_request)
         view.set_callback("server_info", self.on_server_info)
+        view.set_callback("bot_info", self.on_bot_info)
         #view.set_callback("tech_select", self.on_tech_select)
     
     async def display_dashboard(self) -> None:

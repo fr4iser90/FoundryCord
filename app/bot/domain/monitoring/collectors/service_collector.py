@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import List
 
-from ..models.metric import Metric
+from infrastructure.database.models import MetricModel
 from .service_collector.docker import get_docker_status
 from .service_collector.security import get_ssh_attempts
 from .service_collector.services import check_services_status
@@ -10,8 +10,8 @@ from .service_collector.base import collect_service_data
 
 logger = logging.getLogger('homelab_bot')
 
-async def collect_all() -> List[Metric]:
-    """Collects service metrics and returns them as a list of Metric objects"""
+async def collect_all() -> List[MetricModel]:
+    """Collects service metrics and returns them as a list of MetricModel objects"""
     logger.info("Collecting service metrics...")
     
     # Get raw data from your service collector
@@ -38,7 +38,7 @@ async def collect_all() -> List[Metric]:
         docker_running, docker_errors, docker_details = results[0]
         
         if isinstance(docker_running, int):
-            metrics.append(Metric(
+            metrics.append(MetricModel(
                 name="docker_running",
                 value=docker_running,
                 unit="count",
@@ -46,7 +46,7 @@ async def collect_all() -> List[Metric]:
             ))
         
         if isinstance(docker_errors, int):
-            metrics.append(Metric(
+            metrics.append(MetricModel(
                 name="docker_errors",
                 value=docker_errors,
                 unit="count",
@@ -58,7 +58,7 @@ async def collect_all() -> List[Metric]:
             for line in docker_details.strip().split("\n"):
                 if ": " in line:
                     container_name, status = line.split(": ", 1)
-                    metrics.append(Metric(
+                    metrics.append(MetricModel(
                         name="container_status",
                         value=1 if "Running" in status or "Up" in status else 0,
                         unit="status",
@@ -77,7 +77,7 @@ async def collect_all() -> List[Metric]:
         if ssh_attempts not in ("N/A", "N/A (nur Linux)"):
             try:
                 ssh_attempts_val = int(ssh_attempts)
-                metrics.append(Metric(
+                metrics.append(MetricModel(
                     name="ssh_attempts",
                     value=ssh_attempts_val,
                     unit="count",
@@ -95,7 +95,7 @@ async def collect_all() -> List[Metric]:
         service_status = results[2]
         
         for service_name, status in service_status.items():
-            metrics.append(Metric(
+            metrics.append(MetricModel(
                 name="service_status",
                 value=1 if any(x in status for x in ["Online", "✅", "✓"]) else 0,
                 unit="status",

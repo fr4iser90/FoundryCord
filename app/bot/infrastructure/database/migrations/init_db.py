@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncEngine
-from ..models import Base
-from ..models.config import initialize_engine, initialize_session
+from infrastructure.database.models import Base
+from infrastructure.database.models.config import initialize_engine, initialize_session
 import asyncio
 from infrastructure.logging import logger
 from sqlalchemy import select, inspect
@@ -37,8 +37,8 @@ async def migrate_existing_users():
     from infrastructure.config.constants.user_groups import (
         SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
     )
-    from ..models import User
-    from ..models.config import get_async_session
+    from infrastructure.database.models import User
+    from infrastructure.database.models.config import get_async_session
 
     # Neue Session für diesen spezifischen Prozess erstellen
     async_session = await get_async_session()

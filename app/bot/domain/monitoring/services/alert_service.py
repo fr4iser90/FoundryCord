@@ -1,5 +1,4 @@
-from ..models.metric import Metric
-from ..models.alert import Alert
+from infrastructure.database.models import MetricModel, AlertModel
 from ..repositories.monitoring_repository import MonitoringRepository
 
 class AlertService:
