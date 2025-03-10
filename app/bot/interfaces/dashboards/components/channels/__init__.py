@@ -1,11 +1,11 @@
 from . import monitoring
 from . import projects
 from . import welcome
-from . import gameservers
+from . import gamehub
 
 __all__ = [
     'monitoring',
     'projects',
     'welcome',
-    'gameservers'
+    'gamehub'
 ]

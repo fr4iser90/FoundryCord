@@ -5,13 +5,13 @@ This defines the structure and properties of categories.
 
 CATEGORIES = {
     'homelab': {
-        'name': 'HOMELAB',
+        'name': 'Homelab',
         'description': 'Main category for homelab management',
         'is_private': True,
         'position': 0
     },
     'gameservers': {
-        'name': 'GAMESERVERS',
+        'name': 'Homelab Game Servers',
         'description': 'Category for game servers and related channels',
         'is_private': False,
         'position': 1
@@ -23,6 +23,7 @@ CATEGORY_CHANNEL_MAPPINGS = {
     'homelab': [
         'welcome',
         'services',
+        'gamehub',
         'infrastructure',
         'projects',
         'backups',

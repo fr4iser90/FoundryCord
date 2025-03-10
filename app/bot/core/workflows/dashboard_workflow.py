@@ -72,7 +72,7 @@ class DashboardWorkflow(BaseWorkflow):
             self.bot.welcome_dashboard_service = await welcome_setup(self.bot)
             self.bot.monitoring_dashboard_service = await monitoring_setup(self.bot)
             self.bot.project_dashboard_service = await project_setup(self.bot)
-            self.bot.gameservers_dashboard_service = await gameservers_setup(self.bot)
+            self.bot.gamehub_dashboard_service = await gameservers_setup(self.bot)
             
             # Initialize your new service
             self.bot.dynamic_minecraft_dashboard_service = await dynamic_minecraft_setup(self.bot)

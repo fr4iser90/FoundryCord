@@ -1,21 +1,21 @@
-# app/bot/interfaces/dashboards/ui/gameserver_dashboard.py
+# app/bot/interfaces/dashboards/ui/gamehub_dashboard.py
 from typing import Dict, Any, Optional, List
 import nextcord
 from datetime import datetime, timedelta
 from infrastructure.logging import logger
 from infrastructure.config.channel_config import ChannelConfig
 from .base_dashboard import BaseDashboardUI
-from interfaces.dashboards.components.channels.gameservers.views import GameServerView
+from interfaces.dashboards.components.channels.gamehub.views import GameHubView
 from interfaces.dashboards.components.ui.table_builder import UnicodeTableBuilder
 from domain.gameservers.collectors.minecraft.minecraft_server_collector import MinecraftServerFetcher
 from domain.gameservers.models.gameserver_metrics import GameServersMetrics
 
 
-class GameServerDashboardUI(BaseDashboardUI):
-    """UI class for displaying the game server dashboard"""
+class GameHubDashboardUI(BaseDashboardUI):
+    """UI class for displaying the Game Hub dashboard"""
     
-    DASHBOARD_TYPE = "gameservers"
-    TITLE_IDENTIFIER = "Game Servers Status"
+    DASHBOARD_TYPE = "gamehub"
+    TITLE_IDENTIFIER = "Game Hubs Status"
     
     def __init__(self, bot):
         super().__init__(bot)
@@ -23,15 +23,15 @@ class GameServerDashboardUI(BaseDashboardUI):
         self.metrics = GameServersMetrics()  # Domain model
     
     async def initialize(self):
-        """Initialize the game server dashboard UI"""
-        return await super().initialize(channel_config_key='gameservers')
+        """Initialize the Game Hub dashboard UI"""
+        return await super().initialize(channel_config_key='gamehub')
     
     async def create_embed(self) -> nextcord.Embed:
-        """Creates game server dashboard embed with server data"""
+        """Creates Game Hub dashboard embed with server data"""
         if not self.service:
             return nextcord.Embed(
                 title="⚠️ Dashboard Error",
-                description="Game Server service not available",
+                description="Game Hub service not available",
                 color=0xff0000
             )
         
@@ -50,13 +50,13 @@ class GameServerDashboardUI(BaseDashboardUI):
             self.game_metrics = game_metrics  # Store the domain object too
             
             # Create view and embed
-            gameserver_view = GameServerView(metrics)
+            gameserver_view = GameHubView(metrics)
             embed = gameserver_view.create_embed()
             
             return embed
             
         except Exception as e:
-            logger.error(f"Error creating game server embed: {e}")
+            logger.error(f"Error creating Game Hub embed: {e}")
             return nextcord.Embed(
                 title="⚠️ Dashboard Error",
                 description=f"Error creating dashboard: {str(e)}",
@@ -64,12 +64,12 @@ class GameServerDashboardUI(BaseDashboardUI):
             )
     
     async def display_dashboard(self) -> nextcord.Message:
-        """Display the game server dashboard"""
+        """Display the Game Hub dashboard"""
         try:
             embed = await self.create_embed()
             
             # Create the view with buttons
-            view = GameServerView(self.last_metrics).create()
+            view = GameHubView(self.last_metrics).create()
             
             # Register callbacks for the buttons
             await self.register_callbacks(view)
@@ -82,7 +82,7 @@ class GameServerDashboardUI(BaseDashboardUI):
             
             return self.message
         except Exception as e:
-            logger.error(f"Error displaying game server dashboard: {e}")
+            logger.error(f"Error displaying Game Hub dashboard: {e}")
             raise
     
     async def on_server_details(self, interaction: nextcord.Interaction):
@@ -269,7 +269,7 @@ class GameServerDashboardUI(BaseDashboardUI):
             ip_match = self.last_metrics.get('ip_match', None)
             
             # Create a table with connection details
-            conn_table = UnicodeTableBuilder("Game Server Connection Details", width=50)
+            conn_table = UnicodeTableBuilder("Game Hub Connection Details", width=50)
             conn_table.add_header_row("Property", "Value")
             conn_table.add_row("Domain", domain)
             conn_table.add_row("Public IP", public_ip)
@@ -305,7 +305,7 @@ class GameServerDashboardUI(BaseDashboardUI):
         view.set_callback("connection_details", self.on_connection_details)
 
     async def refresh_data(self):
-        """Fetch all game server data and update metrics"""
+        """Fetch all Game Hub data and update metrics"""
         # Get base metrics from your existing source
         base_data = await self.service.get_game_servers_status()
         self.metrics = GameServersMetrics.from_raw_data(base_data)
@@ -315,7 +315,7 @@ class GameServerDashboardUI(BaseDashboardUI):
         minecraft_servers = [(domain, 25570)]  # Use correct port 25570
         
         try:
-            logger.debug(f"🎮 GameServerDashboardUI: Fetching Minecraft data for {minecraft_servers}")
+            logger.debug(f"🎮 GameHubDashboardUI: Fetching Minecraft data for {minecraft_servers}")
             minecraft_data = await MinecraftServerFetcher.fetch_multiple_servers(minecraft_servers)
             
             # Add detailed logging
@@ -350,7 +350,7 @@ class GameServerDashboardUI(BaseDashboardUI):
             logger.error(traceback.format_exc())
         
         # Create a view with the updated metrics
-        view = GameServerView(self.metrics.to_dict())
+        view = GameHubView(self.metrics.to_dict())
         view.create()  # Make sure to call create to set up the buttons
         return view
     
@@ -366,6 +366,6 @@ class GameServerDashboardUI(BaseDashboardUI):
         await self.display_dashboard()
         
         await interaction.followup.send(
-            "Game Server Dashboard updated with latest data!", 
+            "Game Hub Dashboard updated with latest data!", 
             ephemeral=True
         )

@@ -5,8 +5,8 @@ CHANNELS = {
         'topic': 'Welcome Information',
         'is_private': False
         },
-    'gameservers': {
-        'name': 'gameservers',
+    'gamehub': {
+        'name': 'gamehub',
         'topic': 'Gameserver Overview',
         'is_private': False,
         'threads': [

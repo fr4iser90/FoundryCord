@@ -13,7 +13,7 @@ from domain.monitoring.collectors.service_config.game_services import get_puffer
 from domain.gameservers.models.gameserver_metrics import GameServerStatus, GameServersMetrics
 from domain.gameservers.collectors.minecraft.minecraft_server_collector import MinecraftServerFetcher
 
-from interfaces.dashboards.components.channels.gameservers.views import GameServerView
+from interfaces.dashboards.components.channels.gamehub.views import GameHubView
 from interfaces.dashboards.ui.base_dashboard import BaseDashboardUI
 from interfaces.dashboards.ui.minecraft_server_dashboard import MinecraftServerDashboardUI
 

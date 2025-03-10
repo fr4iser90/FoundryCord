@@ -1,4 +1,4 @@
-# app/bot/application/services/dashboard/gameservers_dashboard_service.py
+# app/bot/application/services/dashboard/gamehub_dashboard_service.py
 from typing import Dict, Any, List
 from nextcord.ext import commands
 import asyncio
@@ -6,12 +6,12 @@ from infrastructure.logging import logger
 from infrastructure.factories.discord_ui.dashboard_factory import DashboardFactory
 from domain.monitoring.collectors import service_collector
 from domain.gameservers.models.gameserver_metrics import GameServersMetrics
-from interfaces.dashboards.ui.gameserver_dashboard import GameServerDashboardUI
+from interfaces.dashboards.ui.gamehub_dashboard import GameHubDashboardUI
 from domain.gameservers.collectors.minecraft.minecraft_server_collector import MinecraftServerFetcher
 
 
-class GameServerDashboardService:
-    """Service for the Game Server Dashboard"""
+class GameHubDashboardService:
+    """Service for the Game Hub Dashboard"""
     
     def __init__(self, bot, dashboard_factory: DashboardFactory):
         self.bot = bot
@@ -26,13 +26,13 @@ class GameServerDashboardService:
             self.service_collector = service_collector
             
             # Initialize UI component
-            self.dashboard_ui = GameServerDashboardUI(self.bot).set_service(self)
+            self.dashboard_ui = GameHubDashboardUI(self.bot).set_service(self)
             await self.dashboard_ui.initialize()
             
             self.initialized = True
-            logger.info("Game Server Dashboard Service initialized")
+            logger.info("Game Hub Dashboard Service initialized")
         except Exception as e:
-            logger.error(f"Failed to initialize Game Server Dashboard Service: {e}")
+            logger.error(f"Failed to initialize Game Hub Dashboard Service: {e}")
             raise
     
     async def get_game_servers_status(self) -> Dict[str, Any]:
@@ -147,17 +147,17 @@ class GameServerDashboardService:
         await self.dashboard_ui.display_dashboard()
 
 async def setup(bot):
-    """Setup function for the Game Server Dashboard service"""
+    """Setup function for the Game Hub Dashboard service"""
     try:
         dashboard_factory = bot.dashboard_factory
-        service = GameServerDashboardService(bot, dashboard_factory)
+        service = GameHubDashboardService(bot, dashboard_factory)
         await service.initialize()
         
         # Display the dashboard after initialization
         await service.display_dashboard()
         
-        logger.info("Game Server Dashboard service initialized successfully")
+        logger.info("Game Hub Dashboard service initialized successfully")
         return service
     except Exception as e:
-        logger.error(f"Failed to initialize Game Server Dashboard service: {e}")
+        logger.error(f"Failed to initialize Game Hub Dashboard service: {e}")
         raise

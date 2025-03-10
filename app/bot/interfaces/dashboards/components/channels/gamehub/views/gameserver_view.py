@@ -5,9 +5,9 @@ from datetime import datetime
 from infrastructure.logging import logger
 from interfaces.dashboards.components.common.views import BaseView
 from interfaces.dashboards.components.common.buttons import RefreshButton
-from interfaces.dashboards.components.channels.gameservers.buttons import GameServerButton
+from interfaces.dashboards.components.channels.gamehub.buttons import GameServerButton
 
-class GameServerView(BaseView):
+class GameHubView(BaseView):
     """View for game server dashboard with styled metrics and sections"""
     
     def __init__(
@@ -21,7 +21,7 @@ class GameServerView(BaseView):
     def create_embed(self) -> nextcord.Embed:
         """Creates a beautifully formatted game server dashboard embed"""
         embed = nextcord.Embed(
-            title="🎮 Game Server Dashboard",
+            title="🎮 Game Hub Dashboard",
             description="Current status of all game servers",
             color=0x7289da,  # Discord blurple
             timestamp=datetime.now()
@@ -173,7 +173,7 @@ class GameServerView(BaseView):
                     await interaction.followup.send("No server details available.", ephemeral=True)
                     return
                 
-                details = "**📊 Game Server Details**\n\n"
+                details = "**📊 Game Hub Details**\n\n"
                 for name, data in servers.items():
                     status = "🟢 Online" if data.get('online', False) else "🔴 Offline"
                     version = data.get('version', 'Unknown')

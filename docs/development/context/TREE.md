@@ -8,7 +8,7 @@
 │   │   │   │   ├── cleanup
 │   │   │   │   ├── dashboard
 │   │   │   │   │   ├── dynamic_minecraft_dashboad_service.py
-│   │   │   │   │   ├── gameservers_dashboard_service.py
+│   │   │   │   │   ├── gamehub_dashboard_service.py
 │   │   │   │   │   ├── __init__.py
 │   │   │   │   │   ├── monitoring_dashboard_service.py
 │   │   │   │   │   ├── project_dashboard_service.py
@@ -346,7 +346,7 @@
 │   │   │   │   ├── __init__.py
 │   │   │   │   └── ui
 │   │   │   │       ├── base_dashboard.py
-│   │   │   │       ├── gameserver_dashboard.py
+│   │   │   │       ├── gamehub_dashboard.py
 │   │   │   │       ├── infrastructure.py
 │   │   │   │       ├── __init__.py
 │   │   │   │       ├── monitoring_dashboard.py
