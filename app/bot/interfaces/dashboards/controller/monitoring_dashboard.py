@@ -248,7 +248,7 @@ class MonitoringDashboardController(BaseDashboardController):
         if not await self.check_rate_limit(interaction, "system_details"):
             return
         
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         
         try:
             # Get system data (either from cached metrics or fresh)
@@ -343,8 +343,8 @@ class MonitoringDashboardController(BaseDashboardController):
         if not await self.check_rate_limit(interaction, "games"):
             return
         
-        await interaction.response.defer()
-        
+        await interaction.response.defer(ephemeral=True)
+
         try:
             # Get game servers data (either from cached metrics or fresh)
             if hasattr(self, 'last_metrics'):
@@ -389,7 +389,7 @@ class MonitoringDashboardController(BaseDashboardController):
         if not await self.check_rate_limit(interaction, "logs"):
             return
         
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         
         try:
             # Get error logs from service (implement this method in your service)
