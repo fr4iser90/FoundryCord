@@ -14,6 +14,7 @@ async def setup(bot):
     try:
         # Initialize authentication service
         auth_service = AuthenticationService(bot)
+        await auth_service.initialize()
         bot.authentication = auth_service
         
         # Initialize authorization service

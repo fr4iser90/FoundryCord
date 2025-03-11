@@ -17,6 +17,14 @@
         "docs/development/patterns/DESIGN_PATTERN.md"
       ]
     },
+    "communication-language": {
+      "description": "All communication, comments, and documentation should be in English",
+      "require-consistency": true,
+      "active": true,
+      "files": [
+        "docs/development/context/COMMUNICATION.md"
+      ]
+    },
     "coding-standards": {
       "description": "Follow HomeLab Discord Bot Coding Conventions",
       "require-consistency": true,

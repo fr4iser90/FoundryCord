@@ -2,6 +2,9 @@ from nextcord.ext import commands
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
+from infrastructure.security.key_management.key_manager import KeyManager
+from infrastructure.database.repositories.key_repository import KeyRepository
+
 import os
 import logging
 import base64
@@ -10,6 +13,11 @@ from typing import Union, Optional
 import asyncio
 from infrastructure.logging import logger
 
+# Define AUTO_KEY_MANAGEMENT as a constant in the code
+# When True: Use automatic key management only, ignore environment variables
+# When False: Use environment variables only, fail if not present
+AUTO_KEY_MANAGEMENT = True
+
 class EncryptionService:
     def __init__(self, bot):
         self.bot = bot
@@ -17,35 +25,81 @@ class EncryptionService:
         self.processed_messages = set()  # Track processed message IDs
         self.ready = asyncio.Event()
         
-        # Fernet Key
-        self.key = os.getenv('ENCRYPTION_KEY')
-        if not self.key:
-            raise ValueError("ENCRYPTION_KEY environment variable is required")
-        self.cipher = Fernet(self.key)
+        # Use the constant defined in the code, not from environment
+        self.auto_key_management = AUTO_KEY_MANAGEMENT
         
-        # AES Key
-        self._setup_aes_key()
+        # Initialize keys to None
+        self.key = None
+        self.cipher = None
+        self.aes_key_bytes = None
+        
+    async def initialize(self):
+        """Async initialization to set up encryption keys"""
+        try:
+            # Handle Fernet encryption key
+            await self._setup_fernet_key()
+            
+            # Handle AES encryption key
+            await self._setup_aes_key()
+            
+            # Mark service as ready
+            self.ready.set()
+            logger.info("Encryption service initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize encryption: {e}")
+            raise
 
-    def _setup_aes_key(self):
-        """Separate method for AES key setup"""
-        aes_key_b64 = os.getenv('AES_KEY')
-        if not aes_key_b64:
-            raise ValueError("AES_KEY environment variable is required")
+    async def _setup_fernet_key(self):
+        """Set up Fernet key based on AUTO_KEY_MANAGEMENT setting"""
+        if self.auto_key_management:
+            # AUTO_KEY_MANAGEMENT = True: ONLY use KeyManager, ignore environment
+            logger.info("AUTO_KEY_MANAGEMENT is True, using KeyManager for encryption key")
+            self.key_manager = KeyManager()
+            await self.key_manager.initialize()
+            self.key = self.key_manager.get_current_key()
+            if not self.key:
+                raise ValueError("KeyManager failed to provide an encryption key")
+        else:
+            # AUTO_KEY_MANAGEMENT = False: ONLY use environment
+            env_key = os.getenv('ENCRYPTION_KEY')
+            if not env_key:
+                raise ValueError("ENCRYPTION_KEY environment variable is required when AUTO_KEY_MANAGEMENT is False")
+            logger.info("AUTO_KEY_MANAGEMENT is False, using encryption key from environment")
+            self.key = env_key
+            
+        # Set up Fernet cipher with our key
+        self.cipher = Fernet(self.key)
+
+    async def _setup_aes_key(self):
+        """Set up AES key based on AUTO_KEY_MANAGEMENT setting"""
+        if self.auto_key_management:
+            # AUTO_KEY_MANAGEMENT = True: ONLY use database, ignore environment
+            logger.info("AUTO_KEY_MANAGEMENT is True, using database for AES key")
+            key_repository = KeyRepository()
+            await key_repository.initialize()
+            aes_key = await key_repository.get_aes_key()
+            if aes_key:
+                aes_key_b64 = aes_key
+            else:
+                # Generate new AES key if none exists
+                logger.info("Generating new AES key")
+                aes_key_b64 = base64.urlsafe_b64encode(os.urandom(32)).decode()
+                await key_repository.save_aes_key(aes_key_b64)
+        else:
+            # AUTO_KEY_MANAGEMENT = False: ONLY use environment
+            aes_key_b64 = os.getenv('AES_KEY')
+            if not aes_key_b64:
+                raise ValueError("AES_KEY environment variable is required when AUTO_KEY_MANAGEMENT is False")
+            logger.info("AUTO_KEY_MANAGEMENT is False, using AES key from environment")
+            
+        # Process the AES key
         try:
             self.aes_key_bytes = base64.urlsafe_b64decode(aes_key_b64)
             if len(self.aes_key_bytes) != 32:
                 raise ValueError("AES_KEY must be 32 bytes long after base64 decoding")
         except Exception as e:
             raise ValueError(f"Invalid AES_KEY: {str(e)}")
-
-    async def initialize(self):
-        """Async initialization"""
-        try:
-            self._setup_aes_key()
-            self.ready.set()
-        except Exception as e:
-            logger.error(f"Failed to initialize encryption: {e}")
-            raise
 
     async def wait_until_ready(self):
         """Wait until the service is fully initialized"""
@@ -195,7 +249,9 @@ class EncryptionService:
             return self.aes_decrypt(encrypted)
         return text
 
-def setup(bot):
+async def setup(bot):
     """Fügt den EncryptionService zum Bot hinzu"""
     encryption_service = EncryptionService(bot)
+    await encryption_service.initialize()
     bot.encryption = encryption_service
+    return encryption_service

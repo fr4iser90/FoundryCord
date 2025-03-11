@@ -162,3 +162,48 @@ interfaces/dashboards/components/{domain}/
 ├── views/ # Discord views
 ```
 This structure ensures consistency across the codebase and helps developers quickly locate components based on their architectural responsibilities.
+
+## Component Type Placement
+
+### Domain Layer Components
+Components in this layer focus on business logic and domain concepts:
+
+- **Models**: Core business entities and value objects
+- **Domain Services**: Business logic specific to a domain
+- **Repositories (interfaces)**: Data access contracts
+- **Policies**: Business rules and authorization logic
+- **Validators**: Domain-specific validation rules
+- **Strategies**: Business logic algorithms that may vary
+- **Domain Events**: Business significant events
+
+### Infrastructure Layer Components
+Components in this layer implement technical concerns:
+
+- **Managers**: Lifecycle and state coordination components
+- **Repository Implementations**: Concrete data access
+- **Adapters**: External system integration
+- **Factories**: Object creation
+- **Middleware**: Request/operation interception
+- **Providers**: Resource provisioning
+- **Security**: Authentication, encryption, key management
+- **Caching**: Performance optimization
+- **Logging**: System observability
+- **Configuration**: System settings and parameters
+- **Mappers**: Data transformation between layers
+
+### Application Layer Components
+Components in this layer orchestrate use cases:
+
+- **Application Services**: Coordinate domain objects
+- **Tasks**: Scheduled background operations
+- **Command Handlers**: Process user commands
+- **Workflows**: Multi-step business processes
+- **Event Handlers**: React to system events
+
+### Interface Layer Components
+Components in this layer interact with users:
+
+- **Commands**: Discord slash commands
+- **UI Components**: Dashboard elements and views
+- **Converters**: Transform between UI and application formats
+- **Presenters**: Format data for display

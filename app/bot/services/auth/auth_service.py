@@ -7,10 +7,17 @@ from core.services.auth.models.permissions import is_authorized
 class AuthService:
     def __init__(self, bot):
         self.bot = bot
-        self.jwt_secret = os.getenv('JWT_SECRET_KEY')
+        # Get JWT key from KeyManager instead of environment
+        self.key_manager = KeyManager()
+        self.jwt_secret = self.key_manager.get_jwt_secret_key()
         if not self.jwt_secret:
-            logger.warning("JWT_SECRET_KEY not set! Using fallback secret (not recommended for production)")
+            logger.warning("JWT secret key not available! Using fallback secret (not recommended for production)")
             self.jwt_secret = "fallback_secret_key"  # Only for development
+
+        #self.jwt_secret = os.getenv('JWT_SECRET_KEY')
+        #if not self.jwt_secret:
+        #    logger.warning("JWT_SECRET_KEY not set! Using fallback secret (not recommended for production)")
+        #    self.jwt_secret = "fallback_secret_key"  # Only for development
         self.session_duration = timedelta(hours=24)
         self.active_sessions = {}
         self.processed_requests = set()  # Track processed requests like in encryption service
