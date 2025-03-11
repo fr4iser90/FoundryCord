@@ -223,7 +223,7 @@ class GameHubView(BaseView):
                 
                 # Always do a direct API check to ensure we have the latest data
                 try:
-                    from domain.gameservers.collectors.minecraft.minecraft_server_collector import MinecraftServerFetcher
+                    from infrastructure.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
                     domain = self.metrics.get('domain', 'fr4iser.com') 
                     
                     players_info += "\n\n**Direct API Check:**\n"

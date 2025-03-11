@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime
 from infrastructure.logging import logger
 from infrastructure.database.models import Project, Task
-from infrastructure.database.repositories.project_repository import ProjectRepository
+from infrastructure.database.repositories.project_repository_impl import ProjectRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 from infrastructure.database.models.config import get_session
 import nextcord

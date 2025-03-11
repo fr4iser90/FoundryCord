@@ -7,7 +7,7 @@ import aiohttp
 from .docker_utils import get_container_ip, get_all_containers
 from .port_checker import check_tcp_port
 from infrastructure.logging import logger
-from domain.gameservers.collectors.minecraft.minecraft_server_collector import MinecraftServerFetcher
+from infrastructure.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
 
 async def get_public_ip():
     """Get the public IP address of the server"""

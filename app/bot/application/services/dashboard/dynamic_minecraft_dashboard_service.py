@@ -8,18 +8,18 @@ from infrastructure.logging import logger
 from infrastructure.factories.discord_ui.dashboard_factory import DashboardFactory
 from infrastructure.config.channel_config import ChannelConfig
 
-from domain.monitoring.collectors import service_collector
-from domain.monitoring.collectors.service_config.game_services import get_pufferpanel_services, get_standalone_services
-from domain.gameservers.models.gameserver_metrics import GameServerStatus, GameServersMetrics
-from domain.gameservers.collectors.minecraft.minecraft_server_collector import MinecraftServerFetcher
+from infrastructure.collectors.monitoring.service.service_config.game_services import get_pufferpanel_services, get_standalone_services
+from infrastructure.collectors.monitoring.service.service_config.web_services import get_public_services, get_private_services
+from infrastructure.collectors.monitoring.checkers.game_service_checker import check_pufferpanel_games, check_standalone_games
+from infrastructure.collectors.monitoring.checkers.web_service_checker import check_web_services
+from infrastructure.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
 
 from interfaces.dashboards.components.channels.gamehub.views import GameHubView
 from interfaces.dashboards.ui.base_dashboard import BaseDashboardUI
 from interfaces.dashboards.ui.minecraft_server_dashboard import MinecraftServerDashboardUI
 
-from infrastructure.database.repositories.category_repository import CategoryRepository
+from infrastructure.database.repositories.category_repository_impl import CategoryRepository
 from infrastructure.database.models import CategoryMapping
-
 
 class DynamicMinecraftDashboardService:
     """Service for creating individual Minecraft server dashboards"""

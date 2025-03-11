@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import base64
 import os
 from infrastructure.logging.logger import logger
-from infrastructure.database.repositories.key_repository import KeyRepository
+from infrastructure.database.repositories.key_repository_impl import KeyRepository
 
 class KeyManager:
     def __init__(self):

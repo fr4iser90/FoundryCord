@@ -7,7 +7,7 @@ from infrastructure.config.channel_config import ChannelConfig
 from .base_dashboard import BaseDashboardUI
 from interfaces.dashboards.components.channels.gamehub.views import GameHubView
 from interfaces.dashboards.components.ui.table_builder import UnicodeTableBuilder
-from domain.gameservers.collectors.minecraft.minecraft_server_collector import MinecraftServerFetcher
+from infrastructure.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
 from domain.gameservers.models.gameserver_metrics import GameServersMetrics
 
 

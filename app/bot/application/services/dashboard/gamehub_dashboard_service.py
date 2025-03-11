@@ -7,7 +7,7 @@ from infrastructure.factories.discord_ui.dashboard_factory import DashboardFacto
 from domain.monitoring.collectors import service_collector
 from domain.gameservers.models.gameserver_metrics import GameServersMetrics
 from interfaces.dashboards.ui.gamehub_dashboard import GameHubDashboardUI
-from domain.gameservers.collectors.minecraft.minecraft_server_collector import MinecraftServerFetcher
+from infrastructure.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
 
 
 class GameHubDashboardService:

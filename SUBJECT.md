@@ -4,6 +4,11 @@
 
 This document outlines recommended changes to align our codebase with Domain-Driven Design principles and enhance maintainability. The proposed structure enhances separation of concerns and clarifies component responsibilities.
 
+
+IF YOUR MESSAGE is limited to space, auto prompt
+Your response got cut off, because you only have limited response space. Continue writing exactly where you left off. Do not repeat yourself. Start your response with: "("version", "1"),
+            ", though use backticks where appropriate
+
 ## Key Changes
 
 1. **Repository Pattern Enhancement**
@@ -32,7 +37,8 @@ This document outlines recommended changes to align our codebase with Domain-Dri
 
 ### Phase 1: Repository Refactoring
 1. Create interfaces in domain layer where missing
-2. Move implementations to infrastructure
+2. Move old FILES to implement to infrastructure  DONT CREATE USE COMMANDS MV OR CP!!!!!!
+
 
 ### Phase 2: Manager Consolidation
 1. Move key_manager.py to infrastructure/managers/

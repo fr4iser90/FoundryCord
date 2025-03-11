@@ -1,5 +1,5 @@
 from infrastructure.database.models.config import get_session
-from infrastructure.database.repositories.project_repository import ProjectRepository
+from infrastructure.database.repositories.project_repository_impl import ProjectRepository
 from infrastructure.database.repositories.task_repository import TaskRepository
 from infrastructure.logging import logger
 

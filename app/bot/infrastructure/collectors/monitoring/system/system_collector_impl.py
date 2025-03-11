@@ -1,4 +1,4 @@
- import asyncio
+import asyncio
 import logging
 import os
 import psutil
@@ -8,7 +8,7 @@ from typing import List
 from dotenv import load_dotenv
 
 from infrastructure.database.models import MetricModel
-from .system_collector.base import collect_system_data
+from domain.monitoring.collectors.system_collector_interface import SystemCollectorInterface
 
 logger = logging.getLogger('homelab_bot')
 

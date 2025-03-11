@@ -2,8 +2,8 @@ from nextcord.ext import commands
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
-from infrastructure.security.key_management.key_manager import KeyManager
-from infrastructure.database.repositories.key_repository import KeyRepository
+from infrastructure.managers.key_manager import KeyManager
+from infrastructure.database.repositories.key_repository_impl import KeyRepository
 
 import os
 import logging
