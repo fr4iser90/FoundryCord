@@ -9,6 +9,7 @@ from interfaces.dashboards.components.channels.gamehub.views import GameHubView
 from interfaces.dashboards.components.ui.table_builder import UnicodeTableBuilder
 from infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
 from domain.gameservers.models.gameserver_metrics import GameServersMetrics
+from interfaces.dashboards.components.common.embeds import ErrorEmbed, DashboardEmbed
 
 class GameHubDashboardController(BaseDashboardController):
     """UI class for displaying the Game Hub dashboard"""
@@ -34,17 +35,27 @@ class GameHubDashboardController(BaseDashboardController):
             color=0x3498db
         )
         
-        # Prüfe, ob wir Daten haben
+        # Check if we have data
         if hasattr(self, 'last_metrics') and self.last_metrics:
-            # Hole die Server-Daten aus dem richtigen Schlüssel
+            # Get server data from metrics
             servers = self.last_metrics.get('servers', {})
             
-            # Füge alle Game-Server hinzu
+            # Add all game servers with enhanced player information
             for name, status in servers.items():
                 if '🎮' in name:
+                    # Check if we have player data for this server
+                    enhanced_status = status
+                    if hasattr(self, 'metrics') and 'minecraft' in name.lower():
+                        server = next((s for s_name, s in self.metrics.servers.items() 
+                                      if name.replace('🎮 ', '') in s_name), None)
+                        if server and server.online and server.player_count > 0:
+                            enhanced_status = f"✅ Online ({server.player_count}/{server.max_players}) Port(s): {', '.join(map(str, server.ports))}"
+                            if server.players:
+                                enhanced_status += f"\nPlayers: {', '.join(server.players)}"
+                    
                     embed.add_field(
                         name=name,
-                        value=status,
+                        value=enhanced_status,
                         inline=True
                     )
         else:
@@ -54,6 +65,9 @@ class GameHubDashboardController(BaseDashboardController):
                 inline=False
             )
             
+        # Add standard footer at the end
+        DashboardEmbed.add_standard_footer(embed)
+        
         return embed
     
     async def update_metrics(self):
@@ -127,7 +141,7 @@ class GameHubDashboardController(BaseDashboardController):
     
     async def on_server_details(self, interaction: nextcord.Interaction):
         """Show detailed server information for a specific server"""
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         
         try:
             # Create a selection menu with all available servers
@@ -194,11 +208,16 @@ class GameHubDashboardController(BaseDashboardController):
             
         except Exception as e:
             logger.error(f"Error displaying server details: {e}")
-            await interaction.followup.send(f"Error displaying server details: {str(e)}", ephemeral=True)
+            error_embed = ErrorEmbed.create_error(
+                title="❌ Server Details Error",
+                description="Failed to retrieve server details",
+                error_details=str(e)
+            )
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
     
     async def on_player_list(self, interaction: nextcord.Interaction):
-        """Show player list for a server"""
-        await interaction.response.defer()
+        """Show player list for a specific server"""
+        await interaction.response.defer(ephemeral=True)
         
         try:
             # Create a selection menu with all available servers
@@ -266,7 +285,12 @@ class GameHubDashboardController(BaseDashboardController):
             
         except Exception as e:
             logger.error(f"Error displaying player list: {e}")
-            await interaction.followup.send(f"Error displaying player list: {str(e)}", ephemeral=True)
+            error_embed = ErrorEmbed.create_error(
+                title="❌ Player List Error",
+                description="Failed to retrieve player information",
+                error_details=str(e)
+            )
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
     
     async def on_server_logs(self, interaction: nextcord.Interaction):
         """Show server logs"""
@@ -378,25 +402,44 @@ class GameHubDashboardController(BaseDashboardController):
                 }
             }
             
-            # Format the game servers data properly
+            # Format the game servers data properly with enhanced player info
             for server_name, server_info in base_data.items():
                 # Create game server entry with proper format
                 status_text = "✅ Online" if server_info.get('online', False) else "❌ Offline"
+                
+                # Add port information
                 if 'ports' in server_info:
-                    status_text += f" Port(s): {', '.join(map(str, server_info['ports']))}"
+                    port_list = server_info['ports']
+                    status_text += f" Port(s): {', '.join(map(str, port_list))}"
                     
+                # If it's online and has player info, add it
+                if server_info.get('online', False) and 'player_count' in server_info:
+                    player_count = server_info.get('player_count', 0)
+                    max_players = server_info.get('max_players', 0)
+                    
+                    if player_count > 0:
+                        status_text += f" ({player_count}/{max_players})"
+                        
+                        # Add player list if available
+                        if 'players' in server_info and server_info['players']:
+                            status_text += f" Players: {', '.join(server_info['players'])}"
+                
                 # Add to formatted data
                 formatted_data['services']['services'][f"🎮 {server_name}"] = status_text
             
-            # Create metrics object
+            # Create metrics object and store the raw data
             self.metrics = GameServersMetrics.from_raw_data(formatted_data)
-            
-            # Store raw data for UI display
             self.last_metrics = base_data
             
-            # Fetch and integrate Minecraft-specific data
+            # Now fetch Minecraft-specific data from all ports
             domain = self.metrics.domain or "fr4iser.com"
-            minecraft_servers = [(domain, 25570)]  # Use correct port 25570
+            
+            # Get all Minecraft servers with their ports
+            minecraft_servers = []
+            for server_name, server_info in base_data.items():
+                if 'minecraft' in server_name.lower() and 'ports' in server_info:
+                    for port in server_info['ports']:
+                        minecraft_servers.append((domain, port))
             
             try:
                 logger.debug(f"🎮 GameHubDashboardController: Fetching Minecraft data for {minecraft_servers}")
@@ -490,7 +533,10 @@ class GameHubDashboardController(BaseDashboardController):
             )
         except Exception as e:
             logger.error(f"Error refreshing dashboard: {str(e)}")
-            await interaction.followup.send(
-                f"An error occurred while refreshing: {str(e)}", 
-                ephemeral=True
+            # Use the inherited method
+            error_embed = self.create_error_embed(
+                error_message=str(e),
+                title="❌ Refresh Error",
+                error_code="GAMEHUB-REFRESH-ERR"
             )
+            await interaction.followup.send(embed=error_embed, ephemeral=True)

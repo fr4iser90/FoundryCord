@@ -4,6 +4,8 @@ from datetime import datetime
 from infrastructure.logging import logger
 from infrastructure.config.channel_config import ChannelConfig
 from interfaces.dashboards.components.common.buttons.refresh_button import RefreshButton
+from interfaces.dashboards.components.common.embeds import ErrorEmbed, DashboardEmbed  # Add this import
+
 
 class BaseDashboardController:
     """Base class for all dashboard UIs that handles lifecycle management"""
@@ -174,13 +176,44 @@ class BaseDashboardController:
             logger.error(f"Error displaying {self.DASHBOARD_TYPE} dashboard: {e}")
             return None
     
+    def create_error_embed(self, error_message: str, title: str = None, error_code: str = None) -> nextcord.Embed:
+        """Creates a standardized error embed for dashboards
+        
+        Args:
+            error_message: The error message to display
+            title: Optional custom title (defaults to dashboard-specific error title)
+            error_code: Optional error code for tracing
+            
+        Returns:
+            A formatted error embed with standard footer
+        """
+        dashboard_type = self.DASHBOARD_TYPE.replace('_', ' ').title()
+        default_title = f"⚠️ {dashboard_type} Error"
+        
+        embed = ErrorEmbed.create_error(
+            title=title or default_title,
+            description=f"An error occurred in the {dashboard_type} dashboard:",
+            error_details=error_message,
+            error_code=error_code or f"{self.DASHBOARD_TYPE.upper()}-ERR"
+        )
+        
+        # Add standard footer
+        DashboardEmbed.add_standard_footer(embed)
+        
+        return embed
+    
     async def create_embed(self) -> nextcord.Embed:
         """Override this method in subclasses to create the dashboard embed"""
-        return nextcord.Embed(
+        embed = nextcord.Embed(
             title=f"Base {self.TITLE_IDENTIFIER}",
             description="This is a base dashboard. Override create_embed() in a subclass.",
             color=0x3498db
         )
+        
+        # Add standard footer
+        DashboardEmbed.add_standard_footer(embed)
+        
+        return embed
     
     def create_view(self) -> nextcord.ui.View:
         """Create a basic view with a refresh button - override for additional buttons"""
@@ -204,26 +237,3 @@ class BaseDashboardController:
             ephemeral=True
         )
 
-    # async def setup(self):
-    #     """Initialisiert das Dashboard"""
-    #     try:
-    #         # Channel aus der Config holen
-    #         from infrastructure.config.channel_config import ChannelConfig
-    #         channel_id = await ChannelConfig.get_channel_id('projects')
-    #         self.channel = self.bot.get_channel(channel_id)
-            
-    #         if not self.channel:
-    #             logger.error("Project channel not found")
-    #             return
-            
-    #         # Initialize
-    #         self.projects_data = await self.service.get_projects_by_status()
-    #         self.initialized = True
-            
-    #         # Display dashboard with our custom implementation
-    #         await self.display_dashboard()
-    #         logger.info("Project Dashboard setup completed")
-            
-    #     except Exception as e:
-    #         logger.error(f"Error in Project Dashboard setup: {e}")
-    #         raise

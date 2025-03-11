@@ -67,7 +67,6 @@ class MonitoringDashboardController(BaseDashboardController):
     
     def _transform_metrics(self, raw_data):
         """Transformiert Rohmetriken in das von der View erwartete Format."""
-        logger.info(f"=== TRANSFORM START: Rohdaten erhalten: {raw_data} ===")
         result = {}
         
         # Wenn keine Daten vorhanden, gib leeres Dictionary zurück
@@ -154,7 +153,7 @@ class MonitoringDashboardController(BaseDashboardController):
                     # Standard-Fall: Direkte Übernahme mit Debug-Info
                     else:
                         result[metric.name] = metric.value
-                        logger.debug(f"Standardfall Metrik: {metric.name} -> {metric.value}")
+                        
             
             # Game Server-Liste zum Ergebnis hinzufügen
             if game_servers:

@@ -19,7 +19,7 @@ class GameHubView(BaseView):
         # Support both list and dict data formats
         self.metrics = metrics or {}
     
-    def create_embed(self) -> nextcord.Embed:
+    async def create_embed(self) -> nextcord.Embed:
         """Creates a beautifully formatted game server dashboard embed"""
         embed = nextcord.Embed(
             title="🎮 Game Servers Status",
@@ -39,10 +39,10 @@ class GameHubView(BaseView):
                         'port': server.get('port', 'N/A'),
                         'players': server.get('players', {})
                     }
-            self._add_server_fields(embed, servers)
+            await self._add_server_fields(embed, servers)
         # Handle the case when metrics is already a dictionary
         elif isinstance(self.metrics, dict):
-            self._add_server_fields(embed, self.metrics)
+            await self._add_server_fields(embed, self.metrics)
         else:
             embed.add_field(
                 name="⚠️ Error",
@@ -53,7 +53,7 @@ class GameHubView(BaseView):
         embed.set_footer(text=f"Last updated: {datetime.now().strftime('%H:%M:%S')}")
         return embed
     
-    def _add_server_fields(self, embed, servers):
+    async def _add_server_fields(self, embed, servers):
         """Helper method to add server fields to embed"""
         if not servers:
             embed.add_field(
@@ -96,17 +96,57 @@ class GameHubView(BaseView):
                     status = "🟢 Online" if "Online" in data or "✅" in data else "🔴 Offline"
                     port_info = data.split("Port(s): ")[-1] if "Port(s):" in data else "N/A"
                     
-                    details = f"**{name}**\n"
-                    details += f"Status: {status}\n"
-                    details += f"Port: {port_info}\n\n"
+                    # Check for Minecraft to add player info
+                    if "minecraft" in str(name).lower():
+                        try:
+                            # Import inside the function to avoid circular imports
+                            from infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
+                            
+                            # Get domain (usually fr4iser.com)
+                            domain = self.metrics.get('domain', 'fr4iser.com')
+                            
+                            # Get player data
+                            mc_data = await MinecraftServerFetcher.fetch_server_data(domain, 25570)
+                            if mc_data.get('online', False):
+                                player_count = mc_data.get('player_count', 0)
+                                max_players = mc_data.get('max_players', 0)
+                                details = f"**{name}** ({player_count}/{max_players})\n"
+                                details += f"Status: {status}\n"
+                                if player_count > 0:
+                                    players = mc_data.get('players', [])
+                                    if players:
+                                        details += f"Players: {', '.join(players)}\n"
+                                details += f"Port: {port_info}\n\n"
+                            else:
+                                details = f"**{name}**\n"
+                                details += f"Status: {status}\n"
+                                details += f"Port: {port_info}\n\n"
+                        except Exception as e:
+                            # If there's an error, fall back to standard format
+                            details = f"**{name}**\n"
+                            details += f"Status: {status}\n"
+                            details += f"Port: {port_info}\n\n"
+                    else:
+                        details = f"**{name}**\n"
+                        details += f"Status: {status}\n"
+                        details += f"Port: {port_info}\n\n"
                 # Handle dictionary format data
                 else:
                     status = "🟢 Online" if data.get('online', False) else "🔴 Offline"
                     version = data.get('version', 'Unknown')
                     ports = ', '.join(map(str, data.get('ports', []))) if data.get('ports') else 'N/A'
                     
-                    details = f"**{name}**\n"
-                    details += f"Status: {status}\n"
+                    # Add player count if available
+                    if data.get('online', False) and 'player_count' in data:
+                        player_count = data.get('player_count', 0)
+                        max_players = data.get('max_players', 0)
+                        details = f"**{name}** ({player_count}/{max_players})\n"
+                        details += f"Status: {status}\n"
+                        
+                        # Add player list if available
+                        if player_count > 0 and 'players' in data and data['players']:
+                            details += f"Online: {', '.join(data['players'])}\n"
+                        
                     details += f"Version: {version}\n"
                     details += f"Ports: {ports}\n\n"
                 
@@ -223,19 +263,116 @@ class GameHubView(BaseView):
                 players_info = "**👥 Current Players**\n\n"
                 total_players = 0
                 players_found = False
+                minecraft_data = None
                 
+                # First, try direct API check to ensure we have the latest data
+                try:
+                    from infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
+                    domain = self.metrics.get('domain', 'fr4iser.com')
+                    
+                    # Get all servers and find Minecraft servers with their ports
+                    minecraft_servers = []
+                    for name, data in servers.items():
+                        if 'minecraft' in name.lower():
+                            # Extract port from string format data
+                            if isinstance(data, str) and "Port(s):" in data:
+                                port_str = data.split("Port(s): ")[-1].strip()
+                                if port_str and port_str != 'N/A':
+                                    try:
+                                        # Handle multiple ports separated by commas
+                                        ports = [int(p.strip()) for p in port_str.split(',')]
+                                        for port in ports:
+                                            minecraft_servers.append((domain, port))
+                                    except ValueError:
+                                        logger.error(f"Invalid port format: {port_str}")
+                            # Extract port from dictionary format data
+                            elif isinstance(data, dict) and 'ports' in data:
+                                ports = data.get('ports', [])
+                                for port in ports:
+                                    minecraft_servers.append((domain, port))
+                    
+                    logger.debug(f"Found Minecraft servers: {minecraft_servers}")
+                    
+                    # Fetch data for all found Minecraft servers
+                    minecraft_data_map = {}
+                    if minecraft_servers:
+                        for server_domain, server_port in minecraft_servers:
+                            try:
+                                server_data = await MinecraftServerFetcher.fetch_server_data(server_domain, server_port)
+                                minecraft_data_map[f"{server_domain}:{server_port}"] = server_data
+                                
+                                # Count players from all Minecraft servers
+                                if server_data.get('online', False) and server_data.get('player_count', 0) > 0:
+                                    total_players += server_data.get('player_count', 0)
+                                    players_found = True
+                            except Exception as e:
+                                logger.error(f"Error fetching data for Minecraft server {server_domain}:{server_port}: {str(e)}")
+                    
+                    # Store all Minecraft data for later use
+                    minecraft_data = minecraft_data_map
+                except Exception as e:
+                    logger.error(f"Error in Minecraft API check: {str(e)}")
+                
+                # Only display actual game services (filter out utilities)
+                game_services = {}
                 for name, data in servers.items():
-                    # Handle string format data
+                    # Skip non-game services
+                    if any(service in name.lower() for service in ['pufferpanel', 'owncloud', 'vaultwarden']):
+                        continue
+                        
+                    # Include only game servers
+                    if any(game in name.lower() for game in ['minecraft', 'factorio', 'valheim', 'cs2', 'palworld', 'satisfactory']):
+                        game_services[name] = data
+                
+                # Now process game services
+                for name, data in game_services.items():
+                    # Special handling for Minecraft with API data
+                    if 'minecraft' in name.lower() and minecraft_data:
+                        # Find matching server data
+                        server_data = None
+                        for server_key, data_entry in minecraft_data.items():
+                            if data_entry.get('online', False):
+                                server_data = data_entry
+                                break
+                                
+                        if server_data:
+                            mc_online = server_data.get('online', False)
+                            mc_players = server_data.get('player_count', 0)
+                            mc_max = server_data.get('max_players', 0)
+                            mc_list = server_data.get('players', [])
+                            
+                            players_info += f"**{name}** ({mc_players}/{mc_max})\n"
+                            if mc_list and len(mc_list) > 0:
+                                players_info += f"Players: {', '.join(mc_list)}\n\n"
+                                players_found = True
+                            else:
+                                players_info += "No players online\n\n"
+                        else:
+                            # No matching server data found
+                            if isinstance(data, str):
+                                online = "Online" in data or "✅" in data
+                                players_info += f"**{name}**\n"
+                                players_info += f"Status: {'Online' if online else 'Offline'}\n"
+                                players_info += "No player data available\n\n"
+                            else:
+                                # Continue with normal handling
+                                continue
+                        
+                        # Skip the standard processing for Minecraft
+                        continue
+                        
+                    # Handle string format data for other games
                     if isinstance(data, str):
                         online = "Online" in data or "✅" in data
                         players_info += f"**{name}**\n"
                         players_info += f"Status: {'Online' if online else 'Offline'}\n"
-                        players_info += "Player data not available in this format\n\n"
                         
+                        # For string format data, we can only show basic status
                         if online:
-                            total_players += 0  # We don't know how many players
-                        
-                        logger.debug(f"Processing server {name} (string format): {data}")
+                            players_info += "No player data available\n\n"
+                        else:
+                            players_info += "Offline - No players\n\n"
+                            
                     # Handle dictionary format data
                     else:
                         online = data.get('online', False)
@@ -243,44 +380,24 @@ class GameHubView(BaseView):
                         max_players = data.get('max_players', 0)
                         player_list = data.get('players', [])
                         
-                        logger.debug(f"Processing server {name}:")
-                        logger.debug(f"  Online: {online}")
-                        logger.debug(f"  Player count: {player_count}")
-                        logger.debug(f"  Player list: {player_list}")
-                        
-                        # Add server even if offline
+                        # Add server with player count
                         players_info += f"**{name}** ({player_count}/{max_players})\n"
                         
                         if online and player_list and len(player_list) > 0:
                             players_info += "Players: " + ", ".join(player_list) + "\n\n"
                             players_found = True
-                        else:
-                            players_info += "No players online\n\n"
-                        
-                        if online:
                             total_players += player_count
+                        else:
+                            if online:
+                                players_info += "No players online\n\n"
+                            else:
+                                players_info += "Offline - No players\n\n"
                 
-                if total_players == 0:
-                    players_info += "No players online on any server."
-                
-                # Always do a direct API check to ensure we have the latest data
-                try:
-                    from infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
-                    domain = self.metrics.get('domain', 'fr4iser.com') 
-                    
-                    players_info += "\n\n**Direct API Check:**\n"
-                    minecraft_api_data = await MinecraftServerFetcher.fetch_server_data(domain, 25570)
-                    
-                    mc_online = minecraft_api_data.get('online', False)
-                    mc_players = minecraft_api_data.get('player_count', 0)
-                    mc_max = minecraft_api_data.get('max_players', 0)
-                    mc_list = minecraft_api_data.get('players', [])
-                    
-                    players_info += f"Minecraft: {mc_players}/{mc_max} players"
-                    if mc_list:
-                        players_info += f"\nPlayers: {', '.join(mc_list)}"
-                except Exception as e:
-                    players_info += f"\n\nAPI check error: {str(e)}"
+                # Summary information
+                if not players_found:
+                    players_info += "No players online on any game servers."
+                else:
+                    players_info += f"**Total Players Online: {total_players}**"
                 
                 await interaction.followup.send(players_info, ephemeral=True)
                 

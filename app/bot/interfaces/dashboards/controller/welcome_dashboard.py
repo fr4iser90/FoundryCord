@@ -3,6 +3,7 @@ import nextcord
 from .base_dashboard import BaseDashboardController
 from interfaces.dashboards.components.channels.welcome.views import WelcomeView, BotInfoView
 from infrastructure.logging import logger
+from interfaces.dashboards.components.common.embeds import ErrorEmbed, DashboardEmbed
 
 class WelcomeDashboardController(BaseDashboardController):
     """UI class for displaying the homelab welcome dashboard"""
@@ -130,7 +131,12 @@ class WelcomeDashboardController(BaseDashboardController):
                 
         except Exception as e:
             logger.error(f"Error in rule acceptance: {e}")
-            await interaction.response.send_message("Error processing your request.", ephemeral=True)
+            error_embed = self.create_error_embed(
+                error_message=str(e),
+                title="❌ Role Assignment Error",
+                error_code="WELCOME-ROLE-ERR"
+            )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True)
     
     async def on_role_select(self, interaction: nextcord.Interaction):
         """Handler for tech role selection"""

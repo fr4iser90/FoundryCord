@@ -16,6 +16,7 @@ from interfaces.dashboards.components.channels.projects.views.project_thread_vie
 from interfaces.dashboards.components.common.views.confirmation_view import ConfirmationView
 from interfaces.dashboards.components.channels.projects.views.status_select_view import StatusSelectView
 from interfaces.dashboards.controller.base_dashboard import BaseDashboardController
+from interfaces.dashboards.components.common.embeds import DashboardEmbed
 
 class ProjectDashboardController(BaseDashboardController):
     """UI class for displaying the project dashboard"""
@@ -124,7 +125,9 @@ class ProjectDashboardController(BaseDashboardController):
                 inline=False
             )
         
-        embed.set_footer(text=f"Letztes Update • {datetime.now().strftime('%H:%M:%S')}")
+        # Add standard footer instead
+        DashboardEmbed.add_standard_footer(embed, text="Homelab Project Dashboard • Last Updated")
+        
         return embed
     
     def _create_progress_bar(self, value: float, max_value: float, length: int = 10) -> str:
