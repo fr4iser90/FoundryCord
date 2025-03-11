@@ -3,14 +3,11 @@ set -e
 
 echo "===== Homelab Discord Bot Initialization ====="
 
-# Direct loading of environment variables from .env.discordbot
-ENV_FILE="/.env.discordbot"
-if [ -f "$ENV_FILE" ]; then
-  echo "Loading environment directly from $ENV_FILE"
-  # Source the file directly to get exact values
-  source "$ENV_FILE"
-else
-  echo "WARNING: $ENV_FILE not found, using passed environment variables"
+# Check for credentials file from database
+CREDS_FILE="/app/bot/database/credentials/db_credentials"
+if [ -f "$CREDS_FILE" ]; then
+  echo "Loading database credentials from shared volume..."
+  source "$CREDS_FILE"
 fi
 
 # Function to generate random keys
@@ -71,8 +68,11 @@ generate_optional_keys() {
   keys_generated=false
   env_file="/app/bot/config/.env.keys"
   
-  # Create config directory if it doesn't exist
-  mkdir -p /app/bot/config
+  # Ensure config directory is writable
+  if [ ! -w "/app/bot/config" ]; then
+    echo "WARNING: Config directory is not writable. Keys will not be persistent."
+    env_file="/tmp/.env.keys.temp"
+  fi
   
   # Load previously generated keys if they exist
   if [ -f "$env_file" ]; then
@@ -116,29 +116,22 @@ generate_optional_keys() {
     chmod 600 "$env_file"
     echo "Security keys have been saved for persistence between container restarts."
   fi
-  
-  # Database password checks
-  if [ -z "$POSTGRES_PASSWORD" ]; then
-    echo "WARNING: POSTGRES_PASSWORD not set, using default from compose file."
-  fi
-  
-  if [ -z "$APP_DB_PASSWORD" ]; then
-    echo "WARNING: APP_DB_PASSWORD not set, using default from compose file."
-  fi
 }
 
 # Apply defaults for other optional variables
 apply_variables() {
   echo "Checking environment variables..."
   
-  # Only log the current values without overriding them
+  # Set defaults for optional variables if not provided
+  export ENVIRONMENT=${ENVIRONMENT:-development}
+  export DOMAIN=${DOMAIN:-localhost}
+  export OFFLINE_MODE=${OFFLINE_MODE:-false}
+  export ENABLED_SERVICES=${ENABLED_SERVICES:-Web}
+  
   echo "ENVIRONMENT: ${ENVIRONMENT}"
   echo "DOMAIN: ${DOMAIN}"
   echo "OFFLINE_MODE: ${OFFLINE_MODE}"
   echo "ENABLED_SERVICES: ${ENABLED_SERVICES}"
-  
-  # Add specific debug output for OFFLINE_MODE value
-  echo "DEBUG: OFFLINE_MODE value is '${OFFLINE_MODE}'"
   
   # Legacy variable support - TYPE was renamed to ENABLED_SERVICES
   if [ -n "$TYPE" ] && [ -z "$ENABLED_SERVICES" ]; then
@@ -187,24 +180,11 @@ initialize() {
   # Show configuration summary
   show_configuration_summary
   
-  # Wait for PostgreSQL if needed
-  if [ "$WAIT_FOR_DB" = "true" ]; then
-    echo "Waiting for PostgreSQL to be ready..."
-    python -m infrastructure.database.migrations.wait_for_postgres
-  fi
-  
-  # Create database tables - skip if DB_INIT_DISABLE is set
-  if [ "$DB_INIT_DISABLE" != "true" ]; then
-    echo "Initializing database..."
-    if [ "$USE_ALEMBIC" = "true" ]; then
-      echo "Running Alembic migrations..."
-      cd /app/bot
-      alembic upgrade head
-    else
-      # Default to SQLAlchemy create_all
-      echo "Using SQLAlchemy for database initialization..."
-      python -m infrastructure.database.migrations.init_db
-    fi
+  echo "Starting database initialization..."
+  # Use the dedicated Python script for database setup
+  if ! python -m infrastructure.database.migrations.init_db; then
+    echo "ERROR: Database initialization failed"
+    exit 1
   fi
   
   echo "Initialization complete."

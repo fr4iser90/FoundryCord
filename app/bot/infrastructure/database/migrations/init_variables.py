@@ -83,7 +83,8 @@ def generate_env_files(config):
         "RATE_LIMIT_MAX_ATTEMPTS", "PUID", "PGID"
     ]
     
-    with open("compose/.env.discordbot", "w") as f:
+    #with open("compose/.env.discordbot", "w") as f:
+    with open("compose/.env", "w") as f:
         for var in discord_vars:
             if var in config:
                 f.write(f"{var}={config[var]}\n")
@@ -94,7 +95,8 @@ def generate_env_files(config):
         "POSTGRES_PASSWORD", "POSTGRES_DB", "APP_DB_USER", "APP_DB_PASSWORD"
     ]
     
-    with open("compose/.env.postgres", "w") as f:
+    #with open("compose/.env.postgres", "w") as f:
+    with open("compose/.env", "w") as f:
         for var in postgres_vars:
             if var in config:
                 f.write(f"{var}={config[var]}\n")
@@ -103,8 +105,8 @@ def generate_env_files(config):
     print("compose/.env.discordbot and compose/.env.postgres have been created.")
     
     # Set appropriate permissions
-    os.chmod("compose/.env.discordbot", 0o600)
-    os.chmod("compose/.env.postgres", 0o600)
+    os.chmod("compose/.env", 0o600)
+    #os.chmod("compose/.env.postgres", 0o600)
     print("File permissions set to 600 (user read/write only)")
 
 def main():
@@ -113,7 +115,8 @@ def main():
     # Load existing values if available
     config = {}
     try:
-        with open("compose/.env.discordbot", "r") as f:
+        #with open("compose/.env.discordbot", "r") as f:
+        with open("compose/.env", "r") as f:
             for line in f:
                 if "=" in line and not line.startswith("#"):
                     key, value = line.strip().split("=", 1)

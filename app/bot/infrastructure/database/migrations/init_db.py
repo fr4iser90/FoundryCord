@@ -3,7 +3,7 @@ from infrastructure.database.models import Base
 from infrastructure.database.models.config import initialize_engine, initialize_session
 import asyncio
 from infrastructure.logging import logger
-from sqlalchemy import select, inspect
+from sqlalchemy import select, inspect, text
 
 async def is_database_empty():
     """Check if database has no tables (is empty)"""
@@ -20,16 +20,27 @@ async def is_database_empty():
         return is_empty
 
 async def init_db(bot=None):
-    # Always create/update all tables regardless if DB is empty or not
-    engine = await initialize_engine()
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    
-    # Initialize session after engine is created
-    await initialize_session()
-    
-    logger.info("Database tables created/updated successfully")
-    return True
+    try:
+        engine = await initialize_engine()
+        
+        # First check if we can connect
+        async with engine.begin() as conn:
+            await conn.execute(text('SELECT 1'))
+        
+        # Then create tables
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        
+        await initialize_session()
+        logger.info("Database tables created successfully")
+        
+        # Run migrations for existing users
+        await migrate_existing_users()
+        
+        return True
+    except Exception as e:
+        logger.error(f"Database initialization failed: {e}")
+        raise
 
 async def migrate_existing_users():
     """Migrate existing users from env to database"""

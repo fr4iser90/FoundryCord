@@ -7,6 +7,7 @@ WATCH_CONSOLE=true
 PROJECT_ROOT_DIR="/home/docker/docker/companion-management/homelab-discord-bot"
 DOCKER_DIR="${PROJECT_ROOT_DIR}/compose"
 REMOVE_APP=false
+REMOVE_VOLUMES=false
 FULL_BUILD=false
 
 # Argumente parsen
@@ -20,11 +21,22 @@ for arg in "$@"; do
             FULL_BUILD=true
             shift
             ;;
+        --remove-volumes)
+            REMOVE_VOLUMES=true
+            shift
+            ;;      
+        # Unbekannte Option
         *)
-            # Unbekannte Option
+            echo "Unknown option: $arg"
+            exit 1
             ;;
     esac
 done
+
+if [ "$REMOVE_VOLUMES" = true ]; then
+    echo "Removing volumes..."
+    ssh ${SERVER_USER}@${SERVER_HOST} "cd ${DOCKER_DIR} && docker compose down -v"
+fi
 
 # Art des Updates definieren
 if [ "$FULL_BUILD" = true ]; then
@@ -42,13 +54,14 @@ if [ "$full_update" == "y" ]; then
     # App-Verzeichnis optional entfernen
     if [ "$REMOVE_APP" = true ]; then
         echo "Removing existing app directory..."
-        ssh ${SERVER_USER}@${SERVER_HOST} "rm -rf ${PROJECT_ROOT_DIR}/app"
+        ssh ${SERVER_USER}@${SERVER_HOST} "rm -rf ${PROJECT_ROOT_DIR}"
     fi
 
     # Dateien kopieren
     scp -r ~/Documents/Git/NCC-DiscordBot/* ${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}
-    scp ~/Documents/Git/NCC-DiscordBot/compose/.env.discordbot ${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}
-    scp ~/Documents/Git/NCC-DiscordBot/compose/.env.postgres ${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}
+    #scp ~/Documents/Git/NCC-DiscordBot/compose/.env.discordbot ${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}
+    #scp ~/Documents/Git/NCC-DiscordBot/compose/.env.postgres ${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}
+    scp ~/Documents/Git/NCC-DiscordBot/compose/.env ${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}
     
     # Neu bauen und starten
     if [ "$WATCH_CONSOLE" = true ]; then
