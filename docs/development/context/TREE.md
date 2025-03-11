@@ -5,9 +5,8 @@
 │   │   │   ├── services
 │   │   │   │   ├── channel
 │   │   │   │   │   └── game_server_channel_service.py
-│   │   │   │   ├── cleanup
 │   │   │   │   ├── dashboard
-│   │   │   │   │   ├── dynamic_minecraft_dashboad_service.py
+│   │   │   │   │   ├── dynamic_minecraft_dashboard_service.py
 │   │   │   │   │   ├── gamehub_dashboard_service.py
 │   │   │   │   │   ├── __init__.py
 │   │   │   │   │   ├── monitoring_dashboard_service.py
@@ -20,7 +19,9 @@
 │   │   │   │       └── wireguard_service.py
 │   │   │   └── tasks
 │   │   │       ├── cleanup_dm_task.py
-│   │   │       └── cleanup_task.py
+│   │   │       ├── cleanup_task.py
+│   │   │       └── security_tasks.py
+│   │   ├── config
 │   │   ├── core
 │   │   │   ├── extensions.py
 │   │   │   ├── __init__.py
@@ -35,7 +36,11 @@
 │   │   │       ├── database_workflow.py
 │   │   │       ├── service_workflow.py
 │   │   │       ├── slash_commands_workflow.py
-│   │   │       └── task_workflow.py
+│   │   │       ├── task_workflow.py
+│   │   │       └── webinterface_workflow.py
+│   │   ├── database
+│   │   │   └── credentials
+│   │   │       └── db_credentials
 │   │   ├── dev
 │   │   │   ├── dev_server.py
 │   │   │   └── reload_commands.py
@@ -56,68 +61,40 @@
 │   │   │   │   └── services
 │   │   │   │       ├── __init__.py
 │   │   │   │       └── permission_service.py
-│   │   │   ├── channels
-│   │   │   │   ├── factories
-│   │   │   │   ├── models
-│   │   │   │   └── repositories
-│   │   │   ├── factories
 │   │   │   ├── gameservers
 │   │   │   │   ├── collectors
 │   │   │   │   │   ├── __init__.py
 │   │   │   │   │   └── minecraft
-│   │   │   │   │       └── minecraft_server_collector.py
-│   │   │   │   ├── factories
 │   │   │   │   ├── models
 │   │   │   │   │   ├── gameserver_metrics.py
 │   │   │   │   │   └── __init__.py
-│   │   │   │   ├── repositories
-│   │   │   │   └── services
+│   │   │   │   └── repositories
 │   │   │   ├── monitoring
 │   │   │   │   ├── collectors
-│   │   │   │   │   ├── checkers
-│   │   │   │   │   │   ├── docker_utils.py
-│   │   │   │   │   │   ├── game_service_checker.py
-│   │   │   │   │   │   ├── __init__.py
-│   │   │   │   │   │   ├── port_checker.py
-│   │   │   │   │   │   └── web_service_checker.py
 │   │   │   │   │   ├── __init__.py
-│   │   │   │   │   ├── service_collector
-│   │   │   │   │   │   ├── base.py
-│   │   │   │   │   │   ├── docker.py
-│   │   │   │   │   │   ├── __init__.py
-│   │   │   │   │   │   ├── security.py
-│   │   │   │   │   │   └── services.py
-│   │   │   │   │   ├── service_collector.py
-│   │   │   │   │   ├── service_config
-│   │   │   │   │   │   ├── game_services.py
-│   │   │   │   │   │   ├── __init__.py
-│   │   │   │   │   │   └── web_services.py
-│   │   │   │   │   ├── system_collector
-│   │   │   │   │   │   ├── base.py
-│   │   │   │   │   │   ├── hardware
-│   │   │   │   │   │   │   ├── cpu.py
-│   │   │   │   │   │   │   ├── gpu.py
-│   │   │   │   │   │   │   ├── __init__.py
-│   │   │   │   │   │   │   ├── memory.py
-│   │   │   │   │   │   │   ├── network.py
-│   │   │   │   │   │   │   ├── power.py
-│   │   │   │   │   │   │   ├── sensors.py
-│   │   │   │   │   │   │   ├── speed_test.py
-│   │   │   │   │   │   │   └── system.py
-│   │   │   │   │   │   ├── __init__.py
-│   │   │   │   │   │   ├── network.py
-│   │   │   │   │   │   ├── storage.py
-│   │   │   │   │   │   └── system.py
-│   │   │   │   │   └── system_collector.py
+│   │   │   │   │   └── interfaces
+│   │   │   │   │       ├── collector_interface.py
+│   │   │   │   │       ├── __init__.py
+│   │   │   │   │       ├── service_collector_interface.py
+│   │   │   │   │       └── system_collector_interface.py
 │   │   │   │   ├── models
 │   │   │   │   │   ├── alert.py
+│   │   │   │   │   ├── __init__.py
 │   │   │   │   │   └── metric.py
 │   │   │   │   ├── repositories
 │   │   │   │   │   └── monitoring_repository.py
 │   │   │   │   └── services
 │   │   │   │       ├── alert_service.py
 │   │   │   │       └── metric_service.py
+│   │   │   ├── security
+│   │   │   │   ├── models
+│   │   │   │   ├── policies
+│   │   │   │   ├── repositories
+│   │   │   │   ├── services
+│   │   │   │   │   └── key_rotation_service.py
+│   │   │   │   └── value_objects
 │   │   │   ├── tracker
+│   │   │   │   ├── repositories
 │   │   │   │   └── services
 │   │   │   │       └── project_service.py
 │   │   │   └── wireguard
@@ -146,6 +123,10 @@
 │   │   │   │   │   └── module_services_config.py
 │   │   │   │   └── task_config.py
 │   │   │   ├── database
+│   │   │   │   ├── connection.py
+│   │   │   │   ├── management
+│   │   │   │   │   ├── credential_provider.py
+│   │   │   │   │   └── database_credential_manager.py
 │   │   │   │   ├── migrations
 │   │   │   │   │   ├── alembic.ini
 │   │   │   │   │   ├── env.py
@@ -166,16 +147,19 @@
 │   │   │   │   │   ├── dashboard_models.py
 │   │   │   │   │   ├── discord_models.py
 │   │   │   │   │   ├── __init__.py
-│   │   │   │   │   ├── OLD.py
+│   │   │   │   │   ├── monitoring_models.py
 │   │   │   │   │   └── project_models.py
 │   │   │   │   └── repositories
-│   │   │   │       ├── auditlog_repository.py
+│   │   │   │       ├── auditlog_repository_impl.py
+│   │   │   │       ├── category_repository_impl.py
+│   │   │   │       ├── __init__.py
+│   │   │   │       ├── key_repository_impl.py
 │   │   │   │       ├── monitoring_repository_impl.py
-│   │   │   │       ├── project_repository.py
-│   │   │   │       ├── ratelimit_repository.py
-│   │   │   │       ├── session_repository.py
-│   │   │   │       ├── task_repository.py
-│   │   │   │       └── user_repository.py
+│   │   │   │       ├── project_repository_impl.py
+│   │   │   │       ├── ratelimit_repository_impl.py
+│   │   │   │       ├── session_repository_impl.py
+│   │   │   │       ├── task_repository_impl.py
+│   │   │   │       └── user_repository_impl.py
 │   │   │   ├── discord
 │   │   │   │   ├── category_setup_service.py
 │   │   │   │   ├── channel_setup_service.py
@@ -209,35 +193,81 @@
 │   │   │   │   │   ├── modal_factory.py
 │   │   │   │   │   └── view_factory.py
 │   │   │   │   ├── __init__.py
+│   │   │   │   ├── monitoring
+│   │   │   │   │   ├── collector_factory.py
+│   │   │   │   │   └── __init__.py
 │   │   │   │   └── service
 │   │   │   │       ├── __init__.py
 │   │   │   │       ├── service_factory.py
 │   │   │   │       ├── service_resolver.py
 │   │   │   │       └── task_factory.py
 │   │   │   ├── logging
-│   │   │   │   ├── formatters
-│   │   │   │   ├── handlers
 │   │   │   │   ├── __init__.py
 │   │   │   │   ├── logger.py
 │   │   │   │   └── logging_service.py
 │   │   │   ├── managers
-│   │   │   │   └── dashboard_manager.py
+│   │   │   │   ├── dashboard_manager.py
+│   │   │   │   └── key_manager.py
+│   │   │   ├── monitoring
+│   │   │   │   ├── checkers
+│   │   │   │   │   ├── docker_utils.py
+│   │   │   │   │   ├── game_service_checker.py
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   ├── port_checker.py
+│   │   │   │   │   └── web_service_checker.py
+│   │   │   │   ├── collectors
+│   │   │   │   │   ├── game_servers
+│   │   │   │   │   │   ├── __init__.py
+│   │   │   │   │   │   └── minecraft_server_collector_impl.py
+│   │   │   │   │   ├── service
+│   │   │   │   │   │   ├── components
+│   │   │   │   │   │   │   ├── base.py
+│   │   │   │   │   │   │   ├── docker.py
+│   │   │   │   │   │   │   ├── __init__.py
+│   │   │   │   │   │   │   ├── security.py
+│   │   │   │   │   │   │   └── services.py
+│   │   │   │   │   │   ├── config
+│   │   │   │   │   │   │   ├── game_services.py
+│   │   │   │   │   │   │   ├── __init__.py
+│   │   │   │   │   │   │   └── web_services.py
+│   │   │   │   │   │   ├── impl.py
+│   │   │   │   │   │   └── __init__.py
+│   │   │   │   │   └── system
+│   │   │   │   │       ├── components
+│   │   │   │   │       │   ├── base.py
+│   │   │   │   │       │   ├── hardware
+│   │   │   │   │       │   │   ├── cpu.py
+│   │   │   │   │       │   │   ├── gpu.py
+│   │   │   │   │       │   │   ├── __init__.py
+│   │   │   │   │       │   │   ├── memory.py
+│   │   │   │   │       │   │   ├── network.py
+│   │   │   │   │       │   │   ├── power.py
+│   │   │   │   │       │   │   ├── sensors.py
+│   │   │   │   │       │   │   ├── speed_test.py
+│   │   │   │   │       │   │   └── system.py
+│   │   │   │   │       │   ├── __init__.py
+│   │   │   │   │       │   ├── network.py
+│   │   │   │   │       │   ├── storage.py
+│   │   │   │   │       │   └── system.py
+│   │   │   │   │       ├── impl.py
+│   │   │   │   │       └── __init__.py
+│   │   │   │   └── __init__.py
 │   │   │   ├── rate_limiting
 │   │   │   │   ├── __init__.py
 │   │   │   │   ├── rate_limiting_middleware.py
 │   │   │   │   └── rate_limiting_service.py
-│   │   │   └── security
-│   │   │       ├── encryption
-│   │   │       └── key_management
-│   │   │           └── key_manager.py
+│   │   │   ├── security
+│   │   │   │   └── key_management
+│   │   │   └── web
+│   │   │       ├── auth_middleware.py
+│   │   │       ├── routes.py
+│   │   │       └── server.py
 │   │   ├── __init__.py
 │   │   ├── interfaces
 │   │   │   ├── commands
-│   │   │   │   ├── admin
 │   │   │   │   ├── auth
 │   │   │   │   │   ├── auth_commands.py
 │   │   │   │   │   └── __init__.py
-│   │   │   │   ├── gameserver
 │   │   │   │   ├── monitoring
 │   │   │   │   │   ├── __init__.py
 │   │   │   │   │   └── system_monitoring_commands.py
@@ -255,7 +285,7 @@
 │   │   │   ├── dashboards
 │   │   │   │   ├── components
 │   │   │   │   │   ├── channels
-│   │   │   │   │   │   ├── gameservers
+│   │   │   │   │   │   ├── gamehub
 │   │   │   │   │   │   │   ├── buttons
 │   │   │   │   │   │   │   │   ├── game_server_button.py
 │   │   │   │   │   │   │   │   └── __init__.py
@@ -299,15 +329,19 @@
 │   │   │   │   │   │   │       └── status_select_view.py
 │   │   │   │   │   │   └── welcome
 │   │   │   │   │   │       ├── buttons
-│   │   │   │   │   │       │   └── __init__.py
+│   │   │   │   │   │       │   ├── bot_info_buttons.py
+│   │   │   │   │   │       │   ├── __init__.py
+│   │   │   │   │   │       │   └── welcome_buttons.py
 │   │   │   │   │   │       ├── embeds
 │   │   │   │   │   │       │   ├── __init__.py
 │   │   │   │   │   │       │   └── welcome_embed.py
 │   │   │   │   │   │       ├── modals
 │   │   │   │   │   │       │   └── __init__.py
 │   │   │   │   │   │       ├── selectors
-│   │   │   │   │   │       │   └── __init__.py
+│   │   │   │   │   │       │   ├── __init__.py
+│   │   │   │   │   │       │   └── tech_selector.py
 │   │   │   │   │   │       └── views
+│   │   │   │   │   │           ├── bot_info_view.py
 │   │   │   │   │   │           ├── __init__.py
 │   │   │   │   │   │           └── welcome_view.py
 │   │   │   │   │   ├── common
@@ -317,10 +351,10 @@
 │   │   │   │   │   │   │   └── refresh_button.py
 │   │   │   │   │   │   ├── embeds
 │   │   │   │   │   │   │   ├── base_embed.py
+│   │   │   │   │   │   │   ├── dashboard_embed.py
 │   │   │   │   │   │   │   ├── error_embed.py
 │   │   │   │   │   │   │   └── __init__.py
 │   │   │   │   │   │   ├── __init__.py
-│   │   │   │   │   │   ├── menus
 │   │   │   │   │   │   ├── modals
 │   │   │   │   │   │   │   ├── base_modal.py
 │   │   │   │   │   │   │   └── __init__.py
@@ -343,42 +377,56 @@
 │   │   │   │   │       ├── __init__.py
 │   │   │   │   │       ├── mini_graph.py
 │   │   │   │   │       └── table_builder.py
-│   │   │   │   ├── __init__.py
-│   │   │   │   └── ui
-│   │   │   │       ├── base_dashboard.py
-│   │   │   │       ├── gamehub_dashboard.py
-│   │   │   │       ├── infrastructure.py
-│   │   │   │       ├── __init__.py
-│   │   │   │       ├── monitoring_dashboard.py
-│   │   │   │       ├── project_dashboard.py
-│   │   │   │       └── welcome_dashboard.py
-│   │   │   └── homelab_commands.py
+│   │   │   │   ├── controller
+│   │   │   │   │   ├── base_dashboard.py
+│   │   │   │   │   ├── gamehub_dashboard.py
+│   │   │   │   │   ├── infrastructure.py
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   ├── minecraft_server_dashboard.py
+│   │   │   │   │   ├── monitoring_dashboard.py
+│   │   │   │   │   ├── project_dashboard.py
+│   │   │   │   │   └── welcome_dashboard.py
+│   │   │   │   └── __init__.py
+│   │   │   ├── homelab_commands.py
+│   │   │   └── web
+│   │   │       ├── api
+│   │   │       │   ├── auth.py
+│   │   │       │   ├── dashboard_api.py
+│   │   │       │   ├── __init__.py
+│   │   │       │   └── system_api.py
+│   │   │       ├── __init__.py
+│   │   │       └── ui
+│   │   │           ├── static
+│   │   │           └── templates
 │   │   ├── logs
 │   │   │   └── homelab_bot.log
 │   │   ├── modules
+│   │   │   ├── docker
+│   │   │   │   ├── commands
+│   │   │   │   └── utils
 │   │   │   ├── __init__.py
+│   │   │   ├── monitoring
+│   │   │   │   ├── commands
+│   │   │   │   └── utils
 │   │   │   ├── security
 │   │   │   │   ├── cogs
 │   │   │   │   │   └── security_cog.py
-│   │   │   │   └── __init__.py
+│   │   │   │   ├── commands
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── utils
 │   │   │   └── tracker
+│   │   │       ├── commands
 │   │   │       ├── __init__.py
 │   │   │       ├── ip_management.py
-│   │   │       └── project_tracker.py
+│   │   │       ├── project_tracker.py
+│   │   │       └── utils
 │   │   ├── requirements.txt
 │   │   ├── services
-│   │   │   ├── auth
-│   │   │   │   ├── authentication_service.py
-│   │   │   │   ├── authorization_service.py
-│   │   │   │   ├── auth_service.py
-│   │   │   │   └── __init__.py
-│   │   │   ├── channels
-│   │   │   └── monitoring
-│   │   ├── tests
-│   │   │   ├── domain
-│   │   │   ├── infrastructure
-│   │   │   ├── interfaces
-│   │   │   └── services
+│   │   │   └── auth
+│   │   │       ├── authentication_service.py
+│   │   │       ├── authorization_service.py
+│   │   │       ├── auth_service.py
+│   │   │       └── __init__.py
 │   │   └── utils
 │   │       ├── decorators
 │   │       │   ├── auth.py
@@ -388,7 +436,6 @@
 │   │       │   └── response_mode.py
 │   │       ├── http_client.py
 │   │       ├── message_sender.py
-│   │       ├── validators
 │   │       └── vars.py
 │   └── postgres
 │       ├── pg_hba.conf
@@ -397,19 +444,23 @@
 │   ├── docker-compose.yml
 │   ├── Dockerfile
 │   ├── entrypoint.sh
-│   ├── env.discordbot.example
 │   └── init-db.sh
 ├── DISCLAIMER.md
 ├── docs
 │   ├── core
 │   │   ├── ARCHITECTURE.md
 │   │   ├── CONVENTIONS.md
+│   │   ├── DATA_FLOW.md
+│   │   ├── KEYMANAGER.md
 │   │   ├── PROTOCOL.md
 │   │   ├── SECURITY_POLICY.md
 │   │   └── VARIABLES.md
 │   ├── development
 │   │   ├── context
+│   │   │   ├── COMMUNICATION.md
+│   │   │   └── TREE.md
 │   │   ├── patterns
+│   │   │   ├── DASHBOARD_CONTROLLER_STRUCTURE.md
 │   │   │   ├── DASHBOARD_PATTERN.md
 │   │   │   ├── DESIGN_PATTERN.md
 │   │   │   └── SLASHCOMMAND_PATTERN.md
@@ -418,7 +469,8 @@
 │   │   │   ├── SECURITY_SPECIALIST.md
 │   │   │   ├── SLASH_COMMAND_DEVELOPER.py
 │   │   │   ├── SYSTEM_MONITORING_DEVELOPER.py
-│   │   │   └── UI_UX_DESIGNER.py
+│   │   │   ├── UI_UX_DESIGNER.py
+│   │   │   └── WEB_INTERFACE_DEVELOPER.md
 │   │   └── template
 │   │       └── ROLE_DEFINITION.md
 │   ├── planning
@@ -427,6 +479,7 @@
 │   │   └── ROADMAP.md
 │   └── README.md
 ├── README.md
+├── SUBJECT.md
 └── utils
     ├── database
     │   └── category_v002.sh
