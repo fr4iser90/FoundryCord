@@ -112,6 +112,10 @@ class MinecraftServerDashboardController(BaseDashboardController):
     
     async def on_refresh(self, interaction: nextcord.Interaction):
         """Handle refresh button click"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "refresh"):
+            return
+        
         await interaction.response.defer(ephemeral=True)
         
         try:
@@ -133,5 +137,13 @@ class MinecraftServerDashboardController(BaseDashboardController):
                 error_code="MINECRAFT-REFRESH-ERR"
             )
             await interaction.followup.send(embed=error_embed, ephemeral=True)
+    
+    async def on_player_list(self, interaction: nextcord.Interaction):
+        """Handle player list button click"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "player_list"):
+            return
+        
+        # Existing code continues here...
     
     # Additional methods as needed

@@ -518,6 +518,10 @@ class GameHubDashboardController(BaseDashboardController):
     
     async def on_refresh(self, interaction: nextcord.Interaction):
         """Handler for the refresh button"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "refresh"):
+            return
+        
         await interaction.response.defer(ephemeral=True)
         
         try:

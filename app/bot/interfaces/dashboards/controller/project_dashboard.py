@@ -516,6 +516,10 @@ class ProjectDashboardController(BaseDashboardController):
 
     async def on_project_select(self, interaction: nextcord.Interaction, project_id: int):
         """Handler for when a project button is clicked"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "project_select"):
+            return
+        
         try:
             # Get the project
             project = await self.service.get_project(project_id)
@@ -569,6 +573,10 @@ class ProjectDashboardController(BaseDashboardController):
 
     async def on_project_edit(self, interaction: nextcord.Interaction, project_id: int):
         """Handler für den Edit-Button"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "project_edit"):
+            return
+        
         try:
             project = await self.service.get_project(project_id)
             if not project:
@@ -642,3 +650,93 @@ class ProjectDashboardController(BaseDashboardController):
             
         except Exception as e:
             logger.error(f"Error displaying project dashboard: {e}")
+
+    async def on_task_new(self, interaction: nextcord.Interaction, project_id: int):
+        """Handler for adding a new task to a project"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "task_new"):
+            return
+        
+        try:
+            # Create and send a modal for the new task
+            modal = self.create_task_modal(project_id)
+            await interaction.response.send_modal(modal)
+        except Exception as e:
+            logger.error(f"Error showing task modal: {e}")
+            await interaction.response.send_message("Fehler beim Erstellen einer neuen Aufgabe", ephemeral=True)
+
+    async def on_change_status(self, interaction: nextcord.Interaction, project_id: int):
+        """Handler for changing a project's status"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "change_status"):
+            return
+        
+        # Existing code continues here...
+
+    async def on_delete_project(self, interaction: nextcord.Interaction, project_id: int):
+        """Handler for deleting a project"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "delete_project"):
+            return
+        
+        # Existing code continues here...
+
+    async def handle_edit_project_submit(self, interaction: nextcord.Interaction, project_id: int):
+        """Handles the submission of an edited project"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "edit_project_submit"):
+            return
+        
+        # Existing code continues here...
+
+    async def handle_status_select(self, interaction: nextcord.Interaction, selected_status: str, project_id: int):
+        """Handles the selection of a new status for a project"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "status_select"):
+            return
+        
+        # Existing code continues here...
+
+    async def handle_delete_confirm(self, interaction: nextcord.Interaction, confirmed: bool, project_id: int):
+        """Handles confirmation of project deletion"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "delete_confirm"):
+            return
+        
+        # Existing code continues here...
+
+    async def on_task_complete(self, interaction: nextcord.Interaction, task_id: int, project_id: int):
+        """Handler for marking a task as complete"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "task_complete"):
+            return
+        
+        # Existing code continues here...
+
+    async def on_task_delete(self, interaction: nextcord.Interaction, task_id: int, project_id: int):
+        """Handler for deleting a task"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "task_delete"):
+            return
+        
+        # Existing code continues here...
+
+    async def on_refresh(self, interaction: nextcord.Interaction):
+        """Handler for refreshing the project dashboard"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "refresh"):
+            return
+        
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            # Get fresh project data
+            self.projects_data = await self.service.get_projects_by_status()
+            
+            # Update the dashboard with fresh data
+            await self.display_dashboard()
+            
+            await interaction.followup.send("Projekt-Dashboard wurde aktualisiert!", ephemeral=True)
+        except Exception as e:
+            logger.error(f"Error refreshing project dashboard: {e}")
+            await interaction.followup.send(f"Fehler beim Aktualisieren: {str(e)}", ephemeral=True)

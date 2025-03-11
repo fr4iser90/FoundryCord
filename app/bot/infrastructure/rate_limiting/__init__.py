@@ -2,7 +2,7 @@ from .rate_limiting_service import RateLimitingService
 from .rate_limiting_middleware import RateLimitingMiddleware
 from infrastructure.logging import logger
 
-__all__ = ['RateLimitingService', 'RateLimitingMiddleware']
+__all__ = ['RateLimitingService', 'RateLimitingMiddleware', 'setup']
 
 async def setup(bot):
     """Central initialization of the Rate Limiting service"""
@@ -16,6 +16,8 @@ async def setup(bot):
         bot.add_cog(middleware)
         
         logger.info("Rate limiting service and middleware initialized successfully")
+        logger.info("Rate limiting now protects all interactions including dashboards, buttons and components")
+        
         return rate_limiting_service
     except Exception as e:
         logger.error(f"Failed to initialize rate limiting service: {e}")

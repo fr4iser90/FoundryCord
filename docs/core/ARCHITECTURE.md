@@ -25,6 +25,28 @@ The HomeLab Discord Bot uses a layered architecture based on Domain-Driven Desig
 │ (Discord API, Database, External Services)          │
 └─────────────────────────────────────────────────────┘
 
+ WEBUI TOO:
+
+┌─────────────────────────────────────────────────────┐
+│ Interface Layer                                     │
+│ (Web UI Components, API Endpoints)                  │
+└───────────────────┬─────────────────────────────────┘
+                    │
+┌───────────────────▼─────────────────────────────────┐
+│ Application Layer                                   │
+│ (Web Application Services, Request Handlers)        │
+└───────────────────┬─────────────────────────────────┘
+                    │
+┌───────────────────▼─────────────────────────────────┐
+│ Domain Layer                                        │
+│ (Shared Domain Models, Services, Business Logic)    │
+└───────────────────┬─────────────────────────────────┘
+                    │
+┌───────────────────▼─────────────────────────────────┐
+│ Infrastructure Layer                                │
+│ (Web Server, Authentication Middleware)             │
+└─────────────────────────────────────────────────────┘
+
 ## Key Architectural Components
 
 ### Discord Integration

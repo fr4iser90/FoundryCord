@@ -244,6 +244,10 @@ class MonitoringDashboardController(BaseDashboardController):
     
     async def on_system_details(self, interaction: nextcord.Interaction):
         """Show detailed system information"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "system_details"):
+            return
+        
         await interaction.response.defer()
         
         try:
@@ -299,6 +303,10 @@ class MonitoringDashboardController(BaseDashboardController):
     
     async def on_services(self, interaction: nextcord.Interaction):
         """Show services information"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "services"):
+            return
+        
         await interaction.response.defer()
         
         try:
@@ -331,6 +339,10 @@ class MonitoringDashboardController(BaseDashboardController):
     
     async def on_games(self, interaction: nextcord.Interaction):
         """Show game servers information"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "games"):
+            return
+        
         await interaction.response.defer()
         
         try:
@@ -373,6 +385,10 @@ class MonitoringDashboardController(BaseDashboardController):
     
     async def on_logs(self, interaction: nextcord.Interaction):
         """Show error logs"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "logs"):
+            return
+        
         await interaction.response.defer()
         
         try:
@@ -454,6 +470,10 @@ class MonitoringDashboardController(BaseDashboardController):
 
     async def on_refresh(self, interaction: nextcord.Interaction):
         """Handler for the refresh button"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "refresh"):
+            return
+        
         await interaction.response.defer(ephemeral=False)
         
         try:

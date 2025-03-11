@@ -108,7 +108,11 @@ class WelcomeDashboardController(BaseDashboardController):
         return view
     
     async def on_rules_accept(self, interaction: nextcord.Interaction):
-        """Handler for rule acceptance button"""
+        """Handler for the rules accept button"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "rules_accept"):
+            return
+        
         # Add 'Member' role when accepting rules
         try:
             member_role = nextcord.utils.get(interaction.guild.roles, name="Member")
@@ -188,7 +192,11 @@ class WelcomeDashboardController(BaseDashboardController):
             await interaction.response.send_message("Error processing your request.", ephemeral=True)
     
     async def on_server_info(self, interaction: nextcord.Interaction):
-        """Handler for server info button"""
+        """Handler for the info button"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "info"):
+            return
+        
         guild = interaction.guild
         
         # Get server stats
@@ -229,7 +237,11 @@ class WelcomeDashboardController(BaseDashboardController):
         await interaction.response.send_message(embed=info_embed, ephemeral=True)
     
     async def on_help_request(self, interaction: nextcord.Interaction):
-        """Handler for help button"""
+        """Handler for the help button"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "help"):
+            return
+        
         help_text = (
             "## Available Commands\n"
             "• `/homelab monitoring status` - View system status\n"
@@ -244,6 +256,10 @@ class WelcomeDashboardController(BaseDashboardController):
     async def on_bot_info(self, interaction: nextcord.Interaction):
         """Handler for bot info button"""
         try:
+            # Check rate limiting first
+            if not await self.check_rate_limit(interaction, "bot_info"):
+                return
+            
             # Create bot info embed
             bot_info_embed = nextcord.Embed(
                 title=f"🤖 HomeLab Bot Information",

@@ -227,6 +227,10 @@ class BaseDashboardController:
     
     async def on_refresh(self, interaction: nextcord.Interaction):
         """Handler for the refresh button"""
+        # Check rate limiting first
+        if not await self.check_rate_limit(interaction, "refresh"):
+            return
+        
         await interaction.response.defer(ephemeral=True)
         
         # Simply update the current dashboard
@@ -236,4 +240,41 @@ class BaseDashboardController:
             f"{self.DASHBOARD_TYPE.capitalize()} Dashboard wurde aktualisiert!", 
             ephemeral=True
         )
+
+    async def check_rate_limit(self, interaction, action_type="dashboard"):
+        """Check if the interaction is within rate limits
+        
+        Args:
+            interaction: The nextcord interaction
+            action_type: The type of action for rate limiting
+            
+        Returns:
+            bool: True if allowed, False if rate limited
+        """
+        if not hasattr(self.bot, 'rate_limiting'):
+            return True  # Allow if rate limiting is not enabled
+        
+        custom_id = getattr(interaction, 'custom_id', interaction.data.get('custom_id', 'unknown'))
+        action_name = f"{self.DASHBOARD_TYPE}_{action_type}_{custom_id}"
+        
+        allowed, message = await self.bot.rate_limiting.check_rate_limit(
+            interaction.user.id,
+            action_name,
+            'dashboard'
+        )
+        
+        if not allowed:
+            # Handle blocked interaction
+            try:
+                if not interaction.response.is_done():
+                    await interaction.response.send_message(message, ephemeral=True)
+                else:
+                    await interaction.followup.send(message, ephemeral=True)
+            except Exception as e:
+                logger.error(f"Failed to send rate limit message: {e}")
+            
+            logger.warning(f"Rate limited user {interaction.user.id} for {action_name}")
+            return False
+        
+        return True
 
