@@ -50,8 +50,14 @@ async def collect_system_data():
     data['cpu_temp'] = results[2] if not isinstance(results[2], Exception) else "N/A"
     
     if not isinstance(results[3], Exception):
-        data['net_admin'], data['net_public'] = results[3]
+        network_data = results[3]
+        if isinstance(network_data, dict):
+            data['network_stats'] = network_data
+        else:
+            # Alte Formatierung (Tupel)
+            data['net_admin'], data['net_public'] = network_data
     else:
+        data['network_stats'] = {}
         data['net_admin'], data['net_public'] = "N/A", "N/A"
     
     data['disk_details'] = results[4] if not isinstance(results[4], Exception) else "Keine Festplatten gefunden"

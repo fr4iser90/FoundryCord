@@ -131,7 +131,7 @@ class GameHubDashboardController(BaseDashboardController):
         
         try:
             # Create a selection menu with all available servers
-            servers = self.last_metrics['servers'] if hasattr(self, 'last_metrics') else {}
+            servers = self.last_metrics.get('servers', {}) if hasattr(self, 'last_metrics') else {}
             
             if not servers:
                 await interaction.followup.send("No game servers found", ephemeral=True)
@@ -140,7 +140,13 @@ class GameHubDashboardController(BaseDashboardController):
             # Create select menu with server options
             options = []
             for name, server_data in servers.items():
-                status = "🟢 Online" if server_data['online'] else "🔴 Offline"
+                # Check if the value is a string (new format) or dict (old format)
+                if isinstance(server_data, str):
+                    status = "🟢 Online" if "Online" in server_data or "✅" in server_data else "🔴 Offline"
+                else:
+                    # Original behavior for dict format
+                    status = "🟢 Online" if server_data.get('online', False) else "🔴 Offline"
+                    
                 options.append(
                     nextcord.SelectOption(
                         label=name, 
@@ -162,7 +168,15 @@ class GameHubDashboardController(BaseDashboardController):
                 
                 server_table = UnicodeTableBuilder(f"{server_name} Details", width=50)
                 server_table.add_header_row("Property", "Value")
-                server_table.add_row("Status", "🟢 Online" if servers[server_name]['online'] else "🔴 Offline")
+                
+                # Get status from server data
+                server_data = servers.get(server_name, "")
+                if isinstance(server_data, str):
+                    status = "🟢 Online" if "Online" in server_data or "✅" in server_data else "🔴 Offline"
+                else:
+                    status = "🟢 Online" if server_data.get('online', False) else "🔴 Offline"
+                    
+                server_table.add_row("Status", status)
                 server_table.add_row("Version", server_details.get('version', 'Unknown'))
                 server_table.add_row("Uptime", server_details.get('uptime', 'Unknown'))
                 server_table.add_row("Players", f"{server_details.get('player_count', 0)}/{server_details.get('max_players', 0)}")
@@ -188,14 +202,20 @@ class GameHubDashboardController(BaseDashboardController):
         
         try:
             # Create a selection menu with all available servers
-            servers = self.last_metrics['servers'] if hasattr(self, 'last_metrics') else {}
+            servers = self.last_metrics.get('servers', {}) if hasattr(self, 'last_metrics') else {}
             
             if not servers:
                 await interaction.followup.send("No game servers found", ephemeral=True)
                 return
                 
             # Only show online servers
-            online_servers = {name: data for name, data in servers.items() if data['online']}
+            online_servers = {}
+            for name, data in servers.items():
+                if isinstance(data, str):
+                    if "Online" in data or "✅" in data:
+                        online_servers[name] = {'player_count': 0}  # Default count
+                elif isinstance(data, dict) and data.get('online', False):
+                    online_servers[name] = data
             
             if not online_servers:
                 await interaction.followup.send("No online game servers found", ephemeral=True)
@@ -204,10 +224,11 @@ class GameHubDashboardController(BaseDashboardController):
             # Create select menu with server options
             options = []
             for name, server_data in online_servers.items():
+                player_count = server_data.get('player_count', 0) if isinstance(server_data, dict) else 0
                 options.append(
                     nextcord.SelectOption(
                         label=name, 
-                        description=f"Players: {server_data.get('player_count', 0)}",
+                        description=f"Players: {player_count}",
                         emoji="👥"
                     )
                 )
@@ -430,18 +451,46 @@ class GameHubDashboardController(BaseDashboardController):
         view.create()
         return view
     
+    async def create_view(self) -> nextcord.ui.View:
+        """Create the dashboard view with buttons and components"""
+        try:
+            # Make sure metrics is properly formatted as a dictionary
+            metrics_data = self.metrics.to_dict() if hasattr(self.metrics, 'to_dict') else {}
+            
+            # Ensure metrics_data is a dictionary, not a string
+            if isinstance(metrics_data, str):
+                logger.warning(f"Expected dictionary for metrics, got string: {metrics_data}")
+                metrics_data = {"error": metrics_data}
+                
+            # Create a view with the metrics
+            view = GameHubView(metrics_data)
+            view.create()
+            return view
+        except Exception as e:
+            logger.error(f"Failed to create view: {str(e)}")
+            # Return empty view as fallback
+            empty_view = GameHubView({})
+            empty_view.create()
+            return empty_view
+    
     async def on_refresh(self, interaction: nextcord.Interaction):
         """Handler for the refresh button"""
         await interaction.response.defer(ephemeral=True)
         
-        # Fetch and refresh data
-        await self.create_embed()
-        await self.refresh_data()
-        
-        # Critical: Update the dashboard message with new data
-        await self.display_dashboard()
-        
-        await interaction.followup.send(
-            "Game Hub Dashboard updated with latest data!", 
-            ephemeral=True
-        )
+        try:
+            # Fetch and refresh data
+            await self.refresh_data()
+            
+            # Critical: Update the dashboard message with new data
+            await self.display_dashboard()
+            
+            await interaction.followup.send(
+                "Game Hub Dashboard updated with latest data!", 
+                ephemeral=True
+            )
+        except Exception as e:
+            logger.error(f"Error refreshing dashboard: {str(e)}")
+            await interaction.followup.send(
+                f"An error occurred while refreshing: {str(e)}", 
+                ephemeral=True
+            )

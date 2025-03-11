@@ -82,9 +82,7 @@ class MonitoringDashboardController(BaseDashboardController):
         if isinstance(raw_data, list):
             for metric in raw_data:
                 if hasattr(metric, 'name') and hasattr(metric, 'value'):
-                    # DEBUGGING: Log jede einzelne Metrik
-                    logger.debug(f"Verarbeite Metrik: {metric.name} = {metric.value} ({getattr(metric, 'unit', 'keine Einheit')})")
-                    
+
                     # Memory
                     if metric.name == 'memory_used' and hasattr(metric, 'unit') and metric.unit == 'bytes':
                         result[metric.name] = round(metric.value / (1024**3), 2)  # Bytes zu GB
@@ -144,6 +142,14 @@ class MonitoringDashboardController(BaseDashboardController):
                             game_servers[server_name] = f"✅ Online auf Port(s): {port_str}"
                         else:
                             game_servers[server_name] = "❌ Offline"
+                    
+                    # CPU Metrics
+                    elif 'cpu' in metric.name.lower() and 'model' in metric.name.lower():
+                        result['cpu_model'] = metric.value
+                    elif 'cpu' in metric.name.lower() and 'cores' in metric.name.lower():
+                        result['cpu_cores'] = metric.value
+                    elif 'cpu' in metric.name.lower() and 'threads' in metric.name.lower():
+                        result['cpu_threads'] = metric.value
                     
                     # Standard-Fall: Direkte Übernahme mit Debug-Info
                     else:
@@ -449,7 +455,7 @@ class MonitoringDashboardController(BaseDashboardController):
 
     async def on_refresh(self, interaction: nextcord.Interaction):
         """Handler for the refresh button"""
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=False)
         
         try:
             # Fetch new metrics data from service
@@ -462,11 +468,6 @@ class MonitoringDashboardController(BaseDashboardController):
             
             # Update the message
             await interaction.message.edit(content=None, embed=embed, view=view)
-            
-            await interaction.followup.send(
-                "System Dashboard aktualisiert!",
-                ephemeral=True
-            )
         except Exception as e:
             logger.error(f"Error refreshing monitoring dashboard: {e}")
             await interaction.followup.send(

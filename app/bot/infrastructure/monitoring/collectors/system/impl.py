@@ -38,6 +38,32 @@ class SystemCollector(SystemCollectorInterface):
             metadata={"type": "system", "component": "cpu"}
         ))
         
+        # Add CPU hardware information from hardware_info
+        if isinstance(data.get('hardware_info', {}), dict):
+            # CPU model
+            if 'cpu_model' in data['hardware_info']:
+                metrics.append(MetricModel(
+                    name="cpu_model",
+                    value=data['hardware_info']['cpu_model'],
+                    metadata={"type": "system", "component": "cpu"}
+                ))
+            
+            # CPU cores
+            if 'cpu_cores' in data['hardware_info']:
+                metrics.append(MetricModel(
+                    name="cpu_cores",
+                    value=data['hardware_info']['cpu_cores'],
+                    metadata={"type": "system", "component": "cpu"}
+                ))
+            
+            # CPU threads
+            if 'cpu_threads' in data['hardware_info']:
+                metrics.append(MetricModel(
+                    name="cpu_threads",
+                    value=data['hardware_info']['cpu_threads'],
+                    metadata={"type": "system", "component": "cpu"}
+                ))
+        
         # Memory metrics
         memory = data['memory']
         metrics.append(MetricModel(
@@ -83,45 +109,67 @@ class SystemCollector(SystemCollectorInterface):
             metadata={"type": "system", "component": "storage", "path": "/"}
         ))
         
-        # Other metrics
-        if data['public_ip'] != "N/A":
+        # Festplatten-Metriken
+        if isinstance(data['disk_details'], dict) and data['disk_details']:
+            # Prüfen ob Root-Partition vorhanden ist
+            if '/' in data['disk_details']:
+                root_path = '/'
+            # Alternativ die erste verfügbare Partition nehmen
+            elif data['disk_details']:
+                root_path = next(iter(data['disk_details']))
+            else:
+                root_path = None
+            
+            # Wenn ein gültiger Pfad gefunden wurde
+            if root_path:
+                details = data['disk_details'][root_path]
+                # Disk-Free Metrik
+                metrics.append(MetricModel(
+                    name="disk_free",
+                    value=details["total"] - details["used"],
+                    unit="bytes",
+                    metadata={"type": "system", "component": "storage"}
+                ))
+                
+                # Disk-Total Metrik
+                metrics.append(MetricModel(
+                    name="disk_total",
+                    value=details["total"],
+                    unit="bytes",
+                    metadata={"type": "system", "component": "storage"}
+                ))
+            
+            # Wenn keine Festplatte gefunden wurde, Basis-Disk-Info verwenden
+            else:
+                # Fallback auf die Basis-Disk-Info
+                if isinstance(data.get('disk'), psutil._common.sdiskusage):
+                    metrics.append(MetricModel(
+                        name="disk_free",
+                        value=data['disk'].free,
+                        unit="bytes",
+                        metadata={"type": "system", "component": "storage"}
+                    ))
+                    metrics.append(MetricModel(
+                        name="disk_total",
+                        value=data['disk'].total,
+                        unit="bytes",
+                        metadata={"type": "system", "component": "storage"}
+                    ))
+        
+        # Netzwerk-Metriken
+        if isinstance(data['network_stats'], dict):
             metrics.append(MetricModel(
-                name="public_ip",
-                value=data['public_ip'],
+                name="net_upload",
+                value=round(data['network_stats'].get('net_upload', 0), 1),
+                unit="mbps",
                 metadata={"type": "system", "component": "network"}
             ))
-        
-        if data['uptime'] != "N/A":
             metrics.append(MetricModel(
-                name="uptime_text",
-                value=data['uptime'],
-                metadata={"type": "system", "component": "os"}
+                name="net_download",
+                value=round(data['network_stats'].get('net_download', 0), 1),
+                unit="mbps",
+                metadata={"type": "system", "component": "network"}
             ))
-        
-        if data['cpu_temp'] != "N/A":
-            metrics.append(MetricModel(
-                name="cpu_temperature",
-                value=data['cpu_temp'],
-                unit="celsius",
-                metadata={"type": "system", "component": "cpu"}
-            ))
-        
-        # Process disk details if available
-        if isinstance(data['disk_details'], dict):
-            for path, details in data['disk_details'].items():
-                metrics.append(MetricModel(
-                    name="disk_used",
-                    value=details.get("used", 0),
-                    unit="bytes",
-                    metadata={"type": "system", "component": "storage", "path": path}
-                ))
-                metrics.append(MetricModel(
-                    name="disk_total", 
-                    value=details.get("total", 0),
-                    unit="bytes",
-                    metadata={"type": "system", "component": "storage", "path": path}
-                ))
-        
         logger.info(f"Collected {len(metrics)} system metrics")
         return metrics
 

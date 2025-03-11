@@ -91,17 +91,26 @@ class GameHubView(BaseView):
                 
             server_details = []
             for name, data in server_list:
-                status_emoji = "✅" if data.get('status') == 'online' else "❌"
-                port_info = f"Port: {data.get('port', 'N/A')}" if data.get('port') else ""
-                player_info = ""
+                # Handle string format data
+                if isinstance(data, str):
+                    status = "🟢 Online" if "Online" in data or "✅" in data else "🔴 Offline"
+                    port_info = data.split("Port(s): ")[-1] if "Port(s):" in data else "N/A"
+                    
+                    details = f"**{name}**\n"
+                    details += f"Status: {status}\n"
+                    details += f"Port: {port_info}\n\n"
+                # Handle dictionary format data
+                else:
+                    status = "🟢 Online" if data.get('online', False) else "🔴 Offline"
+                    version = data.get('version', 'Unknown')
+                    ports = ', '.join(map(str, data.get('ports', []))) if data.get('ports') else 'N/A'
+                    
+                    details = f"**{name}**\n"
+                    details += f"Status: {status}\n"
+                    details += f"Version: {version}\n"
+                    details += f"Ports: {ports}\n\n"
                 
-                players = data.get('players', {})
-                if isinstance(players, dict):
-                    online = players.get('online', 0)
-                    max_players = players.get('max', 0)
-                    player_info = f"Players: {online}/{max_players}" if max_players else ""
-                
-                server_details.append(f"{status_emoji} **{name}** {port_info} {player_info}")
+                server_details.append(details)
                 
             if server_details:
                 embed.add_field(
@@ -185,14 +194,24 @@ class GameHubView(BaseView):
                 
                 details = "**📊 Game Hub Details**\n\n"
                 for name, data in servers.items():
-                    status = "🟢 Online" if data.get('online', False) else "🔴 Offline"
-                    version = data.get('version', 'Unknown')
-                    ports = ', '.join(map(str, data.get('ports', []))) if data.get('ports') else 'N/A'
-                    
-                    details += f"**{name}**\n"
-                    details += f"Status: {status}\n"
-                    details += f"Version: {version}\n"
-                    details += f"Ports: {ports}\n\n"
+                    # Handle string format data
+                    if isinstance(data, str):
+                        status = "🟢 Online" if "Online" in data or "✅" in data else "🔴 Offline"
+                        port_info = data.split("Port(s): ")[-1] if "Port(s):" in data else "N/A"
+                        
+                        details += f"**{name}**\n"
+                        details += f"Status: {status}\n"
+                        details += f"Port: {port_info}\n\n"
+                    # Handle dictionary format data
+                    else:
+                        status = "🟢 Online" if data.get('online', False) else "🔴 Offline"
+                        version = data.get('version', 'Unknown')
+                        ports = ', '.join(map(str, data.get('ports', []))) if data.get('ports') else 'N/A'
+                        
+                        details += f"**{name}**\n"
+                        details += f"Status: {status}\n"
+                        details += f"Version: {version}\n"
+                        details += f"Ports: {ports}\n\n"
                 
                 await interaction.followup.send(details, ephemeral=True)
                 
@@ -206,27 +225,40 @@ class GameHubView(BaseView):
                 players_found = False
                 
                 for name, data in servers.items():
-                    online = data.get('online', False)
-                    player_count = data.get('player_count', 0)
-                    max_players = data.get('max_players', 0)
-                    player_list = data.get('players', [])
-                    
-                    logger.debug(f"Processing server {name}:")
-                    logger.debug(f"  Online: {online}")
-                    logger.debug(f"  Player count: {player_count}")
-                    logger.debug(f"  Player list: {player_list}")
-                    
-                    # Add server even if offline
-                    players_info += f"**{name}** ({player_count}/{max_players})\n"
-                    
-                    if online and player_list and len(player_list) > 0:
-                        players_info += "Players: " + ", ".join(player_list) + "\n\n"
-                        players_found = True
+                    # Handle string format data
+                    if isinstance(data, str):
+                        online = "Online" in data or "✅" in data
+                        players_info += f"**{name}**\n"
+                        players_info += f"Status: {'Online' if online else 'Offline'}\n"
+                        players_info += "Player data not available in this format\n\n"
+                        
+                        if online:
+                            total_players += 0  # We don't know how many players
+                        
+                        logger.debug(f"Processing server {name} (string format): {data}")
+                    # Handle dictionary format data
                     else:
-                        players_info += "No players online\n\n"
-                    
-                    if online:
-                        total_players += player_count
+                        online = data.get('online', False)
+                        player_count = data.get('player_count', 0)
+                        max_players = data.get('max_players', 0)
+                        player_list = data.get('players', [])
+                        
+                        logger.debug(f"Processing server {name}:")
+                        logger.debug(f"  Online: {online}")
+                        logger.debug(f"  Player count: {player_count}")
+                        logger.debug(f"  Player list: {player_list}")
+                        
+                        # Add server even if offline
+                        players_info += f"**{name}** ({player_count}/{max_players})\n"
+                        
+                        if online and player_list and len(player_list) > 0:
+                            players_info += "Players: " + ", ".join(player_list) + "\n\n"
+                            players_found = True
+                        else:
+                            players_info += "No players online\n\n"
+                        
+                        if online:
+                            total_players += player_count
                 
                 if total_players == 0:
                     players_info += "No players online on any server."
@@ -284,4 +316,4 @@ class GameHubView(BaseView):
                 
         except Exception as e:
             logger.error(f"Error in button callback handler: {str(e)}")
-            await interaction.followup.send(f"An error occurred: {str(e)}", ephemeral=True)
+            await interaction.followup.send(f"An error occurred: {str(e)}", ephemeral=True) 

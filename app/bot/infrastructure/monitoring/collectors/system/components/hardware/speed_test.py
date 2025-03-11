@@ -7,19 +7,33 @@ from datetime import datetime, timedelta
 from typing import Dict, Optional
 import speedtest
 from functools import partial
+from infrastructure.logging import logger
 
-logger = logging.getLogger('homelab_bot')
+SKIP_SPEED_TEST = True
+DEFAULT_PLACEHOLDER_RESULTS = {
+    "download": 100.0,  # Placeholder 100 Mbps download
+    "upload": 20.0,     # Placeholder 20 Mbps upload
+    "ping": 15.0,       # Placeholder 15ms ping
+}
 
 class SpeedTestManager:
-    def __init__(self, cache_file: str = "/tmp/speed_test_cache.json"):  # Changed path to /tmp for Docker
+    def __init__(self, cache_file: str = "/tmp/speed_test_cache.json", skip_test: bool = SKIP_SPEED_TEST):
         self.cache_file = cache_file
         self.cache_duration = timedelta(hours=24)
         self._cached_results: Optional[Dict] = None
         self._last_test: Optional[datetime] = None
         self._is_testing = False  # Add lock to prevent multiple tests
+        self.skip_test = skip_test  # Flag to skip actual speed test
 
     async def perform_speed_test(self) -> Dict[str, float]:
-        """Führt einen vollständigen Speed Test durch"""
+        """Performs a full speed test or returns placeholder values if skipping is enabled"""
+        if self.skip_test:
+            logger.info("Speed test skipped (skip_test=True), returning placeholder values")
+            results = DEFAULT_PLACEHOLDER_RESULTS.copy()
+            results["timestamp"] = datetime.now().isoformat()
+            await self._save_results(results)
+            return results
+            
         if self._is_testing:
             logger.info("Speed test already in progress, returning cached or default values")
             return await self._load_results() or {
@@ -83,7 +97,13 @@ class SpeedTestManager:
         }
 
     async def get_speed_info(self) -> Dict[str, float]:
-        """Holt Speed Test Ergebnisse (cached oder neu)"""
+        """Retrieves speed test results (cached or new)"""
+        if self.skip_test:
+            logger.info("Speed test skipped (skip_test=True), returning placeholder values")
+            results = DEFAULT_PLACEHOLDER_RESULTS.copy()
+            results["timestamp"] = datetime.now().isoformat()
+            return results
+            
         cached = await self._load_results()
         if cached:
             logger.info("Using cached speed test results from %s", cached['timestamp'])

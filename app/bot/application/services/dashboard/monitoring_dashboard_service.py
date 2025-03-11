@@ -39,13 +39,8 @@ class MonitoringDashboardService:
             await self.initialize()
             
         try:
-            logger.info("=== DASHBOARD DEBUG: Sammle Systemdaten ===")
             system_data = await self.system_collector.collect_system_metrics()
-            logger.info(f"SYSTEM DATA: {system_data}")
-            
-            logger.info("=== DASHBOARD DEBUG: Sammle Service-Daten ===")
             service_data = await self.service_collector.collect_service_metrics()
-            logger.info(f"SERVICE DATA: {service_data}")
             
             # Kombiniere die Listen, wenn vorhanden
             result = []
@@ -60,7 +55,6 @@ class MonitoringDashboardService:
             elif isinstance(service_data, dict) and not result:
                 return service_data  # Wenn bereits ein Dict und keine Liste existiert
                 
-            logger.info(f"=== DASHBOARD DEBUG: Finale Daten (Liste): {result} ===")
             return result
         
         except Exception as e:

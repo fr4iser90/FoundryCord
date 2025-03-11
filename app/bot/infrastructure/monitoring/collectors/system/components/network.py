@@ -36,7 +36,15 @@ async def get_network_stats():
         recv_mb = main_stats.bytes_recv / (1024 * 1024)
         public_text = f"↑ {sent_mb:.2f} MB | ↓ {recv_mb:.2f} MB"
         
-        return admin_text, public_text
+        # Dictionary mit allen Infos zurückgeben
+        return {
+            "main_interface": main_interface,
+            "interfaces": net_io,
+            "admin_text": admin_text,
+            "public_text": public_text,
+            "net_upload": sent_mb,
+            "net_download": recv_mb
+        }
     except Exception as e:
         logger.error(f"Fehler beim Abrufen der Netzwerkstatistiken: {e}")
-        return "Netzwerkstatistiken nicht verfügbar", "Nicht verfügbar"
+        return {}

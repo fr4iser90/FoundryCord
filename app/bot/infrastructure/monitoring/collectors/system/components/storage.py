@@ -8,7 +8,7 @@ async def get_disk_usage_all():
     """Ermittelt die Festplattennutzung aller relevanten Laufwerke."""
     try:
         partitions = psutil.disk_partitions(all=False)  # Nur echte Festplatten
-        result = "```\n"
+        result_dict = {}
         
         # Pfade die übersprungen werden sollen
         skip_paths = {
@@ -34,21 +34,22 @@ async def get_disk_usage_all():
                 usage = psutil.disk_usage(partition.mountpoint)
                 # Nur Laufwerke mit mehr als 1GB anzeigen
                 if usage.total >= (1024**3):  # 1 GB
-                    total_gb = usage.total / (1024**3)
-                    used_gb = usage.used / (1024**3)
-                    # Formatiere die Ausgabe
-                    result += f"{partition.mountpoint} ({partition.fstype}): "
-                    result += f"{used_gb:.1f}/{total_gb:.1f} GB ({usage.percent}%)\n"
+                    # Speichere Daten im Dictionary statt als Text
+                    result_dict[partition.mountpoint] = {
+                        "used": usage.used,
+                        "total": usage.total,
+                        "percent": usage.percent,
+                        "fstype": partition.fstype
+                    }
                     processed_mounts.add(partition.mountpoint)
             except (PermissionError, OSError):
                 continue
         
         # Wenn keine Laufwerke gefunden wurden
         if len(processed_mounts) == 0:
-            return "Keine Festplatten gefunden"
+            return {}  # Leeres Dictionary bei Fehler
             
-        result += "```"
-        return result
+        return result_dict
     except Exception as e:
         logger.error(f"Fehler beim Abrufen der Festplattennutzung: {e}")
-        return "Festplattennutzung nicht verfügbar"
+        return {}  # Leeres Dictionary bei Fehler
