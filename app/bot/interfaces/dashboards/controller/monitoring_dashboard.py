@@ -66,10 +66,7 @@ class MonitoringDashboardController(BaseDashboardController):
             return self.create_error_embed(str(e))
     
     def _transform_metrics(self, raw_data):
-        """
-        Transformiert Rohmetriken in das von der View erwartete Format.
-        Behandelt sowohl Listen von Metric-Objekten als auch vorformatierte Dictionaries.
-        """
+        """Transformiert Rohmetriken in das von der View erwartete Format."""
         logger.info(f"=== TRANSFORM START: Rohdaten erhalten: {raw_data} ===")
         result = {}
         
@@ -78,47 +75,85 @@ class MonitoringDashboardController(BaseDashboardController):
             logger.warning("Keine Rohdaten erhalten, verwende Standardwerte")
             return result
         
+        # Speichere alle Game-Server-Daten
+        game_servers = {}
+        
         # Verarbeite Listen von Metric-Objekten
         if isinstance(raw_data, list):
             for metric in raw_data:
                 if hasattr(metric, 'name') and hasattr(metric, 'value'):
-                    # Umwandlung von Bytes in GB für bestimmte Metriken
-                    if metric.name in ['memory_used', 'memory_total'] and hasattr(metric, 'unit') and metric.unit == 'bytes':
+                    # DEBUGGING: Log jede einzelne Metrik
+                    logger.debug(f"Verarbeite Metrik: {metric.name} = {metric.value} ({getattr(metric, 'unit', 'keine Einheit')})")
+                    
+                    # Memory
+                    if metric.name == 'memory_used' and hasattr(metric, 'unit') and metric.unit == 'bytes':
                         result[metric.name] = round(metric.value / (1024**3), 2)  # Bytes zu GB
-                    # CPU Temperatur
+                    elif metric.name == 'memory_total' and hasattr(metric, 'unit') and metric.unit == 'bytes':
+                        result[metric.name] = round(metric.value / (1024**3), 2)  # Bytes zu GB
+                    elif metric.name == 'memory_percent':
+                        result['memory_percent'] = metric.value
+                    
+                    # CPU
+                    elif metric.name == 'cpu_usage':
+                        result['cpu_usage'] = metric.value
                     elif metric.name == 'cpu_temperature':
                         result['cpu_temp'] = metric.value
-                    # Container/Docker Metriken
+                    
+                    # Docker/Container
                     elif metric.name == 'docker_running':
                         result['containers_running'] = metric.value
                     elif metric.name == 'docker_total':
                         result['containers_total'] = metric.value
                     elif metric.name == 'docker_errors':
                         result['containers_errors'] = metric.value
-                    # Festplatten-Informationen
-                    elif metric.name == 'disk_free_bytes':
-                        result['disk_free'] = round(metric.value / (1024**3), 2)  # Bytes zu GB
-                    elif metric.name == 'disk_total_bytes':
-                        result['disk_total'] = round(metric.value / (1024**3), 2)  # Bytes zu GB
-                    # Netzwerk-Informationen
-                    elif metric.name == 'net_download_mbps':
+                    
+                    # Disk - WICHTIG: Überprüfe die tatsächlichen Namen deiner Disk-Metriken
+                    elif 'disk' in metric.name.lower() and 'free' in metric.name.lower():
+                        # Konvertiere zu GB wenn in Bytes
+                        if hasattr(metric, 'unit') and metric.unit == 'bytes':
+                            result['disk_free'] = round(metric.value / (1024**3), 2)
+                        else:
+                            result['disk_free'] = metric.value
+                    elif 'disk' in metric.name.lower() and 'total' in metric.name.lower():
+                        # Konvertiere zu GB wenn in Bytes
+                        if hasattr(metric, 'unit') and metric.unit == 'bytes':
+                            result['disk_total'] = round(metric.value / (1024**3), 2)
+                        else:
+                            result['disk_total'] = metric.value
+                    
+                    # Netzwerk - WICHTIG: Überprüfe die tatsächlichen Namen deiner Netzwerk-Metriken
+                    elif 'net' in metric.name.lower() and 'download' in metric.name.lower():
                         result['net_download'] = metric.value
-                    elif metric.name == 'net_upload_mbps':
+                    elif 'net' in metric.name.lower() and 'upload' in metric.name.lower():
                         result['net_upload'] = metric.value
-                    elif metric.name == 'net_ping_ms':
+                    elif 'net' in metric.name.lower() and 'ping' in metric.name.lower():
                         result['net_ping'] = metric.value
-                    elif metric.name == 'lan_max_speed':
+                    elif 'lan' in metric.name.lower() and 'max' in metric.name.lower():
                         result['lan_max'] = metric.value
-                    elif metric.name == 'lan_upload':
+                    elif 'lan' in metric.name.lower() and 'up' in metric.name.lower():
                         result['lan_up'] = metric.value
-                    elif metric.name == 'lan_download':
+                    elif 'lan' in metric.name.lower() and 'down' in metric.name.lower():
                         result['lan_down'] = metric.value
+                    
                     # Game Server Informationen
-                    elif metric.name == 'game_servers' and isinstance(metric.value, dict):
-                        result['game_servers'] = metric.value
-                    # Standard-Fall: Direkte Übernahme
+                    elif metric.name == 'service_status' and hasattr(metric, 'service_name') and '🎮' in getattr(metric, 'service_name', ''):
+                        server_name = getattr(metric, 'service_name', 'Unknown')
+                        if metric.value == 1:
+                            ports = getattr(metric, 'ports', [])
+                            port_str = ', '.join(map(str, ports)) if ports else 'unknown'
+                            game_servers[server_name] = f"✅ Online auf Port(s): {port_str}"
+                        else:
+                            game_servers[server_name] = "❌ Offline"
+                    
+                    # Standard-Fall: Direkte Übernahme mit Debug-Info
                     else:
                         result[metric.name] = metric.value
+                        logger.debug(f"Standardfall Metrik: {metric.name} -> {metric.value}")
+            
+            # Game Server-Liste zum Ergebnis hinzufügen
+            if game_servers:
+                result['game_servers'] = game_servers
+        
         # Falls bereits ein Dictionary übergeben wurde
         elif isinstance(raw_data, dict):
             result = raw_data
