@@ -2,7 +2,7 @@
 import asyncio
 import logging
 from typing import List, Optional
-from interfaces.dashboards.ui.base_dashboard import BaseDashboardUI
+from interfaces.dashboards.controller.base_dashboard import BaseDashboardController
 from infrastructure.logging import logger
 from infrastructure.database.models import DashboardMessage
 from infrastructure.database.models.config import get_session
@@ -80,11 +80,11 @@ class DashboardManager:
         except Exception as e:
             logger.error(f"Error during dashboard cleanup: {e}")
 
-    def register_dashboard(self, dashboard_type: str, dashboard: BaseDashboardUI):
+    def register_dashboard(self, dashboard_type: str, dashboard: BaseDashboardController):
         """Register a dashboard instance"""
         self._dashboards[dashboard_type] = dashboard
         
-    def get_dashboard(self, dashboard_type: str) -> Optional[BaseDashboardUI]:
+    def get_dashboard(self, dashboard_type: str) -> Optional[BaseDashboardController]:
         """Get existing dashboard instance"""
         return self._dashboards.get(dashboard_type)
         

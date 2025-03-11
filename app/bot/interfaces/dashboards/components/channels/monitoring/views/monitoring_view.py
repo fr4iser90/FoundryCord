@@ -1,6 +1,6 @@
 import nextcord
 from typing import Dict, List, Optional, Any, Callable
-from datetime import datetime
+from datetime import datetime, timedelta
 from infrastructure.logging import logger
 from interfaces.dashboards.components.common.views import BaseView
 from interfaces.dashboards.components.common.buttons import RefreshButton
@@ -8,41 +8,40 @@ from interfaces.dashboards.components.common.buttons import RefreshButton
 class MonitoringView(BaseView):
     """View for system monitoring dashboard with styled metrics and sections"""
     
-    def __init__(
-        self,
-        metrics: Dict[str, Any] = None,
-        timeout: Optional[int] = None
-    ):
-        super().__init__(timeout=timeout)
-        self.metrics = metrics or {}
+    def __init__(self, metrics):
+        super().__init__()
+        self.metrics = metrics if isinstance(metrics, dict) else {}
     
     def create_embed(self) -> nextcord.Embed:
         """Creates a beautifully formatted monitoring dashboard embed"""
         embed = nextcord.Embed(
             title="📊 System Dashboard",
             description="Current system performance and status",
-            color=0x3498db,
-            timestamp=datetime.now()
+            color=0x3498db
         )
         
-        # Add server name and uptime if available
-        if 'server_name' in self.metrics:
-            embed.set_author(name=f"{self.metrics['server_name']} Status")
-        
-        # CPU Section with progress bar
+        # CPU Section
+        cpu_model = self.metrics.get('cpu_model', 'Unknown')
+        cpu_cores = self.metrics.get('cpu_cores', '?')
+        cpu_threads = self.metrics.get('cpu_threads', '?') 
         cpu_usage = self.metrics.get('cpu_usage', 0)
+        cpu_temp = self.metrics.get('cpu_temp', 0)
+        
         cpu_bar = self._create_progress_bar(cpu_usage, 100)
+        temp_indicator = "🟢" if cpu_temp < 60 else "🟡" if cpu_temp < 80 else "🔴"
+        
         cpu_field = (
             f"**Usage:** {cpu_bar} {cpu_usage}%\n"
-            f"**Model:** {self.metrics.get('cpu_model', 'Unknown')}\n"
-            f"**Cores:** {self.metrics.get('cpu_cores', '?')} (Threads: {self.metrics.get('cpu_threads', '?')})\n"
-            f"**Temp:** {self._colorize_temp(self.metrics.get('cpu_temp', 0))}°C"
+            f"**Model:** {cpu_model}\n"
+            f"**Cores:** {cpu_cores} (Threads: {cpu_threads})\n"
+            f"**Temp:** {temp_indicator} {cpu_temp}°C"
         )
-        embed.add_field(name="🖥️ CPU", value=cpu_field, inline=False)
+        embed.add_field(name="💻 CPU", value=cpu_field, inline=False)
         
-        # Memory Section with progress bar
+        # Memory Section
         memory_used = self.metrics.get('memory_used', 0)
         memory_bar = self._create_progress_bar(memory_used, 100)
+        
         memory_field = (
             f"**Used:** {memory_bar} {memory_used}%\n"
             f"**Total:** {self.metrics.get('memory_total', '?')} GB"
@@ -54,6 +53,7 @@ class MonitoringView(BaseView):
         disk_total = self.metrics.get('disk_total', 0)
         disk_used_percent = 100 - (disk_free/disk_total*100) if disk_total > 0 else 0
         disk_bar = self._create_progress_bar(disk_used_percent, 100)
+        
         disk_field = (
             f"**Used:** {disk_bar} {disk_used_percent:.1f}%\n"
             f"**Free:** {disk_free:.2f} GB / {disk_total:.2f} GB"
@@ -73,6 +73,7 @@ class MonitoringView(BaseView):
         containers_running = self.metrics.get('containers_running', 0)
         containers_total = self.metrics.get('containers_total', 0) 
         containers_errors = self.metrics.get('containers_errors', 0)
+        
         services_field = (
             f"**Docker:** {containers_running}/{containers_total} containers running\n"
             f"**Errors:** {'🟢 None' if containers_errors == 0 else f'🔴 {containers_errors}'}"
@@ -83,16 +84,26 @@ class MonitoringView(BaseView):
         game_servers = self.metrics.get('game_servers', {})
         servers_list = []
         
-        for name, data in game_servers.items():
-            status_emoji = "✅" if data.get('online', False) else "❌"
-            port_info = f"Port{'s' if len(data.get('ports', [])) > 1 else ''}: {', '.join(map(str, data.get('ports', [])))} " if data.get('online', False) else ""
-            servers_list.append(f"• {status_emoji} **{name}**: {port_info}")
-            
-        servers_field = "\n".join(servers_list) if servers_list else "No game servers configured"
-        embed.add_field(name="🎮 Game Servers", value=servers_field, inline=False)
+        for server_name, status in game_servers.items():
+            if isinstance(status, dict):
+                # New format
+                is_online = status.get('online', False)
+                ports = ', '.join(map(str, status.get('ports', []))) if status.get('ports') else 'N/A'
+                servers_list.append(f"{'✅' if is_online else '❌'} {server_name}: {ports}")
+            else:
+                # Old string format
+                servers_list.append(f"{server_name}: {status}")
         
-        # Footer with last update time
-        embed.set_footer(text=f"Last updated • {datetime.now().strftime('%H:%M:%S')} | Refresh for new data")
+        if servers_list:
+            servers_text = "\n".join(servers_list)
+        else:
+            servers_text = "No game servers configured"
+            
+        embed.add_field(name="🎮 Game Servers", value=servers_text, inline=False)
+        
+        # Update timestamp
+        current_time = datetime.now().strftime("%H:%M:%S")
+        embed.set_footer(text=f"Last updated • {current_time} | Refresh for new data • heute um {(datetime.now() + timedelta(minutes=15)).strftime('%H:%M')} Uhr")
         
         return embed
     
@@ -109,15 +120,6 @@ class MonitoringView(BaseView):
             
         empty = "⚫" * (length - filled_blocks)
         return filled + empty
-    
-    def _colorize_temp(self, temp: float) -> str:
-        """Returns colored temperature string based on value"""
-        if temp < 60:
-            return f"🟢 {temp}"
-        elif temp < 80:
-            return f"🟡 {temp}"
-        else:
-            return f"🔴 {temp}"
     
     def create(self):
         """Create the view with monitoring control buttons"""

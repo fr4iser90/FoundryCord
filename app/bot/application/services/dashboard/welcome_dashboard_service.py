@@ -3,7 +3,7 @@ from infrastructure.logging import logger
 from nextcord.ext import commands
 import nextcord
 from nextcord import Message
-from interfaces.dashboards.ui.welcome_dashboard import WelcomeDashboardUI
+from interfaces.dashboards.controller.welcome_dashboard import WelcomeDashboardController
 
 class WelcomeDashboardService:
     """Service für die Geschäftslogik des Welcome Dashboards"""
@@ -18,7 +18,7 @@ class WelcomeDashboardService:
         """Initialisiert den Service"""
         try:
             # Initialize UI component
-            self.dashboard_ui = WelcomeDashboardUI(self.bot).set_service(self)
+            self.dashboard_ui = WelcomeDashboardController(self.bot).set_service(self)
             await self.dashboard_ui.initialize()
             
             self.initialized = True

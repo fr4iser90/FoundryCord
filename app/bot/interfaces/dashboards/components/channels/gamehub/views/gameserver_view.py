@@ -12,51 +12,57 @@ class GameHubView(BaseView):
     
     def __init__(
         self,
-        metrics: Dict[str, Any] = None,
+        metrics=None,
         timeout: Optional[int] = None
     ):
         super().__init__(timeout=timeout)
+        # Support both list and dict data formats
         self.metrics = metrics or {}
     
     def create_embed(self) -> nextcord.Embed:
         """Creates a beautifully formatted game server dashboard embed"""
         embed = nextcord.Embed(
-            title="🎮 Game Hub Dashboard",
-            description="Current status of all game servers",
-            color=0x7289da,  # Discord blurple
-            timestamp=datetime.now()
+            title="🎮 Game Servers Status",
+            description="Real-time status of all game servers",
+            color=0x3498db
         )
         
-        # Get server data
-        servers = self.metrics.get('servers', {})
-        online_count = self.metrics.get('online_servers', 0)
-        total_count = self.metrics.get('total_servers', 0)
-        player_count = self.metrics.get('total_players', 0)
-        
-        # Connection information
-        public_ip = self.metrics.get('public_ip', 'Unknown')
-        domain = self.metrics.get('domain', 'Unknown')
-        ip_match = self.metrics.get('ip_match', None)
-        
-        # Add connection information with indicator when there's a mismatch
-        if ip_match is not None:
-            connection_warning = "" if ip_match else "⚠️ Domain and IP don't match! Check DNS settings."
-            connection_color = 0x2ecc71 if ip_match else 0xf1c40f  # Green or amber
-            connection_info = (
-                f"**Connect via:** {domain}\n"
-                f"**Public IP:** {public_ip}\n"
-                f"{connection_warning}"
+        # Handle the case when metrics is a list (raw server data)
+        if isinstance(self.metrics, list):
+            servers = {}
+            for server in self.metrics:
+                if isinstance(server, dict):
+                    name = server.get('name', 'Unknown Server')
+                    status = server.get('status', 'Unknown')
+                    servers[name] = {
+                        'status': status,
+                        'port': server.get('port', 'N/A'),
+                        'players': server.get('players', {})
+                    }
+            self._add_server_fields(embed, servers)
+        # Handle the case when metrics is already a dictionary
+        elif isinstance(self.metrics, dict):
+            self._add_server_fields(embed, self.metrics)
+        else:
+            embed.add_field(
+                name="⚠️ Error",
+                value="Unable to process server data",
+                inline=False
             )
-            embed.add_field(name="🔌 Connection", value=connection_info, inline=False)
         
-        # Summary field
-        summary = (
-            f"**Servers:** {online_count}/{total_count} online\n"
-            f"**Players:** {player_count} across all servers\n"
-            f"**Last Updated:** {self.metrics.get('timestamp', 'Unknown')}"
-        )
-        embed.add_field(name="📊 Overview", value=summary, inline=False)
-        
+        embed.set_footer(text=f"Last updated: {datetime.now().strftime('%H:%M:%S')}")
+        return embed
+    
+    def _add_server_fields(self, embed, servers):
+        """Helper method to add server fields to embed"""
+        if not servers:
+            embed.add_field(
+                name="Status",
+                value="No server data available",
+                inline=False
+            )
+            return
+            
         # Group servers by game type
         game_types = {
             "Minecraft": [],
@@ -71,34 +77,38 @@ class GameHubView(BaseView):
         for name, data in servers.items():
             found = False
             for game_type in game_types.keys():
-                if game_type.lower() in name.lower():
+                if game_type.lower() in str(name).lower():
                     game_types[game_type].append((name, data))
                     found = True
                     break
             if not found:
                 game_types["Other"].append((name, data))
-        
-        # Add fields for each game type with servers
+                
+        # Add sections for each game type
         for game_type, server_list in game_types.items():
             if not server_list:
                 continue
                 
-            field_value = ""
+            server_details = []
             for name, data in server_list:
-                status_emoji = "🟢" if data.get('online', False) else "🔴"
-                ports = ', '.join(map(str, data.get('ports', []))) if data.get('ports') else 'N/A'
-                player_info = f"{data.get('player_count', 0)}/{data.get('max_players', 0)}" if data.get('online', False) else "-"
+                status_emoji = "✅" if data.get('status') == 'online' else "❌"
+                port_info = f"Port: {data.get('port', 'N/A')}" if data.get('port') else ""
+                player_info = ""
                 
-                field_value += f"{status_emoji} **{name}**\n"
-                field_value += f"└ Players: {player_info} | Ports: {ports}\n"
-            
-            embed.add_field(name=f"{game_type} Servers", value=field_value, inline=True)
-        
-        # Footer with instructions
-        embed.set_footer(text="Use the buttons below for more details | Last updated at " + 
-                              datetime.now().strftime("%H:%M:%S"))
-        
-        return embed
+                players = data.get('players', {})
+                if isinstance(players, dict):
+                    online = players.get('online', 0)
+                    max_players = players.get('max', 0)
+                    player_info = f"Players: {online}/{max_players}" if max_players else ""
+                
+                server_details.append(f"{status_emoji} **{name}** {port_info} {player_info}")
+                
+            if server_details:
+                embed.add_field(
+                    name=f"{game_type} Servers",
+                    value="\n".join(server_details),
+                    inline=False
+                )
     
     def create(self):
         """Creates a complete view with all necessary buttons"""
@@ -223,7 +233,7 @@ class GameHubView(BaseView):
                 
                 # Always do a direct API check to ensure we have the latest data
                 try:
-                    from infrastructure.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
+                    from infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
                     domain = self.metrics.get('domain', 'fr4iser.com') 
                     
                     players_info += "\n\n**Direct API Check:**\n"

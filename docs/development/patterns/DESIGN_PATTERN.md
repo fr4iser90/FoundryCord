@@ -191,7 +191,7 @@ async def get_project_details(project_id):
 **Example**:
 ```python
 # Inject service into UI component
-dashboard_ui = MonitoringDashboardUI(bot)
+dashboard_ui = MonitoringDashboardController(bot)
 dashboard_ui.set_service(monitoring_service)
 ```
 

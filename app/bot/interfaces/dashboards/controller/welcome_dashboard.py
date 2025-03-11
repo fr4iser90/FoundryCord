@@ -1,10 +1,10 @@
 from typing import Optional, List
 import nextcord
-from .base_dashboard import BaseDashboardUI
+from .base_dashboard import BaseDashboardController
 from interfaces.dashboards.components.channels.welcome.views import WelcomeView, BotInfoView
 from infrastructure.logging import logger
 
-class WelcomeDashboardUI(BaseDashboardUI):
+class WelcomeDashboardController(BaseDashboardController):
     """UI class for displaying the homelab welcome dashboard"""
     
     DASHBOARD_TYPE = "welcome"

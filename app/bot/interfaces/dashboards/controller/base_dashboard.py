@@ -5,7 +5,7 @@ from infrastructure.logging import logger
 from infrastructure.config.channel_config import ChannelConfig
 from interfaces.dashboards.components.common.buttons.refresh_button import RefreshButton
 
-class BaseDashboardUI:
+class BaseDashboardController:
     """Base class for all dashboard UIs that handles lifecycle management"""
     
     DASHBOARD_TYPE = "base"  # Override in subclasses

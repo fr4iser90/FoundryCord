@@ -6,7 +6,7 @@ from infrastructure.database.repositories.project_repository_impl import Project
 from sqlalchemy.ext.asyncio import AsyncSession
 from infrastructure.database.models.config import get_session
 import nextcord
-from interfaces.dashboards.ui.project_dashboard import ProjectDashboardUI
+from interfaces.dashboards.controller.project_dashboard import ProjectDashboardController
 
 class ProjectDashboardService:
     """Service for the Project Dashboard business logic"""
@@ -28,7 +28,7 @@ class ProjectDashboardService:
                 break  # Just need one session to create the repository
             
             # Initialize UI component - make sure we're creating a new instance
-            self.dashboard_ui = ProjectDashboardUI(self.bot)
+            self.dashboard_ui = ProjectDashboardController(self.bot)
             # Important: set_service must return self for method chaining
             self.dashboard_ui.set_service(self)
             

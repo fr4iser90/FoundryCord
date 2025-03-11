@@ -5,23 +5,41 @@ from infrastructure.logging import logger
 from infrastructure.config.channel_config import ChannelConfig
 from interfaces.dashboards.components.channels.monitoring.embeds import MonitoringEmbed
 from interfaces.dashboards.components.ui.table_builder import UnicodeTableBuilder
-from .base_dashboard import BaseDashboardUI
+from .base_dashboard import BaseDashboardController
 from interfaces.dashboards.components.channels.monitoring.views import MonitoringView
 from domain.monitoring.models.metric import SystemMetrics
+from interfaces.dashboards.components.common.embeds import DashboardEmbed
+from interfaces.dashboards.components.common.buttons import RefreshButton
 
-class MonitoringDashboardUI(BaseDashboardUI):
+
+class MonitoringDashboardController(BaseDashboardController):
     """UI class for displaying the monitoring dashboard"""
     
     DASHBOARD_TYPE = "monitoring"
     TITLE_IDENTIFIER = "System Status"
     
+    def __init__(self, bot):
+        super().__init__(bot)
+        self.service = None
+        self.initialized = False
+        self.system_metrics = None
+        self.last_metrics = {}
+    
+    def set_service(self, service):
+        """Sets the service for this UI component"""
+        self.service = service
+        return self
+    
     async def initialize(self):
         """Initialize the monitoring dashboard UI"""
+        self.initialized = True
+        logger.info("Monitoring Dashboard UI initialized")
         return await super().initialize(channel_config_key='monitoring')
     
     async def create_embed(self) -> nextcord.Embed:
         """Creates monitoring dashboard embed with system data"""
         if not self.service:
+            logger.error("Monitoring service not available")
             return nextcord.Embed(
                 title="⚠️ Dashboard Error",
                 description="Monitoring service not available",
@@ -29,32 +47,84 @@ class MonitoringDashboardUI(BaseDashboardUI):
             )
         
         try:
-            # Get raw data from service
-            data = await self.service.get_system_status()
+            # Fetch system status data
+            logger.info("Hole System-Status-Daten...")
+            raw_data = await self.service.get_system_status_dict()
+            logger.info(f"Rohdaten erhalten: {raw_data}")
             
-            # Transform data using domain model
-            system_metrics = SystemMetrics.from_raw_data(data)
+            # Transform data to the expected format for MonitoringView
+            self.last_metrics = self._transform_metrics(raw_data)
+            logger.info(f"Transformierte Metrikdaten: {self.last_metrics}")
             
-            # Convert to dictionary for the view
-            metrics = system_metrics.to_dict()
-            
-            # Store metrics for button handlers to use
-            self.last_metrics = metrics
-            self.system_metrics = system_metrics  # Store the domain object too
-            
-            # Create view and embed using MonitoringView
-            monitoring_view = MonitoringView(metrics)
+            # Create view with the transformed metrics
+            monitoring_view = MonitoringView(self.last_metrics)
             embed = monitoring_view.create_embed()
             
             return embed
-            
         except Exception as e:
-            logger.error(f"Error creating monitoring embed: {e}")
-            return nextcord.Embed(
-                title="⚠️ Dashboard Error",
-                description=f"Error creating dashboard: {str(e)}",
-                color=0xff0000
-            )
+            logger.error(f"Error creating monitoring embed: {str(e)}", exc_info=True)
+            return self.create_error_embed(str(e))
+    
+    def _transform_metrics(self, raw_data):
+        """
+        Transformiert Rohmetriken in das von der View erwartete Format.
+        Behandelt sowohl Listen von Metric-Objekten als auch vorformatierte Dictionaries.
+        """
+        logger.info(f"=== TRANSFORM START: Rohdaten erhalten: {raw_data} ===")
+        result = {}
+        
+        # Wenn keine Daten vorhanden, gib leeres Dictionary zurück
+        if not raw_data:
+            logger.warning("Keine Rohdaten erhalten, verwende Standardwerte")
+            return result
+        
+        # Verarbeite Listen von Metric-Objekten
+        if isinstance(raw_data, list):
+            for metric in raw_data:
+                if hasattr(metric, 'name') and hasattr(metric, 'value'):
+                    # Umwandlung von Bytes in GB für bestimmte Metriken
+                    if metric.name in ['memory_used', 'memory_total'] and hasattr(metric, 'unit') and metric.unit == 'bytes':
+                        result[metric.name] = round(metric.value / (1024**3), 2)  # Bytes zu GB
+                    # CPU Temperatur
+                    elif metric.name == 'cpu_temperature':
+                        result['cpu_temp'] = metric.value
+                    # Container/Docker Metriken
+                    elif metric.name == 'docker_running':
+                        result['containers_running'] = metric.value
+                    elif metric.name == 'docker_total':
+                        result['containers_total'] = metric.value
+                    elif metric.name == 'docker_errors':
+                        result['containers_errors'] = metric.value
+                    # Festplatten-Informationen
+                    elif metric.name == 'disk_free_bytes':
+                        result['disk_free'] = round(metric.value / (1024**3), 2)  # Bytes zu GB
+                    elif metric.name == 'disk_total_bytes':
+                        result['disk_total'] = round(metric.value / (1024**3), 2)  # Bytes zu GB
+                    # Netzwerk-Informationen
+                    elif metric.name == 'net_download_mbps':
+                        result['net_download'] = metric.value
+                    elif metric.name == 'net_upload_mbps':
+                        result['net_upload'] = metric.value
+                    elif metric.name == 'net_ping_ms':
+                        result['net_ping'] = metric.value
+                    elif metric.name == 'lan_max_speed':
+                        result['lan_max'] = metric.value
+                    elif metric.name == 'lan_upload':
+                        result['lan_up'] = metric.value
+                    elif metric.name == 'lan_download':
+                        result['lan_down'] = metric.value
+                    # Game Server Informationen
+                    elif metric.name == 'game_servers' and isinstance(metric.value, dict):
+                        result['game_servers'] = metric.value
+                    # Standard-Fall: Direkte Übernahme
+                    else:
+                        result[metric.name] = metric.value
+        # Falls bereits ein Dictionary übergeben wurde
+        elif isinstance(raw_data, dict):
+            result = raw_data
+        
+        logger.info(f"Transformierte Metriken: {result}")
+        return result
     
     async def update_dashboard(self, interaction: Optional[nextcord.Interaction] = None):
         """Updates the monitoring dashboard with fresh data"""
@@ -62,42 +132,64 @@ class MonitoringDashboardUI(BaseDashboardUI):
             # Force cleanup before updating
             await self.cleanup_old_dashboards(keep_count=1)
             
-            # Get raw data from service
-            data = await self.service.get_system_status()
+            # Get system data
+            raw_data = await self.service.get_system_status_dict()
             
             # Transform data using domain model
-            system_metrics = SystemMetrics.from_raw_data(data)
-            
-            # Convert to dictionary for the view
-            metrics = system_metrics.to_dict()
-            
-            # Store metrics for button handlers to use
-            self.last_metrics = metrics
-            self.system_metrics = system_metrics  # Store the domain object too
-            
-            # Create view and embed using MonitoringView
-            monitoring_view = MonitoringView(metrics)
-            embed = monitoring_view.create_embed()
-            view = monitoring_view.create()
-            
-            # Register button callbacks
-            await self.register_callbacks(view)
-            
-            # Update the dashboard
-            if interaction:
-                await interaction.response.edit_message(embed=embed, view=view)
-            else:
-                self.message = await self.channel.send(embed=embed, view=view) if not self.message else await self.message.edit(embed=embed, view=view)
-            
-            return embed
+            try:
+                system_metrics = SystemMetrics.from_raw_data(raw_data)
+                metrics = system_metrics.to_dict()
+                
+                # Store metrics for button handlers to use
+                self.last_metrics = metrics
+                self.system_metrics = system_metrics  # Store the domain object too
+                
+                # Create view and embed using MonitoringView
+                monitoring_view = MonitoringView(metrics)
+                embed = monitoring_view.create_embed()
+                view = monitoring_view.create()
+                
+                # Register button callbacks - MUST USE AWAIT like in welcome_dashboard
+                await self.register_callbacks(view)
+                
+                # Update the dashboard
+                if interaction:
+                    await interaction.response.edit_message(embed=embed, view=view)
+                else:
+                    if self.message and hasattr(self.message, 'edit'):
+                        try:
+                            self.message = await self.message.edit(embed=embed, view=view)
+                            logger.info(f"Updated existing monitoring dashboard in {self.channel.name}")
+                        except Exception as e:
+                            logger.warning(f"Couldn't update existing message: {e}, creating new")
+                            self.message = await self.channel.send(embed=embed, view=view)
+                    else:
+                        self.message = await self.channel.send(embed=embed, view=view)
+                        
+                        # Track in dashboard manager - like in welcome_dashboard
+                        await self.bot.dashboard_manager.track_message(
+                            dashboard_type=self.DASHBOARD_TYPE,
+                            message_id=self.message.id,
+                            channel_id=self.channel.id
+                        )
+                
+                return embed
+                
+            except Exception as e:
+                logger.error(f"Error creating monitoring embed: {e}")
+                # Use the error embed method
+                error_embed = self.create_error_embed(str(e))
+                
+                if interaction:
+                    await interaction.response.edit_message(embed=error_embed)
+                else:
+                    if self.message:
+                        await self.message.edit(embed=error_embed)
+                    else:
+                        await self.channel.send(embed=error_embed)
             
         except Exception as e:
-            logger.error(f"Error updating monitoring dashboard: {e}")
-            return nextcord.Embed(
-                title="⚠️ Dashboard Error",
-                description=f"Error updating dashboard: {str(e)}",
-                color=0xff0000
-            )
+            logger.error(f"Error displaying monitoring dashboard: {e}")
 
     def _extract_ports(self, status_text):
         """Helper to extract port numbers from status text"""
@@ -119,7 +211,8 @@ class MonitoringDashboardUI(BaseDashboardUI):
             if hasattr(self, 'last_metrics'):
                 metrics = self.last_metrics
             else:
-                data = await self.service.get_system_status()
+                # KONSISTENTE BENENNUNG MIT _dict
+                data = await self.service.get_system_status_dict()
                 system_data = data.get('system', {})
                 metrics = {
                     'cpu_model': system_data.get('hardware_info', {}).get('cpu_model', 'Unknown'),
@@ -170,7 +263,7 @@ class MonitoringDashboardUI(BaseDashboardUI):
         
         try:
             # Get services data
-            data = await self.service.get_system_status()
+            data = await self.service.get_system_status_dict()
             service_data = data.get('services', {})
             
             # Create a table for Docker services
@@ -205,7 +298,7 @@ class MonitoringDashboardUI(BaseDashboardUI):
             if hasattr(self, 'last_metrics'):
                 game_servers = self.last_metrics.get('game_servers', {})
             else:
-                data = await self.service.get_system_status()
+                data = await self.service.get_system_status_dict()
                 service_data = data.get('services', {})
                 game_services = {}
                 if 'services' in service_data:
@@ -268,12 +361,25 @@ class MonitoringDashboardUI(BaseDashboardUI):
             await interaction.followup.send(f"Error displaying logs: {str(e)}", ephemeral=True)
     
     async def register_callbacks(self, view):
-        """Register callbacks for the view's buttons"""
-        view.set_callback("refresh", self.on_refresh)
-        view.set_callback("system_details", self.on_system_details)
-        view.set_callback("services", self.on_services)
-        view.set_callback("games", self.on_games)
-        view.set_callback("logs", self.on_logs)
+        """Register button callbacks for the monitoring dashboard"""
+        # Find the buttons by their custom_id and assign callbacks
+        for item in view.children:
+            if hasattr(item, 'custom_id'):
+                if item.custom_id == "system_details":
+                    item.callback = self.on_system_details
+                elif item.custom_id == "docker_services":
+                    item.callback = self.on_services
+                elif item.custom_id == "game_servers":
+                    item.callback = self.on_games
+                elif item.custom_id == "view_logs":
+                    item.callback = self.on_logs
+                
+        # Also register the refresh button if exists
+        for item in view.children:
+            if isinstance(item, RefreshButton):
+                item.callback = self.on_refresh
+            
+        return view
 
     def create_view(self) -> nextcord.ui.View:
         """Create a view with monitoring buttons"""
@@ -283,7 +389,7 @@ class MonitoringDashboardUI(BaseDashboardUI):
             view = monitoring_view.create()
             
             # Register callbacks
-            view.set_callback("refresh", self.on_refresh)  # Use base class method!
+            view.set_callback("refresh", self.on_refresh)
             view.set_callback("system_details", self.on_system_details)
             view.set_callback("services", self.on_services)
             view.set_callback("games", self.on_games)
@@ -291,5 +397,44 @@ class MonitoringDashboardUI(BaseDashboardUI):
             
             return view
         else:
-            # Fallback to base view
             return super().create_view()
+
+    def create_error_embed(self, error_message: str) -> nextcord.Embed:
+        """Creates an error embed for the monitoring dashboard"""
+        embed = nextcord.Embed(
+            title="⚠️ System Monitoring Error",
+            description=f"An error occurred while collecting system data:\n```{error_message}```",
+            color=0xff0000
+        )
+        
+        # Add standard footer
+        DashboardEmbed.add_standard_footer(embed)
+        
+        return embed
+
+    async def on_refresh(self, interaction: nextcord.Interaction):
+        """Handler for the refresh button"""
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            # Fetch new metrics data from service
+            raw_data = await self.service.get_system_status_dict()
+            self.last_metrics = self._transform_metrics(raw_data)
+            
+            # Create new embed with updated data
+            embed = await self.create_embed()
+            view = self.create_view()
+            
+            # Update the message
+            await interaction.message.edit(content=None, embed=embed, view=view)
+            
+            await interaction.followup.send(
+                "System Dashboard aktualisiert!",
+                ephemeral=True
+            )
+        except Exception as e:
+            logger.error(f"Error refreshing monitoring dashboard: {e}")
+            await interaction.followup.send(
+                f"Fehler beim Aktualisieren: {str(e)}",
+                ephemeral=True
+            )

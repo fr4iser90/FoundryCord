@@ -15,9 +15,9 @@ from interfaces.dashboards.components.channels.projects.views.project_task_list_
 from interfaces.dashboards.components.channels.projects.views.project_thread_view import ProjectThreadView
 from interfaces.dashboards.components.common.views.confirmation_view import ConfirmationView
 from interfaces.dashboards.components.channels.projects.views.status_select_view import StatusSelectView
-from interfaces.dashboards.ui.base_dashboard import BaseDashboardUI
+from interfaces.dashboards.controller.base_dashboard import BaseDashboardController
 
-class ProjectDashboardUI(BaseDashboardUI):
+class ProjectDashboardController(BaseDashboardController):
     """UI class for displaying the project dashboard"""
     
     DASHBOARD_TYPE = "project"
@@ -49,7 +49,7 @@ class ProjectDashboardUI(BaseDashboardUI):
     def set_service(self, service):
         """Dependency Injection for the service"""
         self.service = service
-        logger.debug("Service injected into ProjectDashboardUI")
+        logger.debug("Service injected into ProjectDashboardController")
     
     def create_dashboard_embed(self, projects_by_status: Dict[str, List]) -> nextcord.Embed:
         """Erstellt das Embed für das Project Dashboard mit konsistenter Formatierung"""

@@ -2,8 +2,9 @@ from typing import Dict, Any
 from nextcord.ext import commands
 from infrastructure.logging import logger
 from infrastructure.factories.discord_ui.dashboard_factory import DashboardFactory
-from domain.monitoring.collectors import system_collector, service_collector
-from interfaces.dashboards.ui.monitoring_dashboard import MonitoringDashboardUI
+from infrastructure.factories.monitoring import CollectorFactory
+
+from interfaces.dashboards.controller.monitoring_dashboard import MonitoringDashboardController
 
 class MonitoringDashboardService:
     """Service für das Monitoring Dashboard"""
@@ -11,18 +12,19 @@ class MonitoringDashboardService:
     def __init__(self, bot, dashboard_factory: DashboardFactory):
         self.bot = bot
         self.dashboard_factory = dashboard_factory
+        self.collector_factory = CollectorFactory()
         self.initialized = False
         self.dashboard_ui = None
         
     async def initialize(self) -> None:
         """Initialisiert den Service"""
         try:
-            # Direkt die Collector-Module verwenden statt Factory-Methoden
-            self.system_collector = system_collector
-            self.service_collector = service_collector
+            # Get collectors through factory
+            self.system_collector = self.collector_factory.create('system')
+            self.service_collector = self.collector_factory.create('service')
             
             # Initialize UI component
-            self.dashboard_ui = MonitoringDashboardUI(self.bot).set_service(self)
+            self.dashboard_ui = MonitoringDashboardController(self.bot).set_service( self)
             await self.dashboard_ui.initialize()
             
             self.initialized = True
@@ -31,26 +33,51 @@ class MonitoringDashboardService:
             logger.error(f"Failed to initialize Monitoring Dashboard Service: {e}")
             raise
 
-    async def get_system_status(self) -> Dict[str, Any]:
-        """Holt den System-Status über die Collectors"""
+    async def get_system_status_dict(self) -> Dict[str, Any]:
+        """_DICT: Holt den System-Status über die Collectors"""
         if not self.initialized:
             await self.initialize()
             
         try:
-            logger.debug("Collecting system data for monitoring dashboard")
-            system_data = await system_collector.collect_system_data()
+            logger.info("=== DASHBOARD DEBUG: Sammle Systemdaten ===")
+            system_data = await self.system_collector.collect_system_metrics()
+            logger.info(f"SYSTEM DATA: {system_data}")
             
-            logger.debug("Collecting service data for monitoring dashboard")
-            service_data = await service_collector.collect_service_data()
+            logger.info("=== DASHBOARD DEBUG: Sammle Service-Daten ===")
+            service_data = await self.service_collector.collect_service_metrics()
+            logger.info(f"SERVICE DATA: {service_data}")
             
-            return {
-                'system': system_data,
-                'services': service_data,
-            }
+            # Kombiniere die Listen, wenn vorhanden
+            result = []
+            
+            if isinstance(system_data, list):
+                result.extend(system_data)
+            elif isinstance(system_data, dict):
+                return system_data  # Wenn bereits ein Dict, gib es direkt zurück
+                
+            if isinstance(service_data, list):
+                result.extend(service_data)
+            elif isinstance(service_data, dict) and not result:
+                return service_data  # Wenn bereits ein Dict und keine Liste existiert
+                
+            logger.info(f"=== DASHBOARD DEBUG: Finale Daten (Liste): {result} ===")
+            return result
+        
         except Exception as e:
-            logger.error(f"Error collecting system status: {e}")
-            raise
-            
+            logger.error(f"Error getting system status: {str(e)}", exc_info=True)
+            return {}
+        
+    def _extract_ports(self, status_text):
+        """Extract port numbers from status text"""
+        ports = []
+        if 'Port' in status_text:
+            try:
+                port_section = status_text.split('Port')[1].split(':')[1].strip()
+                ports = [int(p.strip()) for p in port_section.split(',') if p.strip().isdigit()]
+            except (IndexError, ValueError):
+                pass
+        return ports
+
     async def display_dashboard(self) -> None:
         """Display the dashboard using the UI component"""
         if not self.dashboard_ui:

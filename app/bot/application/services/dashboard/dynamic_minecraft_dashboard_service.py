@@ -8,15 +8,15 @@ from infrastructure.logging import logger
 from infrastructure.factories.discord_ui.dashboard_factory import DashboardFactory
 from infrastructure.config.channel_config import ChannelConfig
 
-from infrastructure.collectors.monitoring.service.service_config.game_services import get_pufferpanel_services, get_standalone_services
-from infrastructure.collectors.monitoring.service.service_config.web_services import get_public_services, get_private_services
-from infrastructure.collectors.monitoring.checkers.game_service_checker import check_pufferpanel_games, check_standalone_games
-from infrastructure.collectors.monitoring.checkers.web_service_checker import check_web_services
-from infrastructure.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
+from infrastructure.monitoring.collectors.service.config.game_services import get_pufferpanel_services, get_standalone_services
+from infrastructure.monitoring.collectors.service.config.web_services import get_public_services, get_private_services
+from infrastructure.monitoring.checkers.game_service_checker import check_pufferpanel_games, check_standalone_games
+from infrastructure.monitoring.checkers.web_service_checker import check_web_services
+from infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
 
 from interfaces.dashboards.components.channels.gamehub.views import GameHubView
-from interfaces.dashboards.ui.base_dashboard import BaseDashboardUI
-from interfaces.dashboards.ui.minecraft_server_dashboard import MinecraftServerDashboardUI
+from interfaces.dashboards.controller.base_dashboard import BaseDashboardController
+from interfaces.dashboards.controller.minecraft_server_dashboard import MinecraftServerDashboardController
 
 from infrastructure.database.repositories.category_repository_impl import CategoryRepository
 from infrastructure.database.models import CategoryMapping
@@ -123,7 +123,7 @@ class DynamicMinecraftDashboardService:
                 logger.warning(f"Minecraft server on port {server_port} already exists")
                 return False
                 
-            dashboard_ui = MinecraftServerDashboardUI(self.bot, server_name, server_port)
+            dashboard_ui = MinecraftServerDashboardController(self.bot, server_name, server_port)
             await dashboard_ui.initialize()
             
             self.minecraft_servers[server_port] = {

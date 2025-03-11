@@ -26,7 +26,7 @@ After scientifically examining the codebase, I've identified the following key i
 - [ ] Update any references to use the consolidated implementation
 
 ### 2. Create Dedicated System Monitoring Dashboard
-- [ ] Create new `SystemMonitoringDashboardUI` class based on current `GeneralDashboardUI`
+- [ ] Create new `SystemMonitoringDashboardController` class based on current `GeneralDashboardUI`
 - [ ] Move system monitoring code from `GeneralDashboardUI` to the new class
 - [ ] Create a dedicated channel for system monitoring
 - [ ] Update the dashboard factory to support the new dashboard type
@@ -54,7 +54,7 @@ After scientifically examining the codebase, I've identified the following key i
 3. Document all current behavior for verification
 
 ### Phase 2: Implementation
-1. Create `SystemMonitoringDashboardUI` class
+1. Create `SystemMonitoringDashboardController` class
 2. Update channel configuration
 3. Consolidate welcome dashboard implementations
 4. Refactor `GeneralDashboardUI`

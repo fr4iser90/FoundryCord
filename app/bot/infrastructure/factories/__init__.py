@@ -9,11 +9,14 @@ from .service.task_factory import TaskFactory
 # You may want to export the base factory as well
 from .base.base_factory import BaseFactory
 
+from .monitoring.collector_factory import CollectorFactory
+
 __all__ = [
     'BotComponentFactory',
     'DashboardFactory',
     'ServiceFactory',
     'TaskFactory',
-    'BaseFactory'
+    'BaseFactory',
+    'CollectorFactory'
 ]
 

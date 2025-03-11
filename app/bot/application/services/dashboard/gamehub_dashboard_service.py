@@ -4,10 +4,9 @@ from nextcord.ext import commands
 import asyncio
 from infrastructure.logging import logger
 from infrastructure.factories.discord_ui.dashboard_factory import DashboardFactory
-from domain.monitoring.collectors import service_collector
-from domain.gameservers.models.gameserver_metrics import GameServersMetrics
-from interfaces.dashboards.ui.gamehub_dashboard import GameHubDashboardUI
-from infrastructure.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
+from infrastructure.factories.monitoring.collector_factory import CollectorFactory
+from interfaces.dashboards.controller.gamehub_dashboard import GameHubDashboardController
+from infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
 
 
 class GameHubDashboardService:
@@ -16,17 +15,22 @@ class GameHubDashboardService:
     def __init__(self, bot, dashboard_factory: DashboardFactory):
         self.bot = bot
         self.dashboard_factory = dashboard_factory
+        self.collector_factory = CollectorFactory()
         self.initialized = False
         self.dashboard_ui = None
+        self.service_config = []  # Initialize service_config as empty list
         
     async def initialize(self) -> None:
         """Initialize the service"""
         try:
-            # Use the service collector from monitoring
-            self.service_collector = service_collector
+            # Get service collector through factory
+            self.service_collector = self.collector_factory.create('service')
+            
+            # Initialize service configuration
+            self.service_config = self._load_service_config()
             
             # Initialize UI component
-            self.dashboard_ui = GameHubDashboardUI(self.bot).set_service(self)
+            self.dashboard_ui = GameHubDashboardController(self.bot).set_service(self)
             await self.dashboard_ui.initialize()
             
             self.initialized = True
@@ -35,16 +39,28 @@ class GameHubDashboardService:
             logger.error(f"Failed to initialize Game Hub Dashboard Service: {e}")
             raise
     
-    async def get_game_servers_status(self) -> Dict[str, Any]:
-        """Get the game servers status"""
+    def _load_service_config(self) -> list:
+        """Load service configuration for game servers"""
+        # This is a placeholder - ideally you would load this from a config file or database
+        return [
+            {"name": "🎮 Minecraft", "ip": "localhost", "port": 25570},
+            {"name": "🎮 Factorio", "ip": "localhost", "port": 34197},
+            {"name": "🎮 CS2", "ip": "localhost", "port": 27015},
+            {"name": "🎮 Valheim", "ip": "localhost", "port": 2456},
+            {"name": "🎮 Palworld", "ip": "localhost", "port": 8211},
+            {"name": "🎮 Satisfactory", "ip": "localhost", "port": 7777}
+        ]
+    
+    async def get_game_servers_status_dict(self) -> Dict[str, Any]:
+        """_DICT: Get the game servers status"""
         if not self.initialized:
             await self.initialize()
             
         try:
             logger.debug("Collecting game server data for game server dashboard")
             
-            # Get service data
-            service_data = await service_collector.collect_service_data()
+            # Get service data through collector
+            service_data = await self.service_collector.collect_game_services()
             
             # Get system information
             system_info = {}
@@ -65,7 +81,10 @@ class GameHubDashboardService:
             for service_name, status in service_data.items():
                 if "minecraft" in service_name.lower() and "online" in status.lower():
                     # Extract server info from your config
-                    server_info = next((s for s in service_config if s["name"] == service_name), None)
+                    if not isinstance(service_name, str):
+                        logger.warning(f"service_name is not a string: {type(service_name)}")
+                        continue
+                    server_info = next((s for s in self.service_config if s["name"] == service_name), None)
                     if server_info:
                         minecraft_servers.append((server_info["ip"], server_info["port"]))
             
@@ -76,7 +95,10 @@ class GameHubDashboardService:
                     # Update service_data with the API information
                     for service_name, status in service_data.items():
                         if "minecraft" in service_name.lower():
-                            server_info = next((s for s in service_config if s["name"] == service_name), None)
+                            if not isinstance(service_name, str):
+                                logger.warning(f"service_name is not a string: {type(service_name)}")
+                                continue
+                            server_info = next((s for s in self.service_config if s["name"] == service_name), None)
                             if server_info:
                                 service_key = f"{server_info['ip']}:{server_info['port']}"
                                 if service_key in mc_api_data and mc_api_data[service_key].get("online", False):
@@ -95,12 +117,13 @@ class GameHubDashboardService:
             
             # Return combined data
             return {
-                'services': service_data,
+                'servers': service_data,
+                'config': self.service_config,
                 'system': system_info
             }
         except Exception as e:
             logger.error(f"Error collecting game server status: {e}")
-            raise
+            return {}
     
     async def get_server_details(self, server_name: str) -> Dict[str, Any]:
         """Get detailed information about a specific server"""

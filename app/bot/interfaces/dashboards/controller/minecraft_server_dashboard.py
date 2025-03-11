@@ -4,12 +4,12 @@ from datetime import datetime
 
 from infrastructure.logging import logger
 from infrastructure.config.channel_config import ChannelConfig
-from .base_dashboard import BaseDashboardUI
+from .base_dashboard import BaseDashboardController
 from interfaces.dashboards.components.channels.gamehub.views import GameHubView
-from infrastructure.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
+from infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
 
 
-class MinecraftServerDashboardUI(BaseDashboardUI):
+class MinecraftServerDashboardController(BaseDashboardController):
     """UI class for displaying an individual Minecraft server dashboard"""
     
     DASHBOARD_TYPE = "minecraft_server"
