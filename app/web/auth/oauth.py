@@ -5,17 +5,28 @@ import httpx
 import os
 from jose import jwt
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+dotenv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+load_dotenv(dotenv_path)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 # Discord OAuth2 configuration
 DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")
 DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")
-DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI")
+DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI", "http://localhost:8000/auth/callback")
 DISCORD_API_ENDPOINT = "https://discord.com/api/v10"
 
+# Print configuration for debugging
+print(f"Discord OAuth Configuration:")
+print(f"Client ID: {DISCORD_CLIENT_ID}")
+print(f"Redirect URI: {DISCORD_REDIRECT_URI}")
+print(f"Client Secret: {'[SET]' if DISCORD_CLIENT_SECRET else '[MISSING]'}")
+
 # JWT configuration
-SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "default_secret_key_for_development_only")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
@@ -32,6 +43,10 @@ class User(BaseModel):
 # Generate Discord OAuth URL
 @router.get("/login")
 async def login():
+    if not DISCORD_CLIENT_ID:
+        return {"error": "Discord Client ID is not configured", 
+                "hint": "Check your .env file and make sure DISCORD_CLIENT_ID is set"}
+    
     auth_url = f"https://discord.com/api/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&redirect_uri={DISCORD_REDIRECT_URI}&response_type=code&scope=identify"
     return {"auth_url": auth_url}
 
