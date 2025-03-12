@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     Application settings loaded from environment variables
     """
     # Discord OAuth2 settings
-    DISCORD_CLIENT_ID: str = os.getenv("DISCORD_CLIENT_ID", "")
+    DISCORD_TOKEN: str = os.getenv("DISCORD_TOKEN", "")
     DISCORD_CLIENT_SECRET: str = os.getenv("DISCORD_CLIENT_SECRET", "")
     DISCORD_REDIRECT_URI: str = os.getenv("DISCORD_REDIRECT_URI", "http://localhost:8000/auth/callback")
     DISCORD_BOT_TOKEN: str = os.getenv("DISCORD_BOT_TOKEN", "")

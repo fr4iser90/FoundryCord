@@ -91,14 +91,14 @@ class DiscordAuthService:
         
     async def get_oauth_url(self, redirect_uri):
         """Generate Discord OAuth URL with appropriate scopes."""
-        client_id = self.config.get("DISCORD_CLIENT_ID")
+        client_id = self.config.get("DISCORD_TOKEN")
         return f"https://discord.com/api/oauth2/authorize?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify%20guilds"
         
     async def exchange_code(self, code, redirect_uri):
         """Exchange authorization code for access token."""
         token_data = await self.discord_api_client.exchange_code(
             code=code,
-            client_id=self.config.get("DISCORD_CLIENT_ID"),
+            client_id=self.config.get("DISCORD_TOKEN"),
             client_secret=self.config.get("DISCORD_CLIENT_SECRET"),
             redirect_uri=redirect_uri
         )

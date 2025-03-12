@@ -10,7 +10,7 @@ def check_env_file():
         print(f"Warning: {env_file} does not exist. Creating template file.")
         with open(env_file, "w") as f:
             f.write("""# Discord OAuth Configuration
-DISCORD_CLIENT_ID=your_discord_client_id
+DISCORD_TOKEN=your_discord_client_id
 DISCORD_CLIENT_SECRET=your_discord_client_secret
 DISCORD_REDIRECT_URI=http://localhost:8000/auth/callback
 

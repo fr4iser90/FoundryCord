@@ -23,7 +23,7 @@ class AuthService:
         Generate the Discord OAuth2 authorization URL
         """
         params = {
-            'client_id': settings.DISCORD_CLIENT_ID,
+            'client_id': settings.DISCORD_TOKEN,
             'redirect_uri': settings.DISCORD_REDIRECT_URI,
             'response_type': 'code',
             'scope': 'identify email',
@@ -37,7 +37,7 @@ class AuthService:
         Exchange authorization code for access token
         """
         data = {
-            'client_id': settings.DISCORD_CLIENT_ID,
+            'client_id': settings.DISCORD_TOKEN,
             'client_secret': settings.DISCORD_CLIENT_SECRET,
             'grant_type': 'authorization_code',
             'code': code,

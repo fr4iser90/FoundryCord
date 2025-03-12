@@ -25,7 +25,7 @@ Create a `.env` file in the project root with the following variables:
 
 ```
 # Discord OAuth
-DISCORD_CLIENT_ID=your_discord_client_id
+DISCORD_TOKEN=your_discord_client_id
 DISCORD_CLIENT_SECRET=your_discord_client_secret
 DISCORD_REDIRECT_URI=http://localhost:8000/auth/callback
 DISCORD_BOT_TOKEN=your_discord_bot_token

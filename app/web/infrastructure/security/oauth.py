@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 # Discord OAuth2 configuration
-DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")
 DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI")
 DISCORD_API_ENDPOINT = "https://discord.com/api/v10"
@@ -32,7 +32,7 @@ class User(BaseModel):
 # Generate Discord OAuth URL
 @router.get("/login")
 async def login():
-    auth_url = f"https://discord.com/api/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&redirect_uri={DISCORD_REDIRECT_URI}&response_type=code&scope=identify"
+    auth_url = f"https://discord.com/api/oauth2/authorize?client_id={DISCORD_TOKEN}&redirect_uri={DISCORD_REDIRECT_URI}&response_type=code&scope=identify"
     return {"auth_url": auth_url}
 
 # Handle OAuth callback
@@ -40,7 +40,7 @@ async def login():
 async def callback(code: str):
     # Exchange code for access token
     data = {
-        "client_id": DISCORD_CLIENT_ID,
+        "client_id": DISCORD_TOKEN,
         "client_secret": DISCORD_CLIENT_SECRET,
         "grant_type": "authorization_code",
         "code": code,
