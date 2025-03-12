@@ -18,11 +18,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY app/web/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the web application code
+# Copy both web and bot code to allow imports from either
 COPY app/web/ /app/web/
+COPY app/bot/ /app/bot/
 
-# Set the proper Python path to include the app directory
-ENV PYTHONPATH=/app
+# Create a symbolic link to maintain compatibility with app.* imports
+RUN mkdir -p /app/app && ln -s /app/bot /app/app/bot
+
+# Set the proper Python path to include root dir for absolute imports
+ENV PYTHONPATH=/
 
 # Set the working directory to the web app directory
 WORKDIR /app/web
@@ -35,9 +39,5 @@ RUN addgroup --system app && adduser --system --group app
 RUN chown -R app:app /app
 USER app
 
-# Make the start script executable
-COPY app/web/start.sh /app/web/
-RUN chmod +x /app/web/start.sh
-
-# Use the start script as the entrypoint
-CMD ["/app/web/start.sh"] 
+# Run the application
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"] 

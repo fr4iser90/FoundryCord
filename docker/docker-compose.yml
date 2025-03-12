@@ -2,7 +2,7 @@ services:
   bot:
     build:
       context: ..
-      dockerfile: docker/bot/Dockerfile
+      dockerfile: docker/Dockerfile.bot
     image: homelab-discord-bot:latest
     container_name: homelab-discord-bot
     restart: unless-stopped
@@ -43,7 +43,7 @@ services:
   web:
     build:
       context: ..
-      dockerfile: docker/web/Dockerfile.web
+      dockerfile: docker/Dockerfile.web
     image: homelab-discord-bot-web:latest
     container_name: homelab-web
     restart: unless-stopped
@@ -60,14 +60,16 @@ services:
       - DISCORD_REDIRECT_URI=${DISCORD_REDIRECT_URI:-http://localhost:12010/auth/callback}
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - RUN_MIGRATIONS=true
+      - PYTHONPATH=/app
     ports:
       - "12010:8000"
     volumes:
       - ../app/web:/app/web
+      - ../app/bot:/app/bot
     command: >
       sh -c "
-        python -m alembic upgrade head &&
+        python setup_app_package.py &&
+        python main_check.py &&
         uvicorn main:app --host 0.0.0.0 --port 8000 --reload
       "
     networks:

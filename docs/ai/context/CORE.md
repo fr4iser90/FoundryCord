@@ -194,9 +194,11 @@ docs/
 ## Deployment & Testing Structure
 
 ```
-compose/                   # Docker deployment
+docker/                   # Docker deployment
 ├── docker-compose.yml     # Docker composition
-├── Dockerfile             # Main Dockerfile
+├── Dockerfile.bot         # Main Dockerfile
+├── Dockerfile.web         # Main Dockerfile
+├── .env                   # Environment variables
 └── entrypoint.sh          # Container entrypoint
 tests/                     # Test suite
 ├── integration/           # Integration tests

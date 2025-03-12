@@ -27,10 +27,10 @@ restart_bot_services() {
     
     if [ "$rebuild" = "true" ]; then
         echo "Rebuilding and starting bot services..."
-        run_remote_command "cd ${BOT_DOCKER_DIR} && ${BOT_COMPOSE_DOWN} && ${BOT_COMPOSE_BUILD_NOCACHE} && ${BOT_COMPOSE_UP}"
+        run_remote_command "cd ${DOCKER_DIR} && ${BOT_COMPOSE_DOWN} && ${BOT_COMPOSE_BUILD_NOCACHE} && ${BOT_COMPOSE_UP}"
     else
         echo "Starting bot services without rebuild..."
-        run_remote_command "cd ${BOT_DOCKER_DIR} && ${BOT_COMPOSE_UP}"
+        run_remote_command "cd ${DOCKER_DIR} && ${BOT_COMPOSE_UP}"
     fi
     
     # Give services time to start
@@ -56,10 +56,10 @@ restart_web_services() {
     
     if [ "$rebuild" = "true" ]; then
         echo "Rebuilding and starting web services..."
-        run_remote_command "cd ${WEB_DOCKER_DIR} && ${WEB_COMPOSE_DOWN} && ${WEB_COMPOSE_BUILD_NOCACHE} && ${WEB_COMPOSE_UP}"
+        run_remote_command "cd ${DOCKER_DIR} && ${WEB_COMPOSE_DOWN} && ${WEB_COMPOSE_BUILD_NOCACHE} && ${WEB_COMPOSE_UP}"
     else
         echo "Starting web services without rebuild..."
-        run_remote_command "cd ${WEB_DOCKER_DIR} && ${WEB_COMPOSE_UP}"
+        run_remote_command "cd ${DOCKER_DIR} && ${WEB_COMPOSE_UP}"
     fi
     
     # Give services time to start

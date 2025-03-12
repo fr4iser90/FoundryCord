@@ -24,11 +24,11 @@ update_bot_docker() {
     echo -e "\n${YELLOW}Updating Bot Docker Configuration...${NC}"
     
     # Create directory if it doesn't exist
-    run_remote_command "mkdir -p ${BOT_DOCKER_DIR}"
+    run_remote_command "mkdir -p ${DOCKER_DIR}"
     
     # Copy Docker files
     echo "Copying Bot Docker configuration files..."
-    scp -r "${LOCAL_GIT_DIR}/docker/bot/"* "${SERVER_USER}@${SERVER_HOST}:${BOT_DOCKER_DIR}/"
+    scp -r "${LOCAL_GIT_DIR}/docker/bot/"* "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/"
     
     echo -e "${GREEN}Bot Docker configuration updated successfully!${NC}"
 }
@@ -42,11 +42,11 @@ update_web_docker() {
         echo "Web Docker configuration found. Updating..."
         
         # Create directory if it doesn't exist
-        run_remote_command "mkdir -p ${WEB_DOCKER_DIR}"
+        run_remote_command "mkdir -p ${DOCKER_DIR}"
         
         # Copy Docker files
         echo "Copying Web Docker configuration files..."
-        scp -r "${LOCAL_GIT_DIR}/docker/web/"* "${SERVER_USER}@${SERVER_HOST}:${WEB_DOCKER_DIR}/"
+        scp -r "${LOCAL_GIT_DIR}/docker/web/"* "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/"
         
         echo -e "${GREEN}Web Docker configuration updated successfully!${NC}"
     else
@@ -68,10 +68,10 @@ main() {
     read -p "Do you want to rebuild containers now? (y/N): " rebuild
     if [[ "${rebuild,,}" == "y" ]]; then
         echo "Rebuilding containers..."
-        run_remote_command "cd ${BOT_DOCKER_DIR} && ${BOT_COMPOSE_DOWN} && ${BOT_COMPOSE_BUILD_NOCACHE} && ${BOT_COMPOSE_UP}"
+        run_remote_command "cd ${DOCKER_DIR} && ${BOT_COMPOSE_DOWN} && ${BOT_COMPOSE_BUILD_NOCACHE} && ${BOT_COMPOSE_UP}"
         
         if run_remote_command "test -f ${WEB_COMPOSE_FILE}" "true"; then
-            run_remote_command "cd ${WEB_DOCKER_DIR} && ${WEB_COMPOSE_DOWN} && ${WEB_COMPOSE_BUILD_NOCACHE} && ${WEB_COMPOSE_UP}"
+            run_remote_command "cd ${DOCKER_DIR} && ${WEB_COMPOSE_DOWN} && ${WEB_COMPOSE_BUILD_NOCACHE} && ${WEB_COMPOSE_UP}"
         fi
         
         echo -e "${GREEN}Containers rebuilt successfully!${NC}"

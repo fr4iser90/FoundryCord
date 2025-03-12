@@ -25,11 +25,9 @@ export LOCAL_GIT_DIR="$HOME/Documents/Git/NCC-DiscordBot"
 export PROJECT_ROOT_DIR="/home/docker/docker/companion-management/homelab-discord-bot"
 
 # Bot paths
-export BOT_DOCKER_DIR="${PROJECT_ROOT_DIR}/docker/bot"
+export DOCKER_DIR="${PROJECT_ROOT_DIR}/docker"
+export APP_DIR="${PROJECT_ROOT_DIR}/app"
 export BOT_DIR="${PROJECT_ROOT_DIR}/app/bot"
-
-# Web paths
-export WEB_DOCKER_DIR="${PROJECT_ROOT_DIR}/docker/web"
 export WEB_DIR="${PROJECT_ROOT_DIR}/app/web"
 
 # Database paths
@@ -103,14 +101,12 @@ export DOCKER_VOLUME_PRUNE="${DOCKER_CMD} volume prune -f"
 # Docker Compose File Paths
 # ------------------------------------------------------
 export BOT_COMPOSE_FILE="${PROJECT_ROOT_DIR}/docker/docker-compose.yml"
-export BOT_DOCKERFILE="${BOT_DOCKER_DIR}/Dockerfile"
-export BOT_ENV_FILE="${BOT_DOCKER_DIR}/.env"
-export BOT_ENV_DISCORD="${BOT_DOCKER_DIR}/.env.discordbot"
-export BOT_ENV_POSTGRES="${BOT_DOCKER_DIR}/.env.postgres"
+export BOT_DOCKERFILE="${DOCKER_DIR}/Dockerfile.bot"
+export ENV_FILE="${DOCKER_DIR}/.env"
 
 export WEB_COMPOSE_FILE="${PROJECT_ROOT_DIR}/docker/docker-compose.yml"
-export WEB_DOCKERFILE="${WEB_DOCKER_DIR}/Dockerfile.web"
-export WEB_ENV_FILE="${WEB_DOCKER_DIR}/.env"
+export WEB_DOCKERFILE="${DOCKER_DIR}/Dockerfile.web"
+
 
 # ------------------------------------------------------
 # Docker Runtime Options

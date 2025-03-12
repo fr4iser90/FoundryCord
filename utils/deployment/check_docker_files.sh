@@ -6,4 +6,5 @@ source "./utils/lib/common.sh"
 
 log_info "Überprüfe Docker-Dateien auf dem Server..."
 ssh "${SERVER_USER}@${SERVER_HOST}" "ls -la ${DOCKER_DIR}/docker-compose.yml || echo 'DATEI FEHLT!'"
-ssh "${SERVER_USER}@${SERVER_HOST}" "ls -la ${DOCKER_DIR}/Dockerfile || echo 'DATEI FEHLT!'" 
+ssh "${SERVER_USER}@${SERVER_HOST}" "ls -la ${DOCKER_DIR}/Dockerfile.bot || echo 'DATEI FEHLT!'" 
+ssh "${SERVER_USER}@${SERVER_HOST}" "ls -la ${DOCKER_DIR}/Dockerfile.web || echo 'DATEI FEHLT!'" 

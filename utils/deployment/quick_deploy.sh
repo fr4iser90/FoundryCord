@@ -75,11 +75,11 @@ deploy_bot() {
     # 2. Create necessary directories
     log_info "Creating necessary directories..."
     run_remote_command "mkdir -p ${PROJECT_ROOT_DIR}/app/bot"
-    run_remote_command "mkdir -p ${BOT_DOCKER_DIR}"
+    run_remote_command "mkdir -p ${DOCKER_DIR}"
     
     # 3. DIRECTLY COPY .ENV FILE - NO CHECKS
     log_info "Copying .env file to server..."
-    scp "${SSH_OPTS[@]}" "${LOCAL_GIT_DIR}/docker/bot/.env" "${SERVER_USER}@${SERVER_HOST}:${BOT_DOCKER_DIR}/.env"
+    scp "${SSH_OPTS[@]}" "${LOCAL_GIT_DIR}/docker/bot/.env" "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/.env"
     log_success ".env file copied to server."
     
     # 4. Copy bot code
@@ -89,10 +89,10 @@ deploy_bot() {
     
     # 5. Copy Docker files
     log_info "Copying Docker files to server..."
-    scp "${SSH_OPTS[@]}" "${LOCAL_GIT_DIR}/docker/bot/docker-compose.yml" "${SERVER_USER}@${SERVER_HOST}:${BOT_DOCKER_DIR}/"
-    scp "${SSH_OPTS[@]}" "${LOCAL_GIT_DIR}/docker/bot/Dockerfile" "${SERVER_USER}@${SERVER_HOST}:${BOT_DOCKER_DIR}/"
-    scp "${SSH_OPTS[@]}" "${LOCAL_GIT_DIR}/docker/bot/entrypoint.sh" "${SERVER_USER}@${SERVER_HOST}:${BOT_DOCKER_DIR}/"
-    scp "${SSH_OPTS[@]}" "${LOCAL_GIT_DIR}/docker/bot/init-db.sh" "${SERVER_USER}@${SERVER_HOST}:${BOT_DOCKER_DIR}/"
+    scp "${SSH_OPTS[@]}" "${LOCAL_GIT_DIR}/docker/bot/docker-compose.yml" "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/"
+    scp "${SSH_OPTS[@]}" "${LOCAL_GIT_DIR}/docker/bot/Dockerfile" "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/"
+    scp "${SSH_OPTS[@]}" "${LOCAL_GIT_DIR}/docker/bot/entrypoint.sh" "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/"
+    scp "${SSH_OPTS[@]}" "${LOCAL_GIT_DIR}/docker/bot/init-db.sh" "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/"
     log_success "Docker files copied successfully."
     
     # 6. Copy utility scripts
@@ -114,15 +114,15 @@ deploy_bot() {
         
         if [ "$REMOVE_VOLUMES" = "true" ]; then
             log_warning "⚠️ REMOVING VOLUMES - ALL DATA WILL BE DELETED ⚠️"
-            run_remote_command "cd ${BOT_DOCKER_DIR} && docker compose down -v"
+            run_remote_command "cd ${DOCKER_DIR} && docker compose down -v"
         else
-            run_remote_command "cd ${BOT_DOCKER_DIR} && docker compose down"
+            run_remote_command "cd ${DOCKER_DIR} && docker compose down"
         fi
         
-        run_remote_command "cd ${BOT_DOCKER_DIR} && docker compose build --no-cache && docker compose up -d"
+        run_remote_command "cd ${DOCKER_DIR} && docker compose build --no-cache && docker compose up -d"
     else
         log_info "Updating existing containers..."
-        run_remote_command "cd ${BOT_DOCKER_DIR} && docker compose up -d --build"
+        run_remote_command "cd ${DOCKER_DIR} && docker compose up -d --build"
     fi
     
     log_success "Deployment completed successfully!"
@@ -163,7 +163,7 @@ check_services() {
     
     if [ "$all_running" = "false" ]; then
         log_warning "Some services are not running! Check logs with:"
-        echo "ssh ${SERVER_USER}@${SERVER_HOST} \"cd ${BOT_DOCKER_DIR} && docker compose logs\""
+        echo "ssh ${SERVER_USER}@${SERVER_HOST} \"cd ${DOCKER_DIR} && docker compose logs\""
     fi
 }
 
