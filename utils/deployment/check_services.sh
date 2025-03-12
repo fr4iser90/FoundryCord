@@ -1,186 +1,219 @@
 #!/usr/bin/env bash
 
 # =======================================================
-# HomeLab Discord Bot - Service Health Checker
+# HomeLab Discord Bot - Service Status Check with Auto-Restart
 # =======================================================
 
-# Move to project root directory regardless of where script is called from
-cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 1
+# Source configuration
+source "$(dirname "$0")/../config/config.sh"
+source "$(dirname "$0")/../lib/common.sh"
 
-# Source common utilities
-source "./utils/config/config.sh"
-source "./utils/lib/common.sh"
+# Header
+echo -e "${YELLOW}=========================================================${NC}"
+echo -e "${YELLOW}     HomeLab Discord Bot - Service Status Check          ${NC}"
+echo -e "${YELLOW}=========================================================${NC}"
 
-# Colors for better readability
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[0;33m'
-INFO="${YELLOW}[INFO]${NC}"
-SUCCESS="${GREEN}[SUCCESS]${NC}"
-ERROR="${RED}[ERROR]${NC}"
-NC='\033[0m' # No Color
+# Check SSH connection
+if ! check_ssh_connection; then
+    echo -e "${RED}Cannot check services.${NC}"
+    exit 1
+fi
 
-# ------------------------------------------------------
-# Command-line Arguments Parsing
-# ------------------------------------------------------
-VERBOSE=false
-
-parse_checker_args() {
-    for arg in "$@"; do
-        case $arg in
-            --verbose)
-                VERBOSE=true
-                ;;
-            *)
-                parse_args "$arg" # Pass to common arg parser
-                ;;
-        esac
-    done
-}
-
-parse_checker_args "$@"
-
-# ------------------------------------------------------
-# Service Checking Functions
-# ------------------------------------------------------
-check_docker() {
-    local docker_status=$(run_remote_command "systemctl is-active docker" "true")
+# Function to restart bot services if needed
+restart_bot_services() {
+    local rebuild="${1:-false}"
     
-    if [ "$docker_status" = "active" ]; then
-        if [ "$VERBOSE" = "true" ]; then
-            log_success "Docker is running."
-        else
-            echo -e "${GREEN}Docker is running.${NC}"
-        fi
+    echo -e "\n${YELLOW}Starting bot services...${NC}"
+    
+    if [ "$rebuild" = "true" ]; then
+        echo "Rebuilding and starting bot services..."
+        run_remote_command "cd ${BOT_DOCKER_DIR} && ${BOT_COMPOSE_DOWN} && ${BOT_COMPOSE_BUILD_NOCACHE} && ${BOT_COMPOSE_UP}"
+    else
+        echo "Starting bot services without rebuild..."
+        run_remote_command "cd ${BOT_DOCKER_DIR} && ${BOT_COMPOSE_UP}"
+    fi
+    
+    # Give services time to start
+    echo "Waiting for services to start..."
+    sleep 10
+    
+    # Recheck status
+    echo -e "\n${YELLOW}Rechecking Bot Services...${NC}"
+    check_bot_status
+}
+
+# Function to restart web services if needed
+restart_web_services() {
+    local rebuild="${1:-false}"
+    
+    echo -e "\n${YELLOW}Starting web services...${NC}"
+    
+    # Check if web compose file exists first
+    if ! run_remote_command "test -f ${WEB_COMPOSE_FILE}" "true"; then
+        echo -e "${YELLOW}Web services not deployed. Skipping...${NC}"
+        return
+    fi
+    
+    if [ "$rebuild" = "true" ]; then
+        echo "Rebuilding and starting web services..."
+        run_remote_command "cd ${WEB_DOCKER_DIR} && ${WEB_COMPOSE_DOWN} && ${WEB_COMPOSE_BUILD_NOCACHE} && ${WEB_COMPOSE_UP}"
+    else
+        echo "Starting web services without rebuild..."
+        run_remote_command "cd ${WEB_DOCKER_DIR} && ${WEB_COMPOSE_UP}"
+    fi
+    
+    # Give services time to start
+    echo "Waiting for services to start..."
+    sleep 10
+    
+    # Recheck status
+    echo -e "\n${YELLOW}Rechecking Web Services...${NC}"
+    check_web_status
+}
+
+# Function to check bot services status only (no prompt)
+check_bot_status() {
+    local bot_running=false
+    local postgres_running=false
+    local redis_running=false
+    
+    # Check Discord Bot
+    if run_remote_command "docker ps | grep -q ${BOT_CONTAINER}" "true"; then
+        echo -e "${GREEN}✓ ${BOT_CONTAINER} is running${NC}"
+        bot_running=true
+    else
+        echo -e "${RED}✗ ${BOT_CONTAINER} is NOT running${NC}"
+    fi
+    
+    # Check Postgres
+    if run_remote_command "docker ps | grep -q ${POSTGRES_CONTAINER}" "true"; then
+        echo -e "${GREEN}✓ ${POSTGRES_CONTAINER} is running${NC}"
+        postgres_running=true
+    else
+        echo -e "${RED}✗ ${POSTGRES_CONTAINER} is NOT running${NC}"
+    fi
+    
+    # Check Redis
+    if run_remote_command "docker ps | grep -q ${REDIS_CONTAINER}" "true"; then
+        echo -e "${GREEN}✓ ${REDIS_CONTAINER} is running${NC}"
+        redis_running=true
+    else
+        echo -e "${RED}✗ ${REDIS_CONTAINER} is NOT running${NC}"
+    fi
+    
+    # Return success if all are running
+    if [ "$bot_running" = true ] && [ "$postgres_running" = true ] && [ "$redis_running" = true ]; then
         return 0
     else
-        if [ "$VERBOSE" = "true" ]; then
-            log_error "Docker is not running."
-        else
-            echo -e "${RED}Docker is not running.${NC}"
-        fi
         return 1
     fi
 }
 
-check_bot() {
-    if is_container_running "$BOT_CONTAINER"; then
-        if [ "$VERBOSE" = "true" ]; then
-            log_success "HomeLab Discord Bot is running."
-        else
-            echo -e "${GREEN}HomeLab Discord Bot is running.${NC}"
-        fi
+# Function to check web services status only (no prompt)
+check_web_status() {
+    local web_running=false
+    local web_db_running=false
+    
+    # Check if web compose file exists first
+    if ! run_remote_command "test -f ${WEB_COMPOSE_FILE}" "true"; then
+        echo -e "${YELLOW}Web services not deployed. Skipping...${NC}"
+        return 0
+    fi
+    
+    # Check Web Container
+    if run_remote_command "docker ps | grep -q ${WEB_CONTAINER}" "true"; then
+        echo -e "${GREEN}✓ ${WEB_CONTAINER} is running${NC}"
+        web_running=true
+    else
+        echo -e "${RED}✗ ${WEB_CONTAINER} is NOT running${NC}"
+    fi
+    
+    # Check Web DB
+    if run_remote_command "docker ps | grep -q ${WEB_DB_CONTAINER}" "true"; then
+        echo -e "${GREEN}✓ ${WEB_DB_CONTAINER} is running${NC}"
+        web_db_running=true
+    else
+        echo -e "${RED}✗ ${WEB_DB_CONTAINER} is NOT running${NC}"
+    fi
+    
+    # Return success if all are running
+    if [ "$web_running" = true ] && [ "$web_db_running" = true ]; then
         return 0
     else
-        if [ "$VERBOSE" = "true" ]; then
-            log_error "HomeLab Discord Bot is not running."
-        else
-            echo -e "${RED}HomeLab Discord Bot is not running.${NC}"
-        fi
         return 1
     fi
 }
 
-check_postgres() {
-    if is_container_running "$POSTGRES_CONTAINER"; then
-        if [ "$VERBOSE" = "true" ]; then
-            log_success "PostgreSQL is running."
-        else
-            echo -e "${GREEN}PostgreSQL is running.${NC}"
+# Function to check bot services with restart option
+check_bot_services() {
+    echo -e "\n${YELLOW}Checking Bot Services...${NC}"
+    
+    # Check status
+    if check_bot_status; then
+        # Services are running, ask to view logs
+        read -p "Do you want to see the recent bot logs? (y/N): " show_logs
+        if [[ "${show_logs,,}" == "y" ]]; then
+            run_remote_command "${BOT_LOGS} --tail 50"
         fi
-        return 0
     else
-        if [ "$VERBOSE" = "true" ]; then
-            log_error "PostgreSQL is not running."
-        else
-            echo -e "${RED}PostgreSQL is not running.${NC}"
+        # Services not running, offer to start them
+        read -p "Some bot services are not running. Do you want to start them? (Y/n): " start_services
+        
+        if [[ "${start_services,,}" != "n" ]]; then
+            read -p "Do you want to rebuild the containers first? (y/N): " rebuild_first
+            
+            if [[ "${rebuild_first,,}" == "y" ]]; then
+                restart_bot_services "true"
+            else
+                restart_bot_services "false"
+            fi
         fi
-        return 1
     fi
 }
 
-check_redis() {
-    if is_container_running "$REDIS_CONTAINER"; then
-        if [ "$VERBOSE" = "true" ]; then
-            log_success "Redis is running."
-        else
-            echo -e "${GREEN}Redis is running.${NC}"
+# Function to check web services with restart option
+check_web_services() {
+    echo -e "\n${YELLOW}Checking Web Services...${NC}"
+    
+    # Check if web compose file exists first
+    if ! run_remote_command "test -f ${WEB_COMPOSE_FILE}" "true"; then
+        echo -e "${YELLOW}Web services not deployed. Skipping...${NC}"
+        return
+    fi
+    
+    # Check status
+    if check_web_status; then
+        # Services are running, ask to view logs
+        read -p "Do you want to see the recent web logs? (y/N): " show_logs
+        if [[ "${show_logs,,}" == "y" ]]; then
+            run_remote_command "${WEB_LOGS} --tail 50"
         fi
-        return 0
     else
-        if [ "$VERBOSE" = "true" ]; then
-            log_error "Redis is not running."
-        else
-            echo -e "${RED}Redis is not running.${NC}"
+        # Services not running, offer to start them
+        read -p "Some web services are not running. Do you want to start them? (Y/n): " start_services
+        
+        if [[ "${start_services,,}" != "n" ]]; then
+            read -p "Do you want to rebuild the containers first? (y/N): " rebuild_first
+            
+            if [[ "${rebuild_first,,}" == "y" ]]; then
+                restart_web_services "true"
+            else
+                restart_web_services "false"
+            fi
         fi
-        return 1
     fi
 }
 
-# ------------------------------------------------------
 # Main function
-# ------------------------------------------------------
 main() {
-    echo -e "${INFO} Checking services on ${SERVER_HOST}..."
-    echo -e "${INFO} Checking SSH connection to ${SERVER_HOST}..."
-
-    # Test SSH connection first
-    if ssh -q "${SERVER_USER}@${SERVER_HOST}" exit; then
-        echo -e "${SUCCESS} SSH connection successful!"
-    else
-        echo -e "${ERROR} SSH connection failed! Please check your SSH setup."
-        exit 1
-    fi
-
-    # Check if Docker is running by directly checking for containers
-    # This is more reliable than checking the systemd service
-    docker_running=$(ssh "${SERVER_USER}@${SERVER_HOST}" "docker ps >/dev/null 2>&1 && echo 'running' || echo 'not running'")
-
-    if [ "$docker_running" = "running" ]; then
-        echo -e "${SUCCESS} Docker is running."
-        docker_running=true
-    else
-        echo -e "${ERROR} Docker is not running."
-        docker_running=false
-        exit_code=1
-    fi
-
-    # Check if the Discord bot container is running
-    bot_running=$(ssh "${SERVER_USER}@${SERVER_HOST}" "docker ps -q -f name=homelab-discord-bot" 2>/dev/null)
-    if [ -n "$bot_running" ]; then
-        echo -e "${SUCCESS} HomeLab Discord Bot is running."
-    else
-        echo -e "${ERROR} HomeLab Discord Bot is not running."
-        exit_code=1
-    fi
-
-    # Check if PostgreSQL is running
-    postgres_running=$(ssh "${SERVER_USER}@${SERVER_HOST}" "docker ps -q -f name=homelab-postgres" 2>/dev/null)
-    if [ -n "$postgres_running" ]; then
-        echo -e "${SUCCESS} PostgreSQL is running."
-    else
-        echo -e "${ERROR} PostgreSQL is not running."
-        exit_code=1
-    fi
-
-    # Check if Redis is running
-    redis_running=$(ssh "${SERVER_USER}@${SERVER_HOST}" "docker ps -q -f name=homelab-redis" 2>/dev/null)
-    if [ -n "$redis_running" ]; then
-        echo -e "${SUCCESS} Redis is running."
-    else
-        echo -e "${ERROR} Redis is not running."
-        exit_code=1
-    fi
-
-    if [ "${exit_code:-0}" -eq 0 ]; then
-        echo -e "${SUCCESS} All services are running!"
-    else
-        echo -e "${ERROR} Some services are not running. Service check failed."
-    fi
-
-    exit ${exit_code:-0}
+    # Check bot services
+    check_bot_services
+    
+    # Check web services
+    check_web_services
+    
+    echo -e "\n${GREEN}Service check completed.${NC}"
 }
 
 # Run the main function
-main
-exit $? 
+main 

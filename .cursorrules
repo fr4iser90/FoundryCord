@@ -22,7 +22,7 @@
       "require-consistency": true,
       "active": true,
       "files": [
-        "docs/development/context/COMMUNICATION.md"
+        "docs/ai/context/COMMUNICATION.md"
       ]
     },
     "coding-standards": {
@@ -30,7 +30,7 @@
       "require-consistency": true,
       "active": true,
       "files": [
-        "docs/core/CONVENTIONS.md"
+        "docs/development/guidelines/CONVENTIONS.md"
       ]
     },
     "implementation-patterns": {
@@ -55,11 +55,11 @@
       "require-consistency": true,
       "active": true,
       "files": [
-        "docs/development/roles/BOT_FRAMEWORK_DEVELOPER.md",
-        //"docs/development/roles/SYSTEM_MONITORING_DEVELOPER.py",
-        //"docs/development/roles/SECURITY_SPECIALIST.md",
-        "docs/development/roles/UI_UX_DESIGNER.py",
-        //"docs/development/roles/SLASH_COMMAND_DEVELOPER.py"
+        "docs/ai/roles/core/BOT_CORE_ARCHITECT.md",
+        "docs/ai/roles/system/BOT_SYSTEM_MONITOR.md",
+        "docs/ai/roles/core/BOT_CORE_SECURITY.md",
+        "docs/ai/roles/ui/BOT_UI_DESIGNER.md",
+        "docs/ai/roles/ui/BOT_UI_COMMANDS.md"
       ]
     }
   }

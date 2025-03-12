@@ -146,4 +146,9 @@ async def setup_dashboards(bot):
     )
 ```
 
+## Related Documentation
+- [Dashboard Controller Structure](./DASHBOARD_CONTROLLER_STRUCTURE.md) - Detailed controller implementation
+- [UI Designer Role](../../ai/roles/ui/BOT_UI_DESIGNER.md) - Role responsible for dashboard design
+- [Data Flow Patterns](../architecture/DATA_FLOW.md) - Understanding data flow in dashboards
+
 By following this document, developers can create consistent, maintainable dashboards that provide real-time information and interactive capabilities within the HomeLab Discord Bot.

@@ -1,0 +1,43 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on
+
+# Install Python dependencies
+COPY app/web/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the web application code
+COPY app/web/ /app/web/
+
+# Set the proper Python path to include the app directory
+ENV PYTHONPATH=/app
+
+# Set the working directory to the web app directory
+WORKDIR /app/web
+
+# Expose port
+EXPOSE 8000
+
+# Create non-root user
+RUN addgroup --system app && adduser --system --group app
+RUN chown -R app:app /app
+USER app
+
+# Make the start script executable
+COPY app/web/start.sh /app/web/
+RUN chmod +x /app/web/start.sh
+
+# Use the start script as the entrypoint
+CMD ["/app/web/start.sh"] 

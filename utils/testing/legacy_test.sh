@@ -3,12 +3,8 @@
 # Remote Docker Testing Script for HomeLab Discord Bot
 # This script runs tests on a remote server and retrieves the results
 
-# Variables (matching your deployment setup)
-SERVER_USER="docker"
-SERVER_HOST="192.168.178.33"
-PROJECT_ROOT_DIR="/home/docker/docker/companion-management/homelab-discord-bot"
-DOCKER_DIR="${PROJECT_ROOT_DIR}/compose"
-LOCAL_RESULTS_DIR="./test-results"
+# Variablen aus config.sh importieren
+source "$(dirname "$0")/../config/config.sh"
 
 # Colors for output
 GREEN='\033[0;32m'

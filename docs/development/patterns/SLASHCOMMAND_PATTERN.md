@@ -173,3 +173,8 @@ async def setup(bot):
 ```
 
 By following this document, developers can create consistent, maintainable slash commands that provide a great user experience while maintaining the architectural integrity of the HomeLab Discord Bot.
+
+## Related Documentation
+- [UI Commands Role](../../ai/roles/ui/BOT_UI_COMMANDS.md) - Role responsible for command design
+- [Layer Definitions](../architecture/LAYERS.md) - Command implementation in layers
+- [Security Policy](../modules/SECURITY_POLICY.md) - Command security requirements

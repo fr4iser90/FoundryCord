@@ -10,6 +10,7 @@ NC='\033[0m' # No Color
 SERVER_USER="docker"
 SERVER_HOST="192.168.178.33"
 SERVER_DIR="/home/docker/docker/companion-management/homelab-discord-bot"
+DOCKER_DIR="${SERVER_DIR}/docker/bot"
 
 echo -e "${YELLOW}=== HomeLab Discord Bot Server Test Script ===${NC}"
 echo "Testing server: ${SERVER_HOST}"

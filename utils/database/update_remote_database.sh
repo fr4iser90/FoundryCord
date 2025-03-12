@@ -1,11 +1,8 @@
 #!/bin/bash
 # Ein Skript, das den Code aktualisiert und dann die Datenbank migriert
 
-# Variablen aus update_local.sh
-SERVER_USER="docker"
-SERVER_HOST="192.168.178.33"
-PROJECT_ROOT_DIR="/home/docker/docker/companion-management/homelab-discord-bot"
-DOCKER_DIR="${PROJECT_ROOT_DIR}/compose"
+# Variablen aus config.sh importieren
+source "$(dirname "$0")/../config/config.sh"
 
 echo "=== Homelab Discord Bot: Remote Update & Migration Tool ==="
 
@@ -14,7 +11,7 @@ echo "Kopiere den aktuellen Code zum Server..."
 scp -r ~/Documents/Git/NCC-DiscordBot/app/bot/* ${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}/app/bot/
 scp -r ~/Documents/Git/NCC-DiscordBot/utils/* ${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}/utils/database/
 
-# 2. Führe das Datenbank-Update auf dem Server aus PY OR SH?!??! AND SHOULD WE IMPLEMNENT DIRECTLY IN DATABASE MIGRATION OR ?!?!?!? VOLUIMEBECAUSE ITS NOT IN DOCKER?!?!
+# 2. Führe das Datenbank-Update auf dem Server aus
 echo "Führe Datenbank-Update auf dem Server aus..."
 ssh ${SERVER_USER}@${SERVER_HOST} "cd ${PROJECT_ROOT_DIR} && bash utils/database/category_v002.sh"
 

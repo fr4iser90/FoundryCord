@@ -95,6 +95,10 @@ After scientifically examining the codebase, I've identified the following key i
 2. [✅] Create backup of current functionality
 3. [✅] Document all current behavior for verification
 
+All implementation follows architecture defined in [Design Patterns](../development/patterns/DESIGN_PATTERN.md) and adheres to [Coding Conventions](../development/guidelines/CONVENTIONS.md).
+
+For long-term planning context, see [Milestones](./MILESTONES.md) and [Roadmap](./ROADMAP.md).
+
 ### Phase 2: Implementation
 1. [✅] Create `SystemMonitoringDashboardController` class
 2. [✅] Update channel configuration

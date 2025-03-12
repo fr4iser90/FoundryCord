@@ -290,3 +290,11 @@ This guide provides:
 7. Guidance on how to use the document when developing
 
 The document explains the "why" behind the patterns and shows how they work together to create a cohesive architecture.
+
+## Implementation Recommendations
+
+## Related Documentation
+- [Layer Definitions](../architecture/LAYERS.md) - Layer organization details
+- [Data Flow Patterns](../architecture/DATA_FLOW.md) - Component interaction patterns
+- [Dashboard Pattern](./DASHBOARD_PATTERN.md) - Dashboard implementation details
+- [Slash Command Pattern](./SLASHCOMMAND_PATTERN.md) - Command implementation details

@@ -3,11 +3,8 @@
 
 set -e
 
-# Variablen für den Server
-SERVER_USER="docker"
-SERVER_HOST="192.168.178.33"
-PROJECT_ROOT_DIR="/home/docker/docker/companion-management/homelab-discord-bot"
-DOCKER_DIR="${PROJECT_ROOT_DIR}/compose"
+# Variablen aus config.sh importieren
+source "$(dirname "$0")/../config/config.sh"
 
 echo "=== Homelab Discord Bot: Alembic Migration Tool ==="
 
@@ -41,5 +38,5 @@ docker exec "$CONTAINER_ID" bash -c "export USE_ALEMBIC=true && alembic -c infra
 docker exec "$CONTAINER_ID" bash -c "export USE_ALEMBIC=true && alembic -c infrastructure/database/migrations/alembic.ini upgrade head"
 
 echo "Migration abgeschlossen. Container wird neu gestartet..."
-cd ${DOCKER_DIR} && docker-compose restart bot
+cd ${DOCKER_DIR} && docker compose restart bot
 echo "=== Alembic-Migration erfolgreich durchgeführt ==="

@@ -4,95 +4,113 @@
 # HomeLab Discord Bot - Deployment Script
 # =======================================================
 
-# Move to project root directory regardless of where script is called from
-cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 1
+# Source configuration
+source "$(dirname "$0")/../config/config.sh"
+source "$(dirname "$0")/../lib/common.sh"
 
-# Source common utilities
-source "./utils/config/config.sh"
-source "./utils/lib/common.sh"
+# Header
+echo -e "${YELLOW}=========================================================${NC}"
+echo -e "${YELLOW}     HomeLab Discord Bot - Deployment Tool               ${NC}"
+echo -e "${YELLOW}=========================================================${NC}"
 
-# ------------------------------------------------------
-# Command-line Arguments Parsing
-# ------------------------------------------------------
-parse_args "$@"
+# Check SSH connection
+if ! check_ssh_connection; then
+    echo -e "${RED}Cannot proceed with deployment.${NC}"
+    exit 1
+fi
 
-# ------------------------------------------------------
-# Main Deployment Function
-# ------------------------------------------------------
-deploy_changes() {
-    log_section "Deploying changes to ${SERVER_HOST}"
+# Function to deploy bot application
+deploy_bot() {
+    echo -e "\n${YELLOW}Deploying Discord Bot Application...${NC}"
     
-    # Create a temporary directory
-    TMP_DIR=$(mktemp -d)
-    log_info "Created temporary directory: ${TMP_DIR}"
+    # 1. DIRECTLY COPY .ENV FILE - NO CHECKS
+    echo -e "\n${YELLOW}Copying .env file...${NC}"
+    scp "${LOCAL_GIT_DIR}/docker/bot/.env" "${SERVER_USER}@${SERVER_HOST}:${BOT_DOCKER_DIR}/.env"
+    echo -e "${GREEN}.env file copied.${NC}"
     
-    # Copy essential files to deploy
-    cp compose/docker-compose.yml "${TMP_DIR}/"
-    cp compose/Dockerfile "${TMP_DIR}/"
-    cp -r utils "${TMP_DIR}/"
-    cp app/bot/requirements.txt "${TMP_DIR}/"
+    # 2. Copy bot application files
+    echo "Copying bot application files..."
+    scp -r "${LOCAL_GIT_DIR}/app/bot/"* "${SERVER_USER}@${SERVER_HOST}:${BOT_DIR}/"
     
-    # Upload Docker Compose files
-    log_info "Uploading Docker Compose files..."
-    run_remote_command "mkdir -p ${DOCKER_DIR}"
-    upload_file "${TMP_DIR}/docker-compose.yml" "${DOCKER_DIR}/docker-compose.yml"
-    upload_file "${TMP_DIR}/Dockerfile" "${DOCKER_DIR}/Dockerfile"
+    # 3. Copy Docker files
+    echo "Copying Docker configuration files..."
     
-    # Upload utilities
-    log_info "Uploading utility scripts..."
-    run_remote_command "mkdir -p ${PROJECT_ROOT_DIR}/utils"
-    for util_file in $(find "${TMP_DIR}/utils" -type f -name "*.sh"); do
-        rel_path="${util_file#$TMP_DIR/utils/}"
-        remote_path="${PROJECT_ROOT_DIR}/utils/${rel_path}"
-        remote_dir=$(dirname "$remote_path")
-        
-        # Ensure remote directory exists
-        run_remote_command "mkdir -p $remote_dir" "true"
-        
-        # Upload the file and make it executable
-        upload_file "$util_file" "$remote_path"
-        run_remote_command "chmod +x $remote_path" "true"
-    done
+    # Copy the individual docker files from bot directory
+    scp "${LOCAL_GIT_DIR}/docker/bot/Dockerfile" "${SERVER_USER}@${SERVER_HOST}:${BOT_DOCKER_DIR}/"
+    scp "${LOCAL_GIT_DIR}/docker/bot/entrypoint.sh" "${SERVER_USER}@${SERVER_HOST}:${BOT_DOCKER_DIR}/"
+    scp "${LOCAL_GIT_DIR}/docker/bot/init-db.sh" "${SERVER_USER}@${SERVER_HOST}:${BOT_DOCKER_DIR}/"
     
-    # Upload requirements
-    log_info "Uploading requirements file..."
-    run_remote_command "mkdir -p ${BOT_DIR}"
-    upload_file "${TMP_DIR}/requirements.txt" "${BOT_DIR}/requirements.txt"
-    
-    # Clean up
-    rm -rf "${TMP_DIR}"
-    
-    # Optionally rebuild Docker containers
-    if [ "$REBUILD_ON_DEPLOY" = "true" ]; then
-        log_section "Performing Docker rebuild"
-        run_remote_command "cd ${DOCKER_DIR} && docker-compose down && docker-compose build --no-cache && docker-compose up -d"
-        
-        log_info "Waiting for services to start..."
-        sleep 15
-        
-        log_success "Deployment and rebuild completed successfully."
+    # Copy the main docker-compose.yml to the correct location
+    echo "Copying main docker-compose.yml file..."
+    scp "${LOCAL_GIT_DIR}/docker/docker-compose.yml" "${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}/docker/docker-compose.yml"
+    scp "${LOCAL_GIT_DIR}/docker/bot/.env" "${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}/docker/.env"
+    scp "${LOCAL_GIT_DIR}/docker/bot/.env" "${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}/docker/bot/.env"
+    scp "${LOCAL_GIT_DIR}/docker/bot/.env" "${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}/docker/web/.env"
+
+    # 4. Deploy the containers
+    echo "Deploying Docker containers..."
+    if [ "${REBUILD_ON_DEPLOY}" = "true" ]; then
+        run_remote_command "cd ${PROJECT_ROOT_DIR}/docker && docker compose down && docker compose build --no-cache && docker compose up -d"
     else
-        log_success "Deployment completed successfully."
+        run_remote_command "cd ${PROJECT_ROOT_DIR}/docker && docker compose up -d --build"
     fi
     
-    return 0
+    echo -e "${GREEN}Bot deployment completed successfully!${NC}"
 }
 
-# ------------------------------------------------------
-# Main function
-# ------------------------------------------------------
-main() {
-    # Check SSH connection
-    check_ssh_connection
-    if [ $? -ne 0 ]; then
-        exit 1
-    fi
+# Function to deploy web application (if available)
+deploy_web() {
+    echo -e "\n${YELLOW}Checking for Web Application...${NC}"
     
-    # Deploy changes
-    deploy_changes
-    if [ $? -ne 0 ]; then
-        exit 1
+    # Check if web docker-compose file exists in local git directory
+    if [ -f "${LOCAL_GIT_DIR}/docker/web/docker-compose.web.yml" ]; then
+        echo "Web application found. Deploying..."
+        
+        # 1. Copy web .env file directly
+        if [ -f "${LOCAL_GIT_DIR}/docker/web/.env" ]; then
+            echo "Copying web .env file..."
+            scp "${LOCAL_GIT_DIR}/docker/web/.env" "${SERVER_USER}@${SERVER_HOST}:${WEB_DOCKER_DIR}/.env"
+        fi
+        
+        # 2. Copy web application files if they exist
+        if [ -d "${LOCAL_GIT_DIR}/app/web" ]; then
+            echo "Copying web application files..."
+            scp -r "${LOCAL_GIT_DIR}/app/web/"* "${SERVER_USER}@${SERVER_HOST}:${WEB_DIR}/"
+        fi
+        
+        # 3. Copy Docker files
+        echo "Copying web Docker configuration files..."
+        scp "${LOCAL_GIT_DIR}/docker/web/docker-compose.web.yml" "${SERVER_USER}@${SERVER_HOST}:${WEB_DOCKER_DIR}/"
+        scp "${LOCAL_GIT_DIR}/docker/web/Dockerfile.web" "${SERVER_USER}@${SERVER_HOST}:${WEB_DOCKER_DIR}/"
+        
+        # 4. Deploy the containers
+        echo "Deploying web Docker containers..."
+        if [ "${REBUILD_ON_DEPLOY}" = "true" ]; then
+            run_remote_command "cd ${WEB_DOCKER_DIR} && docker compose -f docker-compose.web.yml down && docker compose -f docker-compose.web.yml build --no-cache && docker compose -f docker-compose.web.yml up -d"
+        else
+            run_remote_command "cd ${WEB_DOCKER_DIR} && docker compose -f docker-compose.web.yml up -d --build"
+        fi
+        
+        echo -e "${GREEN}Web deployment completed successfully!${NC}"
+    else
+        echo "No web application found. Skipping web deployment."
     fi
+}
+
+# Main deployment function
+main() {
+    # 1. Deploy bot
+    deploy_bot
+    
+    # 2. Deploy web (if available)
+    deploy_web
+    
+    # 3. Check services
+    echo -e "\n${YELLOW}Checking services...${NC}"
+    sleep 5  # Give services time to start
+    "$(dirname "$0")/check_services.sh"
+    
+    echo -e "\n${GREEN}Deployment completed successfully!${NC}"
 }
 
 # Run the main function

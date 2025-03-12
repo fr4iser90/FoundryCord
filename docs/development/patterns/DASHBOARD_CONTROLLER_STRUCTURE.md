@@ -4,6 +4,11 @@
 
 This document outlines the standardized structure for dashboard controllers in the HomeLab Discord Bot. By following these patterns, we ensure consistency across all dashboard implementations and facilitate maintenance and new feature development.
 
+## Related Documentation
+- [Dashboard Pattern](./DASHBOARD_PATTERN.md) - Overall dashboard implementation workflow
+- [UI Designer Role](../../ai/roles/ui/BOT_UI_DESIGNER.md) - Role responsible for dashboard design
+- [Data Flow Patterns](../architecture/DATA_FLOW.md) - Understanding data flow in dashboards
+
 ## Controller Hierarchy
 
 BaseDashboardController

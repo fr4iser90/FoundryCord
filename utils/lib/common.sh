@@ -4,63 +4,119 @@
 # HomeLab Discord Bot - Common Utility Functions
 # =======================================================
 
-# Source the main config if it hasn't been loaded
+# Check if config is loaded, if not, load it
 if [ -z "$CONFIG_LOADED" ]; then
     source "$(dirname "$0")/../config/config.sh"
 fi
 
 # ------------------------------------------------------
-# Logging Functions
+# Common Utility Functions
 # ------------------------------------------------------
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
 
-log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-log_section() {
-    echo -e "\n${YELLOW}=========================================================${NC}"
-    echo -e "${YELLOW}     $1${NC}"
-    echo -e "${YELLOW}=========================================================${NC}\n"
-}
-
-# ------------------------------------------------------
-# SSH Connection Functions
-# ------------------------------------------------------
-check_ssh_connection() {
-    log_info "Checking SSH connection to ${SERVER_HOST}..."
+# Print a message with timestamp
+log() {
+    local level="$1"
+    local message="$2"
+    local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
     
-    if ssh -i "$SERVER_KEY" -p "$SERVER_PORT" "$SERVER_USER@$SERVER_HOST" "echo 'Connection successful'" > /dev/null 2>&1; then
+    case "$level" in
+        "INFO")
+            echo -e "${BLUE}[${timestamp}] [INFO]${NC} $message"
+            ;;
+        "SUCCESS")
+            echo -e "${GREEN}[${timestamp}] [SUCCESS]${NC} $message"
+            ;;
+        "WARNING")
+            echo -e "${YELLOW}[${timestamp}] [WARNING]${NC} $message"
+            ;;
+        "ERROR")
+            echo -e "${RED}[${timestamp}] [ERROR]${NC} $message"
+            ;;
+        *)
+            echo -e "[${timestamp}] $message"
+            ;;
+    esac
+}
+
+# Log info message
+log_info() {
+    log "INFO" "$1"
+}
+
+# Log success message
+log_success() {
+    log "SUCCESS" "$1"
+}
+
+# Log warning message
+log_warning() {
+    log "WARNING" "$1"
+}
+
+# Log error message
+log_error() {
+    log "ERROR" "$1"
+}
+
+# Execute command and handle errors
+execute_command() {
+    local command="$1"
+    local error_message="${2:-Command failed}"
+    
+    if ! eval "$command"; then
+        log_error "$error_message"
+        return 1
+    fi
+    
+    return 0
+}
+
+# Check SSH connection to server
+check_ssh_connection() {
+    log_info "Testing SSH connection to ${SERVER_HOST}..."
+    
+    if ssh -q -o ConnectTimeout=5 "${SERVER_USER}@${SERVER_HOST}" exit; then
         log_success "SSH connection successful!"
         return 0
     else
-        log_error "Could not connect to remote server via SSH."
-        log_info "Please check your SSH credentials and server status."
+        log_error "SSH connection failed!"
         return 1
     fi
 }
 
+# Run command on remote server
 run_remote_command() {
     local cmd="$1"
     local silent="${2:-false}"
     
     if [ "$silent" = "true" ]; then
-        ssh -i "$SERVER_KEY" -p "$SERVER_PORT" "$SERVER_USER@$SERVER_HOST" "$cmd" > /dev/null 2>&1
+        ssh "${SERVER_USER}@${SERVER_HOST}" "$cmd" > /dev/null 2>&1
     else
-        ssh -i "$SERVER_KEY" -p "$SERVER_PORT" "$SERVER_USER@$SERVER_HOST" "$cmd"
+        ssh "${SERVER_USER}@${SERVER_HOST}" "$cmd"
     fi
     
     return $?
+}
+
+# Check if docker-compose.yml exists (for both bot and web)
+check_docker_compose_files() {
+    log_info "Checking for docker-compose files..."
+    
+    if run_remote_command "test -f ${BOT_COMPOSE_FILE}" "true"; then
+        log_success "Bot docker-compose.yml exists."
+    else
+        log_error "Bot docker-compose.yml NOT found at ${BOT_COMPOSE_FILE}"
+        return 1
+    fi
+    
+    if run_remote_command "test -f ${WEB_COMPOSE_FILE}" "true"; then
+        log_success "Web docker-compose.yml exists."
+    else
+        log_warning "Web docker-compose.yml NOT found at ${WEB_COMPOSE_FILE}"
+        # Not returning error as web might be optional
+    fi
+    
+    return 0
 }
 
 # ------------------------------------------------------
