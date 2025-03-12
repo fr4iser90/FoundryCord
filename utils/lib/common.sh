@@ -4,6 +4,13 @@
 # HomeLab Discord Bot - Common Utility Functions
 # =======================================================
 
+# Color codes for terminal output
+export RED='\033[0;31m'
+export GREEN='\033[0;32m'
+export YELLOW='\033[0;33m'
+export BLUE='\033[0;34m'
+export NC='\033[0m' # No Color
+
 # Check if config is loaded, if not, load it
 if [ -z "$CONFIG_LOADED" ]; then
     source "$(dirname "$0")/../config/config.sh"
@@ -71,31 +78,132 @@ execute_command() {
     return 0
 }
 
-# Check SSH connection to server
-check_ssh_connection() {
-    log_info "Testing SSH connection to ${SERVER_HOST}..."
+# Validate configuration and ensure required variables are set
+validate_config() {
+    local missing_vars=()
+    local config_valid=true
     
-    if ssh -q -o ConnectTimeout=5 "${SERVER_USER}@${SERVER_HOST}" exit; then
-        log_success "SSH connection successful!"
+    # Only validate connection settings if not running locally
+    if [ "$RUN_LOCALLY" = false ]; then
+        # Check server connection settings
+        [ -z "$SERVER_USER" ] && missing_vars+=("SERVER_USER") && config_valid=false
+        [ -z "$SERVER_HOST" ] && missing_vars+=("SERVER_HOST") && config_valid=false
+        [ -z "$SERVER_PORT" ] && missing_vars+=("SERVER_PORT") && config_valid=false
+    fi
+    
+    # If configuration is incomplete, show a setup dialog
+    if [ "$config_valid" = false ]; then
+        clear
+        echo -e "${YELLOW}=========================================================${NC}"
+        echo -e "${YELLOW}     Initial Configuration Required                      ${NC}"
+        echo -e "${YELLOW}=========================================================${NC}"
+        echo -e "${RED}Some required configuration settings are missing:${NC}"
+        
+        for var in "${missing_vars[@]}"; do
+            echo -e " - ${var}"
+        done
+        
+        echo ""
+        echo -e "Let's set up your configuration now."
+        echo ""
+        
+        configure_settings
+    fi
+}
+
+# Check SSH connection to remote server
+check_ssh_connection() {
+    local silent_mode="$1"
+    
+    if [ "$RUN_LOCALLY" = true ]; then
+        [ "$silent_mode" != "silent" ] && echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] Running in local mode, skipping SSH check.${NC}"
         return 0
-    else
-        log_error "SSH connection failed!"
+    fi
+    
+    [ "$silent_mode" != "silent" ] && echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] Testing SSH connection to ${SERVER_HOST}...${NC}"
+    
+    if ! ssh -o BatchMode=yes -o ConnectTimeout=5 -p "${SERVER_PORT}" "${SERVER_USER}@${SERVER_HOST}" "echo 2>&1" > /dev/null; then
+        [ "$silent_mode" != "silent" ] && echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] Cannot connect to ${SERVER_HOST}.${NC}"
+        [ "$silent_mode" != "silent" ] && echo -e "${YELLOW}Please check your SSH configuration and ensure you have key-based authentication set up.${NC}"
         return 1
     fi
+    
+    [ "$silent_mode" != "silent" ] && echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] [SUCCESS] SSH connection successful!${NC}"
+    
+    # Check if project directory exists
+    if [ -n "$PROJECT_ROOT_DIR" ]; then
+        if ! ssh -p "${SERVER_PORT}" "${SERVER_USER}@${SERVER_HOST}" "test -d ${PROJECT_ROOT_DIR}" > /dev/null 2>&1; then
+            [ "$silent_mode" != "silent" ] && echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] [WARNING] Project directory ${PROJECT_ROOT_DIR} does not exist on remote server.${NC}"
+            
+            # Ask to create directory
+            if [ "$silent_mode" != "silent" ] && get_yes_no "Would you like to create the project directory?"; then
+                ssh -p "${SERVER_PORT}" "${SERVER_USER}@${SERVER_HOST}" "mkdir -p ${PROJECT_ROOT_DIR}"
+                echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] [SUCCESS] Created directory ${PROJECT_ROOT_DIR}${NC}"
+            fi
+        fi
+    fi
+    
+    return 0
 }
 
 # Run command on remote server
 run_remote_command() {
-    local cmd="$1"
-    local silent="${2:-false}"
+    local command="$1"
+    local silent_mode="$2"
     
-    if [ "$silent" = "true" ]; then
-        ssh "${SERVER_USER}@${SERVER_HOST}" "$cmd" > /dev/null 2>&1
-    else
-        ssh "${SERVER_USER}@${SERVER_HOST}" "$cmd"
+    if [ "$RUN_LOCALLY" = true ]; then
+        [ "$silent_mode" != "silent" ] && echo -e "${BLUE}[LOCAL MODE] Would run: ${command}${NC}"
+        return 0
     fi
     
+    [ "$silent_mode" != "silent" ] && echo -e "${BLUE}[REMOTE] ${command}${NC}"
+    
+    # Skip directory checks if command doesn't use DOCKER_DIR
+    if ! echo "$command" | grep -q "cd \${DOCKER_DIR}"; then
+        ssh -p "${SERVER_PORT}" "${SERVER_USER}@${SERVER_HOST}" "$command"
+        return $?
+    fi
+    
+    # Check if DOCKER_DIR exists
+    if ! ssh -p "${SERVER_PORT}" "${SERVER_USER}@${SERVER_HOST}" "test -d ${DOCKER_DIR}" > /dev/null 2>&1; then
+        [ "$silent_mode" != "silent" ] && echo -e "${YELLOW}[WARNING] Docker directory not found: ${DOCKER_DIR}${NC}"
+        
+        if [ "$silent_mode" != "silent" ] && get_yes_no "Would you like to create the Docker directory?"; then
+            ssh -p "${SERVER_PORT}" "${SERVER_USER}@${SERVER_HOST}" "mkdir -p ${DOCKER_DIR}"
+            echo -e "${GREEN}[SUCCESS] Created Docker directory.${NC}"
+        else
+            [ "$silent_mode" != "silent" ] && echo -e "${RED}[ERROR] Cannot execute command without a valid Docker directory.${NC}"
+            return 1
+        fi
+    fi
+    
+    # Now run the actual command
+    ssh -p "${SERVER_PORT}" "${SERVER_USER}@${SERVER_HOST}" "$command"
     return $?
+}
+
+# Get yes/no input
+get_yes_no() {
+    local prompt="$1"
+    local default="${2:-n}"
+    local input
+    
+    if [ "$default" = "y" ]; then
+        read -p "$prompt [Y/n]: " input
+        input=${input:-y}
+    else
+        read -p "$prompt [y/N]: " input
+        input=${input:-n}
+    fi
+    
+    case "$input" in
+        [Yy]*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
 }
 
 # Check if docker-compose.yml exists (for both bot and web)

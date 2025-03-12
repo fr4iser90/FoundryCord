@@ -31,7 +31,7 @@ deploy_bot() {
     echo "Copying Docker configuration files..."
     
     scp "${LOCAL_GIT_DIR}/docker/."* "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/"
-    #scp "${LOCAL_GIT_DIR}/docker/." "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/"
+    scp "${LOCAL_GIT_DIR}/docker/." "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/"
 
     # 4. Deploy the containers
     echo "Deploying Docker containers..."

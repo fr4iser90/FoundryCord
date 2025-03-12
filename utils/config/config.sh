@@ -152,11 +152,24 @@ export BOT_ALEMBIC="${BOT_EXEC} alembic -c infrastructure/database/migrations/al
 export BOT_PYTHON="${BOT_EXEC} python"
 
 # ------------------------------------------------------
-# Load local overrides if they exist
+# Ensure local config doesn't overwrite your settings
 # ------------------------------------------------------
-if [ -f "./utils/config/local_config.sh" ]; then
-    source "./utils/config/local_config.sh"
-    echo "Loaded local configuration overrides"
+# We'll PRESERVE your settings by not loading local_config here
+# but instead save your current settings TO local_config
+# ------------------------------------------------------
+
+# Save current settings if local_config doesn't exist
+if [ ! -f "./utils/config/local_config.sh" ]; then
+    mkdir -p "./utils/config"
+    echo "#!/usr/bin/env bash" > "./utils/config/local_config.sh"
+    echo "" >> "./utils/config/local_config.sh"
+    echo "# Local configuration - AUTOMATICALLY GENERATED" >> "./utils/config/local_config.sh"
+    echo "export SERVER_USER=\"${SERVER_USER}\"" >> "./utils/config/local_config.sh"
+    echo "export SERVER_HOST=\"${SERVER_HOST}\"" >> "./utils/config/local_config.sh"
+    echo "export SERVER_PORT=\"${SERVER_PORT}\"" >> "./utils/config/local_config.sh"
+    echo "export PROJECT_ROOT_DIR=\"${PROJECT_ROOT_DIR}\"" >> "./utils/config/local_config.sh"
+    echo "export ENVIRONMENT=\"${ENVIRONMENT}\"" >> "./utils/config/local_config.sh"
+    echo "# Saved from your config.sh on $(date)" >> "./utils/config/local_config.sh"
 fi
 
 # Print confirmation
