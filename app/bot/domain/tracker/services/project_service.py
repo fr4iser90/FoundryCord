@@ -1,7 +1,7 @@
-from infrastructure.database.models.config import get_session
-from infrastructure.database.repositories.project_repository_impl import ProjectRepository
-from infrastructure.database.repositories.task_repository import TaskRepository
-from infrastructure.logging import logger
+from app.bot.infrastructure.database.models.config import get_session
+from app.bot.infrastructure.database.repositories.project_repository_impl import ProjectRepository
+from app.bot.infrastructure.database.repositories.task_repository import TaskRepository
+from app.bot.infrastructure.logging import logger
 
 async def get_projects_data():
     """Lädt die Projekte und Aufgaben aus der Datenbank"""

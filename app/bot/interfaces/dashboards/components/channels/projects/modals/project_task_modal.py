@@ -1,8 +1,8 @@
 from typing import Optional
 import nextcord
-from infrastructure.logging import logger
-from infrastructure.database.models import Task
-from interfaces.dashboards.components.common.modals import BaseModal
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.database.models import Task
+from app.bot.interfaces.dashboards.components.common.modals import BaseModal
 
 class TaskModal(BaseModal):
     """Modal for task creation/editing"""

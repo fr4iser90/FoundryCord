@@ -4,13 +4,13 @@ import nextcord
 import sys
 import asyncio
 from nextcord.ext import commands
-from infrastructure.config import EnvConfig, ServiceConfig, TaskConfig, ChannelConfig, CategoryConfig, DashboardConfig, ModuleServicesConfig
-from infrastructure.logging import logger
-from infrastructure.factories import BotComponentFactory, ServiceFactory, TaskFactory, DashboardFactory
-from core.lifecycle.lifecycle_manager import BotLifecycleManager
-from infrastructure.database.migrations.init_db import init_db
-from infrastructure.managers.dashboard_manager import DashboardManager
-from infrastructure.config.command_config import CommandConfig
+from app.bot.infrastructure.config import EnvConfig, ServiceConfig, TaskConfig, ChannelConfig, CategoryConfig, DashboardConfig, ModuleServicesConfig
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.factories import BotComponentFactory, ServiceFactory, TaskFactory, DashboardFactory
+from app.bot.core.lifecycle.lifecycle_manager import BotLifecycleManager
+from app.bot.infrastructure.database.migrations.init_db import init_db
+from app.bot.infrastructure.managers.dashboard_manager import DashboardManager
+from app.bot.infrastructure.config.command_config import CommandConfig
 
 # Load environment configuration
 env_config = EnvConfig()

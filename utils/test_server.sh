@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/run/current-system/sw/bin/bash
 
 # Colors for better readability
 GREEN='\033[0;32m'

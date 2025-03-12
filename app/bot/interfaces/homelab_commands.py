@@ -1,7 +1,7 @@
 import nextcord
 from nextcord.ext import commands
-from utils.decorators.auth import admin_or_higher
-from infrastructure.logging import logger
+from app.bot.utils.decorators.auth import admin_or_higher
+from app.bot.infrastructure.logging import logger
 
 class HomelabCommands(commands.Cog):
     def __init__(self, bot):

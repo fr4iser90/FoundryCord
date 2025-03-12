@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from infrastructure.database.models import MetricModel, AlertModel
+from app.bot.infrastructure.database.models import MetricModel, AlertModel
 from datetime import datetime
-from domain.monitoring.models import Metric, Alert
+from app.bot.domain.monitoring.models import Metric, Alert
  
 
 class MonitoringRepository(ABC):

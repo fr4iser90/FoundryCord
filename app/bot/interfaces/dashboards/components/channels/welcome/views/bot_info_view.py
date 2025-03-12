@@ -1,7 +1,7 @@
 import nextcord
 from typing import Optional, Callable, Dict, Any
-from infrastructure.logging import logger
-from interfaces.dashboards.components.common.views import BaseView
+from app.bot.infrastructure.logging import logger
+from app.bot.interfaces.dashboards.components.common.views import BaseView
 
 
 class BotInfoView(BaseView):

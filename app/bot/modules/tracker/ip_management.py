@@ -2,8 +2,8 @@ import os
 import hashlib
 import nextcord
 from nextcord.ext import commands
-from utils.http_client import http_client
-from infrastructure.logging import logger
+from app.bot.utils.http_client import http_client
+from app.bot.infrastructure.logging import logger
 
 class IPManagement(commands.Cog):
     def __init__(self, bot):

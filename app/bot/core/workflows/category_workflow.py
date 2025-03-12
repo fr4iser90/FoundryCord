@@ -1,6 +1,6 @@
 from .base_workflow import BaseWorkflow
-from infrastructure.logging import logger
-from infrastructure.config.constants.category_constants import CATEGORIES
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.config.constants.category_constants import CATEGORIES
 
 class CategoryWorkflow(BaseWorkflow):
     async def initialize(self):
@@ -30,8 +30,8 @@ class CategoryWorkflow(BaseWorkflow):
     async def _verify_category_integrity(self):
         """Verify all categories exist and repair if needed"""
         try:
-            from infrastructure.config.category_config import CategoryConfig
-            from infrastructure.config.constants.category_constants import CATEGORIES
+            from app.bot.infrastructure.config.category_config import CategoryConfig
+            from app.bot.infrastructure.config.constants.category_constants import CATEGORIES
             
             logger.info("Verifying category integrity...")
             

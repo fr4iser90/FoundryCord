@@ -3,7 +3,7 @@ set -e
 
 echo "===== Homelab Discord Bot Initialization ====="
 
-# Check for credentials file from database
+# Check for credentials file from app.bot.database
 CREDS_FILE="/app/bot/database/credentials/db_credentials"
 if [ -f "$CREDS_FILE" ]; then
   echo "Loading database credentials from shared volume..."
@@ -103,7 +103,7 @@ initialize() {
   
   echo "Starting database initialization..."
   # Use the dedicated Python script for database setup
-  if ! python -m infrastructure.database.migrations.init_db; then
+  if ! python -m app.bot.infrastructure.database.migrations.init_db; then
     echo "ERROR: Database initialization failed"
     exit 1
   fi
@@ -116,4 +116,4 @@ initialize
 
 # Start the Discord bot
 echo "Starting Discord bot..."
-exec python -m core.main
+exec python -m app.bot.core.main

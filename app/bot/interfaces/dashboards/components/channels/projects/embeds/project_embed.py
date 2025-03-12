@@ -1,7 +1,7 @@
 from typing import Dict, List, Any
 import nextcord
 from datetime import datetime
-from interfaces.dashboards.components.common.embeds import BaseEmbed
+from app.bot.interfaces.dashboards.components.common.embeds import BaseEmbed
 
 class ProjectEmbed(BaseEmbed):
     """Project specific embed implementations with consistent formatting"""

@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any
 import nextcord
 from datetime import datetime
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 
 class BaseEmbed:
     """Base class for all dashboard embeds"""

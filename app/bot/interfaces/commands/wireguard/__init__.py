@@ -1,13 +1,13 @@
 from .config_commands import WireguardConfigCommands
 from .qr_commands import WireguardQRCommands
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 
 async def setup(bot):
     """Setup function for the WireGuard commands"""
     try:
         # Check if wireguard service exists
         if not hasattr(bot, 'wireguard_service'):
-            from application.services.wireguard.wireguard_service import setup as setup_service
+            from app.bot.application.services.wireguard.wireguard_service import setup as setup_service
             bot.wireguard_service = await setup_service(bot)
         
         # Initialize command interfaces

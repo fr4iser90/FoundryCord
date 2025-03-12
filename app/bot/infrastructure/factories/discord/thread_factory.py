@@ -24,7 +24,7 @@ class ThreadFactory(BaseFactory):
             self._threads[thread_id] = existing_thread
             
             # WICHTIG: Auch für existierende Threads die ID speichern!
-            from infrastructure.config.channel_config import ChannelConfig
+            from app.bot.infrastructure.config.channel_config import ChannelConfig
             await ChannelConfig.set_channel_id(thread_id, existing_thread.id)
             
             return existing_thread

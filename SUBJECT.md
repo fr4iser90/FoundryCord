@@ -34,7 +34,7 @@ This document outlines the implementation strategy for a user-friendly web inter
    - User preferences and settings storage
 
 4. **Bot Integration Layer**
-   - Configuration retrieval from database
+   - Configuration retrieval from app.bot.database
    - Dashboard rendering in Discord channels
    - Real-time updates when configurations change
 

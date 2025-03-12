@@ -153,8 +153,8 @@ app/bot/
 All imports should use absolute paths from the project root:
 ```python
 # Recommended
-from domain.monitoring.services.metric_service import MetricService
-from infrastructure.factories.service.service_factory import ServiceFactory
+from app.bot.domain.monitoring.services.metric_service import MetricService
+from app.bot.infrastructure.factories.service.service_factory import ServiceFactory
 ```
 
 ```python

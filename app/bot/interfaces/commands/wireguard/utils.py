@@ -1,6 +1,6 @@
 
 import os
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 
 def get_user_config(config_path, username):
     user_dir = os.path.join(config_path, f"peer_{username}")

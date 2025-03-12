@@ -1,6 +1,6 @@
 import nextcord
 from typing import Optional, Dict, Any
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 
 class BaseModal(nextcord.ui.Modal):
     """Base class for all dashboard modals"""

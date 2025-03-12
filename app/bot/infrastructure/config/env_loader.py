@@ -1,6 +1,6 @@
 """
 Environment variable loader for configuration
-Separates environment loading from domain models
+Separates environment loading from app.bot.domain models
 """
 import os
 from typing import Dict
@@ -21,7 +21,7 @@ def parse_users(users_str: str) -> Dict[str, str]:
 
 def load_user_groups() -> Dict[str, Dict[str, str]]:
     """Load all user groups from environment variables"""
-    from infrastructure.config.constants.role_constants import DEFAULT_USER_GROUPS
+    from app.bot.infrastructure.config.constants.role_constants import DEFAULT_USER_GROUPS
     
     # Start with default empty groups
     result = DEFAULT_USER_GROUPS.copy()

@@ -1,7 +1,7 @@
 # app/bot/domain/gameservers/models/gameserver_metrics.py
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 
 class GameServerStatus:
     """Status of a game server"""

@@ -1,8 +1,8 @@
 from typing import Dict
-from application.services.dashboard.project_dashboard_service import ProjectDashboardService
-from application.services.dashboard.monitoring_dashboard_service import MonitoringDashboardService
-from application.services.dashboard.welcome_dashboard_service import WelcomeDashboardService
-from infrastructure.logging import logger
+from app.bot.application.services.dashboard.project_dashboard_service import ProjectDashboardService
+from app.bot.application.services.dashboard.monitoring_dashboard_service import MonitoringDashboardService
+from app.bot.application.services.dashboard.welcome_dashboard_service import WelcomeDashboardService
+from app.bot.infrastructure.logging import logger
 
 class DashboardConfig:
     @staticmethod

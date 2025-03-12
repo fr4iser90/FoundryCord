@@ -1,5 +1,5 @@
 # app/bot/core/services/factories/command_sync_service.py
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 import asyncio
 import os
 import time

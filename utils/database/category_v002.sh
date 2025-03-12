@@ -35,8 +35,8 @@ echo "Erstelle temporäre Python-Datei zur Datenbank-Reparatur..."
 cat > /tmp/fix_category_mapping.py << 'EOL'
 import asyncio
 from sqlalchemy import text
-from infrastructure.database.models.config import initialize_engine
-from infrastructure.logging import logger
+from app.bot.infrastructure.database.models.config import initialize_engine
+from app.bot.infrastructure.logging import logger
 
 async def fix_category_mapping_table():
     try:

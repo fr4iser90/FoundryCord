@@ -1,10 +1,10 @@
-from infrastructure.database.models.config import initialize_engine, initialize_session, engine, AsyncSession
+from app.bot.infrastructure.database.models.config import initialize_engine, initialize_session, engine, AsyncSession
 from sqlalchemy import text
 from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import sessionmaker
-from infrastructure.logging.logger import logger
+from app.bot.infrastructure.logging.logger import logger
 
 class DatabaseConnection:
     """Connection wrapper for database operations"""
@@ -16,7 +16,7 @@ class DatabaseConnection:
     async def ensure_initialized(self):
         """Ensure the engine and session factory are initialized"""
         if self.engine is None:
-            from infrastructure.database.models.config import engine, initialize_engine
+            from app.bot.infrastructure.database.models.config import engine, initialize_engine
             if engine is None:
                 await initialize_engine()
             self.engine = engine

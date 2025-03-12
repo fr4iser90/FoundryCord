@@ -1,9 +1,9 @@
 from typing import Dict, List, Optional, Any
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 from nextcord.ext import commands
 import nextcord
 from nextcord import Message
-from interfaces.dashboards.controller.welcome_dashboard import WelcomeDashboardController
+from app.bot.interfaces.dashboards.controller.welcome_dashboard import WelcomeDashboardController
 
 class WelcomeDashboardService:
     """Service für die Geschäftslogik des Welcome Dashboards"""

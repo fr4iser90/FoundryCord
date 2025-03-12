@@ -1,22 +1,22 @@
 from typing import Dict, List, Optional, Any
 import nextcord
 from datetime import datetime
-from infrastructure.logging import logger
-from infrastructure.database.models import Project
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.database.models import Project
 
 # Importieren Sie die vorhandenen Komponenten
-from interfaces.dashboards.components.channels.projects.buttons.project_buttons import ProjectActionButtons
-from interfaces.dashboards.components.channels.projects.buttons.project_task_buttons import TaskActionButtons
-from interfaces.dashboards.components.channels.projects.modals.project_modal import ProjectModal
-from interfaces.dashboards.components.channels.projects.modals.project_task_modal import TaskModal
-from interfaces.dashboards.components.channels.projects.views.project_dashboard_view import ProjectDashboardView
-from interfaces.dashboards.components.channels.projects.views.project_details_view import ProjectDetailsView
-from interfaces.dashboards.components.channels.projects.views.project_task_list_view import TaskListView
-from interfaces.dashboards.components.channels.projects.views.project_thread_view import ProjectThreadView
-from interfaces.dashboards.components.common.views.confirmation_view import ConfirmationView
-from interfaces.dashboards.components.channels.projects.views.status_select_view import StatusSelectView
-from interfaces.dashboards.controller.base_dashboard import BaseDashboardController
-from interfaces.dashboards.components.common.embeds import DashboardEmbed
+from app.bot.interfaces.dashboards.components.channels.projects.buttons.project_buttons import ProjectActionButtons
+from app.bot.interfaces.dashboards.components.channels.projects.buttons.project_task_buttons import TaskActionButtons
+from app.bot.interfaces.dashboards.components.channels.projects.modals.project_modal import ProjectModal
+from app.bot.interfaces.dashboards.components.channels.projects.modals.project_task_modal import TaskModal
+from app.bot.interfaces.dashboards.components.channels.projects.views.project_dashboard_view import ProjectDashboardView
+from app.bot.interfaces.dashboards.components.channels.projects.views.project_details_view import ProjectDetailsView
+from app.bot.interfaces.dashboards.components.channels.projects.views.project_task_list_view import TaskListView
+from app.bot.interfaces.dashboards.components.channels.projects.views.project_thread_view import ProjectThreadView
+from app.bot.interfaces.dashboards.components.common.views.confirmation_view import ConfirmationView
+from app.bot.interfaces.dashboards.components.channels.projects.views.status_select_view import StatusSelectView
+from app.bot.interfaces.dashboards.controller.base_dashboard import BaseDashboardController
+from app.bot.interfaces.dashboards.components.common.embeds import DashboardEmbed
 
 class ProjectDashboardController(BaseDashboardController):
     """UI class for displaying the project dashboard"""

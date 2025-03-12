@@ -1,11 +1,11 @@
 from typing import Dict, Optional, List
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 from nextcord import TextChannel
-from infrastructure.discord.channel_setup_service import ChannelSetupService
-from infrastructure.database.models import ChannelMapping
-from infrastructure.database.models.config import get_session
-from infrastructure.config.constants.channel_constants import CHANNELS
-from infrastructure.config.constants.dashboard_constants import DASHBOARD_MAPPINGS
+from app.bot.infrastructure.discord.channel_setup_service import ChannelSetupService
+from app.bot.infrastructure.database.models import ChannelMapping
+from app.bot.infrastructure.database.models.config import get_session
+from app.bot.infrastructure.config.constants.channel_constants import CHANNELS
+from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOARD_MAPPINGS
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
@@ -28,9 +28,9 @@ class ChannelConfig:
             cls.DISCORD_SERVER = bot.env_config.guild_id
             
             # Import hier um zirkuläre Imports zu vermeiden
-            from infrastructure.discord.channel_setup_service import ChannelSetupService
+            from app.bot.infrastructure.discord.channel_setup_service import ChannelSetupService
             
-            # Load existing channel mappings from database
+            # Load existing channel mappings from app.bot.database
             async for session in get_session():
                 result = await session.execute(select(ChannelMapping))
                 mappings = result.scalars().all()

@@ -396,7 +396,7 @@ class TestAuthService:
         assert "response_type=code" in url
         assert "scope=identify+email" in url
 
-    @patch("app.bot.interfaces.web.services.auth_service.httpx.AsyncClient.post")
+    @patch("interfaces.web.services.auth_service.httpx.AsyncClient.post")
     async def test_token_exchange(self, mock_post, auth_service):
         # Mock the Discord API response
         mock_response = AsyncMock()
@@ -415,7 +415,7 @@ class TestAuthService:
         assert result["access_token"] == "discord_test_token"
         mock_post.assert_called_once()
 
-    @patch("app.bot.interfaces.web.services.auth_service.httpx.AsyncClient.get")
+    @patch("interfaces.web.services.auth_service.httpx.AsyncClient.get")
     async def test_get_user_info(self, mock_get, auth_service):
         # Mock the Discord API user info response
         mock_response = AsyncMock()

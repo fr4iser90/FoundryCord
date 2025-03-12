@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
-from infrastructure.database.models import MetricModel
+from app.bot.infrastructure.database.models import MetricModel
 from .collector_interface import CollectorInterface
 
 class ServiceCollectorInterface(CollectorInterface):

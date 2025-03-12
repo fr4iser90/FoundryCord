@@ -1,11 +1,11 @@
 import nextcord
-from utils.decorators.auth import admin_or_higher
-from infrastructure.logging import logger
-from infrastructure.database.models.config import get_session
-from infrastructure.database.repositories.project_repository_impl import ProjectRepository
-from infrastructure.database.repositories.task_repository import TaskRepository
-from domain.tracker.services.project_service import get_projects_data
-from interfaces.dashboards.controller.project_dashboard import create_task_embed
+from app.bot.utils.decorators.auth import admin_or_higher
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.database.models.config import get_session
+from app.bot.infrastructure.database.repositories.project_repository_impl import ProjectRepository
+from app.bot.infrastructure.database.repositories.task_repository import TaskRepository
+from app.bot.domain.tracker.services.project_service import get_projects_data
+from app.bot.interfaces.dashboards.controller.project_dashboard import create_task_embed
 
 async def check_tracker_thread(interaction):
     """Überprüft, ob der Befehl im Projekt-Tracker-Thread ausgeführt wird"""

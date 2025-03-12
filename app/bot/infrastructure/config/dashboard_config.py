@@ -1,6 +1,6 @@
 from typing import Dict, Any
-from infrastructure.logging import logger
-from infrastructure.config.constants.dashboard_constants import DASHBOARD_MAPPINGS
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOARD_MAPPINGS
 
 class DashboardConfig:
     @staticmethod

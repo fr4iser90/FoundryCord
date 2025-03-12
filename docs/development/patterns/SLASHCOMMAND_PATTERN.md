@@ -158,7 +158,7 @@ async def setup(bot):
     try:
         # Initialize services if needed
         if not hasattr(bot, 'required_service'):
-            from services.required import setup as setup_service
+            from app.bot.services.required import setup as setup_service
             bot.required_service = await setup_service(bot)
             
         # Create and register command

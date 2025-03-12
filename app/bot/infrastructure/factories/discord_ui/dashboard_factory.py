@@ -2,8 +2,8 @@ from typing import List, Dict, Any, Optional
 import nextcord
 from ..base.base_factory import BaseFactory
 import logging
-from infrastructure.config.constants.dashboard_constants import DASHBOARD_SERVICES
-from infrastructure.logging import logger
+from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOARD_SERVICES
+from app.bot.infrastructure.logging import logger
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +156,7 @@ class DashboardFactory(BaseFactory):
         try:
             # Ensure dashboard manager exists
             if not hasattr(self.bot, 'dashboard_manager'):
-                from infrastructure.managers.dashboard_manager import DashboardManager
+                from app.bot.infrastructure.managers.dashboard_manager import DashboardManager
                 logger.warning("Dashboard manager not initialized, creating now")
                 self.bot.dashboard_manager = await DashboardManager.setup(self.bot)
             

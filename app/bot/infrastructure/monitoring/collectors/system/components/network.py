@@ -1,7 +1,7 @@
 import aiohttp
 import psutil
 import logging
-from infrastructure.config.feature_flags import OFFLINE_MODE
+from app.bot.infrastructure.config.feature_flags import OFFLINE_MODE
 
 logger = logging.getLogger('homelab_bot')
 

@@ -2,7 +2,7 @@ from typing import List
 from .services.critical_services_config import CriticalServicesConfig
 from .services.module_services_config import ModuleServicesConfig
 from .services.dashboard_config import DashboardConfig
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 
 class ServiceConfig:
     @staticmethod

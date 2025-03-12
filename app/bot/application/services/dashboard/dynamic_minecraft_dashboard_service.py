@@ -4,22 +4,22 @@ import nextcord
 import asyncio
 from datetime import datetime, timedelta
 
-from infrastructure.logging import logger
-from infrastructure.factories.discord_ui.dashboard_factory import DashboardFactory
-from infrastructure.config.channel_config import ChannelConfig
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.factories.discord_ui.dashboard_factory import DashboardFactory
+from app.bot.infrastructure.config.channel_config import ChannelConfig
 
-from infrastructure.monitoring.collectors.service.config.game_services import get_pufferpanel_services, get_standalone_services
-from infrastructure.monitoring.collectors.service.config.web_services import get_public_services, get_private_services
-from infrastructure.monitoring.checkers.game_service_checker import check_pufferpanel_games, check_standalone_games
-from infrastructure.monitoring.checkers.web_service_checker import check_web_services
-from infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
+from app.bot.infrastructure.monitoring.collectors.service.config.game_services import get_pufferpanel_services, get_standalone_services
+from app.bot.infrastructure.monitoring.collectors.service.config.web_services import get_public_services, get_private_services
+from app.bot.infrastructure.monitoring.checkers.game_service_checker import check_pufferpanel_games, check_standalone_games
+from app.bot.infrastructure.monitoring.checkers.web_service_checker import check_web_services
+from app.bot.infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
 
-from interfaces.dashboards.components.channels.gamehub.views import GameHubView
-from interfaces.dashboards.controller.base_dashboard import BaseDashboardController
-from interfaces.dashboards.controller.minecraft_server_dashboard import MinecraftServerDashboardController
+from app.bot.interfaces.dashboards.components.channels.gamehub.views import GameHubView
+from app.bot.interfaces.dashboards.controller.base_dashboard import BaseDashboardController
+from app.bot.interfaces.dashboards.controller.minecraft_server_dashboard import MinecraftServerDashboardController
 
-from infrastructure.database.repositories.category_repository_impl import CategoryRepository
-from infrastructure.database.models import CategoryMapping
+from app.bot.infrastructure.database.repositories.category_repository_impl import CategoryRepository
+from app.bot.infrastructure.database.models import CategoryMapping
 
 class DynamicMinecraftDashboardService:
     """Service for creating individual Minecraft server dashboards"""

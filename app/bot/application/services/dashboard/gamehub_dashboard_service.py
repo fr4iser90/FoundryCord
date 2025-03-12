@@ -2,11 +2,11 @@
 from typing import Dict, Any, List
 from nextcord.ext import commands
 import asyncio
-from infrastructure.logging import logger
-from infrastructure.factories.discord_ui.dashboard_factory import DashboardFactory
-from infrastructure.factories.monitoring.collector_factory import CollectorFactory
-from interfaces.dashboards.controller.gamehub_dashboard import GameHubDashboardController
-from infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.factories.discord_ui.dashboard_factory import DashboardFactory
+from app.bot.infrastructure.factories.monitoring.collector_factory import CollectorFactory
+from app.bot.interfaces.dashboards.controller.gamehub_dashboard import GameHubDashboardController
+from app.bot.infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
 
 
 class GameHubDashboardService:

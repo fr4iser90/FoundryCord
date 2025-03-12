@@ -1,10 +1,10 @@
-from infrastructure.database.models import MetricModel, AlertModel
-from infrastructure.monitoring.collectors.monitoring import collect_all, system_collect_all
-from infrastructure.repositories.monitoring_repository import MonitoringRepository
+from app.bot.infrastructure.database.models import MetricModel, AlertModel
+from app.bot.infrastructure.monitoring.collectors.monitoring import collect_all, system_collect_all
+from app.bot.infrastructure.repositories.monitoring_repository import MonitoringRepository
 import logging
-from infrastructure.logging import logger
-from infrastructure.monitoring.collectors.system import SystemCollector
-from infrastructure.monitoring.collectors.service import ServiceCollector
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.monitoring.collectors.system import SystemCollector
+from app.bot.infrastructure.monitoring.collectors.service import ServiceCollector
 
 
 class MetricService:

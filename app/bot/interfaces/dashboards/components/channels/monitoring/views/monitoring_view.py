@@ -1,9 +1,9 @@
 import nextcord
 from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime, timedelta
-from infrastructure.logging import logger
-from interfaces.dashboards.components.common.views import BaseView
-from interfaces.dashboards.components.common.buttons import RefreshButton
+from app.bot.infrastructure.logging import logger
+from app.bot.interfaces.dashboards.components.common.views import BaseView
+from app.bot.interfaces.dashboards.components.common.buttons import RefreshButton
 
 class MonitoringView(BaseView):
     """View for system monitoring dashboard with styled metrics and sections"""

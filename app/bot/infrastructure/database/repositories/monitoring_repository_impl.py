@@ -1,9 +1,9 @@
-from domain.monitoring.repositories.monitoring_repository import MonitoringRepository
-from domain.monitoring.models.metric import Metric
-from domain.monitoring.models.alert import Alert
+from app.bot.domain.monitoring.repositories.monitoring_repository import MonitoringRepository
+from app.bot.domain.monitoring.models.metric import Metric
+from app.bot.domain.monitoring.models.alert import Alert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, desc, func
-from infrastructure.database.models import MetricModel, AlertModel
+from app.bot.infrastructure.database.models import MetricModel, AlertModel
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 

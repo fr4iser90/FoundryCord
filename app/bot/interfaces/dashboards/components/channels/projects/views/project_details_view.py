@@ -1,7 +1,7 @@
 import nextcord
 from datetime import datetime
-from infrastructure.logging import logger
-from interfaces.dashboards.components.common.views import BaseView
+from app.bot.infrastructure.logging import logger
+from app.bot.interfaces.dashboards.components.common.views import BaseView
 
 class ProjectDetailsView(BaseView):
     def __init__(self, project, dashboard):

@@ -2,8 +2,8 @@ from nextcord.ext import commands
 import nextcord
 import os
 import tempfile
-from infrastructure.encryption.encryption_service import EncryptionService
-from infrastructure.logging import logger
+from app.bot.infrastructure.encryption.encryption_service import EncryptionService
+from app.bot.infrastructure.logging import logger
 import asyncio
 
 class EncryptionCommands(commands.Cog):

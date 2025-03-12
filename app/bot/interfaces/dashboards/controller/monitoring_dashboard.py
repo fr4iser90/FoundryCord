@@ -1,15 +1,15 @@
 from typing import Dict, Any, Optional, List
 import nextcord
 from datetime import datetime, timedelta
-from infrastructure.logging import logger
-from infrastructure.config.channel_config import ChannelConfig
-from interfaces.dashboards.components.channels.monitoring.embeds import MonitoringEmbed
-from interfaces.dashboards.components.ui.table_builder import UnicodeTableBuilder
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.config.channel_config import ChannelConfig
+from app.bot.interfaces.dashboards.components.channels.monitoring.embeds import MonitoringEmbed
+from app.bot.interfaces.dashboards.components.ui.table_builder import UnicodeTableBuilder
 from .base_dashboard import BaseDashboardController
-from interfaces.dashboards.components.channels.monitoring.views import MonitoringView
-from domain.monitoring.models.metric import SystemMetrics
-from interfaces.dashboards.components.common.embeds import DashboardEmbed
-from interfaces.dashboards.components.common.buttons import RefreshButton
+from app.bot.interfaces.dashboards.components.channels.monitoring.views import MonitoringView
+from app.bot.domain.monitoring.models.metric import SystemMetrics
+from app.bot.interfaces.dashboards.components.common.embeds import DashboardEmbed
+from app.bot.interfaces.dashboards.components.common.buttons import RefreshButton
 
 
 class MonitoringDashboardController(BaseDashboardController):

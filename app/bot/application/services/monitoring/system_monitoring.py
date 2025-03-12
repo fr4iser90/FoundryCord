@@ -3,9 +3,9 @@ import requests
 import socket
 from dotenv import load_dotenv
 import os
-from utils.http_client import http_client
-from infrastructure.logging import logger
-from infrastructure.config.feature_flags import DOMAIN, OFFLINE_MODE, ENABLE_DOMAIN_CHECKS
+from app.bot.utils.http_client import http_client
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.config.feature_flags import DOMAIN, OFFLINE_MODE, ENABLE_DOMAIN_CHECKS
 
 # Load environment variables from .env file
 load_dotenv()

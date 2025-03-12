@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from collections import defaultdict
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 
 class RateLimitingService:
     def __init__(self, bot):

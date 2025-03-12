@@ -97,7 +97,7 @@ alembic upgrade head
 
 ```python
 from .base_workflow import BaseWorkflow
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 from alembic.config import Config
 from alembic import command
 class DatabaseWorkflow(BaseWorkflow):
@@ -107,7 +107,7 @@ logger.debug("Starting database workflow initialization")
 # Run database migrations using Alembic
 await self.run_migrations()
 # Migrate existing users if needed (keep this as a separate step)
-from infrastructure.database.migrations.init_db import migrate_existing_users
+from app.bot.infrastructure.database.migrations.init_db import migrate_existing_users
 await migrate_existing_users()
 # Verify database integrity
 await self.verify_database_integrity()

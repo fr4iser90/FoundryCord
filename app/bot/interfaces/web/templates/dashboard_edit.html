@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Dashboard - HomeLab Discord Bot{% endblock %}
+
+{% block content %}
+<div class="flex flex-col">
+    <h1 class="text-3xl font-bold mb-6">Edit Dashboard</h1>
+    
+    <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div class="bg-indigo-600 px-4 py-2">
+            <h2 class="text-lg font-semibold">Dashboard Details</h2>
+        </div>
+        <div class="p-6">
+            <form method="post" action="/dashboard/{{ dashboard.id }}/edit" class="space-y-6">
+                <div>
+                    <label for="title" class="block text-sm font-medium text-gray-400 mb-1">Dashboard Title <span class="text-red-400">*</span></label>
+                    <input type="text" id="title" name="title" value="{{ dashboard.title }}" required class="w-full bg-gray-700 border border-gray-600 rounded py-2 px-3 text-white">
+                </div>
+                
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-400 mb-1">Description</label>
+                    <textarea id="description" name="description" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded py-2 px-3 text-white">{{ dashboard.description }}</textarea>
+                </div>
+                
+                <div>
+                    <label for="dashboardType" class="block text-sm font-medium text-gray-400 mb-1">Dashboard Type <span class="text-red-400">*</span></label>
+                    <select id="dashboardType" name="dashboard_type" required class="w-full bg-gray-700 border border-gray-600 rounded py-2 px-3 text-white">
+                        <option value="system" {% if dashboard.dashboard_type == 'system' %}selected{% endif %}>System Monitoring</option>
+                        <option value="services" {% if dashboard.dashboard_type == 'services' %}selected{% endif %}>Services Status</option>
+                        <option value="network" {% if dashboard.dashboard_type == 'network' %}selected{% endif %}>Network Monitoring</option>
+                        <option value="custom" {% if dashboard.dashboard_type == 'custom' %}selected{% endif %}>Custom</option>
+                    </select>
+                </div>
+                
+                <div class="flex items-center">
+                    <input id="isPublic" name="is_public" type="checkbox" {% if dashboard.is_public %}checked{% endif %} class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 rounded bg-gray-700">
+                    <label for="isPublic" class="ml-2 block text-sm text-white">
+                        Make dashboard public
+                    </label>
+                </div>
+                
+                <div class="pt-4 border-t border-gray-700">
+                    <div class="flex space-x-4">
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded">
+                            Save Changes
+                        </button>
+                        <a href="/dashboard/{{ dashboard.id }}" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded">
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="mt-8 bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div class="bg-indigo-600 px-4 py-2 flex justify-between items-center">
+            <h2 class="text-lg font-semibold">Dashboard Components</h2>
+            <button id="addComponentBtn" class="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-1 px-3 rounded">
+                Add Component
+            </button>
+        </div>
+        <div class="p-6">
+            <div id="componentList" class="space-y-4">
+                {% for component in components %}
+                <div class="bg-gray-700 p-4 rounded component-item" data-component-id="{{ component.id }}">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-semibold">{{ component.title }}</h3>
+                        <div class="flex space-x-2">
+                            <button class="edit-component-btn text-blue-400 hover:text-blue-300">Edit</button>
+                            <button class="delete-component-btn text-red-400 hover:text-red-300">Delete</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-400">Type:</span> {{ component.component_type }}
+                        </div>
+                        <div>
+                            <span class="text-gray-400">Size:</span> {{ component.grid_col_span }}x{{ component.grid_row_span }}
+                        </div>
+                        <div>
+                            <span class="text-gray-400">Position:</span> Col {{ component.grid_col }}, Row {{ component.grid_row }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                {% if not components %}
+                <div class="text-center text-gray-400 py-8">
+                    <p class="mb-4">No components added yet.</p>
+                    <p>Click "Add Component" to start building your dashboard.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Component Modal -->
+<div id="componentModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-auto">
+        <h3 id="modalTitle" class="text-xl font-bold mb-4">Add Component</h3>
+        <form id="componentForm" class="space-y-4">
+            <input type="hidden" id="componentId" name="componentId" value="">
+            <div>
+                <label for="componentTitle" class="block text-sm font-medium text-gray-400 mb-1">Title <span class="text-red-400">*</span></label>
+                <input type="text" id="componentTitle" name="title" required class="w-full bg-gray-700 border border-gray-600 rounded py-2 px-3 text-white">
+            </div>
+            
+            <div>
+                <label for="componentType" class="block text-sm font-medium text-gray-400 mb-1">Component Type <span class="text-red-400">*</span></label>
+                <select id="componentType" name="component_type" required class="w-full bg-gray-700 border border-gray-600 rounded py-2 px-3 text-white">
+                    <option value="chart">Chart</option>
+                    <option value="status">Status</option>
+                    <option value="table">Table</option>
+                    <option value="logs">Logs</option>
+                </select>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="gridCol" class="block text-sm font-medium text-gray-400 mb-1">Column <span class="text-red-400">*</span></label>
+                    <input type="number" id="gridCol" name="grid_col" min="1" max="12" required class="w-full bg-gray-700 border border-gray-600 rounded py-2 px-3 text-white">
+                </div>
+                <div>
+                    <label for="gridRow" class="block text-sm font-medium text-gray-400 mb-1">Row <span class="text-red-400">*</span></label>
+                    <input type="number" id="gridRow" name="grid_row" min="1" max="12" required class="w-full bg-gray-700 border border-gray-600 rounded py-2 px-3 text-white">
+                </div>
+                <div>
+                    <label for="gridColSpan" class="block text-sm font-medium text-gray-400 mb-1">Width <span class="text-red-400">*</span></label>
+                    <input type="number" id="gridColSpan" name="grid_col_span" min="1" max="12" required class="w-full bg-gray-700 border border-gray-600 rounded py-2 px-3 text-white">
+                </div>
+                <div>
+                    <label for="gridRowSpan" class="block text-sm font-medium text-gray-400 mb-1">Height <span class="text-red-400">*</span></label>
+                    <input type="number" id="gridRowSpan" name="grid_row_span" min="1" max="12" required class="w-full bg-gray-700 border border-gray-600 rounded py-2 px-3 text-white">
+                </div>
+            </div>
+            
+            <div>
+                <label for="dataSource" class="block text-sm font-medium text-gray-400 mb-1">Data Source <span class="text-red-400">*</span></label>
+                <select id="dataSource" name="data_source" required class="w-full bg-gray-700 border border-gray-600 rounded py-2 px-3 text-white">
+                    <option value="system_cpu">System CPU</option>
+                    <option value="system_memory">System Memory</option>
+                    <option value="system_disk">System Disk</option>
+                    <option value="system_network">System Network</option>
+                    <option value="services_status">Services Status</option>
+                    <option value="system_logs">System Logs</option>
+                </select>
+            </div>
+            
+            <div id="advancedSettingsToggle" class="text-blue-400 hover:text-blue-300 cursor-pointer text-sm">
+                Show Advanced Settings
+            </div>
+            
+            <div id="advancedSettings" class="hidden space-y-4 pt-2 border-t border-gray-700">
+                <div>
+                    <label for="refreshInterval" class="block text-sm font-medium text-gray-400 mb-1">Refresh Interval (seconds)</label>
+                    <input type="number" id="refreshInterval" name="refresh_interval" min="5" class="w-full bg-gray-700 border border-gray-600 rounded py-2 px-3 text-white">
+                </div>
+                
+                <div>
+                    <label for="configJson" class="block text-sm font-medium text-gray-400 mb-1">Component Configuration (JSON)</label>
+                    <textarea id="configJson" name="config_json" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded py-2 px-3 text-white font-mono text-xs"></textarea>
+                    <div class="text-xs text-gray-400 mt-1">Advanced users only. Configuration in JSON format.</div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 pt-4">
+                <button type="button" id="cancelComponent" class="bg-gray-600 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded">
+                    Cancel
+                </button>
+                <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded">
+                    Save Component
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Component modal elements
+        const componentModal = document.getElementById('componentModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const componentForm = document.getElementById('componentForm');
+        const addComponentBtn = document.getElementById('addComponentBtn');
+        const cancelComponent = document.getElementById('cancelComponent');
+        const advancedSettingsToggle = document.getElementById('advancedSettingsToggle');
+        const advancedSettings = document.getElementById('advancedSettings');
+        
+        // Edit and delete buttons
+        const editButtons = document.querySelectorAll('.edit-component-btn');
+        const deleteButtons = document.querySelectorAll('.delete-component-btn');
+        
+        // Toggle advanced settings
+        advancedSettingsToggle.addEventListener('click', function() {
+            if (advancedSettings.classList.contains('hidden')) {
+                advancedSettings.classList.remove('hidden');
+                advancedSettingsToggle.textContent = 'Hide Advanced Settings';
+            } else {
+                advancedSettings.classList.add('hidden');
+                advancedSettingsToggle.textContent = 'Show Advanced Settings';
+            }
+        });
+        
+        // Show add component modal
+        addComponentBtn.addEventListener('click', function() {
+            modalTitle.textContent = 'Add Component';
+            componentForm.reset();
+            document.getElementById('componentId').value = '';
+            componentModal.classList.remove('hidden');
+        });
+        
+        // Hide component modal
+        cancelComponent.addEventListener('click', function() {
+            componentModal.classList.add('hidden');
+        });
+        
+        // Handle component form submission
+        componentForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // In a real implementation, this would send an AJAX request to save the component
+            // For now, we'll just close the modal and reload the page
+            componentModal.classList.add('hidden');
+            
+            // Simulate API request
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        });
+        
+        // Edit component functionality
+        editButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const componentItem = this.closest('.component-item');
+                const componentId = componentItem.dataset.componentId;
+                
+                // In a real implementation, this would fetch the component data
+                // For now, we'll just show the modal with placeholder data
+                modalTitle.textContent = 'Edit Component';
+                document.getElementById('componentId').value = componentId;
+                document.getElementById('componentTitle').value = 'Component ' + componentId;
+                componentModal.classList.remove('hidden');
+            });
+        });
+        
+        // Delete component functionality
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const componentItem = this.closest('.component-item');
+                const componentId = componentItem.dataset.componentId;
+                
+                if (confirm('Are you sure you want to delete this component?')) {
+                    // In a real implementation, this would send an AJAX request to delete the component
+                    // For now, we'll just remove the element from the DOM
+                    componentItem.remove();
+                }
+            });
+        });
+    });
+</script>
+{% endblock %} 

@@ -1,6 +1,6 @@
 import nextcord
 from typing import List, Optional, Callable, Any
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 
 class BaseSelector(nextcord.ui.Select):
     """Base class for all dashboard selectors"""

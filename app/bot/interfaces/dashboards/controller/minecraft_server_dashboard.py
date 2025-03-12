@@ -2,12 +2,12 @@ from typing import Dict, Any, Optional
 import nextcord
 from datetime import datetime
 
-from infrastructure.logging import logger
-from infrastructure.config.channel_config import ChannelConfig
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.config.channel_config import ChannelConfig
 from .base_dashboard import BaseDashboardController
-from interfaces.dashboards.components.channels.gamehub.views import GameHubView
-from infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
-from interfaces.dashboards.components.common.embeds import ErrorEmbed, DashboardEmbed
+from app.bot.interfaces.dashboards.components.channels.gamehub.views import GameHubView
+from app.bot.infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
+from app.bot.interfaces.dashboards.components.common.embeds import ErrorEmbed, DashboardEmbed
 
 
 class MinecraftServerDashboardController(BaseDashboardController):

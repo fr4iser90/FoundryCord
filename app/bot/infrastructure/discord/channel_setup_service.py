@@ -1,8 +1,8 @@
 from typing import Dict, Optional
 from nextcord import TextChannel, Guild
-from infrastructure.logging import logger
-from infrastructure.factories.discord import ChannelFactory, ThreadFactory
-from infrastructure.config.constants.channel_constants import CHANNELS
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.factories.discord import ChannelFactory, ThreadFactory
+from app.bot.infrastructure.config.constants.channel_constants import CHANNELS
 import asyncio
 
 class ChannelSetupService:

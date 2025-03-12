@@ -1,8 +1,8 @@
 from typing import List
-from application.services.monitoring.system_monitoring import setup as setup_system_monitoring
+from app.bot.application.services.monitoring.system_monitoring import setup as setup_system_monitoring
 from modules.tracker.ip_management import setup as setup_ip_management
-from application.services.wireguard import setup as setup_wireguard
-from infrastructure.logging import logger
+from app.bot.application.services.wireguard import setup as setup_wireguard
+from app.bot.infrastructure.logging import logger
 
 class ModuleServicesConfig:
     @staticmethod

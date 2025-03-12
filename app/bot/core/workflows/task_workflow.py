@@ -1,5 +1,5 @@
 from .base_workflow import BaseWorkflow
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 
 class TaskWorkflow(BaseWorkflow):
     async def initialize(self):

@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 import jwt as PyJWT
 import os
-from infrastructure.logging import logger
-from infrastructure.managers.key_manager import KeyManager
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.managers.key_manager import KeyManager
 
 class AuthenticationService:
     def __init__(self, bot):

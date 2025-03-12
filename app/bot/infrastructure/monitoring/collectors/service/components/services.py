@@ -2,11 +2,11 @@
 import logging
 import asyncio
 
-from infrastructure.monitoring.collectors.service.config.game_services import get_pufferpanel_services, get_standalone_services
-from infrastructure.monitoring.collectors.service.config.web_services import get_public_services, get_private_services
-from infrastructure.monitoring.checkers.game_service_checker import check_pufferpanel_games, check_standalone_games
-from infrastructure.monitoring.checkers.web_service_checker import check_web_services
-from infrastructure.logging import logger
+from app.bot.infrastructure.monitoring.collectors.service.config.game_services import get_pufferpanel_services, get_standalone_services
+from app.bot.infrastructure.monitoring.collectors.service.config.web_services import get_public_services, get_private_services
+from app.bot.infrastructure.monitoring.checkers.game_service_checker import check_pufferpanel_games, check_standalone_games
+from app.bot.infrastructure.monitoring.checkers.web_service_checker import check_web_services
+from app.bot.infrastructure.logging import logger
 
 async def check_services_status(include_private=False):
     """Überprüft den Status wichtiger Dienste."""

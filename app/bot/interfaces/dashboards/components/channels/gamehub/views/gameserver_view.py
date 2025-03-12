@@ -2,10 +2,10 @@
 import nextcord
 from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime
-from infrastructure.logging import logger
-from interfaces.dashboards.components.common.views import BaseView
-from interfaces.dashboards.components.common.buttons import RefreshButton
-from interfaces.dashboards.components.channels.gamehub.buttons import GameServerButton
+from app.bot.infrastructure.logging import logger
+from app.bot.interfaces.dashboards.components.common.views import BaseView
+from app.bot.interfaces.dashboards.components.common.buttons import RefreshButton
+from app.bot.interfaces.dashboards.components.channels.gamehub.buttons import GameServerButton
 
 class GameHubView(BaseView):
     """View for game server dashboard with styled metrics and sections"""
@@ -100,7 +100,7 @@ class GameHubView(BaseView):
                     if "minecraft" in str(name).lower():
                         try:
                             # Import inside the function to avoid circular imports
-                            from infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
+                            from app.bot.infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
                             
                             # Get domain (usually fr4iser.com)
                             domain = self.metrics.get('domain', 'fr4iser.com')
@@ -267,7 +267,7 @@ class GameHubView(BaseView):
                 
                 # First, try direct API check to ensure we have the latest data
                 try:
-                    from infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
+                    from app.bot.infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
                     domain = self.metrics.get('domain', 'fr4iser.com')
                     
                     # Get all servers and find Minecraft servers with their ports

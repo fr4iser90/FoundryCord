@@ -1,7 +1,7 @@
 import nextcord
 from typing import Optional, Callable, Coroutine
 from .base_button import BaseButton
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 
 class RefreshButton(BaseButton):
     """Standard refresh button implementation"""

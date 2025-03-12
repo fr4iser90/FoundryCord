@@ -1,5 +1,5 @@
-from infrastructure.logging import logger
-from domain.wireguard.config_manager import WireguardConfigManager
+from app.bot.infrastructure.logging import logger
+from app.bot.domain.wireguard.config_manager import WireguardConfigManager
 
 class WireguardService:
     """Application service for WireGuard functionality"""

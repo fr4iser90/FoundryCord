@@ -1,6 +1,6 @@
 import nextcord
 from typing import Dict, Any
-from interfaces.dashboards.components.common.buttons.base_button import BaseButton
+from app.bot.interfaces.dashboards.components.common.buttons.base_button import BaseButton
 
 class BotInfoButtons:
     """Button components for bot info view"""

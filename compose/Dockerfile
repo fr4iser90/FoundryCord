@@ -1,18 +1,24 @@
 FROM python:3.9-slim
 
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
 WORKDIR /app/bot
 
-# Kopiere den gesamten Inhalt des app-Verzeichnisses in den Container
-COPY ./app/bot/ /app/bot/
+# Set Python path to allow imports from root
+ENV PYTHONPATH="/"
 
+# Copy requirements and install
+COPY app/bot/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy entrypoint script
 COPY compose/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-RUN pip install --no-cache-dir -r /app/bot/requirements.txt
-ENV PYTHONPATH=/app/bot
-
-# Standard-Benutzer setzen (wird von docker-compose überschrieben, wenn dort angegeben)
-USER 1001:987
-
-#CMD ["python", "-m", "core.main"]
+# Run entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]

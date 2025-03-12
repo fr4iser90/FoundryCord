@@ -1,7 +1,7 @@
 from typing import Dict, Any
 import nextcord
 from datetime import datetime
-from interfaces.dashboards.components.common.embeds import BaseEmbed
+from app.bot.interfaces.dashboards.components.common.embeds import BaseEmbed
 
 class MonitoringEmbed(BaseEmbed):
     """Monitoring specific embed implementations"""

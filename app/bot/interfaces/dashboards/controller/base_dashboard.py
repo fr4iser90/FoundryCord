@@ -1,10 +1,10 @@
 from typing import Optional, Dict, Any, List
 import nextcord
 from datetime import datetime
-from infrastructure.logging import logger
-from infrastructure.config.channel_config import ChannelConfig
-from interfaces.dashboards.components.common.buttons.refresh_button import RefreshButton
-from interfaces.dashboards.components.common.embeds import ErrorEmbed, DashboardEmbed  # Add this import
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.config.channel_config import ChannelConfig
+from app.bot.interfaces.dashboards.components.common.buttons.refresh_button import RefreshButton
+from app.bot.interfaces.dashboards.components.common.embeds import ErrorEmbed, DashboardEmbed  # Add this import
 
 
 class BaseDashboardController:

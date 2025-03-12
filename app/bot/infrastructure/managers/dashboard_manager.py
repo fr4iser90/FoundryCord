@@ -2,10 +2,10 @@
 import asyncio
 import logging
 from typing import List, Optional
-from interfaces.dashboards.controller.base_dashboard import BaseDashboardController
-from infrastructure.logging import logger
-from infrastructure.database.models import DashboardMessage
-from infrastructure.database.models.config import get_session
+from app.bot.interfaces.dashboards.controller.base_dashboard import BaseDashboardController
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.database.models import DashboardMessage
+from app.bot.infrastructure.database.models.config import get_session
 from sqlalchemy import select
 import nextcord
 
@@ -19,7 +19,7 @@ class DashboardManager:
     async def get_dashboard_channels(self) -> List[str]:
         """Holt die Dashboard-Kanäle dynamisch aus der Konfiguration"""
         try:
-            from infrastructure.config.channel_config import ChannelConfig
+            from app.bot.infrastructure.config.channel_config import ChannelConfig
             
             # Alle verfügbaren Kanäle aus der Datenbank holen
             channels = await ChannelConfig.get_dashboard_channels()
@@ -46,7 +46,7 @@ class DashboardManager:
             
             for channel_name in channel_names:
                 # Kanal-ID aus der Config holen
-                from infrastructure.config.channel_config import ChannelConfig
+                from app.bot.infrastructure.config.channel_config import ChannelConfig
                 channel_id = await ChannelConfig.get_channel_id(channel_name)
                 if not channel_id:
                     continue
@@ -119,7 +119,7 @@ class DashboardManager:
             logger.error(f"Error tracking dashboard message in database: {e}")
         
     async def get_tracked_message(self, dashboard_type: str) -> Optional[nextcord.Message]:
-        """Retrieve tracked message from database"""
+        """Retrieve tracked message from app.bot.database"""
         try:
             async for session in get_session():
                 result = await session.execute(
@@ -148,7 +148,7 @@ class DashboardManager:
                     logger.error(f"Error fetching message: {e}")
                     return None
         except Exception as e:
-            logger.error(f"Error retrieving dashboard message from database: {e}")
+            logger.error(f"Error retrieving dashboard message from app.bot.database: {e}")
             return None
 
     @staticmethod

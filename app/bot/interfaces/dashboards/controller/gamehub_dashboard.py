@@ -2,14 +2,14 @@
 from typing import Dict, Any, Optional, List
 import nextcord
 from datetime import datetime, timedelta
-from infrastructure.logging import logger
-from infrastructure.config.channel_config import ChannelConfig
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.config.channel_config import ChannelConfig
 from .base_dashboard import BaseDashboardController
-from interfaces.dashboards.components.channels.gamehub.views import GameHubView
-from interfaces.dashboards.components.ui.table_builder import UnicodeTableBuilder
-from infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
-from domain.gameservers.models.gameserver_metrics import GameServersMetrics
-from interfaces.dashboards.components.common.embeds import ErrorEmbed, DashboardEmbed
+from app.bot.interfaces.dashboards.components.channels.gamehub.views import GameHubView
+from app.bot.interfaces.dashboards.components.ui.table_builder import UnicodeTableBuilder
+from app.bot.infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
+from app.bot.domain.gameservers.models.gameserver_metrics import GameServersMetrics
+from app.bot.interfaces.dashboards.components.common.embeds import ErrorEmbed, DashboardEmbed
 
 class GameHubDashboardController(BaseDashboardController):
     """UI class for displaying the Game Hub dashboard"""

@@ -1,15 +1,15 @@
-from infrastructure.discord.command_sync_service import CommandSyncService
+from app.bot.infrastructure.discord.command_sync_service import CommandSyncService
 import asyncio
 import os
 import logging
-from infrastructure.managers.dashboard_manager import DashboardManager
-from core.workflows.category_workflow import CategoryWorkflow
-from core.workflows.channel_workflow import ChannelWorkflow
-from core.workflows.service_workflow import ServiceWorkflow
-from core.workflows.dashboard_workflow import DashboardWorkflow
-from core.workflows.task_workflow import TaskWorkflow
-from core.workflows.slash_commands_workflow import SlashCommandsWorkflow
-from infrastructure.logging import logger
+from app.bot.infrastructure.managers.dashboard_manager import DashboardManager
+from app.bot.core.workflows.category_workflow import CategoryWorkflow
+from app.bot.core.workflows.channel_workflow import ChannelWorkflow
+from app.bot.core.workflows.service_workflow import ServiceWorkflow
+from app.bot.core.workflows.dashboard_workflow import DashboardWorkflow
+from app.bot.core.workflows.task_workflow import TaskWorkflow
+from app.bot.core.workflows.slash_commands_workflow import SlashCommandsWorkflow
+from app.bot.infrastructure.logging import logger
 
 
 class BotLifecycleManager:

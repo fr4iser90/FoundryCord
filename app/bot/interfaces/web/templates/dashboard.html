@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - HomeLab Discord Bot{% endblock %}
+
+{% block content %}
+<div class="flex flex-col">
+    <h1 class="text-3xl font-bold mb-6">Dashboard</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <!-- System Status Card -->
+        <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+            <div class="bg-blue-600 px-4 py-2">
+                <h2 class="text-lg font-semibold">System Status</h2>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div class="flex justify-between">
+                        <span>CPU</span>
+                        <span class="text-green-400">32%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Memory</span>
+                        <span class="text-yellow-400">58%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Disk</span>
+                        <span class="text-green-400">45%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Network</span>
+                        <span class="text-green-400">Active</span>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <button class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded">
+                        View Details
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Services Card -->
+        <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+            <div class="bg-purple-600 px-4 py-2">
+                <h2 class="text-lg font-semibold">Services</h2>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div class="flex justify-between">
+                        <span>Web Server</span>
+                        <span class="text-green-400">Running</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Database</span>
+                        <span class="text-green-400">Running</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Cache</span>
+                        <span class="text-green-400">Running</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Discord Bot</span>
+                        <span class="text-green-400">Connected</span>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <button class="w-full bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded">
+                        Manage Services
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions Card -->
+        <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+            <div class="bg-green-600 px-4 py-2">
+                <h2 class="text-lg font-semibold">Quick Actions</h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <button class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded flex flex-col items-center">
+                        <span class="mb-1">Restart Bot</span>
+                    </button>
+                    <button class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded flex flex-col items-center">
+                        <span class="mb-1">View Logs</span>
+                    </button>
+                    <button class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded flex flex-col items-center">
+                        <span class="mb-1">Backup</span>
+                    </button>
+                    <button class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded flex flex-col items-center">
+                        <span class="mb-1">Settings</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div class="bg-gray-700 px-4 py-2">
+            <h2 class="text-lg font-semibold">Recent Activity</h2>
+        </div>
+        <div class="p-6">
+            <table class="min-w-full divide-y divide-gray-700">
+                <thead>
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Time</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Event</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">User</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700">
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">10:30 AM</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">System Update</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">Admin</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-400">Completed</td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">09:15 AM</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">User Login</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">JohnDoe</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-400">Success</td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">08:45 AM</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">Database Backup</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">System</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-400">Completed</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %} 

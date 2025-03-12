@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from infrastructure.database.models import User
+from app.bot.infrastructure.database.models import User
 from typing import Optional, List
 from datetime import datetime
 

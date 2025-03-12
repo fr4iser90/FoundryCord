@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional
 import nextcord
 from datetime import datetime
-from interfaces.dashboards.components.common.embeds import BaseEmbed
+from app.bot.interfaces.dashboards.components.common.embeds import BaseEmbed
 
 class StatusEmbed(BaseEmbed):
     """Status specific embed implementations with consistent formatting"""

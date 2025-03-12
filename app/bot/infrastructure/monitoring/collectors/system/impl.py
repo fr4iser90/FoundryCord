@@ -7,9 +7,9 @@ from datetime import datetime
 from typing import List
 from dotenv import load_dotenv
 
-from infrastructure.database.models import MetricModel
-from domain.monitoring.collectors.interfaces import SystemCollectorInterface
-from infrastructure.logging import logger
+from app.bot.infrastructure.database.models import MetricModel
+from app.bot.domain.monitoring.collectors.interfaces import SystemCollectorInterface
+from app.bot.infrastructure.logging import logger
 from .components.base import collect_system_data
 
 load_dotenv()

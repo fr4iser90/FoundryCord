@@ -1,6 +1,6 @@
 from .base_workflow import BaseWorkflow
-from infrastructure.logging import logger
-from infrastructure.config.constants.channel_constants import CHANNELS
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.config.constants.channel_constants import CHANNELS
 
 class ChannelWorkflow(BaseWorkflow):
     async def initialize(self):
@@ -29,8 +29,8 @@ class ChannelWorkflow(BaseWorkflow):
     async def _verify_channel_integrity(self):
         """Verify all channels exist and repair if needed"""
         try:
-            from infrastructure.config.channel_config import ChannelConfig
-            from infrastructure.config.constants.channel_constants import CHANNELS
+            from app.bot.infrastructure.config.channel_config import ChannelConfig
+            from app.bot.infrastructure.config.constants.channel_constants import CHANNELS
             
             logger.info("Verifying channel integrity...")
             missing_channels = []

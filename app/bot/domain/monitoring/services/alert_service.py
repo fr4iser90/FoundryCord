@@ -1,4 +1,4 @@
-from infrastructure.database.models import MetricModel, AlertModel
+from app.bot.infrastructure.database.models import MetricModel, AlertModel
 from ..repositories.monitoring_repository import MonitoringRepository
 
 class AlertService:

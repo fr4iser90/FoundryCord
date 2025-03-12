@@ -1,6 +1,6 @@
 import nextcord
 from typing import Callable, Optional
-from interfaces.dashboards.components.common.buttons.base_button import BaseButton
+from app.bot.interfaces.dashboards.components.common.buttons.base_button import BaseButton
 
 class GameServerButton(BaseButton):
     """Button for game server dashboard"""

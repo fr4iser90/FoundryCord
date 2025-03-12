@@ -1,8 +1,8 @@
-from infrastructure.logging import logger
-from domain.auth.models import User, Role, Permission
-from domain.auth.policies import is_authorized
+from app.bot.infrastructure.logging import logger
+from app.bot.domain.auth.models import User, Role, Permission
+from app.bot.domain.auth.policies import is_authorized
 # OR if you moved to domain services:
-# from domain.auth.services.permission_service import PermissionService
+# from app.bot.domain.auth.services.permission_service import PermissionService
 
 class AuthorizationService:
     def __init__(self, bot):

@@ -1,7 +1,7 @@
 from typing import Optional
 import nextcord
 from datetime import datetime
-from interfaces.dashboards.components.common.embeds import BaseEmbed
+from app.bot.interfaces.dashboards.components.common.embeds import BaseEmbed
 
 class WelcomeEmbed(BaseEmbed):
     """Welcome specific embed implementations"""

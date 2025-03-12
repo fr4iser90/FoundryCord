@@ -1,7 +1,7 @@
 """Configuration for web-based services"""
 import os
 from dotenv import load_dotenv
-from infrastructure.config.feature_flags import get_service_url
+from app.bot.infrastructure.config.feature_flags import get_service_url
 
 load_dotenv()
 DOMAIN = os.getenv('DOMAIN')

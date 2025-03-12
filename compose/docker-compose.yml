@@ -37,7 +37,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-
+      redis:
+        condition: service_healthy
 
   postgres:
     image: postgres:17-alpine
@@ -73,6 +74,29 @@ services:
         reservations:
           cpus: '0.1'
           memory: 256M
+
+  redis:
+    image: redis:alpine
+    container_name: homelab-redis
+    restart: unless-stopped
+    networks:
+      - homelab-net
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
           
 networks:
   homelab-net:
@@ -86,4 +110,6 @@ volumes:
   bot_config:
     driver: local
   bot_credentials:
+    driver: local
+  redis_data:
     driver: local

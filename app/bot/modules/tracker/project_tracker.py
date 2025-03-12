@@ -1,11 +1,11 @@
 # modules/tracker/project_tracker.py
 import nextcord
 from datetime import datetime
-from utils.decorators.auth import admin_or_higher
-from infrastructure.logging import logger
-from infrastructure.database.models.config import get_session
-from infrastructure.database.repositories.project_repository_impl import ProjectRepository
-from infrastructure.database.repositories.task_repository import TaskRepository
+from app.bot.utils.decorators.auth import admin_or_higher
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.database.models.config import get_session
+from app.bot.infrastructure.database.repositories.project_repository_impl import ProjectRepository
+from app.bot.infrastructure.database.repositories.task_repository import TaskRepository
 
 def create_task_embed(tasks_data):
     """Erstellt ein Embed mit allen Projekten und Aufgaben"""

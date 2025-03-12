@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from infrastructure.database.models import AuditLog
+from app.bot.infrastructure.database.models import AuditLog
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 

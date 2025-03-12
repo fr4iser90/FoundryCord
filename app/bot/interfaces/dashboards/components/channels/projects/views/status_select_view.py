@@ -1,6 +1,6 @@
 import nextcord
-from infrastructure.logging import logger
-from interfaces.dashboards.components.common.views import BaseView
+from app.bot.infrastructure.logging import logger
+from app.bot.interfaces.dashboards.components.common.views import BaseView
 
 class StatusSelectView(BaseView):
     def __init__(self, project, status_emojis, status_names):

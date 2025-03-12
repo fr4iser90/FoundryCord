@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime
-from infrastructure.database.connection import get_db_connection
+from app.bot.infrastructure.database.connection import get_db_connection
 
 class KeyRepository:
     """Repository for storing and retrieving encryption keys"""

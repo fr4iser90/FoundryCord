@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional
-from interfaces.dashboards.components.ui.table_builder import UnicodeTableBuilder
-from interfaces.dashboards.components.ui.mini_graph import MiniGraph
+from app.bot.interfaces.dashboards.components.ui.table_builder import UnicodeTableBuilder
+from app.bot.interfaces.dashboards.components.ui.mini_graph import MiniGraph
 
 class UIComponentFactory:
     """Factory for creating UI components following the factory pattern"""

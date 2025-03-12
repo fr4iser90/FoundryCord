@@ -3,6 +3,6 @@
 .env.discordbot
 .env.postgres
 .env.secret
-
+test-results/*
 # cache
 __pycache__

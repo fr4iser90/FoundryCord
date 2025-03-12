@@ -1,5 +1,5 @@
-from infrastructure.logging import logger
-from infrastructure.config.channels.game_server_config import GameServerChannelConfig
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.config.channels.game_server_config import GameServerChannelConfig
 
 class GameServerChannelService:
     def __init__(self, channel_setup_service):

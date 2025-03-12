@@ -1,11 +1,11 @@
 from typing import Dict, Optional
-from infrastructure.logging import logger
-from infrastructure.discord.category_setup_service import CategorySetupService
-from infrastructure.database.models import CategoryMapping
-from infrastructure.database.models.config import get_session
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.discord.category_setup_service import CategorySetupService
+from app.bot.infrastructure.database.models import CategoryMapping
+from app.bot.infrastructure.database.models.config import get_session
 from sqlalchemy import select, update
-from infrastructure.config.constants.category_constants import CATEGORIES, ENABLE_HOMELAB_CATEGORY, ENABLE_GAMESERVERS_CATEGORY
-from infrastructure.config.env_config import EnvConfig
+from app.bot.infrastructure.config.constants.category_constants import CATEGORIES, ENABLE_HOMELAB_CATEGORY, ENABLE_GAMESERVERS_CATEGORY
+from app.bot.infrastructure.config.env_config import EnvConfig
 import os
 
 class CategoryConfig:
@@ -32,9 +32,9 @@ class CategoryConfig:
             cls.DISCORD_SERVER = bot.env_config.guild_id
             
             # Import here to avoid circular imports
-            from infrastructure.discord.category_setup_service import CategorySetupService
+            from app.bot.infrastructure.discord.category_setup_service import CategorySetupService
             
-            # Load existing category mapping from database
+            # Load existing category mapping from app.bot.database
             async for session in get_session():
                 result = await session.execute(
                     select(CategoryMapping).where(
@@ -48,7 +48,7 @@ class CategoryConfig:
                     # Update config with database value if needed
                     if not cls.HOMELAB_CATEGORY_ID and mapping.category_id:
                         cls.HOMELAB_CATEGORY_ID = mapping.category_id
-                        logger.info(f"Updated category ID from database: {cls.HOMELAB_CATEGORY_ID}")
+                        logger.info(f"Updated category ID from app.bot.database: {cls.HOMELAB_CATEGORY_ID}")
             
             category_setup = CategorySetupService(bot)
             return category_setup

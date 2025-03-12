@@ -29,4 +29,4 @@ async def setup(bot):
         raise
 
 ## You can now use:
-#from core.services.auth import AuthenticationService, AuthorizationService
+#from app.bot.core.services.auth import AuthenticationService, AuthorizationService

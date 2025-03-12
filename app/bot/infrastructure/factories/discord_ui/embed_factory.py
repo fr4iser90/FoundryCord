@@ -1,12 +1,12 @@
 from typing import Dict, Any, Optional
 import nextcord
 from ..base.base_factory import BaseFactory
-from interfaces.dashboards.components.common.embeds import BaseEmbed
-from interfaces.dashboards.components.channels.projects.embeds import ProjectEmbed
-from interfaces.dashboards.components.channels.monitoring.embeds import MonitoringEmbed
-from interfaces.dashboards.components.channels.projects.embeds import ProjectEmbed
-from interfaces.dashboards.components.channels.projects.embeds import StatusEmbed
-from interfaces.dashboards.components.channels.welcome.embeds import WelcomeEmbed
+from app.bot.interfaces.dashboards.components.common.embeds import BaseEmbed
+from app.bot.interfaces.dashboards.components.channels.projects.embeds import ProjectEmbed
+from app.bot.interfaces.dashboards.components.channels.monitoring.embeds import MonitoringEmbed
+from app.bot.interfaces.dashboards.components.channels.projects.embeds import ProjectEmbed
+from app.bot.interfaces.dashboards.components.channels.projects.embeds import StatusEmbed
+from app.bot.interfaces.dashboards.components.channels.welcome.embeds import WelcomeEmbed
 
 class EmbedFactory(BaseFactory):
     """Factory für die Erstellung von Embeds"""

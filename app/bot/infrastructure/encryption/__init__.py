@@ -1,6 +1,6 @@
 from .encryption_service import EncryptionService
 from .encryption_commands import EncryptionCommands
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 
 __all__ = ['EncryptionService', 'EncryptionCommands']
 

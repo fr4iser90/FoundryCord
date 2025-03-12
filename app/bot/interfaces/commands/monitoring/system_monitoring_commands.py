@@ -1,7 +1,7 @@
 import nextcord
 from nextcord.ext import commands
-from utils.decorators.auth import admin_or_higher
-from infrastructure.logging import logger
+from app.bot.utils.decorators.auth import admin_or_higher
+from app.bot.infrastructure.logging import logger
 
 class SystemMonitoringCommands(commands.Cog):
     def __init__(self, bot):
@@ -83,7 +83,7 @@ async def setup(bot):
     try:
         # Check if system monitoring service exists and initialize if needed
         if not hasattr(bot, 'system_monitoring_service'):
-            from application.services.monitoring.system_monitoring import setup as setup_service
+            from app.bot.application.services.monitoring.system_monitoring import setup as setup_service
             bot.system_monitoring_service = await setup_service(bot)
             
         # Initialize commands (remove await from add_cog since it's not an async method)

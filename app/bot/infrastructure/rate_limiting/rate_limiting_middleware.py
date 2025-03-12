@@ -1,7 +1,7 @@
 from nextcord.ext import commands
 import nextcord
 import asyncio
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 
 class RateLimitingMiddleware(commands.Cog):
     def __init__(self, bot, rate_limiting_service):

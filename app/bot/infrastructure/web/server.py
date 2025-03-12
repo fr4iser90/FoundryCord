@@ -1,7 +1,7 @@
 import asyncio
 from aiohttp import web
 import nextcord
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 
 class WebInterfaceServer:
     def __init__(self, bot):
@@ -13,12 +13,12 @@ class WebInterfaceServer:
         
     async def setup_routes(self):
         # Import routes here to avoid circular imports
-        from infrastructure.web.routes import setup_routes
+        from app.bot.infrastructure.web.routes import setup_routes
         setup_routes(self.app, self.bot)
         
     async def setup_middleware(self):
         # Import middleware here to avoid circular imports
-        from infrastructure.web.auth_middleware import setup_middleware
+        from app.bot.infrastructure.web.auth_middleware import setup_middleware
         setup_middleware(self.app, self.bot)
         
     async def start(self):

@@ -2,8 +2,8 @@ from cryptography.fernet import Fernet
 from datetime import datetime, timedelta
 import base64
 import os
-from infrastructure.logging.logger import logger
-from infrastructure.database.repositories.key_repository_impl import KeyRepository
+from app.bot.infrastructure.logging.logger import logger
+from app.bot.infrastructure.database.repositories.key_repository_impl import KeyRepository
 
 class KeyManager:
     def __init__(self):
@@ -24,7 +24,7 @@ class KeyManager:
         await self._load_keys()
         
     async def _load_keys(self):
-        """Load keys from database, generating if needed"""
+        """Load keys from app.bot.database, generating if needed"""
         # Get encryption keys
         keys = await self.key_repository.get_encryption_keys()
         
@@ -58,7 +58,7 @@ class KeyManager:
         self.last_rotation = await self._get_last_rotation_time()
         
     async def _get_last_rotation_time(self):
-        """Get timestamp of last key rotation from database"""
+        """Get timestamp of last key rotation from app.bot.database"""
         return await self.key_repository.get_last_rotation_time()
         
     async def needs_rotation(self):

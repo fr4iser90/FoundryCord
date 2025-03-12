@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncEngine
-from infrastructure.database.models import Base
-from infrastructure.database.models.config import initialize_engine, initialize_session
+from app.bot.infrastructure.database.models import Base
+from app.bot.infrastructure.database.models.config import initialize_engine, initialize_session
 import asyncio
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 from sqlalchemy import select, inspect, text
 
 async def is_database_empty():
@@ -45,11 +45,11 @@ async def init_db(bot=None):
 async def migrate_existing_users():
     """Migrate existing users from env to database"""
     # Import innerhalb der Funktion, um zirkuläre Importe zu vermeiden
-    from infrastructure.config.constants.user_groups import (
+    from app.bot.infrastructure.config.constants.user_groups import (
         SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
     )
-    from infrastructure.database.models import User
-    from infrastructure.database.models.config import get_async_session
+    from app.bot.infrastructure.database.models import User
+    from app.bot.infrastructure.database.models.config import get_async_session
 
     # Neue Session für diesen spezifischen Prozess erstellen
     async_session = await get_async_session()

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HomeLab Discord Bot{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <header class="bg-gray-800 shadow-md">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <span class="text-xl font-bold">HomeLab Discord Bot</span>
+            </div>
+            <nav class="hidden md:flex space-x-10">
+                {% if user %}
+                <a href="/dashboard" class="hover:text-blue-400">Dashboard</a>
+                <a href="/user/profile" class="hover:text-blue-400">Profile</a>
+                <a href="/user/settings" class="hover:text-blue-400">Settings</a>
+                <a href="/auth/logout" class="hover:text-red-400">Logout</a>
+                {% else %}
+                <a href="/auth/login" class="hover:text-blue-400">Login</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-gray-800 mt-auto">
+        <div class="container mx-auto px-6 py-4">
+            <p class="text-center text-gray-400 text-sm">
+                &copy; {% now 'Y' %} HomeLab Discord Bot. All rights reserved.
+            </p>
+        </div>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html> 

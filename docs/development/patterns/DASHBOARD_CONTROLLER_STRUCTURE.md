@@ -44,7 +44,7 @@ def create_view(self) -> nextcord.ui.View:
 async def display_dashboard(self) -> nextcord.Message:
 """Create or update the dashboard message"""
 async def refresh_data(self):
-"""Fetch fresh data from services"""
+"""Fetch fresh data from app.bot.services"""
 ```
 
 ### 2. Error Handling
@@ -260,12 +260,12 @@ await interaction.followup.send(embed=error_embed, ephemeral=True)
 from typing import Dict, Any, Optional
 import nextcord
 from datetime import datetime
-from infrastructure.logging import logger
-from infrastructure.config.channel_config import ChannelConfig
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.config.channel_config import ChannelConfig
 from .base_dashboard import BaseDashboardController
-from interfaces.dashboards.components.channels.example.views import ExampleView
-from domain.example.models.example_metrics import ExampleMetrics
-from interfaces.dashboards.components.common.embeds import ErrorEmbed, DashboardEmbed
+from app.bot.interfaces.dashboards.components.channels.example.views import ExampleView
+from app.bot.domain.example.models.example_metrics import ExampleMetrics
+from app.bot.interfaces.dashboards.components.common.embeds import ErrorEmbed, DashboardEmbed
 class ExampleDashboardController(BaseDashboardController):
 """Controller for the Example dashboard"""
 DASHBOARD_TYPE = "example"

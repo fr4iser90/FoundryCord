@@ -1,7 +1,7 @@
 import os
 import nextcord
 import functools
-from utils.message_sender import send_response, send_file_response, send_encrypted_ephemeral, send_ephemeral, send_dm
+from app.bot.utils.message_sender import send_response, send_file_response, send_encrypted_ephemeral, send_ephemeral, send_dm
 
 def respond_in_channel():
     """Decorator: Responds directly in the channel."""

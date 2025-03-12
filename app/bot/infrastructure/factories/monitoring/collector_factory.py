@@ -1,7 +1,7 @@
 from typing import Dict, Type
-from domain.monitoring.collectors.interfaces.collector_interface import CollectorInterface
-from infrastructure.monitoring.collectors.service.impl import ServiceCollector
-from infrastructure.monitoring.collectors.system.impl import SystemCollector
+from app.bot.domain.monitoring.collectors.interfaces.collector_interface import CollectorInterface
+from app.bot.infrastructure.monitoring.collectors.service.impl import ServiceCollector
+from app.bot.infrastructure.monitoring.collectors.system.impl import SystemCollector
 
 class CollectorFactory:
     def __init__(self):

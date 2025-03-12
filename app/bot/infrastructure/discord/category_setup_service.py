@@ -1,8 +1,8 @@
 from typing import Optional
 from nextcord import Guild, CategoryChannel, PermissionOverwrite
-from infrastructure.logging import logger
-from infrastructure.database.models.config import get_session
-from infrastructure.database.models import CategoryMapping
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.database.models.config import get_session
+from app.bot.infrastructure.database.models import CategoryMapping
 from sqlalchemy import select, update, insert
 import asyncio
 import os
@@ -26,7 +26,7 @@ class CategorySetupService:
         self.guild = self.bot.guilds[0]
         logger.info(f"Category service connected to guild: {self.guild.name}")
         
-        # Get category ID from config - can be None or an integer
+        # Get category ID from app.bot.config - can be None or an integer
         self.category_id = self.bot.env_config.HOMELAB_CATEGORY_ID
         
         # Check if we should auto-create (either None or specifically set to "auto")
@@ -142,8 +142,8 @@ class CategorySetupService:
     async def _verify_category_integrity(self):
         """Verify all categories exist and repair if needed"""
         try:
-            from infrastructure.config.category_config import CategoryConfig
-            from infrastructure.config.constants.category_constants import CATEGORIES
+            from app.bot.infrastructure.config.category_config import CategoryConfig
+            from app.bot.infrastructure.config.constants.category_constants import CATEGORIES
             
             logger.info("Verifying category integrity...")
             missing_categories = []

@@ -1,12 +1,12 @@
 from typing import Dict, List, Optional, Any
 from datetime import datetime
-from infrastructure.logging import logger
-from infrastructure.database.models import Project, Task
-from infrastructure.database.repositories.project_repository_impl import ProjectRepository
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.database.models import Project, Task
+from app.bot.infrastructure.database.repositories.project_repository_impl import ProjectRepository
 from sqlalchemy.ext.asyncio import AsyncSession
-from infrastructure.database.models.config import get_session
+from app.bot.infrastructure.database.models.config import get_session
 import nextcord
-from interfaces.dashboards.controller.project_dashboard import ProjectDashboardController
+from app.bot.interfaces.dashboards.controller.project_dashboard import ProjectDashboardController
 
 class ProjectDashboardService:
     """Service for the Project Dashboard business logic"""

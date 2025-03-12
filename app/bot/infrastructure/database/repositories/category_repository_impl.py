@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from infrastructure.database.models import CategoryMapping
+from app.bot.infrastructure.database.models import CategoryMapping
 from typing import Optional, List
 
 class CategoryRepository:

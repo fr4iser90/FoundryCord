@@ -1,9 +1,9 @@
 from typing import Dict, Any
-from infrastructure.logging import logger
-from infrastructure.config.constants.dashboard_constants import DASHBOARD_MAPPINGS
-from infrastructure.factories.service.service_resolver import ServiceResolver
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOARD_MAPPINGS
+from app.bot.infrastructure.factories.service.service_resolver import ServiceResolver
 from .base_workflow import BaseWorkflow
-from application.services.dashboard import dynamic_minecraft_setup
+from app.bot.application.services.dashboard import dynamic_minecraft_setup
 
 class DashboardWorkflow(BaseWorkflow):
     def __init__(self, bot):

@@ -18,3 +18,6 @@ gputil
 py3nvml
 speedtest-cli
 watchdog
+redis==4.5.1
+pytest
+pytest-cov

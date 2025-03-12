@@ -1,7 +1,7 @@
 # app/bot/core/workflows/slash_commands_workflow.py
 from .base_workflow import BaseWorkflow
-from infrastructure.logging import logger
-from infrastructure.discord.command_sync_service import CommandSyncService
+from app.bot.infrastructure.logging import logger
+from app.bot.infrastructure.discord.command_sync_service import CommandSyncService
 import inspect
 
 class SlashCommandsWorkflow(BaseWorkflow):
@@ -43,7 +43,7 @@ class SlashCommandsWorkflow(BaseWorkflow):
     async def _register_commands(self):
         """Register all command modules"""
         try:
-            from infrastructure.config import CommandConfig
+            from app.bot.infrastructure.config import CommandConfig
             
             if hasattr(CommandConfig, 'register_commands'):
                 commands = CommandConfig.register_commands(self.bot)
@@ -89,7 +89,7 @@ class SlashCommandsWorkflow(BaseWorkflow):
         try:
             # 1. Check and initialize required services if needed
             if not hasattr(bot, 'required_service'):
-                from application.services.required_service import setup as setup_service
+                from app.bot.application.services.required_service import setup as setup_service
                 bot.required_service = await setup_service(bot)
                 
             # 2. Create command cog instance

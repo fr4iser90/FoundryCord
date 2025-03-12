@@ -1,8 +1,8 @@
 from enum import Enum
 from typing import Dict, List, Optional
-from infrastructure.config.constants.role_constants import SERVER_ROLES, ROLE_PRIORITIES
+from app.bot.infrastructure.config.constants.role_constants import SERVER_ROLES, ROLE_PRIORITIES
 # Importiere Benutzergruppen aus der Constants-Datei 
-from infrastructure.config.constants.user_groups import (
+from app.bot.infrastructure.config.constants.user_groups import (
     SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
 )
 

@@ -33,7 +33,7 @@ class ChannelFactory(BaseFactory):
             self._channels[name] = existing_channel
             
             # WICHTIG: Auch für existierende Channels die ID speichern!
-            from infrastructure.config.channel_config import ChannelConfig
+            from app.bot.infrastructure.config.channel_config import ChannelConfig
             await ChannelConfig.set_channel_id(name, existing_channel.id)
             
             return existing_channel
@@ -57,7 +57,7 @@ class ChannelFactory(BaseFactory):
         self._channels[name] = channel
         
         # Channel-ID in der Config speichern
-        from infrastructure.config.channel_config import ChannelConfig
+        from app.bot.infrastructure.config.channel_config import ChannelConfig
         await ChannelConfig.set_channel_id(name, channel.id)
         
         return channel

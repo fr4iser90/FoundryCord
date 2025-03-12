@@ -1,4 +1,4 @@
-from infrastructure.logging import logger
+from app.bot.infrastructure.logging import logger
 from .cogs.security_cog import SecurityCommands
 
 async def setup(bot):

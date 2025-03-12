@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from alembic import context
 
 # Import your models
-from infrastructure.database.models import Base
+from app.bot.infrastructure.database.models import Base
 
 # this is the Alembic Config object
 config = context.config
@@ -48,7 +48,7 @@ def do_run_migrations(connection):
 async def run_migrations_online():
     """Run migrations in 'online' mode."""
     # Use same URL builder as in your config.py
-    from infrastructure.database.models.config import DATABASE_URL
+    from app.bot.infrastructure.database.models.config import DATABASE_URL
     
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = DATABASE_URL
