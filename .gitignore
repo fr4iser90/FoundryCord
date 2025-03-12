@@ -1,8 +1,69 @@
-# .env.*
+# HomeLab Discord Bot - .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+test-results/
+.nox/
+
+# Docker
+docker-compose.override.yml
+
+# Environment
 .env
-.env.discordbot
-.env.postgres
-.env.secret
-test-results/*
-# cache
-__pycache__
+.env.*
+!.env.sample
+utils/config/local_config.sh
+
+# IDE
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+*.swp
+*~
+
+# Logs
+logs/
+*.log
+
+# Backup files
+*.bak
+*~
+*.old
+*.orig
+
+# Local configuration overrides
+utils/config/local_config.sh
+utils/testing/config/test_config_local.sh
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
