@@ -1,43 +1,52 @@
 """
 Diagnostic script to check module availability and print the Python path.
 """
+#!/usr/bin/env python3
 import sys
-import os
+import importlib
 
 def check_module(module_name):
+    """Check if a module can be imported and print the result"""
     try:
         __import__(module_name)
         print(f"✅ Module '{module_name}' is available")
         return True
     except ImportError as e:
-        print(f"❌ Module '{module_name}' is not available: {e}")
+        print(f"❌ Module '{module_name}' is not available: {str(e)}")
+        return False
+    except Exception as e:
+        print(f"⚠️ Error checking module '{module_name}': {str(e)}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def main():
+    """Main function to check required modules"""
+    print("=== Module Checks ===")
+    
+    # List of modules to check
+    modules = [
+        "fastapi",            # Web framework
+        "interfaces",         # Web interface modules
+        "app.bot.interfaces (alternative path)"  # Bot interface modules
+    ]
+    
+    # Check each module
+    for module in modules:
+        if " " in module:
+            # This is a description, extract the actual module name
+            parts = module.split(" ", 1)
+            module_name = parts[0]
+        else:
+            module_name = module
+        
+        check_module(module_name)
+    
+    # Add additional path information
     print("=== Python Path ===")
     for path in sys.path:
         print(f"- {path}")
-    
-    print("\n=== Module Checks ===")
-    modules_to_check = [
-        "fastapi", 
-        "interfaces",  # The problematic module
-        "app.bot.interfaces" if "app.bot" in sys.modules else "app.bot.interfaces (alternative path)",
-        "bot.interfaces" if "bot" in sys.modules else "bot.interfaces (alternative path)"
-    ]
-    
-    for module in modules_to_check:
-        check_module(module)
-    
-    print("\n=== Directory Contents ===")
-    dirs_to_check = ["/app", "/app/web", "/app/bot"]
-    for dir_path in dirs_to_check:
-        if os.path.exists(dir_path):
-            print(f"Contents of {dir_path}:")
-            for item in os.listdir(dir_path):
-                print(f"  - {item}")
-        else:
-            print(f"Directory {dir_path} does not exist")
+    print()
 
 if __name__ == "__main__":
     main() 

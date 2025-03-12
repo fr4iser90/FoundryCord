@@ -192,8 +192,36 @@ run_quick_deploy() {
     fi
     
     print_info "Running quick deploy (preserves database)..."
-    ./utils/deployment/quick_deploy.sh
-    return $?
+    
+    # 1. Deploy application files
+    if ! deploy_app; then
+        print_error "Deployment failed at app deployment stage"
+        return 1
+    fi
+    
+    # 2. Deploy Docker configuration
+    if ! deploy_docker; then
+        print_error "Deployment failed at Docker configuration stage"
+        return 1
+    fi
+    
+    # 3. Deploy containers with specific options for monitoring
+    print_section_header "Building and Starting Containers"
+    
+    if [ "${AUTO_BUILD_ENABLED}" = "true" ]; then
+        print_info "Building containers (this may take a while)..."
+        run_remote_command "cd ${DOCKER_DIR} && docker compose build"
+    fi
+    
+    # Start containers in background
+    print_info "Starting containers..."
+    run_remote_command "cd ${DOCKER_DIR} && docker compose up -d"
+    
+    # 4. Check services
+    check_deployed_services
+    
+    print_success "Quick deployment completed successfully!"
+    return 0
 }
 
 # Run partial deploy - SAFE, rebuilds containers only without touching database

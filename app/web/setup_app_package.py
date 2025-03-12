@@ -1,34 +1,66 @@
-"""
-Helper script to create the necessary package structure for app.bot imports.
-"""
+#!/usr/bin/env python3
 import os
 import sys
+import shutil
 
 def setup_app_package():
-    """Create the necessary directory structure and __init__.py files"""
-    # Create app directory if it doesn't exist
-    app_dir = "/app/app"
-    if not os.path.exists(app_dir):
-        os.makedirs(app_dir)
-        print(f"Created directory: {app_dir}")
+    """
+    Sets up the app package structure to allow imports in both
+    app.web and app.bot formats while working with Docker volumes.
+    """
+    print("Setting up app package structure...")
     
-    # Create app/__init__.py if it doesn't exist
-    app_init = os.path.join(app_dir, "__init__.py")
-    if not os.path.exists(app_init):
-        with open(app_init, "w") as f:
-            f.write('"""App package"""')
-        print(f"Created file: {app_init}")
+    # Create the app directory if it doesn't exist
+    if not os.path.exists('/app/app'):
+        os.makedirs('/app/app', exist_ok=True)
+        print("Created /app/app directory")
     
-    # Create symlink from /app/bot to /app/app/bot if it doesn't exist
-    app_bot_dir = os.path.join(app_dir, "bot")
-    if not os.path.exists(app_bot_dir):
-        try:
-            os.symlink("/app/bot", app_bot_dir)
-            print(f"Created symlink: /app/bot -> {app_bot_dir}")
-        except OSError as e:
-            print(f"Failed to create symlink: {e}")
+    # Create __init__.py files at various levels to make Python treat directories as packages
+    init_paths = [
+        '/app/__init__.py', 
+        '/app/app/__init__.py',
+        '/app/app/web/__init__.py',
+        '/app/app/bot/__init__.py'
+    ]
+    
+    for init_path in init_paths:
+        dir_path = os.path.dirname(init_path)
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path, exist_ok=True)
+            print(f"Created directory {dir_path}")
+        
+        if not os.path.exists(init_path):
+            with open(init_path, 'w') as f:
+                f.write('# Package initialization file\n')
+            print(f"Created {init_path}")
+    
+    # Create symbolic links if they don't exist
+    symlinks = [
+        ('/app/bot', '/app/app/bot'),
+        ('/app/web', '/app/app/web')
+    ]
+    
+    for src, dst in symlinks:
+        # Remove existing destination if it's not a proper symlink
+        if os.path.exists(dst) and not os.path.islink(dst):
+            if os.path.isdir(dst):
+                shutil.rmtree(dst)
+            else:
+                os.remove(dst)
+            print(f"Removed existing {dst}")
+        
+        # Create symbolic link if it doesn't exist
+        if not os.path.exists(dst):
+            os.symlink(src, dst)
+            print(f"Created symbolic link from {src} to {dst}")
     
     print("App package setup complete")
+    
+    # Show Python path
+    print("=== Python Path ===")
+    for path in sys.path:
+        print(f"- {path}")
+    print()
 
 if __name__ == "__main__":
     setup_app_package() 

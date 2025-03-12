@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.9-slim
 
 WORKDIR /app
 
@@ -22,10 +22,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/web/ /app/web/
 COPY app/bot/ /app/bot/
 
-# Create a symbolic link to maintain compatibility with app.* imports
-RUN mkdir -p /app/app && ln -s /app/bot /app/app/bot
-
-# Set the proper Python path to include root dir for absolute imports
+# Set the proper Python path to include app directory for absolute imports
 ENV PYTHONPATH=/
 
 # Set the working directory to the web app directory
