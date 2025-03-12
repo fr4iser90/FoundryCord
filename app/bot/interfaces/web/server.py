@@ -38,9 +38,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files directory
-app.mount("/static", StaticFiles(directory="app/bot/interfaces/web/static"), name="static")
-
 # Set up Jinja2 templates
 templates = Jinja2Templates(directory="app/bot/interfaces/web/templates")
 

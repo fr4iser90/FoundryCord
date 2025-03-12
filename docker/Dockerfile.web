@@ -1,6 +1,6 @@
 FROM python:3.9-slim
 
-WORKDIR /app
+
 
 # Install dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -8,12 +8,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
+
+# Set working directory
+WORKDIR /app/web
+
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=off \
-    PIP_DISABLE_PIP_VERSION_CHECK=on \
-    PYTHONPATH=/app:/
+ENV PYTHONPATH="/"
 
 # Install Python dependencies
 COPY app/web/requirements.txt .
@@ -27,17 +27,12 @@ COPY app/bot/ /app/bot/
 COPY app/web/start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
-# Create user with specified UID/GID from environment
-ARG PUID=1001
-ARG PGID=987
-RUN groupadd --gid $PGID app && \
-    useradd --uid $PUID --gid $PGID --create-home app && \
-    chown -R app:app /app
-
-USER app
+# Copy entrypoint script
+COPY docker/web/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Expose port
 EXPOSE 8000
 
 # Run the application with our startup script
-CMD ["/app/start.sh"]
+CMD ["/entrypoint.sh"]

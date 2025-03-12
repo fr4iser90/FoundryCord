@@ -28,7 +28,7 @@ def main():
     modules = [
         "fastapi",            # Web framework
         "interfaces",         # Web interface modules
-        "app.bot.interfaces (alternative path)"  # Bot interface modules
+        "bot.interfaces (alternative path)"  # Bot interface modules
     ]
     
     # Check each module

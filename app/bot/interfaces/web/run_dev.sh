@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Create necessary directories if they don't exist
-mkdir -p app/bot/interfaces/web/static
-
 # Check if virtual environment exists, if not create it
 if [ ! -d "venv" ]; then
     echo "Creating virtual environment..."

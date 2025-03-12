@@ -1,10 +1,10 @@
 """
-Homelab Discord Bot Web - Ein Discord-Bot Web zur Verwaltung und Überwachung von Homelab-Systemen.
+Homelab Discord Bot Web - A Discord Bot Web interface for managing and monitoring Homelab systems.
 """
 
 __version__ = "0.0.1"
 
-# Einfachere Importe für häufig verwendete Klassen oder Funktionen
+# Easier imports for commonly used classes or functions
 from app.bot.infrastructure.logging import logger
 # from app.bot.infrastructure.factories import BotComponentFactory
-# from app.bot.core.main import run_bot  # Falls du eine zentrale Startfunktion hast
+# from app.bot.core.main import run_bot  # If you have a central start function

@@ -7,12 +7,13 @@ echo "===== Starting HomeLab Discord Bot Web Interface ====="
 echo "Installing required packages..."
 pip install -r requirements.txt
 
+# Create necessary directories for package structure
+echo "Setting up directory structure..."
+mkdir -p /app/app/web /app/app/bot
+
 # Set up the app package structure for imports
 echo "Setting up Python package structure..."
 python setup_app_package.py
-
-# Create necessary directories
-mkdir -p /app/app/bot /app/app/web
 
 # Run module availability check
 echo "Checking module availability..."
@@ -26,6 +27,8 @@ pip install nextcord discord.py
 echo "Initializing application..."
 python init.py
 
+
 # Start the web application
 echo "Starting web server..."
+cd /app/web  # Ensure we're in the correct directory
 exec uvicorn main:app --host 0.0.0.0 --port 8000 --reload 

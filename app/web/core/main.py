@@ -6,11 +6,8 @@ import os
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
-from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-import pathlib
-
-# Import app components
+from fastapi.templating import Jinja2Templates
 from app.web.auth.oauth import router as auth_router
 from app.web.api.dashboard import router as dashboard_router
 from app.web.auth.dependencies import get_current_user
@@ -39,17 +36,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Get the absolute path to the templates directory
-base_dir = pathlib.Path(__file__).parent
-templates_dir = os.path.join(base_dir, "templates")
-print(f"Templates directory: {templates_dir}")
-templates = Jinja2Templates(directory=templates_dir)
-
-# Initialize static files
-static_dir = os.path.join(base_dir, "static")
-if not os.path.exists(static_dir):
-    os.makedirs(static_dir, exist_ok=True)
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
+templates = Jinja2Templates(directory="templates")
 
 # Include routers
 app.include_router(auth_router)
@@ -66,13 +53,6 @@ async def home(request: Request, user=Depends(get_current_user)):
             {"id": 1, "title": "System Overview", "description": "System metrics and status"},
             {"id": 2, "title": "Game Servers", "description": "Game server status and players"}
         ]
-    
-    # Debugging: Print available templates
-    print(f"Looking for index.html in {templates_dir}")
-    if os.path.exists(os.path.join(templates_dir, "index.html")):
-        print("index.html exists")
-    else:
-        print("index.html not found")
     
     return templates.TemplateResponse(
         "index.html", 
@@ -105,10 +85,7 @@ async def debug():
         "directory_contents": os.listdir("/app") if os.path.exists("/app") else "Not available",
         "app_directory_exists": os.path.exists("/app/app"),
         "app_bot_directory_exists": os.path.exists("/app/app/bot"),
-        "bot_directory_exists": os.path.exists("/app/bot"),
-        "templates_dir": templates_dir,
-        "templates_exists": os.path.exists(templates_dir),
-        "index_exists": os.path.exists(os.path.join(templates_dir, "index.html")) 
+        "bot_directory_exists": os.path.exists("/app/bot")
     }
 
 # Add error handler for graceful error messages
@@ -117,4 +94,4 @@ async def global_exception_handler(request, exc):
     return JSONResponse(
         status_code=500,
         content={"message": "Internal server error", "details": str(exc)}
-    )
+    ) 

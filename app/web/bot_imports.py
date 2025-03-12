@@ -46,32 +46,6 @@ def install_missing_dependencies():
         print(f"Failed to install dependencies: {e}")
         return False
 
-# Create empty __init__.py files if they don't exist
-def ensure_package_structure():
-    """Ensure proper package structure by creating __init__.py files"""
-    try:
-        paths = [
-            os.path.join(parent_dir, "__init__.py"),
-            os.path.join(parent_dir, "bot", "__init__.py"),
-            os.path.join(parent_dir, "app", "__init__.py"),
-            os.path.join(parent_dir, "app", "bot", "__init__.py"),
-        ]
-        
-        for path in paths:
-            directory = os.path.dirname(path)
-            if not os.path.exists(directory):
-                os.makedirs(directory, exist_ok=True)
-                
-            if not os.path.exists(path):
-                with open(path, "w") as f:
-                    f.write("# Package initialization\n")
-                print(f"Created package file: {path}")
-        
-        return True
-    except Exception as e:
-        print(f"Failed to ensure package structure: {e}")
-        return False
-
 # Attempt to import bot modules with dependency check
 def import_bot_modules():
     global BOT_IMPORTS_SUCCESS, bot_web_interface
@@ -81,9 +55,6 @@ def import_bot_modules():
         if not install_missing_dependencies():
             print("Could not import bot modules due to missing dependencies")
             return False
-    
-    # Ensure package structure is correct
-    ensure_package_structure()
     
     # Try multiple import approaches in sequence
     import_attempts = [
