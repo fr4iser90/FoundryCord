@@ -303,11 +303,6 @@ parse_args() {
             --key=*)
                 export SERVER_KEY="${arg#*=}"
                 ;;
-            --env=*)
-                export ENVIRONMENT="${arg#*=}"
-                # Re-source config to load environment-specific settings
-                source "$(dirname "$0")/../config/config.sh"
-                ;;
             --no-restart)
                 export AUTO_RESTART="false"
                 ;;

@@ -152,6 +152,22 @@ export BOT_ALEMBIC="${BOT_EXEC} alembic -c infrastructure/database/migrations/al
 export BOT_PYTHON="${BOT_EXEC} python"
 
 # ------------------------------------------------------
+# Auto-start Configuration
+# ------------------------------------------------------
+export AUTO_START="${AUTO_START:-true}"
+export AUTO_START_SERVICES="${AUTO_START_SERVICES:-all}"
+export AUTO_START_WAIT="${AUTO_START_WAIT:-10}"
+export AUTO_BUILD_ENABLED="${AUTO_BUILD_ENABLED:-true}"
+export AUTO_START_FEEDBACK="${AUTO_START_FEEDBACK:-minimal}"
+
+# If auto-start config file exists, source it
+if [ -f "${PROJECT_ROOT_DIR}/utils/config/auto_start.conf" ]; then
+    source "${PROJECT_ROOT_DIR}/utils/config/auto_start.conf"
+elif [ -f "./utils/config/auto_start.conf" ]; then
+    source "./utils/config/auto_start.conf"
+fi
+
+# ------------------------------------------------------
 # Ensure local config doesn't overwrite your settings
 # ------------------------------------------------------
 # We'll PRESERVE your settings by not loading local_config here

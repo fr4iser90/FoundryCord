@@ -9,14 +9,16 @@ show_deployment_menu() {
     show_header
     print_section_header "Deployment Menu"
     
-    print_menu_item "1" "Quick Deploy - Deploy with direct .env file copying (SAFE, preserves database)"
-    print_menu_item "2" "Partial Deploy - Rebuild containers only (SAFE, preserves database)"
-    print_menu_item "3" "Check Services - Verify running services"
-    print_menu_item "4" "Update Docker Configuration - Update Docker files"
-    print_menu_item "5" "Check Docker Files - Verify Docker configuration"
+    print_menu_item "1" "Quick Deploy - Deploy with .env preservation (SAFE, preserves database)"
+    print_menu_item "2" "Quick Deploy with Auto-Start (preserves data, auto-builds AND auto-starts)"
+    print_menu_item "3" "Partial Deploy - Rebuild containers only (SAFE, preserves database)"
+    print_menu_item "4" "Check Services - Verify running services"
+    print_menu_item "5" "Update Docker Configuration - Update Docker files"
+    print_menu_item "6" "Check Docker Files - Verify Docker configuration"
+    print_menu_item "7" "Configure Auto-start Settings"
     echo ""
     print_section_header "⚠️ DANGER ZONE - DATA LOSS OPTIONS ⚠️"
-    print_menu_item "6" "FULL RESET DEPLOY - Complete deployment with database reset (WILL DELETE ALL DATA)"
+    print_menu_item "8" "FULL RESET DEPLOY - Complete deployment with database reset (WILL DELETE ALL DATA)"
     print_back_option
     echo ""
     
@@ -29,26 +31,34 @@ show_deployment_menu() {
             show_deployment_menu
             ;;
         2)
-            run_partial_deploy
+            run_quick_deploy_with_auto_start
             press_enter_to_continue
             show_deployment_menu
             ;;
         3)
-            check_services
+            run_partial_deploy
             press_enter_to_continue
             show_deployment_menu
             ;;
         4)
-            update_docker_config
+            check_services
             press_enter_to_continue
             show_deployment_menu
             ;;
         5)
-            check_docker_files
+            update_docker_config
             press_enter_to_continue
             show_deployment_menu
             ;;
         6)
+            check_docker_files
+            press_enter_to_continue
+            show_deployment_menu
+            ;;
+        7)
+            show_auto_start_menu
+            ;;
+        8)
             # Extra warning for data-destroying option
             clear
             print_section_header "⚠️ DANGER: FULL RESET DEPLOYMENT ⚠️"

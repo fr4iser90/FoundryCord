@@ -14,13 +14,22 @@ show_header() {
     echo -e "  Server: ${GREEN}${SERVER_USER}@${SERVER_HOST}${NC}"
     echo -e "  Environment: ${GREEN}${ENVIRONMENT:-dev}${NC}"
     
+    # Show environment variables status
+    local env_status=""
+    if [ -n "$DISCORD_BOT_TOKEN" ]; then
+        env_status="${GREEN}Loaded${NC}"
+    else
+        env_status="${YELLOW}Not loaded${NC}"
+    fi
+    echo -e "  Environment Variables: $env_status"
+    
     # Show running containers if possible
     if [ "$RUN_LOCALLY" = false ] && check_ssh_connection "silent"; then
         RUNNING_CONTAINERS=$(run_remote_command "cd ${DOCKER_DIR} && docker compose ps --services --filter \"status=running\"" "silent")
         if [ -n "$RUNNING_CONTAINERS" ]; then
             echo -e "  Running containers: ${GREEN}${RUNNING_CONTAINERS//$'\n'/, }${NC}"
         else
-            echo -e "  Running containers: ${RED}None${NC}"
+            echo -e "  Running containers: ${YELLOW}None${NC}"
         fi
     fi
     

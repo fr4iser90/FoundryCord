@@ -13,8 +13,19 @@ find utils -name "*.sh" -type f -exec chmod +x {} \;
 find utils -name "*.py" -type f -exec chmod +x {} \;
 echo "Permissions set successfully."
 
+# Check for Docker .env file and load if it exists
+if [ -f "./docker/.env" ]; then
+    echo "Loading environment variables from docker/.env..."
+    export $(grep -v '^#' ./docker/.env | xargs)
+elif [ -f "../docker/.env" ]; then
+    echo "Loading environment variables from ../docker/.env..."
+    export $(grep -v '^#' ../docker/.env | xargs)
+fi
+
 # Global Variables
 export RUN_LOCALLY=false
+export AUTO_START=true
+export AUTO_BUILD=true
 
 # Source common utilities and configuration
 source "./utils/config/config.sh"
@@ -41,16 +52,41 @@ source "./utils/menus/testing_menu.sh"
 source "./utils/menus/development_menu.sh"
 source "./utils/menus/logs_menu.sh"
 source "./utils/menus/env_files_menu.sh"
+source "./utils/menus/auto_start_menu.sh"
+source "./utils/menus/watch_menu.sh"
 
 # ------------------------------------------------------
 # Main function
 # ------------------------------------------------------
 main() {
+    # Parse command line arguments
+    parse_cli_args "$@"
+    
     # Validate configuration first
     validate_config
     
-    # Ensure directories exist on remote server
-    if [ "$RUN_LOCALLY" = false ]; then
+    # Handle special execution modes
+    if [ "$WATCH_CONSOLE" = true ]; then
+        # Direct to deployment with monitoring
+        print_info "Starting deployment with console monitoring..."
+        run_deployment_with_monitoring "$WATCH_SERVICES"
+        exit $?
+    fi
+    
+    if [ "$INIT_ONLY" = true ]; then
+        print_info "Running initialization only..."
+        run_initial_setup
+        exit $?
+    fi
+    
+    # Check if this is the first run
+    local first_run=false
+    if [ ! -f "./utils/config/local_config.sh" ] || [ ! -f "${PROJECT_ROOT_DIR}/.env" ]; then
+        first_run=true
+    fi
+    
+    # For initial setup, check remote directories
+    if [ "$first_run" = true ]; then
         echo "Checking remote directories..."
         if check_ssh_connection; then
             # Check project directory and create if needed
@@ -77,5 +113,47 @@ main() {
     show_main_menu
 }
 
-# Run the main function
-main
+# Parse command line arguments
+parse_cli_args() {
+    for arg in "$@"; do
+        case $arg in
+            --auto-start)
+                export AUTO_START=true
+                ;;
+            --no-auto-start)
+                export AUTO_START=false
+                ;;
+            --watch-console)
+                export WATCH_CONSOLE=true
+                ;;
+            --watch=*)
+                export WATCH_SERVICES="${arg#*=}"
+                export WATCH_CONSOLE=true
+                ;;
+            --feedback=*)
+                export AUTO_START_FEEDBACK="${arg#*=}"
+                ;;
+            --init-only)
+                export INIT_ONLY=true
+                ;;
+            --local)
+                export RUN_LOCALLY=true
+                ;;
+            --env-file=*)
+                export ENV_FILE="${arg#*=}"
+                if [ -f "$ENV_FILE" ]; then
+                    echo "Loading environment variables from $ENV_FILE..."
+                    export $(grep -v '^#' "$ENV_FILE" | xargs)
+                else
+                    echo "Warning: Environment file $ENV_FILE not found"
+                fi
+                ;;
+            *)
+                # Pass other arguments to the common parser
+                ;;
+        esac
+    done
+}
+
+# Run the main function with all command line arguments
+main "$@"
