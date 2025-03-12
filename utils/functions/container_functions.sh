@@ -205,4 +205,34 @@ rebuild_containers() {
     print_success "Rebuild completed successfully!"
     press_enter_to_continue
     show_container_menu
+}
+
+# Start all containers (locally or remotely)
+start_all_containers() {
+    print_section_header "Starting All Containers"
+    
+    if [ "$RUN_LOCALLY" = true ]; then
+        print_info "Starting all containers locally..."
+        cd "${LOCAL_DOCKER_DIR}" || { print_error "Local Docker directory not found!"; return 1; }
+        docker compose up -d
+        
+        if [ $? -eq 0 ]; then
+            print_success "All containers started locally!"
+        else
+            print_error "Failed to start containers locally"
+            return 1
+        fi
+    else
+        print_info "Starting all containers on remote server..."
+        run_remote_command "cd ${DOCKER_DIR} && docker compose up -d"
+        
+        if [ $? -eq 0 ]; then
+            print_success "All containers started on remote server!"
+        else
+            print_error "Failed to start containers on remote server"
+            return 1
+        fi
+    fi
+    
+    return 0
 } 

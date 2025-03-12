@@ -19,6 +19,7 @@ show_deployment_menu() {
     echo ""
     print_section_header "⚠️ DANGER ZONE - DATA LOSS OPTIONS ⚠️"
     print_menu_item "8" "FULL RESET DEPLOY - Complete deployment with database reset (WILL DELETE ALL DATA)"
+    print_menu_item "9" "FULL RESET + VOLUME REMOVAL - Complete reset including all volumes (WILL DELETE EVERYTHING)"
     print_back_option
     echo ""
     
@@ -73,6 +74,28 @@ show_deployment_menu() {
                 run_full_reset_deploy
             else
                 print_info "Full reset deployment cancelled"
+            fi
+            
+            press_enter_to_continue
+            show_deployment_menu
+            ;;
+        9)
+            # Extra warning for volume-destroying option
+            clear
+            print_section_header "⚠️ EXTREME DANGER: FULL RESET WITH VOLUME REMOVAL ⚠️"
+            print_error "This will COMPLETELY ERASE your database AND ALL VOLUMES!"
+            print_error "This action CANNOT be undone unless you have a backup!"
+            echo ""
+            
+            if get_confirmed_input "Are you absolutely sure you want to DELETE ALL DATA AND VOLUMES?" "DELETE-ALL-DATA-AND-VOLUMES"; then
+                if get_yes_no "Would you like to create a backup before proceeding?"; then
+                    backup_database
+                fi
+                export REMOVE_VOLUMES=true
+                run_full_reset_deploy
+                export REMOVE_VOLUMES=false
+            else
+                print_info "Full reset with volume removal cancelled"
             fi
             
             press_enter_to_continue

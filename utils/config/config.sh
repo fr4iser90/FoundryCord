@@ -189,4 +189,36 @@ if [ ! -f "./utils/config/local_config.sh" ]; then
 fi
 
 # Print confirmation
-echo "Configuration loaded successfully with bot and web components" 
+echo "Configuration loaded successfully with bot and web components"
+
+# ------------------------------------------------------
+# Local Mode Configuration
+# ------------------------------------------------------
+# These variables are used when RUN_LOCALLY=true
+
+# If not defined in local_config.sh, set defaults
+export LOCAL_PROJECT_DIR="${LOCAL_PROJECT_DIR:-$HOME/Documents/Development/NCC-DiscordBot}"
+export LOCAL_DOCKER_DIR="${LOCAL_DOCKER_DIR:-$LOCAL_PROJECT_DIR/docker}"
+export LOCAL_APP_DIR="${LOCAL_APP_DIR:-$LOCAL_PROJECT_DIR/app}"
+export LOCAL_BOT_DIR="${LOCAL_BOT_DIR:-$LOCAL_PROJECT_DIR/app/bot}"
+export LOCAL_WEB_DIR="${LOCAL_WEB_DIR:-$LOCAL_PROJECT_DIR/app/web}"
+
+# Create directories if they don't exist when in local mode
+if [ "$RUN_LOCALLY" = true ]; then
+    echo "Running in local mode with project directory: $LOCAL_PROJECT_DIR"
+    mkdir -p "$LOCAL_PROJECT_DIR" "$LOCAL_DOCKER_DIR" "$LOCAL_APP_DIR" "$LOCAL_BOT_DIR" "$LOCAL_WEB_DIR"
+    
+    # Use local paths instead of remote paths when in local mode
+    EFFECTIVE_DOCKER_DIR="$LOCAL_DOCKER_DIR"
+    EFFECTIVE_APP_DIR="$LOCAL_APP_DIR"
+    EFFECTIVE_BOT_DIR="$LOCAL_BOT_DIR"
+    EFFECTIVE_WEB_DIR="$LOCAL_WEB_DIR"
+else
+    # Use remote paths
+    EFFECTIVE_DOCKER_DIR="$DOCKER_DIR"
+    EFFECTIVE_APP_DIR="$APP_DIR"
+    EFFECTIVE_BOT_DIR="$BOT_DIR"
+    EFFECTIVE_WEB_DIR="$WEB_DIR"
+fi
+
+export EFFECTIVE_DOCKER_DIR EFFECTIVE_APP_DIR EFFECTIVE_BOT_DIR EFFECTIVE_WEB_DIR 

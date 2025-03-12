@@ -26,6 +26,20 @@ fi
 export RUN_LOCALLY=false
 export AUTO_START=true
 export AUTO_BUILD=true
+export REMOVE_VOLUMES=false
+export SKIP_CONFIRMATION=false
+export DIRECT_DEPLOY=false
+
+# Parse command line arguments for local mode
+for arg in "$@"; do
+    case $arg in
+        --local)
+            export RUN_LOCALLY=true
+            echo "Running in local mode with project directory: $LOCAL_PROJECT_DIR"
+            shift
+            ;;
+    esac
+done
 
 # Source common utilities and configuration
 source "./utils/config/config.sh"
@@ -64,6 +78,12 @@ main() {
     
     # Validate configuration first
     validate_config
+    
+    # Handle direct deployment options first (bypass menus)
+    if [ "$DIRECT_DEPLOY" = true ]; then
+        # Skip showing any menus and run the requested deployment directly
+        exit $?
+    fi
     
     # Handle special execution modes
     if [ "$WATCH_CONSOLE" = true ]; then
@@ -136,9 +156,6 @@ parse_cli_args() {
             --init-only)
                 export INIT_ONLY=true
                 ;;
-            --local)
-                export RUN_LOCALLY=true
-                ;;
             --env-file=*)
                 export ENV_FILE="${arg#*=}"
                 if [ -f "$ENV_FILE" ]; then
@@ -147,6 +164,39 @@ parse_cli_args() {
                 else
                     echo "Warning: Environment file $ENV_FILE not found"
                 fi
+                ;;
+            --quick-deploy)
+                export DIRECT_DEPLOY=true
+                run_quick_deploy
+                ;;
+            --partial-deploy)
+                export DIRECT_DEPLOY=true
+                run_partial_deploy
+                ;;
+            --full-reset)
+                export DIRECT_DEPLOY=true
+                if [ "$SKIP_CONFIRMATION" != "true" ]; then
+                    print_error "⚠️ WARNING: This will COMPLETELY ERASE your database and all data! ⚠️"
+                    if ! get_confirmed_input "Are you absolutely sure you want to DELETE ALL DATA?" "DELETE-ALL-DATA"; then
+                        print_info "Full reset deployment cancelled"
+                        exit 1
+                    fi
+                fi
+                run_full_reset_deploy
+                ;;
+            --remove-volumes)
+                export REMOVE_VOLUMES=true
+                ;;
+            --skip-confirmation)
+                export SKIP_CONFIRMATION=true
+                ;;
+            --deploy-with-monitoring)
+                export DIRECT_DEPLOY=true
+                run_deployment_with_monitoring "all"
+                ;;
+            --deploy-with-auto-start)
+                export DIRECT_DEPLOY=true
+                run_quick_deploy_with_auto_start
                 ;;
             *)
                 # Pass other arguments to the common parser

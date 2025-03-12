@@ -39,10 +39,37 @@ def install_missing_dependencies():
     try:
         print("Installing missing dependencies...")
         import subprocess
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "nextcord", "discord.py"])
+        result = subprocess.check_call([sys.executable, "-m", "pip", "install", "nextcord", "discord.py"])
+        print("Dependencies installed successfully")
         return True
     except Exception as e:
         print(f"Failed to install dependencies: {e}")
+        return False
+
+# Create empty __init__.py files if they don't exist
+def ensure_package_structure():
+    """Ensure proper package structure by creating __init__.py files"""
+    try:
+        paths = [
+            os.path.join(parent_dir, "__init__.py"),
+            os.path.join(parent_dir, "bot", "__init__.py"),
+            os.path.join(parent_dir, "app", "__init__.py"),
+            os.path.join(parent_dir, "app", "bot", "__init__.py"),
+        ]
+        
+        for path in paths:
+            directory = os.path.dirname(path)
+            if not os.path.exists(directory):
+                os.makedirs(directory, exist_ok=True)
+                
+            if not os.path.exists(path):
+                with open(path, "w") as f:
+                    f.write("# Package initialization\n")
+                print(f"Created package file: {path}")
+        
+        return True
+    except Exception as e:
+        print(f"Failed to ensure package structure: {e}")
         return False
 
 # Attempt to import bot modules with dependency check
@@ -55,41 +82,66 @@ def import_bot_modules():
             print("Could not import bot modules due to missing dependencies")
             return False
     
-    # First attempt - absolute imports
-    try:
-        from app.bot.interfaces import web as bot_web_interface
-        BOT_IMPORTS_SUCCESS = True
-        print("Successfully imported bot interfaces using absolute import path")
-        return True
-    except ImportError as e:
-        print(f"Warning: Failed to import bot interfaces using absolute path: {e}")
+    # Ensure package structure is correct
+    ensure_package_structure()
     
-    # Second attempt - relative to /app
-    try:
-        from bot.interfaces import web as bot_web_interface
-        BOT_IMPORTS_SUCCESS = True
-        print("Successfully imported bot interfaces using relative import path")
-        return True
-    except ImportError as e:
-        print(f"Warning: Failed to import bot interfaces using relative path: {e}")
+    # Try multiple import approaches in sequence
+    import_attempts = [
+        # Approach 1: Using absolute imports with app.bot
+        lambda: __import__('app.bot.interfaces.web', fromlist=['*']),
+        
+        # Approach 2: Using relative imports with bot
+        lambda: __import__('bot.interfaces.web', fromlist=['*']),
+        
+        # Approach 3: Dynamic import with importlib
+        lambda: importlib.import_module('app.bot.interfaces.web'),
+        
+        # Approach 4: Direct path manipulation
+        lambda: import_with_path_manipulation(),
+        
+        # Approach 5: Create a simplified mock interface if all else fails
+        lambda: create_mock_interface()
+    ]
     
-    # Last attempt - direct path manipulation
-    try:
-        # Add the bot's interfaces directory directly to the path
-        bot_interfaces_path = os.path.join(parent_dir, 'bot', 'interfaces')
-        if os.path.exists(bot_interfaces_path):
-            sys.path.insert(0, os.path.join(parent_dir, 'bot'))
-            from interfaces import web as bot_web_interface
+    for i, import_attempt in enumerate(import_attempts):
+        try:
+            print(f"Trying import approach {i+1}...")
+            bot_web_interface = import_attempt()
             BOT_IMPORTS_SUCCESS = True
-            print("Successfully imported bot interfaces using direct path insertion")
+            print(f"Successfully imported bot interfaces using approach {i+1}")
             return True
-    except ImportError as e:
-        print(f"Warning: All import approaches failed: {e}")
+        except ImportError as e:
+            print(f"Import approach {i+1} failed: {e}")
+        except Exception as e:
+            print(f"Unexpected error with import approach {i+1}: {e}")
     
+    print("WARNING: All import approaches failed. Using fallback empty interface")
     return False
 
+def import_with_path_manipulation():
+    """Import using direct path manipulation"""
+    bot_interfaces_path = os.path.join(parent_dir, 'bot', 'interfaces')
+    if os.path.exists(bot_interfaces_path):
+        sys.path.insert(0, os.path.join(parent_dir, 'bot'))
+        from interfaces import web as imported_web
+        return imported_web
+    raise ImportError(f"Path {bot_interfaces_path} does not exist")
+
+def create_mock_interface():
+    """Create a minimal mock interface when imports fail"""
+    class MockInterface:
+        """Mock interface when real bot interface is unavailable"""
+        def __init__(self):
+            self.name = "Mock Bot Interface"
+            
+        def get_status(self):
+            return {"status": "offline", "message": "Bot interface unavailable"}
+    
+    print("WARNING: Creating mock interface as fallback")
+    return MockInterface()
+
 # Try to import the bot modules
-import_bot_modules()
+import_result = import_bot_modules()
 
 def get_bot_interfaces():
     """Returns the bot web interface if import was successful"""

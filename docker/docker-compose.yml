@@ -66,12 +66,7 @@ services:
     volumes:
       - ../app/web:/app/web
       - ../app/bot:/app/bot
-    command: >
-      sh -c "
-        python setup_app_package.py &&
-        python main_check.py &&
-        uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-      "
+    command: sh /app/start.sh
     networks:
       - homelab-net
     depends_on:

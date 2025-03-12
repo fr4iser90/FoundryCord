@@ -4,62 +4,100 @@
 # HomeLab Discord Bot - Deployment Functions
 # =======================================================
 
-# Deploy application files to remote server
+# Deploy application files to remote server or local directory
 deploy_app() {
     print_section_header "Deploying App Files"
     
     if [ "$RUN_LOCALLY" = true ]; then
-        print_error "Cannot deploy app in local mode"
-        return 1
-    fi
-    
-    # Copy application files
-    print_info "Copying application files..."
-    scp -r "${LOCAL_GIT_DIR}/app/"* "${SERVER_USER}@${SERVER_HOST}:${APP_DIR}/"
-    
-    if [ $? -eq 0 ]; then
-        print_success "Application files deployed successfully!"
+        print_info "Deploying app files to local directory..."
+        
+        # Ensure local directories exist
+        mkdir -p "${LOCAL_APP_DIR}"
+        
+        # Copy application files
+        cp -r "${LOCAL_GIT_DIR}/app/"* "${LOCAL_APP_DIR}/"
+        
+        if [ $? -eq 0 ]; then
+            print_success "Application files deployed locally to ${LOCAL_APP_DIR}!"
+        else
+            print_error "Failed to copy application files locally"
+            return 1
+        fi
     else
-        print_error "Failed to copy application files"
-        return 1
+        # Copy application files to remote server
+        print_info "Copying application files to remote server..."
+        scp -r "${LOCAL_GIT_DIR}/app/"* "${SERVER_USER}@${SERVER_HOST}:${APP_DIR}/"
+        
+        if [ $? -eq 0 ]; then
+            print_success "Application files deployed successfully to remote server!"
+        else
+            print_error "Failed to copy application files to remote server"
+            return 1
+        fi
     fi
     
     return 0
 }
 
-# Deploy Docker configuration files to remote server
+# Deploy Docker configuration files to remote server or local directory
 deploy_docker() {
     print_section_header "Deploying Docker Configuration"
     
     if [ "$RUN_LOCALLY" = true ]; then
-        print_error "Cannot deploy Docker configuration in local mode"
-        return 1
-    fi
-    
-    # Copy Docker files
-    print_info "Copying Docker configuration files..."
-    scp -r "${LOCAL_GIT_DIR}/docker/"* "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/"
-    
-    # Copy .env files (explicitly to make sure they're included)
-    print_info "Copying environment files..."
-    if [ -f "${LOCAL_GIT_DIR}/docker/.env" ]; then
-        scp "${LOCAL_GIT_DIR}/docker/.env" "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/.env"
-        print_success "Copied .env file from ${LOCAL_GIT_DIR}/docker/.env"
-    elif [ -f "${LOCAL_GIT_DIR}/.env" ]; then
-        scp "${LOCAL_GIT_DIR}/.env" "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/.env"
-        print_success "Copied .env file from ${LOCAL_GIT_DIR}/.env"
-    elif [ -f "${LOCAL_GIT_DIR}/docker/.env.example" ]; then
-        print_warning "No .env file found, copying .env.example. You'll need to edit this!"
-        scp "${LOCAL_GIT_DIR}/docker/.env.example" "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/.env"
+        print_info "Deploying Docker configuration to local directory..."
+        
+        # Ensure local docker directory exists
+        mkdir -p "${LOCAL_DOCKER_DIR}"
+        
+        # Copy Docker files
+        cp -r "${LOCAL_GIT_DIR}/docker/"* "${LOCAL_DOCKER_DIR}/"
+        
+        # Copy .env files (explicitly to make sure they're included)
+        if [ -f "${LOCAL_GIT_DIR}/docker/.env" ]; then
+            cp "${LOCAL_GIT_DIR}/docker/.env" "${LOCAL_DOCKER_DIR}/.env"
+            print_success "Copied .env file from ${LOCAL_GIT_DIR}/docker/.env"
+        elif [ -f "${LOCAL_GIT_DIR}/.env" ]; then
+            cp "${LOCAL_GIT_DIR}/.env" "${LOCAL_DOCKER_DIR}/.env"
+            print_success "Copied .env file from ${LOCAL_GIT_DIR}/.env"
+        elif [ -f "${LOCAL_GIT_DIR}/docker/.env.example" ]; then
+            print_warning "No .env file found, copying .env.example. You'll need to edit this!"
+            cp "${LOCAL_GIT_DIR}/docker/.env.example" "${LOCAL_DOCKER_DIR}/.env"
+        else
+            print_error "No .env or .env.example file found! Deployment may fail."
+        fi
+        
+        if [ $? -eq 0 ]; then
+            print_success "Docker configuration files deployed locally to ${LOCAL_DOCKER_DIR}!"
+        else
+            print_error "Failed to copy Docker configuration files locally"
+            return 1
+        fi
     else
-        print_error "No .env or .env.example file found! Deployment may fail."
-    fi
-    
-    if [ $? -eq 0 ]; then
-        print_success "Docker configuration files deployed successfully!"
-    else
-        print_error "Failed to copy Docker configuration files"
-        return 1
+        # Copy Docker files to remote server
+        print_info "Copying Docker configuration files..."
+        scp -r "${LOCAL_GIT_DIR}/docker/"* "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/"
+        
+        # Copy .env files (explicitly to make sure they're included)
+        print_info "Copying environment files..."
+        if [ -f "${LOCAL_GIT_DIR}/docker/.env" ]; then
+            scp "${LOCAL_GIT_DIR}/docker/.env" "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/.env"
+            print_success "Copied .env file from ${LOCAL_GIT_DIR}/docker/.env"
+        elif [ -f "${LOCAL_GIT_DIR}/.env" ]; then
+            scp "${LOCAL_GIT_DIR}/.env" "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/.env"
+            print_success "Copied .env file from ${LOCAL_GIT_DIR}/.env"
+        elif [ -f "${LOCAL_GIT_DIR}/docker/.env.example" ]; then
+            print_warning "No .env file found, copying .env.example. You'll need to edit this!"
+            scp "${LOCAL_GIT_DIR}/docker/.env.example" "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/.env"
+        else
+            print_error "No .env or .env.example file found! Deployment may fail."
+        fi
+        
+        if [ $? -eq 0 ]; then
+            print_success "Docker configuration files deployed successfully!"
+        else
+            print_error "Failed to copy Docker configuration files"
+            return 1
+        fi
     fi
     
     return 0
@@ -70,39 +108,66 @@ deploy_containers() {
     print_section_header "Deploying Containers"
     
     if [ "$RUN_LOCALLY" = true ]; then
-        print_error "Cannot deploy containers in local mode"
-        return 1
-    fi
-    
-    # Verify .env file exists on server before deploying
-    if ! run_remote_command "test -f ${DOCKER_DIR}/.env" "true"; then
-        print_error "No .env file found on server! Container deployment will fail."
-        print_info "Please ensure .env file exists at ${DOCKER_DIR}/.env"
-        
-        # Ask if user wants to continue anyway
-        if ! get_yes_no "Continue without .env file?"; then
-            print_info "Deployment cancelled."
-            return 1
-        else
-            print_warning "Continuing without .env file. Expect deployment errors!"
+        # Verify .env file exists locally before deploying
+        if [ ! -f "${LOCAL_DOCKER_DIR}/.env" ]; then
+            print_error "No .env file found locally! Container deployment will fail."
+            print_info "Please ensure .env file exists at ${LOCAL_DOCKER_DIR}/.env"
+            
+            # Ask if user wants to continue anyway
+            if ! get_yes_no "Continue without .env file?"; then
+                print_info "Deployment cancelled."
+                return 1
+            fi
         fi
-    fi
-    
-    # Start or restart containers
-    print_info "Deploying Docker containers..."
-    if [ "${REBUILD_ON_DEPLOY}" = "true" ]; then
-        print_info "Rebuilding containers (this may take a while)..."
-        run_remote_command "cd ${PROJECT_ROOT_DIR}/docker && docker compose down && docker compose build --no-cache && docker compose up -d"
+        
+        # Start containers locally
+        print_info "Starting containers in local Docker environment..."
+        cd "${LOCAL_DOCKER_DIR}" || { print_error "Local Docker directory not found!"; return 1; }
+        
+        if [ "${AUTO_BUILD_ENABLED}" = "true" ]; then
+            print_info "Building containers (this may take a while)..."
+            docker compose build
+        fi
+        
+        print_info "Starting Docker containers locally..."
+        docker compose up -d
+        
+        if [ $? -eq 0 ]; then
+            print_success "Containers started locally!"
+        else
+            print_error "Failed to start containers locally"
+            return 1
+        fi
     else
-        print_info "Starting containers with incremental build..."
-        run_remote_command "cd ${PROJECT_ROOT_DIR}/docker && docker compose up -d --build"
-    fi
-    
-    if [ $? -eq 0 ]; then
-        print_success "Containers deployed successfully!"
-    else
-        print_error "Failed to deploy containers"
-        return 1
+        # Verify .env file exists on server before deploying
+        if ! run_remote_command "test -f ${DOCKER_DIR}/.env" "true"; then
+            print_error "No .env file found on server! Container deployment will fail."
+            print_info "Please ensure .env file exists at ${DOCKER_DIR}/.env"
+            
+            # Ask if user wants to continue anyway
+            if ! get_yes_no "Continue without .env file?"; then
+                print_info "Deployment cancelled."
+                return 1
+            fi
+        fi
+        
+        # Start containers
+        print_info "Starting containers on remote server..."
+        
+        if [ "${AUTO_BUILD_ENABLED}" = "true" ]; then
+            print_info "Building containers (this may take a while)..."
+            run_remote_command "cd ${DOCKER_DIR} && docker compose build"
+        fi
+        
+        print_info "Starting Docker containers..."
+        run_remote_command "cd ${DOCKER_DIR} && docker compose up -d"
+        
+        if [ $? -eq 0 ]; then
+            print_success "Containers started successfully!"
+        else
+            print_error "Failed to start containers"
+            return 1
+        fi
     fi
     
     return 0
@@ -183,17 +248,9 @@ full_deploy() {
 
 # Run quick deploy (wrapper for quick_deploy.sh) - SAFE, preserves database
 run_quick_deploy() {
-    clear
     print_section_header "Quick Deploy (Database Safe)"
     
-    if [ "$RUN_LOCALLY" = true ]; then
-        print_error "Cannot deploy in local mode"
-        return 1
-    fi
-    
-    print_info "Running quick deploy (preserves database)..."
-    
-    # 1. Deploy application files
+    # 1. Deploy app files
     if ! deploy_app; then
         print_error "Deployment failed at app deployment stage"
         return 1
@@ -205,20 +262,19 @@ run_quick_deploy() {
         return 1
     fi
     
-    # 3. Deploy containers with specific options for monitoring
-    print_section_header "Building and Starting Containers"
-    
-    if [ "${AUTO_BUILD_ENABLED}" = "true" ]; then
-        print_info "Building containers (this may take a while)..."
-        run_remote_command "cd ${DOCKER_DIR} && docker compose build"
+    # 3. Deploy containers
+    if ! deploy_containers; then
+        print_error "Deployment failed at container deployment stage"
+        return 1
     fi
     
-    # Start containers in background
-    print_info "Starting containers..."
-    run_remote_command "cd ${DOCKER_DIR} && docker compose up -d"
-    
     # 4. Check services
-    check_deployed_services
+    if [ "$RUN_LOCALLY" = true ]; then
+        print_info "Containers started locally."
+        print_info "Check your local Docker Dashboard to verify services are running"
+    else
+        check_deployed_services
+    fi
     
     print_success "Quick deployment completed successfully!"
     return 0
@@ -261,11 +317,22 @@ run_full_reset_deploy() {
     print_error "Performing COMPLETE RESET with DATABASE DELETION..."
     print_error "ALL DATA WILL BE LOST!"
     
-    # Full deployment with -v flag to remove volumes (DESTROYS DATABASE)
-    run_remote_command "cd ${DOCKER_DIR} && docker compose down -v && docker compose build --no-cache && docker compose up -d"
+    # Check if we should remove volumes
+    local volume_flag=""
+    if [ "${REMOVE_VOLUMES}" = "true" ]; then
+        print_warning "Volume removal flag set - ALL persistent data will be removed!"
+        volume_flag="-v"
+    fi
+    
+    # Full deployment with optional -v flag to remove volumes (DESTROYS DATABASE)
+    run_remote_command "cd ${DOCKER_DIR} && docker compose down ${volume_flag} && docker compose build --no-cache && docker compose up -d"
     
     print_success "Full reset deployment completed."
-    print_warning "Your database has been reset to default state."
+    if [ "${REMOVE_VOLUMES}" = "true" ]; then
+        print_warning "Your database has been completely removed."
+    else
+        print_warning "Your database has been reset to default state."
+    fi
     
     return 0
 }
