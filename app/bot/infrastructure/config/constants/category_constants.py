@@ -38,9 +38,3 @@ CATEGORY_CHANNEL_MAPPINGS = {
     ]
 }
 
-# Default category (used when no specific category is defined)
-DEFAULT_CATEGORY = 'homelab'
-
-# Flag constants for category features
-ENABLE_HOMELAB_CATEGORY = True
-ENABLE_GAMESERVERS_CATEGORY = True

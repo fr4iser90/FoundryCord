@@ -15,9 +15,7 @@ class EnvConfig:
         self.guild_id = None
         self.HOMELAB_CATEGORY_ID = None
         self.user_groups = {}
-        
-        # Auto-generate values if they don't exist
-        #self._ensure_secure_keys()
+
 
     def _ensure_secure_keys(self):
         """Ensure all security keys are set, generating if needed"""

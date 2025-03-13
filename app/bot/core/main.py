@@ -43,7 +43,7 @@ async def initialize_bot():
     bot.dashboard_factory = bot.factory.factories['dashboard']  # For dashboard creation
     
     # NOW register configurations
-    bot.category_config = CategoryConfig.register(bot)  # Add this line
+    bot.category_config = CategoryConfig.register(bot)  # Add this li
     bot.channel_config = ChannelConfig.register(bot)
     bot.critical_services = ServiceConfig.register_critical_services(bot)
     bot.module_services = ModuleServicesConfig.register(bot)

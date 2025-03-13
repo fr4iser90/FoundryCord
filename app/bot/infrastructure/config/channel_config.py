@@ -9,28 +9,21 @@ from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOAR
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
+from app.bot.infrastructure.config.constants.category_constants import CATEGORY_CHANNEL_MAPPINGS
 
 class ChannelConfig:
-    # Konstanten aus channel_constants.py als Klassenattribute
+    # Constants from channel_constants.py
     CHANNELS = CHANNELS
     DASHBOARD_MAPPINGS = DASHBOARD_MAPPINGS
-    
-    # Channel IDs werden aus EnvConfig geladen
-    HOMELAB_CATEGORY_ID = None
     DISCORD_SERVER = None
     
     @classmethod
     async def create_channel_setup(cls, bot) -> 'ChannelSetupService':
         """Creates and configures the channel setup service"""
         try:
-            # Load from bot.env_config
-            cls.HOMELAB_CATEGORY_ID = bot.env_config.HOMELAB_CATEGORY_ID
             cls.DISCORD_SERVER = bot.env_config.guild_id
             
-            # Import hier um zirkuläre Imports zu vermeiden
-            from app.bot.infrastructure.discord.channel_setup_service import ChannelSetupService
-            
-            # Load existing channel mappings from app.bot.database
+            # Load existing channel mappings from database
             async for session in get_session():
                 result = await session.execute(select(ChannelMapping))
                 mappings = result.scalars().all()
@@ -146,13 +139,13 @@ class ChannelConfig:
         return missing_channels
 
     @classmethod
-    def get_channel_factory_config(cls, channel_name: str, guild) -> Dict:
+    async def get_channel_factory_config(cls, channel_name: str, guild, category_id: int) -> Dict:
         """Creates configuration for channel factory"""
         channel_config = cls.CHANNELS.get(channel_name, {})
         return {
             'guild': guild,
             'name': channel_name,
-            'category_id': int(cls.HOMELAB_CATEGORY_ID),
+            'category_id': category_id,  # Now passed as parameter
             'is_private': channel_config.get('is_private', False),
             'topic': channel_config.get('topic'),
             'slowmode': channel_config.get('slowmode', 0)
@@ -228,7 +221,6 @@ class ChannelConfig:
         """Attempts to repair a channel mapping if the channel doesn't exist"""
         try:
             logger.info(f"Attempting to repair channel mapping for {channel_name}")
-            channel_id = await cls.get_channel_id(channel_name)
             
             # Get channel config
             channel_config = cls.CHANNELS.get(channel_name, {})
@@ -236,22 +228,102 @@ class ChannelConfig:
                 logger.error(f"No configuration found for channel {channel_name}")
                 return False
             
-            # Create channel through factory
-            channel_factory = bot.component_factory.factories['channel']
+            # Find which category this channel belongs to
+            category_type = None
+            for cat_type, channels in CATEGORY_CHANNEL_MAPPINGS.items():
+                if channel_name in channels:
+                    category_type = cat_type
+                    break
+                
+            if not category_type:
+                logger.error(f"Channel {channel_name} not found in any category mapping")
+                return False
+            
+            # Look for category setup service with correct attribute name
+            # Try several possible service attribute names based on lifecycle manager's naming convention
+            possible_service_attrs = [
+                'category_setup',
+                'category_setup_service',
+                'category_service',
+                'category'
+            ]
+            
+            category_setup = None
+            for attr in possible_service_attrs:
+                if hasattr(bot, attr) and hasattr(getattr(bot, attr), 'get_category'):
+                    category_setup = getattr(bot, attr)
+                    logger.info(f"Found category service as bot.{attr}")
+                    break
+                
+            if not category_setup:
+                # Check components if available
+                if hasattr(bot, 'components') and isinstance(bot.components, dict):
+                    component_names = ['Category Setup', 'CategorySetup', 'Category']
+                    for name in component_names:
+                        if name in bot.components and hasattr(bot.components[name], 'get_category'):
+                            category_setup = bot.components[name]
+                            logger.info(f"Found category service in components as '{name}'")
+                            break
+            
+            if not category_setup:
+                # Last resort - try to create a temporary instance if possible
+                try:
+                    logger.warning("No category service found - creating temporary instance")
+                    from app.bot.infrastructure.discord.category_setup_service import CategorySetupService
+                    temp_service = CategorySetupService(bot)
+                    await temp_service.initialize()
+                    category_setup = temp_service
+                except Exception as e:
+                    logger.error(f"Failed to create temporary category service: {e}")
+                    return False
+                
+            # Get the category
+            category = await category_setup.get_category(category_type)
+            if not category:
+                # Try to ensure it exists
+                logger.info(f"Category {category_type} not found, trying to create it")
+                category = await category_setup.ensure_category_exists(category_type)
+                
+            if not category:
+                logger.error(f"Failed to get or create category {category_type}")
+                return False
+            
             guild = bot.guilds[0] if bot.guilds else None
             if not guild:
                 logger.error("No guild available to recreate channel")
                 return False
             
-            new_channel = await channel_factory.create_channel(
-                guild=guild,
-                name=channel_name,
-                is_private=channel_config.get('is_private', False),
-                topic=channel_config.get('topic', None),
-                slowmode=channel_config.get('slowmode', 0)
-            )
+            # Create channel through factory - using the CORRECT parameter name
+            try:
+                # Check if component_factory is available and has channel factory
+                if hasattr(bot, 'component_factory') and 'channel' in bot.component_factory.factories:
+                    channel_factory = bot.component_factory.factories['channel']
+                else:
+                    # Try to create a temporary channel factory
+                    from app.bot.infrastructure.factories.discord import ChannelFactory
+                    channel_factory = ChannelFactory(bot)
+                    
+                new_channel = await channel_factory.create_channel(
+                    guild=guild,
+                    name=channel_name,
+                    category_id=category.id,  # CORRECT parameter as used in channel_setup_service.py
+                    is_private=channel_config.get('is_private', False),
+                    topic=channel_config.get('topic', None),
+                    slowmode=channel_config.get('slowmode', 0)
+                )
+                
+                if new_channel:
+                    await cls.set_channel_id(channel_name, new_channel.id)
+                    logger.info(f"Successfully repaired channel {channel_name}")
+                    return True
+                else:
+                    logger.error(f"Failed to create channel {channel_name}")
+                    return False
+                
+            except Exception as e:
+                logger.error(f"Error creating channel: {e}")
+                return False
             
-            return new_channel is not None
         except Exception as e:
             logger.error(f"Error repairing channel mapping: {e}")
             return False 

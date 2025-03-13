@@ -7,6 +7,13 @@ class CategoryWorkflow(BaseWorkflow):
         """Initialize category workflow"""
         try:
             logger.debug("Starting category workflow initialization")
+            logger.debug(f"Category config available? {hasattr(self.bot, 'category_config')}")
+            
+            if not hasattr(self.bot, 'category_config'):
+                # Handle missing config
+                from app.bot.infrastructure.config.category_config import CategoryConfig
+                logger.warning("Category config not found, registering it now")
+                self.bot.category_config = CategoryConfig.register(self.bot)
             
             # Create category setup through factory (similar to service pattern)
             category_setup = self.bot.factory.create_service(

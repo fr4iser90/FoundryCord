@@ -14,25 +14,28 @@ class ChannelFactory(BaseFactory):
     async def create_channel(self, 
             guild,
             name: str,
-            HOMELAB_CATEGORY_ID: Optional[int] = None,
+            category_id: Optional[int] = None,
             is_private: bool = False,
             topic: Optional[str] = None,
             slowmode: int = 0
         ) -> TextChannel:
         """Creates a channel with the given configuration"""
-        # Kategorie aus Bot env_config holen
-        category = self.bot.get_channel(self.bot.env_config.HOMELAB_CATEGORY_ID)
+        # Use the passed category_id parameter
+        category = None
+        if category_id:
+            category = self.bot.get_channel(category_id)
+            
         if not category or not isinstance(category, CategoryChannel):
-            logger.error(f"HOMELAB category not found or invalid! ID: {self.bot.env_config.HOMELAB_CATEGORY_ID}")
+            logger.error(f"Category not found or invalid! ID: {category_id}")
             return None
 
-        # IN DER KATEGORIE nach existierendem Channel suchen
+        # Search for existing channel in the category
         existing_channel = nextcord.utils.get(category.channels, name=name)
         if existing_channel:
-            logger.debug(f"Found existing channel '{name}' in HOMELAB category")
+            logger.debug(f"Found existing channel '{name}' in category")
             self._channels[name] = existing_channel
             
-            # WICHTIG: Auch für existierende Channels die ID speichern!
+            # Store ID for existing channels as well
             from app.bot.infrastructure.config.channel_config import ChannelConfig
             await ChannelConfig.set_channel_id(name, existing_channel.id)
             
@@ -44,19 +47,19 @@ class ChannelFactory(BaseFactory):
             )
         }
         
-        # Neuen Channel IN DER KATEGORIE erstellen
+        # Create new channel in the category
         channel = await guild.create_text_channel(
             name=name,
-            category=category,  # Wichtig: Kategorie wird hier verwendet
+            category=category,
             overwrites=channel_overwrites,
             topic=topic,
             slowmode_delay=slowmode
         )
             
-        logger.info(f"Created new channel '{name}' in HOMELAB category")
+        logger.info(f"Created new channel '{name}' in category")
         self._channels[name] = channel
         
-        # Channel-ID in der Config speichern
+        # Store channel ID in config
         from app.bot.infrastructure.config.channel_config import ChannelConfig
         await ChannelConfig.set_channel_id(name, channel.id)
         

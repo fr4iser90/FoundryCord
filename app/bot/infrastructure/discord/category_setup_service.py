@@ -1,12 +1,12 @@
-from typing import Optional
-from nextcord import Guild, CategoryChannel, PermissionOverwrite
+from typing import Optional, Dict, List
+from nextcord import Guild, CategoryChannel, PermissionOverwrite, utils
 from app.bot.infrastructure.logging import logger
 from app.bot.infrastructure.database.models.config import get_session
 from app.bot.infrastructure.database.models import CategoryMapping
 from sqlalchemy import select, update, insert
 import asyncio
 import os
-
+from app.bot.infrastructure.config.constants.category_constants import CATEGORIES, CATEGORY_CHANNEL_MAPPINGS
 
 
 class CategorySetupService:
@@ -15,8 +15,8 @@ class CategorySetupService:
     def __init__(self, bot):
         self.bot = bot
         self.guild: Optional[Guild] = None
-        self.category: Optional[CategoryChannel] = None
-        self.category_id = None
+        self.categories = {}  # Store category mappings
+        self._default_category = next(iter(CATEGORIES)) if CATEGORIES else None
         
     async def initialize(self):
         """Initialize the category service with guild connection"""
@@ -26,214 +26,179 @@ class CategorySetupService:
         self.guild = self.bot.guilds[0]
         logger.info(f"Category service connected to guild: {self.guild.name}")
         
-        # Get category ID from app.bot.config - can be None or an integer
-        self.category_id = self.bot.env_config.HOMELAB_CATEGORY_ID
-        
-        # Check if we should auto-create (either None or specifically set to "auto")
-        category_env_value = os.environ.get('HOMELAB_CATEGORY_ID', 'auto')
-        auto_create = self.category_id is None or category_env_value == 'auto'
-        
-        if auto_create:
-            logger.info("HOMELAB_CATEGORY_ID not provided or set to 'auto', will create automatically")
-            await self.initialize_categories()
-        else:
-            logger.info(f"Using configured category ID: {self.category_id}")
-        
-    async def verify_category(self, category_key: str) -> bool:
-        """Verify if configured category exists in Discord"""
-        if not self.category_id:
-            logger.warning("No category ID configured")
-            return False
-            
+        # Initialize all categories from configuration
+        for category_type, config in CATEGORIES.items():
+            await self._initialize_category(category_type, config)
+
+    async def _initialize_category(self, category_type: str, config: dict):
+        """Initialize a single category by checking DB, server, or creating new"""
         try:
-            category = self.bot.get_channel(int(self.category_id))
-            if category and isinstance(category, CategoryChannel):
-                self.category = category
-                logger.info(f"Verified category exists: {category.name} (ID: {self.category_id})")
-                return True
-            else:
-                logger.warning(f"Category ID {self.category_id} not found or not a category")
-                return False
+            # 1. Check database first
+            category_id = await self._get_category_from_db(category_type)
+            if category_id:
+                category = self.guild.get_channel(int(category_id))
+                if category:
+                    self.categories[category_type] = category
+                    logger.info(f"Found {category_type} category in DB: {category.name}")
+                    return
+
+            # 2. Search server for existing category by name
+            category = await self._find_category_by_name(config['name'])
+            if category:
+                self.categories[category_type] = category
+                await self._store_category_mapping(category.id, category_type)
+                logger.info(f"Found existing {category_type} category on server: {category.name}")
+                return
+
+            # 3. Create new category
+            category = await self._create_category(config['name'], config)
+            if category:
+                self.categories[category_type] = category
+                await self._store_category_mapping(category.id, category_type)
+                logger.info(f"Created new {category_type} category: {category.name}")
+
         except Exception as e:
-            logger.error(f"Error verifying category: {e}")
-            return False
-            
-    async def create_category(self) -> Optional[CategoryChannel]:
-        """Create a new category for the bot"""
+            logger.error(f"Error initializing {category_type} category: {e}")
+
+    async def _get_category_from_db(self, category_type: str) -> Optional[str]:
+        """Get category ID from database"""
         try:
-            logger.info("Creating new Homelab category")
-            category_name = "HOMELAB"
-            
-            # Set up permissions - admin roles can see, others cannot
+            async for session in get_session():
+                result = await session.execute(
+                    select(CategoryMapping).where(
+                        CategoryMapping.guild_id == str(self.guild.id),
+                        CategoryMapping.category_type == category_type
+                    )
+                )
+                mapping = result.scalars().first()
+                return mapping.category_id if mapping else None
+        except Exception as e:
+            logger.error(f"Error getting category from DB: {e}")
+            return None
+
+    async def _find_category_by_name(self, name: str) -> Optional[CategoryChannel]:
+        """Find category in guild by name"""
+        return utils.get(self.guild.categories, name=name.upper())
+
+    async def _create_category(self, name: str, config: dict) -> Optional[CategoryChannel]:
+        """Create a new category with specified configuration"""
+        try:
             overwrites = {
-                self.guild.default_role: PermissionOverwrite(read_messages=False),
-                self.guild.me: PermissionOverwrite(read_messages=True, manage_channels=True)
+                self.guild.default_role: PermissionOverwrite(
+                    read_messages=not config.get('is_private', True)
+                ),
+                self.guild.me: PermissionOverwrite(
+                    read_messages=True, 
+                    manage_channels=True
+                )
             }
-            
-            # Create the category
+
             category = await self.guild.create_category(
-                name=category_name,
+                name=name.upper(),
                 overwrites=overwrites,
-                reason="Homelab Bot initialization"
+                position=config.get('position', 0),
+                reason="Homelab Bot category initialization"
             )
-            
-            self.category = category
-            self.category_id = category.id
-            
-            # Store in database
-            await self._store_category_mapping(category.id)
-            
-            logger.info(f"Created new category: {category.name} (ID: {category.id})")
             return category
-            
         except Exception as e:
             logger.error(f"Error creating category: {e}")
             return None
-    
-    async def ensure_category_exists(self) -> Optional[CategoryChannel]:
-        """Ensure category exists, creating it if necessary"""
-        # First verify if it exists
-        exists = await self.verify_category("HOMELAB")
-        
-        if exists:
-            return self.category
-            
-        # Create new category
-        category = await self.create_category()
-        if category:
-            logger.info(f"Category created/ensured: {category.name}")
-            return category
-        else:
-            logger.error("Failed to create category")
-            return None
-    
-    async def _store_category_mapping(self, category_id):
-        """Store category ID mapping in database"""
+
+    async def _store_category_mapping(self, category_id: int, category_type: str):
+        """Store category mapping in database"""
         try:
             async for session in get_session():
                 # Check if mapping exists
-                result = await session.execute(select(CategoryMapping).where(
-                    CategoryMapping.guild_id == str(self.guild.id)
-                ))
+                result = await session.execute(
+                    select(CategoryMapping).where(
+                        CategoryMapping.guild_id == str(self.guild.id),
+                        CategoryMapping.category_type == category_type
+                    )
+                )
                 mapping = result.scalars().first()
                 
                 if mapping:
-                    # Update existing mapping
                     await session.execute(
                         update(CategoryMapping)
-                        .where(CategoryMapping.guild_id == str(self.guild.id))
+                        .where(
+                            CategoryMapping.guild_id == str(self.guild.id),
+                            CategoryMapping.category_type == category_type
+                        )
                         .values(category_id=str(category_id))
                     )
                 else:
-                    # Create new mapping
                     new_mapping = CategoryMapping(
                         guild_id=str(self.guild.id),
                         category_id=str(category_id),
-                        category_name=self.category.name
-                    )
-                    session.add(new_mapping)
-                    
-                await session.commit()
-                logger.info(f"Category mapping stored in database: {category_id}")
-                
-        except Exception as e:
-            logger.error(f"Error storing category mapping: {e}")
-
-    async def _verify_category_integrity(self):
-        """Verify all categories exist and repair if needed"""
-        try:
-            from app.bot.infrastructure.config.category_config import CategoryConfig
-            from app.bot.infrastructure.config.constants.category_constants import CATEGORIES
-            
-            logger.info("Verifying category integrity...")
-            missing_categories = []
-            
-            # Check each category
-            for category_key, category_config in CATEGORIES.items():
-                if not await self.verify_category(category_key):
-                    missing_categories.append(category_key)
-            
-            if missing_categories:
-                logger.warning(f"Found {len(missing_categories)} missing categories: {missing_categories}")
-                
-                # Attempt to repair each missing category
-                for category_key in missing_categories:
-                    repaired = await self.create_category()
-                    if repaired:
-                        logger.info(f"Successfully created category: {CATEGORIES[category_key]['name']}")
-                    else:
-                        logger.error(f"Failed to create category: {CATEGORIES[category_key]['name']}")
-            else:
-                logger.info("All categories are intact")
-                
-        except Exception as e:
-            logger.error(f"Category integrity verification failed: {e}")
-
-    async def initialize_categories(self):
-        """Initialize categories that are marked for auto-creation"""
-        try:
-            # Check for Homelab category
-            if os.environ.get('HOMELAB_CATEGORY_ID', 'auto') == 'auto':
-                logger.info("Auto-creating Homelab category")
-                homelab_category = await self.create_category()
-                os.environ['HOMELAB_CATEGORY_ID'] = str(homelab_category.id)
-                logger.info(f"Created Homelab category with ID: {homelab_category.id}")
-                
-                # Store in database
-                await self._store_category_mapping(homelab_category.id)
-                
-            # Check for Gameservers category
-            if os.environ.get('GAMESERVERS_CATEGORY_ID', 'auto') == 'auto':
-                logger.info("Auto-creating Gameservers category")
-                gameservers_category = await self.create_category()
-                os.environ['GAMESERVERS_CATEGORY_ID'] = str(gameservers_category.id)
-                logger.info(f"Created Gameservers category with ID: {gameservers_category.id}")
-                
-                # Store in database
-                await self._store_category_mapping(gameservers_category.id, category_type="gameservers")
-                
-        except Exception as e:
-            logger.error(f"Error auto-creating categories: {e}")
-            raise
-
-    async def create_category(self, name):
-        """Create a new category in the Discord server"""
-        return await self.guild.create_category(name)
-    
-    async def _store_category_mapping(self, category_id, category_type="homelab"):
-        """Store category ID mapping in database"""
-        try:
-            async for session in get_session():
-                # Check if mapping exists
-                result = await session.execute(select(CategoryMapping).where(
-                    CategoryMapping.guild_id == str(self.guild.id),
-                    CategoryMapping.category_type == category_type
-                ))
-                mapping = result.scalars().first()
-                
-                if mapping:
-                    # Update existing mapping
-                    await session.execute(
-                        update(CategoryMapping)
-                        .where(CategoryMapping.guild_id == str(self.guild.id),
-                               CategoryMapping.category_type == category_type)
-                        .values(category_id=str(category_id))
-                    )
-                else:
-                    # Create new mapping
-                    new_mapping = CategoryMapping(
-                        guild_id=str(self.guild.id),
-                        category_id=str(category_id),
-                        category_name=self.category.name,
+                        category_name=self.categories[category_type].name,
                         category_type=category_type
                     )
                     session.add(new_mapping)
                     
                 await session.commit()
-                logger.info(f"{category_type.capitalize()} category mapping stored in database: {category_id}")
+                logger.info(f"Stored {category_type} category mapping: {category_id}")
                 
         except Exception as e:
             logger.error(f"Error storing category mapping: {e}")
+
+    async def verify_category(self, category_key: str) -> bool:
+        """Verify if configured category exists in Discord"""
+        if not self.categories.get(category_key):
+            logger.warning(f"No {category_key} category found")
+            return False
+            
+        try:
+            category = self.guild.get_channel(int(self.categories[category_key].id))
+            if category and isinstance(category, CategoryChannel):
+                logger.info(f"Verified {category_key} category exists: {category.name} (ID: {self.categories[category_key].id})")
+                return True
+            else:
+                logger.warning(f"{category_key} category ID {self.categories[category_key].id} not found or not a category")
+                return False
+        except Exception as e:
+            logger.error(f"Error verifying {category_key} category: {e}")
+            return False
+            
+    async def ensure_category_exists(self, category_type: str = None) -> Optional[CategoryChannel]:
+        """Ensure category exists, creating it if necessary"""
+        try:
+            # Use default category if none specified
+            if category_type is None:
+                category_type = self._default_category
+                logger.info(f"No category specified, using default: {category_type}")
+
+            # First verify if it exists
+            if category_type in self.categories:
+                exists = await self.verify_category(category_type)
+                if exists:
+                    return self.categories[category_type]
+
+            # If not exists, create new category using config from CATEGORIES
+            config = CATEGORIES.get(category_type)
+            if not config:
+                logger.error(f"No configuration found for category type: {category_type}")
+                return None
+
+            category = await self._create_category(config['name'], config)
+            if category:
+                self.categories[category_type] = category
+                await self._store_category_mapping(category.id, category_type)
+                logger.info(f"Category created/ensured: {category.name}")
+                return category
+            else:
+                logger.error(f"Failed to create category: {category_type}")
+                return None
+            
+        except Exception as e:
+            logger.error(f"Error ensuring category exists: {e}")
+            return None
+            
+    async def get_category(self, category_type: str = None) -> Optional[CategoryChannel]:
+        """Get a category by type, using default if none specified"""
+        if category_type is None:
+            category_type = self._default_category
+            
+        return self.categories.get(category_type)
 
 async def setup_category(bot):
     """Setup function for Discord category"""
