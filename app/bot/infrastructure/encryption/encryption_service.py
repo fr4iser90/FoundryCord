@@ -6,7 +6,6 @@ from app.bot.infrastructure.managers.key_manager import KeyManager
 from app.shared.database.repositories.key_repository_impl import KeyRepository
 
 import os
-import logging
 import base64
 import tempfile
 from typing import Union, Optional
