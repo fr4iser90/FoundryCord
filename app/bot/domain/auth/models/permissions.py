@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from .roles import Role, SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
 
 class Permission(Enum):

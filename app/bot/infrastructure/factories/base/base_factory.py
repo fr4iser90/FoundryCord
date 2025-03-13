@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 
 class BaseFactory(ABC):
     def __init__(self, bot):

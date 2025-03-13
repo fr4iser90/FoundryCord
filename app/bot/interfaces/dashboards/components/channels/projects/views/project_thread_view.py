@@ -1,6 +1,6 @@
 import nextcord
 from typing import Callable, Optional
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.interfaces.dashboards.components.common.views import BaseView
 
 class ProjectThreadView(BaseView):

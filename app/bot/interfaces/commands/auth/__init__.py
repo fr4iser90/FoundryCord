@@ -1,6 +1,6 @@
 from app.bot.services.auth import AuthenticationService , AuthorizationService
 from .auth_commands import AuthCommands
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 
 __all__ = ['AuthCommands', 'setup']
 

@@ -1,6 +1,6 @@
 import nextcord
 from typing import Optional, Callable, Coroutine
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 
 class BaseButton(nextcord.ui.Button):
     """Base class for all dashboard buttons"""

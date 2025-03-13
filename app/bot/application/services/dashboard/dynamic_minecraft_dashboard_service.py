@@ -4,7 +4,7 @@ import nextcord
 import asyncio
 from datetime import datetime, timedelta
 
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.infrastructure.factories.discord_ui.dashboard_factory import DashboardFactory
 from app.bot.infrastructure.config.channel_config import ChannelConfig
 
@@ -18,8 +18,8 @@ from app.bot.interfaces.dashboards.components.channels.gamehub.views import Game
 from app.bot.interfaces.dashboards.controller.base_dashboard import BaseDashboardController
 from app.bot.interfaces.dashboards.controller.minecraft_server_dashboard import MinecraftServerDashboardController
 
-from app.bot.infrastructure.database.repositories.category_repository_impl import CategoryRepository
-from app.bot.infrastructure.database.models import CategoryMapping
+from app.shared.database.repositories.category_repository_impl import CategoryRepository
+from app.shared.database.models import CategoryMapping
 
 class DynamicMinecraftDashboardService:
     """Service for creating individual Minecraft server dashboards"""

@@ -3,13 +3,6 @@ set -e
 
 echo "===== Homelab Discord Bot Initialization ====="
 
-# Check for credentials file from app.bot.database
-CREDS_FILE="/app/bot/database/credentials/db_credentials"
-if [ -f "$CREDS_FILE" ]; then
-  echo "Loading database credentials from shared volume..."
-  source "$CREDS_FILE"
-fi
-
 # Check and set required environment variables
 check_required_vars() {
   missing_vars=0

@@ -1,4 +1,4 @@
 from .system_monitoring_commands import setup
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 
 __all__ = ['setup']

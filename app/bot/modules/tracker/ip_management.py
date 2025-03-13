@@ -3,7 +3,7 @@ import hashlib
 import nextcord
 from nextcord.ext import commands
 from app.bot.utils.http_client import http_client
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 
 class IPManagement(commands.Cog):
     def __init__(self, bot):

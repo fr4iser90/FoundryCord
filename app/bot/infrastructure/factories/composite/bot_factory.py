@@ -11,7 +11,7 @@ from ..discord_ui.menu_factory import MenuFactory
 from ..discord_ui.modal_factory import ModalFactory
 from ..discord_ui.dashboard_factory import DashboardFactory
 from ..discord_ui.embed_factory import EmbedFactory
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 
 logger = logging.getLogger(__name__)
 

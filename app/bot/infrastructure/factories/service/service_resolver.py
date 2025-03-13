@@ -1,4 +1,4 @@
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 
 class ServiceResolver:
     @staticmethod

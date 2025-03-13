@@ -1,5 +1,5 @@
 from typing import Dict, Any
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOARD_MAPPINGS
 from app.bot.infrastructure.factories.service.service_resolver import ServiceResolver
 from .base_workflow import BaseWorkflow

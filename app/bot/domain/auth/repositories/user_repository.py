@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List
-from app.bot.infrastructure.database.models.user import User
+from app.shared.database.models.user import User
 
 class UserRepository(ABC):
     @abstractmethod

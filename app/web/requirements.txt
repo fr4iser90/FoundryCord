@@ -16,10 +16,10 @@ passlib[bcrypt]==1.7.4
 httpx==0.25.0
 
 # Database
-sqlalchemy==2.0.22
-alembic==1.12.1
-psycopg2-binary==2.9.9
-asyncpg==0.28.0
+sqlalchemy>=2.0.0
+alembic>=1.10.0
+psycopg2-binary>=2.9.5
+asyncpg>=0.27.0
 
 # Session Management
 redis==5.0.1

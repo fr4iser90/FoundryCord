@@ -2,8 +2,8 @@ from cryptography.fernet import Fernet
 from datetime import datetime, timedelta
 import base64
 import os
-from app.bot.infrastructure.logging.logger import logger
-from app.bot.infrastructure.database.repositories.key_repository_impl import KeyRepository
+from app.shared.logging.logger import bot_logger
+from app.shared.database.repositories.key_repository_impl import KeyRepository
 
 class KeyManager:
     def __init__(self):

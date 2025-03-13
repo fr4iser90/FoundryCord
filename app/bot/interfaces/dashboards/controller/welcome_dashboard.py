@@ -2,7 +2,7 @@ from typing import Optional, List
 import nextcord
 from .base_dashboard import BaseDashboardController
 from app.bot.interfaces.dashboards.components.channels.welcome.views import WelcomeView, BotInfoView
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.interfaces.dashboards.components.common.embeds import ErrorEmbed, DashboardEmbed
 
 class WelcomeDashboardController(BaseDashboardController):

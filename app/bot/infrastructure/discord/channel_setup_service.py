@@ -1,6 +1,6 @@
 from typing import Dict, Optional
 from nextcord import TextChannel, Guild, CategoryChannel
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.infrastructure.factories.discord import ChannelFactory, ThreadFactory
 from app.bot.infrastructure.config.constants.channel_constants import CHANNELS
 from app.bot.infrastructure.config.constants.category_constants import CATEGORY_CHANNEL_MAPPINGS, CATEGORIES

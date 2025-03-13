@@ -1,8 +1,8 @@
 from typing import Optional, Dict, List
 from nextcord import Guild, CategoryChannel, PermissionOverwrite, utils
-from app.bot.infrastructure.logging import logger
-from app.bot.infrastructure.database.models.config import get_session
-from app.bot.infrastructure.database.models import CategoryMapping
+from app.shared.logging import logger
+from app.shared.database.models.config import get_session
+from app.shared.database.models import CategoryMapping
 from sqlalchemy import select, update, insert
 import asyncio
 import os

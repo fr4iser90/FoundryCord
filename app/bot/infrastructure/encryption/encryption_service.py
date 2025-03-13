@@ -3,7 +3,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from app.bot.infrastructure.managers.key_manager import KeyManager
-from app.bot.infrastructure.database.repositories.key_repository_impl import KeyRepository
+from app.shared.database.repositories.key_repository_impl import KeyRepository
 
 import os
 import logging
@@ -11,7 +11,7 @@ import base64
 import tempfile
 from typing import Union, Optional
 import asyncio
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 
 # Define AUTO_KEY_MANAGEMENT as a constant in the code
 # When True: Use automatic key management only, ignore environment variables

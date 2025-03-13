@@ -1,6 +1,6 @@
 # app/bot/core/workflows/slash_commands_workflow.py
 from .base_workflow import BaseWorkflow
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.infrastructure.discord.command_sync_service import CommandSyncService
 import inspect
 

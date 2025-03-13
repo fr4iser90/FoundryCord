@@ -2,7 +2,7 @@ from typing import Dict
 from app.bot.application.services.dashboard.project_dashboard_service import ProjectDashboardService
 from app.bot.application.services.dashboard.monitoring_dashboard_service import MonitoringDashboardService
 from app.bot.application.services.dashboard.welcome_dashboard_service import WelcomeDashboardService
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 
 class DashboardConfig:
     @staticmethod

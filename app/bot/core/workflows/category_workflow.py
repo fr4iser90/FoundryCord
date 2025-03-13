@@ -1,5 +1,5 @@
 from .base_workflow import BaseWorkflow
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.infrastructure.config.constants.category_constants import CATEGORIES
 
 class CategoryWorkflow(BaseWorkflow):

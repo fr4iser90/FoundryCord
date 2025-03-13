@@ -3,12 +3,12 @@ import logging
 
 from typing import List, Dict, Any
 
-from app.bot.infrastructure.database.models import MetricModel
+from app.shared.database.models import MetricModel
 from .components import docker
 from .components import security  
 from .components import services
 from .components.base import collect_service_data
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.domain.monitoring.collectors.interfaces.service_collector_interface import ServiceCollectorInterface
 
 class ServiceCollector(ServiceCollectorInterface):

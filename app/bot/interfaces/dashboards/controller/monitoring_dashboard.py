@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional, List
 import nextcord
 from datetime import datetime, timedelta
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.infrastructure.config.channel_config import ChannelConfig
 from app.bot.interfaces.dashboards.components.channels.monitoring.embeds import MonitoringEmbed
 from app.bot.interfaces.dashboards.components.ui.table_builder import UnicodeTableBuilder

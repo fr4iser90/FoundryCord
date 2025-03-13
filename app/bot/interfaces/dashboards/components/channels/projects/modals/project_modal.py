@@ -1,6 +1,6 @@
 from typing import Optional
 import nextcord
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from ....common.modals import BaseModal
 
 class ProjectModal(BaseModal):

@@ -2,10 +2,10 @@
 import nextcord
 from datetime import datetime
 from app.bot.utils.decorators.auth import admin_or_higher
-from app.bot.infrastructure.logging import logger
-from app.bot.infrastructure.database.models.config import get_session
-from app.bot.infrastructure.database.repositories.project_repository_impl import ProjectRepository
-from app.bot.infrastructure.database.repositories.task_repository import TaskRepository
+from app.shared.logging import logger
+from app.shared.database.models.config import get_session
+from app.shared.database.repositories.project_repository_impl import ProjectRepository
+from app.shared.database.repositories.task_repository import TaskRepository
 
 def create_task_embed(tasks_data):
     """Erstellt ein Embed mit allen Projekten und Aufgaben"""

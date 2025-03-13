@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Optional
 import speedtest
 from functools import partial
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 
 SKIP_SPEED_TEST = True
 DEFAULT_PLACEHOLDER_RESULTS = {

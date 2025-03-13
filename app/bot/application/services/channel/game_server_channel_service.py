@@ -1,4 +1,4 @@
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.infrastructure.config.channels.game_server_config import GameServerChannelConfig
 
 class GameServerChannelService:

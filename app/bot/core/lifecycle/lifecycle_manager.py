@@ -9,7 +9,7 @@ from app.bot.core.workflows.service_workflow import ServiceWorkflow
 from app.bot.core.workflows.dashboard_workflow import DashboardWorkflow
 from app.bot.core.workflows.task_workflow import TaskWorkflow
 from app.bot.core.workflows.slash_commands_workflow import SlashCommandsWorkflow
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 
 
 class BotLifecycleManager:

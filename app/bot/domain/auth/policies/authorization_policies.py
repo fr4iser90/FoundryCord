@@ -1,4 +1,4 @@
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.domain.auth.models import Role, SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
 
 def is_super_admin(user):

@@ -1,7 +1,7 @@
 import asyncio
 from aiohttp import web
 import nextcord
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 
 class WebInterfaceServer:
     def __init__(self, bot):

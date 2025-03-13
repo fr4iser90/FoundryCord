@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import jwt as PyJWT
 import os
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.core.services.auth.models.permissions import is_authorized
 
 class AuthService:

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from app.bot.infrastructure.database.models import MetricModel, AlertModel
+from app.shared.database.models import MetricModel, AlertModel
 from datetime import datetime
 from app.bot.domain.monitoring.models import Metric, Alert
  

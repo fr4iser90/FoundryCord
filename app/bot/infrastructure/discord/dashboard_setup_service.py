@@ -1,4 +1,4 @@
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.infrastructure.config.constants.channel_constants import DASHBOARD_MAPPINGS
 
 class DashboardSetupService:

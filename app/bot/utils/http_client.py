@@ -1,7 +1,7 @@
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 
 def create_http_client(retries=3, backoff_factor=0.3):
     session = requests.Session()

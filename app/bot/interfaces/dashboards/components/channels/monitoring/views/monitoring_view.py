@@ -1,7 +1,7 @@
 import nextcord
 from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime, timedelta
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.interfaces.dashboards.components.common.views import BaseView
 from app.bot.interfaces.dashboards.components.common.buttons import RefreshButton
 

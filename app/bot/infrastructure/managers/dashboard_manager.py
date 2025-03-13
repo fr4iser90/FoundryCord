@@ -3,9 +3,9 @@ import asyncio
 import logging
 from typing import List, Optional
 from app.bot.interfaces.dashboards.controller.base_dashboard import BaseDashboardController
-from app.bot.infrastructure.logging import logger
-from app.bot.infrastructure.database.models import DashboardMessage
-from app.bot.infrastructure.database.models.config import get_session
+from app.shared.logging import logger
+from app.shared.database.models import DashboardMessage
+from app.shared.database.models.config import get_session
 from sqlalchemy import select
 import nextcord
 

@@ -1,8 +1,8 @@
 import nextcord
 from nextcord.ext import commands
-from app.bot.infrastructure.database.models import User, AuditLog
+from app.shared.database.models import User, AuditLog
 from datetime import datetime
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.utils.decorators.auth import admin_or_higher
 
 class SecurityCommands(commands.Cog):

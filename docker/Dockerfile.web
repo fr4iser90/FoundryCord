@@ -9,23 +9,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 
-# Set working directory
+# Set shared directory first
+WORKDIR /app/shared
+COPY app/shared /app/shared
+
+# Set working directory for the web app
 WORKDIR /app/web
+COPY app/web /app/web
 
 # Set environment variables
 ENV PYTHONPATH="/"
+
 
 # Install Python dependencies
 COPY app/web/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy both web and bot code to allow imports from either
-COPY app/web/ /app/web/
-COPY app/bot/ /app/bot/
-
-# Copy the startup script and make it executable
-COPY app/web/start.sh /app/start.sh
-RUN chmod +x /app/start.sh
 
 # Copy entrypoint script
 COPY docker/web/entrypoint.sh /entrypoint.sh

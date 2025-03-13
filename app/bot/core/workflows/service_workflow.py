@@ -1,5 +1,5 @@
 from .base_workflow import BaseWorkflow
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 
 class ServiceWorkflow(BaseWorkflow):
     async def initialize(self):

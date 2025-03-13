@@ -1,5 +1,5 @@
 import os
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 
 class WireguardConfigManager:
     """Domain logic for managing WireGuard configurations"""

@@ -1,6 +1,6 @@
 import nextcord
 from typing import Optional, Callable, Dict, Any
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 
 class BaseView(nextcord.ui.View):
     """Base class for all dashboard views"""

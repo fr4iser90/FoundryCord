@@ -6,7 +6,7 @@ import asyncio
 import aiohttp
 from .docker_utils import get_container_ip, get_all_containers
 from .port_checker import check_tcp_port
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
 
 async def get_public_ip():

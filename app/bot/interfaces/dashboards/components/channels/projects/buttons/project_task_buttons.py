@@ -1,7 +1,7 @@
 from typing import List
 import nextcord
-from app.bot.infrastructure.logging import logger
-from app.bot.infrastructure.database.models import Task
+from app.shared.logging import logger
+from app.shared.database.models import Task
 
 class TaskActionButtons:
     def __init__(self, task_id: int, project_id: int, dashboard):

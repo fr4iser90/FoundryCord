@@ -1,5 +1,5 @@
 import nextcord
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from .base_view import BaseView
 
 class ConfirmationView(BaseView):

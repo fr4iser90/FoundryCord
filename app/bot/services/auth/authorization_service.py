@@ -1,4 +1,4 @@
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.domain.auth.models import User, Role, Permission
 from app.bot.domain.auth.policies import is_authorized
 # OR if you moved to domain services:

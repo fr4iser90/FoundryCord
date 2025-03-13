@@ -265,7 +265,7 @@ await interaction.followup.send(embed=error_embed, ephemeral=True)
 from typing import Dict, Any, Optional
 import nextcord
 from datetime import datetime
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.infrastructure.config.channel_config import ChannelConfig
 from .base_dashboard import BaseDashboardController
 from app.bot.interfaces.dashboards.components.channels.example.views import ExampleView

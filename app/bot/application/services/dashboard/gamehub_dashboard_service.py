@@ -2,7 +2,7 @@
 from typing import Dict, Any, List
 from nextcord.ext import commands
 import asyncio
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.infrastructure.factories.discord_ui.dashboard_factory import DashboardFactory
 from app.bot.infrastructure.factories.monitoring.collector_factory import CollectorFactory
 from app.bot.interfaces.dashboards.controller.gamehub_dashboard import GameHubDashboardController

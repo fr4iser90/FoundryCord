@@ -1,70 +1,182 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional
-from pydantic import BaseModel
-from datetime import datetime
-from app.web.auth.dependencies import get_current_user
+from app.web.domain.auth.dependencies import get_current_user
+from app.web.domain.dashboard_builder.models import Dashboard, DashboardCreate, DashboardUpdate, Widget, WidgetCreate
+from app.web.application.services.dashboard import DashboardService
+from app.web.infrastructure.database.repositories import SQLAlchemyDashboardRepository
+from app.web.infrastructure.database.connection import get_db_session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-router = APIRouter(prefix="/api/dashboards", tags=["Dashboards"])
+router = APIRouter(prefix="/api/v1/dashboards", tags=["Dashboards"])
 
-# Models
-class DashboardBase(BaseModel):
-    title: str
-    description: Optional[str] = None
-    
-class DashboardCreate(DashboardBase):
-    widgets: List[dict] = []
-    
-class Dashboard(DashboardBase):
-    id: int
-    user_id: str
-    created_at: datetime
-    updated_at: datetime
-    widgets: List[dict] = []
-    
-    class Config:
-        orm_mode = True
+# Get service
+async def get_dashboard_service(session: AsyncSession = Depends(get_db_session)):
+    repository = SQLAlchemyDashboardRepository(session)
+    return DashboardService(repository)
 
 # Routes
 @router.get("/", response_model=List[Dashboard])
-async def get_dashboards(current_user = Depends(get_current_user)):
+async def get_dashboards(
+    service: DashboardService = Depends(get_dashboard_service),
+    current_user = Depends(get_current_user)
+):
     """Get all dashboards for the current user"""
-    # Implementation depends on your database setup
-    # This is a placeholder
-    return []
+    if not current_user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    
+    dashboards = await service.get_user_dashboards(current_user["id"])
+    return dashboards
 
 @router.post("/", response_model=Dashboard)
-async def create_dashboard(dashboard: DashboardCreate, current_user = Depends(get_current_user)):
+async def create_dashboard(
+    dashboard: DashboardCreate,
+    service: DashboardService = Depends(get_dashboard_service),
+    current_user = Depends(get_current_user)
+):
     """Create a new dashboard"""
-    # Implementation depends on your database setup
-    # This is a placeholder
-    new_dashboard = {
-        "id": 1,
-        "user_id": current_user["id"],
-        "title": dashboard.title,
-        "description": dashboard.description,
-        "widgets": dashboard.widgets,
-        "created_at": datetime.now(),
-        "updated_at": datetime.now()
-    }
+    if not current_user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    
+    new_dashboard = await service.create_dashboard(current_user["id"], dashboard)
     return new_dashboard
 
+@router.get("/widget-types")
+async def get_widget_types(
+    service: DashboardService = Depends(get_dashboard_service),
+    current_user = Depends(get_current_user)
+):
+    """Get available widget types"""
+    if not current_user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    
+    widgets = await service.get_available_widgets()
+    return widgets
+
 @router.get("/{dashboard_id}", response_model=Dashboard)
-async def get_dashboard(dashboard_id: int, current_user = Depends(get_current_user)):
+async def get_dashboard(
+    dashboard_id: str,
+    service: DashboardService = Depends(get_dashboard_service),
+    current_user = Depends(get_current_user)
+):
     """Get a specific dashboard by ID"""
-    # Implementation depends on your database setup
-    # This is a placeholder
-    return {"id": dashboard_id, "title": "Sample Dashboard", "user_id": current_user["id"]}
+    if not current_user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    
+    dashboard = await service.get_dashboard(dashboard_id)
+    
+    if not dashboard:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dashboard not found")
+        
+    # Check permissions
+    if dashboard.user_id != current_user["id"] and not dashboard.is_public:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this dashboard")
+    
+    return dashboard
 
 @router.put("/{dashboard_id}", response_model=Dashboard)
-async def update_dashboard(dashboard_id: int, dashboard: DashboardCreate, current_user = Depends(get_current_user)):
+async def update_dashboard(
+    dashboard_id: str,
+    dashboard: DashboardUpdate,
+    service: DashboardService = Depends(get_dashboard_service),
+    current_user = Depends(get_current_user)
+):
     """Update an existing dashboard"""
-    # Implementation depends on your database setup
-    # This is a placeholder
-    return {"id": dashboard_id, "title": dashboard.title, "user_id": current_user["id"]}
+    if not current_user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    
+    # Check if dashboard exists and belongs to user
+    existing_dashboard = await service.get_dashboard(dashboard_id)
+    if not existing_dashboard:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dashboard not found")
+        
+    if existing_dashboard.user_id != current_user["id"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to modify this dashboard")
+    
+    updated_dashboard = await service.update_dashboard(dashboard_id, dashboard)
+    return updated_dashboard
 
 @router.delete("/{dashboard_id}")
-async def delete_dashboard(dashboard_id: int, current_user = Depends(get_current_user)):
+async def delete_dashboard(
+    dashboard_id: str,
+    service: DashboardService = Depends(get_dashboard_service),
+    current_user = Depends(get_current_user)
+):
     """Delete a dashboard"""
-    # Implementation depends on your database setup
-    # This is a placeholder
-    return {"status": "success", "message": f"Dashboard {dashboard_id} deleted"} 
+    if not current_user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    
+    # Check if dashboard exists and belongs to user
+    existing_dashboard = await service.get_dashboard(dashboard_id)
+    if not existing_dashboard:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dashboard not found")
+        
+    if existing_dashboard.user_id != current_user["id"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to delete this dashboard")
+    
+    success = await service.delete_dashboard(dashboard_id)
+    
+    if not success:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete dashboard")
+        
+    return {"status": "success", "message": f"Dashboard {dashboard_id} deleted"}
+
+@router.post("/{dashboard_id}/widgets", response_model=Widget)
+async def add_widget(
+    dashboard_id: str,
+    widget: WidgetCreate,
+    service: DashboardService = Depends(get_dashboard_service),
+    current_user = Depends(get_current_user)
+):
+    """Add a widget to a dashboard"""
+    if not current_user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    
+    # Check if dashboard exists and belongs to user
+    existing_dashboard = await service.get_dashboard(dashboard_id)
+    if not existing_dashboard:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dashboard not found")
+        
+    if existing_dashboard.user_id != current_user["id"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to modify this dashboard")
+    
+    new_widget = await service.add_widget(dashboard_id, widget)
+    
+    if not new_widget:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to add widget")
+        
+    return new_widget
+
+@router.put("/widgets/{widget_id}", response_model=Widget)
+async def update_widget(
+    widget_id: str,
+    widget_data: dict,
+    service: DashboardService = Depends(get_dashboard_service),
+    current_user = Depends(get_current_user)
+):
+    """Update a widget"""
+    if not current_user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    
+    updated_widget = await service.update_widget(widget_id, widget_data)
+    
+    if not updated_widget:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Widget not found")
+        
+    return updated_widget
+
+@router.delete("/widgets/{widget_id}")
+async def delete_widget(
+    widget_id: str,
+    service: DashboardService = Depends(get_dashboard_service),
+    current_user = Depends(get_current_user)
+):
+    """Delete a widget"""
+    if not current_user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    
+    success = await service.delete_widget(widget_id)
+    
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Widget not found")
+        
+    return {"status": "success", "message": f"Widget {widget_id} deleted"} 

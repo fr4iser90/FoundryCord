@@ -1,5 +1,5 @@
 import nextcord
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from app.bot.utils.decorators.auth import admin_or_higher
 from app.bot.application.tasks.cleanup_task import cleanup_homelab_channel
 from app.bot.application.tasks.cleanup_dm_task import cleanup_dm_messages

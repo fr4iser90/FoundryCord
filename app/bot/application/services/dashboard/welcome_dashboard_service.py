@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional, Any
-from app.bot.infrastructure.logging import logger
+from app.shared.logging import logger
 from nextcord.ext import commands
 import nextcord
 from nextcord import Message
