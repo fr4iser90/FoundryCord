@@ -1,7 +1,7 @@
 import functools
 import nextcord
 from nextcord.ext import commands
-from app.bot.domain.auth import (
+from app.shared.database.auth import (
     is_super_admin, is_admin, is_moderator,
     is_user, is_guest, is_authorized
 )

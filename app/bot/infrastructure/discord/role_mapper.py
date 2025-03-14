@@ -1,5 +1,5 @@
 from typing import Optional, List
-from app.bot.domain.auth.models.roles import Role, SERVER_ROLES
+from app.shared.database.auth.models.roles import Role, SERVER_ROLES
 
 # Discord-specific role mapping
 DISCORD_ROLE_MAPPING = {
