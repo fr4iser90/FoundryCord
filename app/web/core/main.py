@@ -18,13 +18,6 @@ from app.web.interfaces.web import routers as web_routers
 from app.web.domain.auth.dependencies import get_current_user
 from app.web.interfaces.api.v1.health_routes import router as health_router
 
-# Import the bot modules through our bridge module
-# try:
-#     from app.web.infrastructure.setup.bot_imports import get_bot_interfaces, BOT_IMPORTS_SUCCESS
-#     bot_interface = get_bot_interfaces()
-# except ImportError:
-#     bot_interface = None
-#     print("Warning: Bot interfaces not available. Some features will be disabled.")
 
 # Create FastAPI application
 app = FastAPI(
@@ -43,7 +36,7 @@ app.add_middleware(
 )
 
 # Get the absolute path to the templates directory
-base_dir = pathlib.Path(__file__).parent
+base_dir = pathlib.Path(__file__).parent.parent
 templates_dir = os.path.join(base_dir, "templates")
 print(f"Templates directory: {templates_dir}")
 templates = Jinja2Templates(directory=templates_dir)

@@ -34,7 +34,7 @@ async def dashboard_builder(
     """Dashboard builder page"""
     if not current_user:
         return templates.TemplateResponse(
-            "login.html", 
+            "auth/login.html", 
             {"request": request, "message": "Please login to access the dashboard builder"}
         )
     
@@ -63,7 +63,7 @@ async def dashboard_view(
     if not dashboard.is_public and (not current_user or dashboard.user_id != current_user["id"]):
         if not current_user:
             return templates.TemplateResponse(
-                "login.html", 
+                "auth/login.html", 
                 {"request": request, "message": "Please login to view this dashboard"}
             )
         else:
@@ -91,7 +91,7 @@ async def dashboards_list(
     """Dashboards list page"""
     if not current_user:
         return templates.TemplateResponse(
-            "login.html", 
+            "auth/login.html", 
             {"request": request, "message": "Please login to view your dashboards"}
         )
     

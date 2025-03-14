@@ -1,0 +1,53 @@
+{% extends "layouts/dashboard_layout.html" %}
+
+{% block title %}Dashboard Builder - HomeLab Discord Bot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack.min.css"/>
+{% endblock %}
+
+{% block left_sidebar %}
+    {% include "components/sidebars/builder_sidebar.html" %}
+{% endblock %}
+
+{% block right_sidebar %}
+    {% include "components/sidebars/toolbox_sidebar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="editor-area">
+    <div class="grid-stack" id="builder-grid"></div>
+</div>
+
+<!-- New Dashboard Modal -->
+<div class="modal fade" id="newDashboardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Dashboard</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="new-dashboard-title" class="form-label">Dashboard Title</label>
+                    <input type="text" class="form-control" id="new-dashboard-title" placeholder="My Dashboard">
+                </div>
+                <div class="mb-3">
+                    <label for="new-dashboard-description" class="form-label">Description (Optional)</label>
+                    <textarea class="form-control" id="new-dashboard-description" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="create-dashboard-btn">Create Dashboard</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack-all.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="{{ url_for('static', path='js/pages/dashboard_builder.js') }}"></script>
+{% endblock %} 

@@ -1,0 +1,46 @@
+/* Global styles that apply across all themes */
+
+/* Utility classes */
+.mt-20 {
+    margin-top: 20px;
+}
+
+/* Basic layout classes that aren't theme-specific */
+.main-content {
+    padding: 20px;
+    margin-left: 200px;
+}
+
+/* Common component layout (structure only, not colors) */
+.sidebar {
+    padding: 15px;
+    height: 100vh;
+    position: fixed;
+    overflow-y: auto;
+    width: 200px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        z-index: 100;
+    }
+    
+    .main-content {
+        margin-left: 0;
+        padding: 15px;
+    }
+    
+    .toolbox {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
+    
+    .editor-area {
+        margin-right: 0;
+    }
+}
