@@ -4,13 +4,13 @@ from app.web.domain.auth.dependencies import get_current_user, require_moderator
 from app.web.domain.dashboard_builder.models import Dashboard, DashboardCreate, DashboardUpdate, Widget, WidgetCreate
 from app.web.application.services.dashboard import DashboardService
 from app.web.infrastructure.database.repositories import SQLAlchemyDashboardRepository
-from app.web.infrastructure.database.connection import get_db_session
+from app.shared.infrastructure.database.management.connection import get_db_connection
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/api/v1/dashboards", tags=["Dashboards"])
 
 # Get service
-async def get_dashboard_service(session: AsyncSession = Depends(get_db_session)):
+async def get_dashboard_service(session: AsyncSession = Depends(get_db_connection)):
     repository = SQLAlchemyDashboardRepository(session)
     return DashboardService(repository)
 

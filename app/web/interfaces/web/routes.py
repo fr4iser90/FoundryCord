@@ -11,7 +11,7 @@ from app.web.domain.auth.dependencies import get_current_user, require_moderator
 from app.web.domain.dashboard_builder.models import Dashboard
 from app.web.application.services.dashboard import DashboardService
 from app.web.infrastructure.database.repositories import SQLAlchemyDashboardRepository
-from app.web.infrastructure.database.connection import get_db_session
+from app.shared.infrastructure.database.management.connection import get_db_connection
 
 router = APIRouter(tags=["Web UI"])
 
@@ -21,7 +21,7 @@ templates_dir = os.path.join(base_dir, "templates")
 templates = Jinja2Templates(directory=templates_dir)
 
 # Get dashboard service
-async def get_dashboard_service(session: AsyncSession = Depends(get_db_session)):
+async def get_dashboard_service(session: AsyncSession = Depends(get_db_connection)):
     repository = SQLAlchemyDashboardRepository(session)
     return DashboardService(repository)
 
@@ -106,7 +106,7 @@ async def dashboards_list(
 @router.get("/", response_class=HTMLResponse)
 async def home(
     request: Request, 
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_connection),
     current_user = Depends(get_current_user)
 ):
     # If authentication fails, user will be None

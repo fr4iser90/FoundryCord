@@ -15,6 +15,7 @@ from app.web.infrastructure.config.env_loader import (
     ensure_web_env_loaded, get_discord_oauth_config, get_jwt_config
 )
 from app.shared.logging import logger
+from app.web.domain.auth.dependencies import auth_service
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -102,7 +103,7 @@ async def auth_callback(code: str, state: str = None, request: Request = None):
                 user_role = "GUEST"
             
             # Create JWT token with role information
-            access_token = create_access_token(
+            access_token = auth_service.create_access_token(
                 data={
                     "sub": user_data["id"], 
                     "username": user_data["username"],

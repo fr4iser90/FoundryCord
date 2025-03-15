@@ -4,13 +4,15 @@ import nextcord
 import sys
 import asyncio
 from nextcord.ext import commands
-from app.bot.infrastructure.config import EnvConfig, ServiceConfig, TaskConfig, ChannelConfig, CategoryConfig, DashboardConfig, ModuleServicesConfig
+from app.bot.infrastructure.config import ServiceConfig, TaskConfig, ChannelConfig, CategoryConfig, DashboardConfig, ModuleServicesConfig
 from app.shared.logging import logger
 from app.bot.infrastructure.factories import BotComponentFactory, ServiceFactory, TaskFactory, DashboardFactory
 from app.bot.core.lifecycle.lifecycle_manager import BotLifecycleManager
 from app.shared.infrastructure.database.migrations.init_db import init_db
 from app.bot.infrastructure.managers.dashboard_manager import DashboardManager
 from app.bot.infrastructure.config.command_config import CommandConfig
+from app.shared.infrastructure.config.env_config import EnvConfig  # Import the shared EnvConfig
+
 
 # Load environment configuration
 env_config = EnvConfig()
@@ -26,9 +28,6 @@ bot = commands.Bot(
 bot.env_config = env_config
 
 async def initialize_bot():
-    # Initialize database first
-    await init_db()
-
     # Initialize core components and factories first
     bot.lifecycle = BotLifecycleManager(bot)
     bot.factory = BotComponentFactory(bot)  # Main factory
@@ -43,7 +42,7 @@ async def initialize_bot():
     bot.dashboard_factory = bot.factory.factories['dashboard']  # For dashboard creation
     
     # NOW register configurations
-    bot.category_config = CategoryConfig.register(bot)  # Add this li
+    bot.category_config = CategoryConfig.register(bot)
     bot.channel_config = ChannelConfig.register(bot)
     bot.critical_services = ServiceConfig.register_critical_services(bot)
     bot.module_services = ModuleServicesConfig.register(bot)
@@ -61,9 +60,23 @@ async def on_ready():
         logger.error(f"Startup error: {e}")
         raise
 
-if __name__ == '__main__':
+# Add these two functions for entrypoint.py to use
+def setup_bot():
+    """Return the bot object for use by entrypoint.py"""
+    return bot
+
+async def run_bot_async(bot_instance):
+    """Async version that entrypoint.py can use"""
+    # This is just a placeholder for now - entrypoint will run the bot
+    return bot_instance
+
+# Original function - untouched
+def run_bot():
     try:
         bot.run(env_config.DISCORD_BOT_TOKEN)
     except Exception as e:
         logger.error(f"Failed to start bot: {str(e)}")
         sys.exit(1)
+
+if __name__ == '__main__':
+    run_bot()

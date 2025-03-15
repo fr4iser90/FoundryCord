@@ -40,6 +40,9 @@ class EnvConfig:
     def load(self) -> None:
         """Load all environment variables with smart defaults"""
         try:
+            # Ensure security keys are set
+            self._ensure_secure_keys()
+            
             # Load basic environment settings
             self.environment = os.getenv('ENVIRONMENT', 'development').lower()
             self.is_development = self.environment == 'development'

@@ -59,7 +59,7 @@ services:
       - DISCORD_REDIRECT_URI=${DISCORD_REDIRECT_URI:-http://localhost:8000/auth/callback}
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
       - APP_DB_USER=${APP_DB_USER:-homelab_discord_bot}
-      - APP_DB_PASSWORD=${POSTGRES_PASSWORD}
+      - APP_DB_PASSWORD=${APP_DB_PASSWORD}
       # - POSTGRES_HOST=postgres
     ports:
       - "8000:8000"

@@ -10,36 +10,26 @@ async def role_check_middleware(request: Request, call_next):
     
     # Skip role check for authentication routes and static files
     path = request.url.path
-    if path.startswith("/auth/") or path.startswith("/static/") or path == "/":
+    if path.startswith("/auth/") or path.startswith("/static/") or path == "/" or path == "/health":
         response = await call_next(request)
         return response
     
     # Check if user is authenticated
-    user = request.session.get("user")
-    if not user:
-        # If it's an API request, let the route handler handle it
-        if path.startswith("/api/"):
-            response = await call_next(request)
-            return response
-        # Otherwise redirect to login
-        return RedirectResponse(url="/auth/login")
+    # User is stored in state by the authentication dependency, not in session
+    user = None
     
-    # Check if user has required role
-    user_id = user.get("id")
-    has_access = (
-        str(user_id) in SUPER_ADMINS.values() or
-        str(user_id) in ADMINS.values() or
-        str(user_id) in MODERATORS.values()
-    )
+    # For API requests, let the route handler handle authorization
+    if path.startswith("/api/"):
+        response = await call_next(request)
+        return response
+        
+    # Get token from cookie
+    token = request.cookies.get("access_token")
+    if not token:
+        # If it's not an API endpoint, redirect to login
+        if not path.startswith("/api/"):
+            return RedirectResponse(url="/auth/login")
     
-    if not has_access:
-        # If it's an API request, let the route handler handle it
-        if path.startswith("/api/"):
-            response = await call_next(request)
-            return response
-        # Otherwise redirect to insufficient permissions page
-        return RedirectResponse(url="/insufficient-permissions")
-    
-    # User has appropriate role, continue with request
+    # Continue with the request
     response = await call_next(request)
     return response 
