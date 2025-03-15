@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional
-from app.web.domain.auth.dependencies import get_current_user
+from app.web.domain.auth.dependencies import get_current_user, require_moderator
 from app.web.domain.dashboard_builder.models import Dashboard, DashboardCreate, DashboardUpdate, Widget, WidgetCreate
 from app.web.application.services.dashboard import DashboardService
 from app.web.infrastructure.database.repositories import SQLAlchemyDashboardRepository
@@ -18,12 +18,9 @@ async def get_dashboard_service(session: AsyncSession = Depends(get_db_session))
 @router.get("/", response_model=List[Dashboard])
 async def get_dashboards(
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_moderator)
 ):
     """Get all dashboards for the current user"""
-    if not current_user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    
     dashboards = await service.get_user_dashboards(current_user["id"])
     return dashboards
 
@@ -31,24 +28,18 @@ async def get_dashboards(
 async def create_dashboard(
     dashboard: DashboardCreate,
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_moderator)
 ):
     """Create a new dashboard"""
-    if not current_user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    
     new_dashboard = await service.create_dashboard(current_user["id"], dashboard)
     return new_dashboard
 
 @router.get("/widget-types")
 async def get_widget_types(
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_moderator)
 ):
     """Get available widget types"""
-    if not current_user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    
     widgets = await service.get_available_widgets()
     return widgets
 
@@ -56,12 +47,9 @@ async def get_widget_types(
 async def get_dashboard(
     dashboard_id: str,
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_moderator)
 ):
     """Get a specific dashboard by ID"""
-    if not current_user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    
     dashboard = await service.get_dashboard(dashboard_id)
     
     if not dashboard:
@@ -78,12 +66,9 @@ async def update_dashboard(
     dashboard_id: str,
     dashboard: DashboardUpdate,
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_moderator)
 ):
     """Update an existing dashboard"""
-    if not current_user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    
     # Check if dashboard exists and belongs to user
     existing_dashboard = await service.get_dashboard(dashboard_id)
     if not existing_dashboard:
@@ -99,12 +84,9 @@ async def update_dashboard(
 async def delete_dashboard(
     dashboard_id: str,
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_moderator)
 ):
     """Delete a dashboard"""
-    if not current_user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    
     # Check if dashboard exists and belongs to user
     existing_dashboard = await service.get_dashboard(dashboard_id)
     if not existing_dashboard:
@@ -125,12 +107,9 @@ async def add_widget(
     dashboard_id: str,
     widget: WidgetCreate,
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_moderator)
 ):
     """Add a widget to a dashboard"""
-    if not current_user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    
     # Check if dashboard exists and belongs to user
     existing_dashboard = await service.get_dashboard(dashboard_id)
     if not existing_dashboard:
@@ -151,12 +130,9 @@ async def update_widget(
     widget_id: str,
     widget_data: dict,
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_moderator)
 ):
     """Update a widget"""
-    if not current_user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    
     updated_widget = await service.update_widget(widget_id, widget_data)
     
     if not updated_widget:
@@ -168,12 +144,9 @@ async def update_widget(
 async def delete_widget(
     widget_id: str,
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_moderator)
 ):
     """Delete a widget"""
-    if not current_user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    
     success = await service.delete_widget(widget_id)
     
     if not success:

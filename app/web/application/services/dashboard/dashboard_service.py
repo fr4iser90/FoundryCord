@@ -2,8 +2,8 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
 
-from app.web.domain.dashboard.models import Dashboard, DashboardCreate, DashboardUpdate, Widget, WidgetCreate
-from app.web.domain.dashboard.repositories import DashboardRepository
+from app.web.domain.dashboard_builder.models import Dashboard, DashboardCreate, DashboardUpdate, Widget, WidgetCreate
+from app.web.domain.dashboard_builder.repositories import DashboardRepository
 
 
 class DashboardService:

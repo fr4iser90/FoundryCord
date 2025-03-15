@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Insufficient Permissions - HomeLab Discord Bot{% endblock %}
+
+{% block content %}
+<div class="container text-center mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title text-danger">Access Denied</h2>
+                    <p class="card-text">
+                        You don't have sufficient permissions to access this area.
+                        Only users with Moderator role or higher can access the dashboard.
+                    </p>
+                    <p>
+                        Please contact an administrator if you believe you should have access.
+                    </p>
+                    <a href="/" class="btn btn-primary mt-3">Return to Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

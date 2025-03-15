@@ -17,6 +17,7 @@ from app.web.interfaces.api.v1 import routers as api_routers
 from app.web.interfaces.web import routers as web_routers
 from app.web.infrastructure.security.auth import get_current_user
 from app.web.interfaces.api.v1.health_routes import router as health_router
+from app.web.core.middleware import role_check_middleware
 
 
 # Create FastAPI application
@@ -34,6 +35,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add custom role middleware
+app.middleware("http")(role_check_middleware)
 
 # Get the absolute path to the templates directory
 base_dir = pathlib.Path(__file__).parent.parent

@@ -5,8 +5,9 @@ import json
 import os
 import pathlib
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 
-from app.web.domain.auth.dependencies import get_current_user
+from app.web.domain.auth.dependencies import get_current_user, require_moderator
 from app.web.domain.dashboard_builder.models import Dashboard
 from app.web.application.services.dashboard import DashboardService
 from app.web.infrastructure.database.repositories import SQLAlchemyDashboardRepository
@@ -29,7 +30,7 @@ async def dashboard_builder(
     request: Request,
     id: str = None,
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_moderator)
 ):
     """Dashboard builder page"""
     if not current_user:
@@ -118,4 +119,12 @@ async def home(
     return templates.TemplateResponse(
         "index.html", 
         {"request": request, "user": current_user, "dashboards": dashboards}
+    )
+
+@router.get("/insufficient-permissions")
+async def insufficient_permissions(request: Request):
+    """Page shown when user doesn't have required permissions"""
+    return templates.TemplateResponse(
+        "auth/insufficient_permissions.html", 
+        {"request": request, "user": request.session.get("user")}
     ) 

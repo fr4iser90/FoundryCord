@@ -9,6 +9,10 @@ from datetime import datetime, timedelta
 from fastapi.responses import RedirectResponse
 import traceback
 from app.web.infrastructure.security.auth import Token, User, create_access_token
+from app.shared.domain.auth.models import Role
+from app.shared.infrastructure.database.constants import (
+    SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
+)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -101,7 +105,7 @@ async def login():
 
 # Handle OAuth callback
 @router.get("/callback")
-async def callback(code: str = None, request: Request = None):
+async def auth_callback(code: str, state: str = None, request: Request = None):
     if not code:
         return {"error": "Missing authorization code"}
     
@@ -132,9 +136,29 @@ async def callback(code: str = None, request: Request = None):
             
             user_data = user_response.json()
             
-            # Create JWT token
+            # Get user role
+            user_role = None
+            user_id = user_data["id"]
+            
+            if str(user_id) in SUPER_ADMINS.values():
+                user_role = "SUPER_ADMIN"
+            elif str(user_id) in ADMINS.values():
+                user_role = "ADMIN"
+            elif str(user_id) in MODERATORS.values():
+                user_role = "MODERATOR"
+            elif str(user_id) in USERS.values():
+                user_role = "USER"
+            else:
+                user_role = "GUEST"
+            
+            # Create JWT token with role information
             access_token = create_access_token(
-                data={"sub": user_data["id"], "username": user_data["username"]}
+                data={
+                    "sub": user_data["id"], 
+                    "username": user_data["username"],
+                    "avatar": user_data.get("avatar"),
+                    "role": user_role
+                }
             )
             
             # Redirect to home page with cookie

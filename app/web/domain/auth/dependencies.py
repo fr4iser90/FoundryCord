@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 import os
 from typing import Optional, Dict
+import jwt as PyJWT
 
 # OAuth2 token URL and scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token", auto_error=False)
@@ -33,18 +34,47 @@ async def get_current_user(request: Request) -> Optional[Dict]:
         token = token.replace("Bearer ", "")
         
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = PyJWT.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
         if user_id is None:
             return None
             
-        # Create a simple user object from JWT claims
+        # Create a user object from JWT claims with role
         return {
             "id": user_id,
             "username": payload.get("username", "Unknown"),
             "avatar": payload.get("avatar"),
+            "role": payload.get("role", "GUEST"),
             "authenticated": True
         }
     except JWTError as e:
         print(f"JWT Error: {e}")
         return None 
+
+async def require_moderator(user = Depends(get_current_user)):
+    """Dependency to require moderator role or higher"""
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required"
+        )
+    
+    user_role = user.get("role", "GUEST")
+    required_role = "MODERATOR"
+    
+    # Simple role hierarchy check
+    role_levels = {
+        "SUPER_ADMIN": 100,
+        "ADMIN": 80,
+        "MODERATOR": 60,
+        "USER": 40,
+        "GUEST": 20
+    }
+    
+    if role_levels.get(user_role, 0) < role_levels.get(required_role, 0):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access denied: requires {required_role} role or higher"
+        )
+    
+    return user 
