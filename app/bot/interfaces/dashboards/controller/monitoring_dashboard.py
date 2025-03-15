@@ -50,7 +50,6 @@ class MonitoringDashboardController(BaseDashboardController):
             # Fetch system status data
             logger.info("Hole System-Status-Daten...")
             raw_data = await self.service.get_system_status_dict()
-            logger.info(f"Rohdaten erhalten: {raw_data}")
             
             # Transform data to the expected format for MonitoringView
             self.last_metrics = self._transform_metrics(raw_data)
