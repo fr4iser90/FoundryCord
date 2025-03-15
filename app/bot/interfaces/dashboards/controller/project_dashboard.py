@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Any
 import nextcord
 from datetime import datetime
 from app.shared.logging import logger
-from app.shared.database.models import Project
+from app.shared.infrastructure.database.models import Project
 
 # Importieren Sie die vorhandenen Komponenten
 from app.bot.interfaces.dashboards.components.channels.projects.buttons.project_buttons import ProjectActionButtons

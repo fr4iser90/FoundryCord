@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 import httpx
@@ -6,9 +6,9 @@ import os
 import sys
 from jose import jwt
 from datetime import datetime, timedelta
-from fastapi.requests import Request
 from fastapi.responses import RedirectResponse
 import traceback
+from app.web.infrastructure.security.auth import Token, User, create_access_token
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -64,9 +64,9 @@ if not os.getenv("JWT_SECRET_KEY"):
     os.environ["JWT_SECRET_KEY"] = "fallback_development_secret_key_not_for_production"
 
 # Discord OAuth2 configuration
-DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")
+DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "151707357926129664")
 DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", "your_discord_client_secret")
-DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI")
+DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI", "http://localhost:8000/auth/callback")
 DISCORD_API_ENDPOINT = "https://discord.com/api/v10"
 
 # Print configuration for debugging
@@ -94,8 +94,7 @@ class User(BaseModel):
 @router.get("/login")
 async def login():
     if not DISCORD_CLIENT_ID:
-        return {"error": "Discord Client ID is not configured", 
-                "hint": "Check your .env file and make sure DISCORD_CLIENT_ID is set"}
+        return {"error": "Discord Client ID is not configured"}
     
     auth_url = f"https://discord.com/api/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&redirect_uri={DISCORD_REDIRECT_URI}&response_type=code&scope=identify"
     return {"auth_url": auth_url}
@@ -103,19 +102,8 @@ async def login():
 # Handle OAuth callback
 @router.get("/callback")
 async def callback(code: str = None, request: Request = None):
-    # If code is missing, return a clear error message
     if not code:
-        return {
-            "error": "Missing authorization code",
-            "details": "The 'code' parameter is required but was not provided by Discord.",
-            "troubleshooting": [
-                "Make sure you're going through the full OAuth flow by starting at /auth/login",
-                "Check that your Discord application has the correct redirect URI",
-                "Verify your Discord application is properly configured and not disabled"
-            ],
-            "redirect_uri_configured": DISCORD_REDIRECT_URI,
-            "client_id_configured": DISCORD_CLIENT_ID[:6] + "..." if DISCORD_CLIENT_ID else "None"
-        }
+        return {"error": "Missing authorization code"}
     
     # Exchange code for access token
     data = {
@@ -130,15 +118,7 @@ async def callback(code: str = None, request: Request = None):
         async with httpx.AsyncClient() as client:
             response = await client.post(f"{DISCORD_API_ENDPOINT}/oauth2/token", data=data)
             if response.status_code != 200:
-                return {
-                    "error": "Token exchange failed",
-                    "status": response.status_code,
-                    "details": response.text,
-                    "client_id_valid": DISCORD_CLIENT_ID is not None and len(DISCORD_CLIENT_ID) > 0,
-                    "client_secret_valid": DISCORD_CLIENT_SECRET is not None and len(DISCORD_CLIENT_SECRET) > 0,
-                    "redirect_uri": DISCORD_REDIRECT_URI,
-                    "data_sent": data
-                }
+                return {"error": "Token exchange failed"}
             
             token_data = response.json()
             discord_token = token_data["access_token"]
@@ -148,11 +128,7 @@ async def callback(code: str = None, request: Request = None):
             user_response = await client.get(f"{DISCORD_API_ENDPOINT}/users/@me", headers=headers)
             
             if user_response.status_code != 200:
-                return {
-                    "error": "Could not retrieve user information",
-                    "status": user_response.status_code,
-                    "details": user_response.text
-                }
+                return {"error": "Could not retrieve user information"}
             
             user_data = user_response.json()
             
@@ -161,7 +137,7 @@ async def callback(code: str = None, request: Request = None):
                 data={"sub": user_data["id"], "username": user_data["username"]}
             )
             
-            # Instead of returning JSON, redirect to the home page
+            # Redirect to home page with cookie
             response = RedirectResponse(url="/")
             
             # Set cookie with the token
@@ -178,27 +154,11 @@ async def callback(code: str = None, request: Request = None):
             return response
             
     except Exception as e:
-        return {
-            "error": "Exception during token exchange",
-            "details": str(e),
-            "traceback": traceback.format_exc()
-        }
-
-# Create JWT token
-def create_access_token(data: dict):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+        return {"error": "Exception during token exchange", "details": str(e)}
 
 # Logout endpoint
 @router.get("/logout")
 async def logout():
-    # Create a response that redirects to the home page
     response = RedirectResponse(url="/")
-    
-    # Clear the access token cookie
     response.delete_cookie(key="access_token", path="/")
-    
     return response 

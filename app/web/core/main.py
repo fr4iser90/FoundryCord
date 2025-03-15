@@ -12,10 +12,10 @@ from fastapi.staticfiles import StaticFiles
 import pathlib
 
 # Import app components
-from app.web.domain.auth import auth_router
+from app.web.domain.auth.oauth import router as auth_router
 from app.web.interfaces.api.v1 import routers as api_routers
 from app.web.interfaces.web import routers as web_routers
-from app.web.domain.auth.dependencies import get_current_user
+from app.web.infrastructure.security.auth import get_current_user
 from app.web.interfaces.api.v1.health_routes import router as health_router
 
 

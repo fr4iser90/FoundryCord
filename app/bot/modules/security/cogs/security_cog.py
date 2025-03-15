@@ -1,6 +1,6 @@
 import nextcord
 from nextcord.ext import commands
-from app.shared.database.models import User, AuditLog
+from app.shared.infrastructure.database.models import User, AuditLog
 from datetime import datetime
 from app.shared.logging import logger
 from app.bot.utils.decorators.auth import admin_or_higher
@@ -34,7 +34,7 @@ class SecurityCommands(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def rotate_keys(self, ctx):
         """Manually trigger key rotation"""
-        key_manager = self.bot.get_cog('KeyManager')
+        key_manager = self.bot.get_cog('KeyManagementService')
         await key_manager.rotate_keys()
         await ctx.send("Keys rotated successfully")
 

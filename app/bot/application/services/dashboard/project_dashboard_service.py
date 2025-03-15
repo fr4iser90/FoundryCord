@@ -1,10 +1,10 @@
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 from app.shared.logging import logger
-from app.shared.database.models import Project, Task
-from app.shared.database.repositories.project_repository_impl import ProjectRepository
+from app.shared.infrastructure.database.models import Project, Task
+from app.shared.infrastructure.database.repositories.project_repository_impl import ProjectRepository
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.shared.database.models.config import get_session
+from app.shared.infrastructure.database.models.config import get_session
 import nextcord
 from app.bot.interfaces.dashboards.controller.project_dashboard import ProjectDashboardController
 

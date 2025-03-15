@@ -1,7 +1,7 @@
 from typing import List
-from app.bot.infrastructure.logging import setup as setup_logging
-from app.bot.services.auth import setup as setup_auth
-from app.bot.infrastructure.encryption import setup as setup_encryption
+from app.shared.logging import setup as setup_logging
+from app.shared.domain.auth.services import setup as setup_auth
+from app.shared.infrastructure.encryption import setup as setup_encryption
 from app.bot.infrastructure.rate_limiting import setup as setup_rate_limiting
 from app.shared.logging import logger
 

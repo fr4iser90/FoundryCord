@@ -2,12 +2,13 @@ from datetime import datetime, timedelta
 import jwt as PyJWT
 import os
 from app.shared.logging import logger
-from app.bot.infrastructure.managers.key_manager import KeyManager
+from app.shared.infrastructure.encryption import get_key_management_service
 
+KeyManagementService = get_key_management_service()
 class AuthenticationService:
     def __init__(self, bot):
         self.bot = bot
-        self.key_manager = KeyManager()
+        self.key_manager = KeyManagementService()
         self.jwt_secret = None
         self.session_duration = timedelta(hours=24)
         self.active_sessions = {}

@@ -9,7 +9,7 @@ class CommandConfig:
             #from app.bot.interfaces.commands.monitoring import setup as setup_monitoring
             #from app.bot.interfaces.commands.auth import setup as setup_auth
             #from app.bot.interfaces.commands.wireguard import setup as setup_wireguard
-            from app.bot.interfaces.homelab_commands import setup as setup_homelab
+            #from app.bot.interfaces.homelab_commands import setup as setup_homelab
             # Import other setup functions here
             
             # Return setup functions that will be called by the lifecycle manager

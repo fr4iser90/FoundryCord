@@ -1,4 +1,4 @@
-from app.shared.database.migrations.init_db import init_db
+from app.shared.infrastructure.database.migrations.init_db import init_db
 from .channel_setup_service import ChannelSetupService
 from .game_server_channels import setup_minecraft_channels
 from app.shared.logging import logger

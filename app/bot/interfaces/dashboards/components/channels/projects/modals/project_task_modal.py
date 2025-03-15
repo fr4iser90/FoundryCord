@@ -1,7 +1,7 @@
 from typing import Optional
 import nextcord
 from app.shared.logging import logger
-from app.shared.database.models import Task
+from app.shared.infrastructure.database.models import Task
 from app.bot.interfaces.dashboards.components.common.modals import BaseModal
 
 class TaskModal(BaseModal):

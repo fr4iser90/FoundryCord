@@ -114,4 +114,4 @@ Original content from SECURITY_SPECIALIST.md with these additions:
 - AI data privacy requirements
 
 ## Implementation Guidelines
-When implementing security features, follow the [Security Policy](../../../development/modules/SECURITY_POLICY.md) and consult the [Key Management documentation](../../../development/modules/KEYMANAGER.md) for encryption implementation. 
+When implementing security features, follow the [Security Policy](../../../development/modules/SECURITY_POLICY.md) and consult the [Key Management documentation](../../../development/modules/KeyManagementService.md) for encryption implementation. 

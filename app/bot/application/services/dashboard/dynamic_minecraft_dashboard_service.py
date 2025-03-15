@@ -18,8 +18,8 @@ from app.bot.interfaces.dashboards.components.channels.gamehub.views import Game
 from app.bot.interfaces.dashboards.controller.base_dashboard import BaseDashboardController
 from app.bot.interfaces.dashboards.controller.minecraft_server_dashboard import MinecraftServerDashboardController
 
-from app.shared.database.repositories.category_repository_impl import CategoryRepository
-from app.shared.database.models import CategoryMapping
+from app.shared.infrastructure.database.repositories.category_repository_impl import CategoryRepository
+from app.shared.infrastructure.database.models import CategoryMapping
 
 class DynamicMinecraftDashboardService:
     """Service for creating individual Minecraft server dashboards"""

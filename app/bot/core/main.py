@@ -8,7 +8,7 @@ from app.bot.infrastructure.config import EnvConfig, ServiceConfig, TaskConfig, 
 from app.shared.logging import logger
 from app.bot.infrastructure.factories import BotComponentFactory, ServiceFactory, TaskFactory, DashboardFactory
 from app.bot.core.lifecycle.lifecycle_manager import BotLifecycleManager
-from app.shared.database.migrations.init_db import init_db
+from app.shared.infrastructure.database.migrations.init_db import init_db
 from app.bot.infrastructure.managers.dashboard_manager import DashboardManager
 from app.bot.infrastructure.config.command_config import CommandConfig
 

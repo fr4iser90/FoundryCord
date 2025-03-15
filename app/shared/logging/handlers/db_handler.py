@@ -34,8 +34,8 @@ class DatabaseHandler(logging.Handler):
         """Write log record to database"""
         try:
             # Lazy import to avoid circular dependencies
-            from app.shared.database import get_async_session
-            from app.shared.database.models.log_models import LogEntry
+            from app.shared.infrastructure.database import get_async_session
+            from app.shared.infrastructure.database.models.log_models import LogEntry
             from sqlalchemy.ext.asyncio import AsyncSession
             
             async with get_async_session() as session:

@@ -5,7 +5,7 @@ import sys
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
-from app.shared.database import get_db_connection
+from app.shared.infrastructure.database import get_db_connection
 #from app.web.infrastructure.setup.bot_imports import bot_interface
 
 router = APIRouter(tags=["System"])

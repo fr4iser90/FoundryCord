@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List
-from app.shared.database.models import MetricModel
+from app.shared.infrastructure.database.models import MetricModel
 from .collector_interface import CollectorInterface
 
 class SystemCollectorInterface(CollectorInterface):

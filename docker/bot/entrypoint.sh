@@ -96,7 +96,7 @@ initialize() {
   
   echo "Starting database initialization..."
   # Use the dedicated Python script for database setup
-  if ! python -m app.bot.infrastructure.database.migrations.init_db; then
+  if ! python -m app.shared.infrastructure.database.migrations.init_db; then
     echo "ERROR: Database initialization failed"
     exit 1
   fi

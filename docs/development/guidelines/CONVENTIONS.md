@@ -128,7 +128,7 @@ from bot.infrastructure.repositories import UserRepository
 ### Component Types
 
 - **Managers**: Handle lifecycle, state management and coordination between components
-  - Example: `KeyManager` manages encryption key lifecycle
+  - Example: `KeyManagementService` manages encryption key lifecycle
   - Naming: `{Component}Manager` or `{Function}Manager`
   - Location: `infrastructure/{domain}/management/` or `domain/{domain}/management/`
 

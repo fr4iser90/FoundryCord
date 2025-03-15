@@ -1,7 +1,7 @@
 from typing import Dict, Callable, List
 import nextcord
 from app.shared.logging import logger
-from app.shared.database.models import Project
+from app.shared.infrastructure.database.models import Project
 
 class ProjectActionButtons:
     def __init__(self, project_id: int, dashboard):

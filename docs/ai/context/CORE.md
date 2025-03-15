@@ -174,7 +174,7 @@ docs/
 │   ├── ARCHITECTURE.md    # Architecture overview
 │   ├── CONVENTIONS.md     # Coding conventions
 │   ├── DATA_FLOW.md       # Data flow diagrams
-│   ├── KEYMANAGER.md      # Key management
+│   ├── KeyManagementService.md      # Key management
 │   └── SECURITY_POLICY.md # Security documentation
 ├── development/           # Development guides
 │   └── patterns/          # Design patterns

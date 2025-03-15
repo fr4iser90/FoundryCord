@@ -7,8 +7,8 @@ from app.bot.core.services.auth.models.permission import is_authorized
 class AuthService:
     def __init__(self, bot):
         self.bot = bot
-        # Get JWT key from KeyManager instead of environment
-        self.key_manager = KeyManager()
+        # Get JWT key from KeyManagementService instead of environment
+        self.key_manager = KeyManagementService()
         self.jwt_secret = self.key_manager.get_jwt_secret_key()
         if not self.jwt_secret:
             logger.warning("JWT secret key not available! Using fallback secret (not recommended for production)")

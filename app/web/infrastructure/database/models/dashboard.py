@@ -3,8 +3,8 @@ from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, J
 from sqlalchemy.orm import relationship
 
 # Import the Base from the shared models
-from app.shared.database.models.base import Base
-from app.shared.database.models.dashboard_models import DashboardMessage as DashboardModel
+from app.shared.infrastructure.database.models.base import Base
+from app.shared.infrastructure.database.models.dashboard_models import DashboardMessage as DashboardModel
 
 
 class DashboardModel(Base):

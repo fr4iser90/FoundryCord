@@ -2,8 +2,10 @@ from nextcord.ext import commands
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
-from app.bot.infrastructure.managers.key_manager import KeyManager
-from app.shared.database.repositories.key_repository_impl import KeyRepository
+
+from app.shared.infrastructure.database.repositories.key_repository_impl import KeyRepository
+from app.shared.infrastructure.encryption import get_key_management_service
+# Then use:
 
 import os
 import base64
@@ -16,6 +18,7 @@ from app.shared.logging import logger
 # When True: Use automatic key management only, ignore environment variables
 # When False: Use environment variables only, fail if not present
 AUTO_KEY_MANAGEMENT = True
+KeyManagementService = get_key_management_service()
 
 class EncryptionService:
     def __init__(self, bot):
@@ -52,13 +55,13 @@ class EncryptionService:
     async def _setup_fernet_key(self):
         """Set up Fernet key based on AUTO_KEY_MANAGEMENT setting"""
         if self.auto_key_management:
-            # AUTO_KEY_MANAGEMENT = True: ONLY use KeyManager, ignore environment
-            logger.info("AUTO_KEY_MANAGEMENT is True, using KeyManager for encryption key")
-            self.key_manager = KeyManager()
+            # AUTO_KEY_MANAGEMENT = True: ONLY use KeyManagementService, ignore environment
+            logger.info("AUTO_KEY_MANAGEMENT is True, using KeyManagementService for encryption key")
+            self.key_manager = KeyManagementService()
             await self.key_manager.initialize()
             self.key = self.key_manager.get_current_key()
             if not self.key:
-                raise ValueError("KeyManager failed to provide an encryption key")
+                raise ValueError("KeyManagementService failed to provide an encryption key")
         else:
             # AUTO_KEY_MANAGEMENT = False: ONLY use environment
             env_key = os.getenv('ENCRYPTION_KEY')

@@ -1,7 +1,6 @@
 from app.bot.infrastructure.discord.command_sync_service import CommandSyncService
 import asyncio
 import os
-import logging
 from app.bot.infrastructure.managers.dashboard_manager import DashboardManager
 from app.bot.core.workflows.category_workflow import CategoryWorkflow
 from app.bot.core.workflows.channel_workflow import ChannelWorkflow

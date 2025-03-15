@@ -1,10 +1,12 @@
-from .oauth import router as auth_router, create_access_token, Token, User
-from .dependencies import get_current_user, oauth2_scheme
+from app.web.infrastructure.security.auth import (
+    Token, 
+    User, 
+    get_current_user, 
+    oauth2_scheme, 
+    create_access_token
+)
 
 __all__ = [
-    # Core router
-    "auth_router", 
-    
     # Authentication utilities
     "get_current_user",
     "create_access_token",

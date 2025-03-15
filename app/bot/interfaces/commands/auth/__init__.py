@@ -1,4 +1,4 @@
-from app.bot.services.auth import AuthenticationService , AuthorizationService
+from app.shared.domain.auth import AuthenticationService , AuthorizationService
 from .auth_commands import AuthCommands
 from app.shared.logging import logger
 
@@ -11,7 +11,7 @@ async def setup(bot):
         if not hasattr(bot, 'authentication') or not hasattr(bot, 'authorization'):
             logger.warning("Auth services not found on bot instance. They should be initialized before commands.")
             # Initialize them if needed (fallback, not ideal for DDD)
-            from app.bot.services.auth import setup as setup_services
+            from app.shared.domain.auth import setup as setup_services
             await setup_services(bot)
         
         # Add commands as cog

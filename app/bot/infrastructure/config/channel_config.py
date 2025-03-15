@@ -2,8 +2,8 @@ from typing import Dict, Optional, List
 from app.shared.logging import logger
 from nextcord import TextChannel
 from app.bot.infrastructure.discord.channel_setup_service import ChannelSetupService
-from app.shared.database.models import ChannelMapping
-from app.shared.database.models.config import get_session
+from app.shared.infrastructure.database.models import ChannelMapping
+from app.shared.infrastructure.database.models.config import get_session
 from app.bot.infrastructure.config.constants.channel_constants import CHANNELS
 from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOARD_MAPPINGS
 from sqlalchemy import select

@@ -1,7 +1,7 @@
 from typing import Dict, Optional
 from app.shared.logging import logger
-from app.shared.database.models import CategoryMapping
-from app.shared.database.models.config import get_session
+from app.shared.infrastructure.database.models import CategoryMapping
+from app.shared.infrastructure.database.models.config import get_session
 from sqlalchemy import select, update
 from app.bot.infrastructure.config.constants.category_constants import CATEGORIES
 from app.bot.infrastructure.config.env_config import EnvConfig

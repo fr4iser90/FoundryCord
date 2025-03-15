@@ -1,16 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.web.domain.auth.dependencies import get_current_user
-from pydantic import BaseModel
-from typing import Optional
+from app.web.infrastructure.security.auth import get_current_user, User
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
-class UserInfo(BaseModel):
-    id: str
-    username: str
-    avatar: Optional[str] = None
-
-@router.get("/me", response_model=UserInfo)
+@router.get("/me", response_model=User)
 async def get_current_user_info(user = Depends(get_current_user)):
     """Get current user information"""
     if not user:
@@ -21,7 +14,8 @@ async def get_current_user_info(user = Depends(get_current_user)):
     return {
         "id": user["id"],
         "username": user["username"],
-        "avatar": user.get("avatar")
+        "avatar": user.get("avatar"),
+        "authenticated": True
     }
 
 @router.get("/logout")

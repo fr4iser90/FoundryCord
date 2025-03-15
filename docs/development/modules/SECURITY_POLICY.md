@@ -199,6 +199,6 @@ Define and maintain a list of emergency contacts for security incidents:
 - ⚠️ **Emergency recovery plans** - Not yet implemented
 
 ## Related Security Documentation
-- [Key Management](./KEYMANAGER.md) - Encryption key handling
+- [Key Management](./KeyManagementService.md) - Encryption key handling
 - [Security Role](../../ai/roles/core/BOT_CORE_SECURITY.md) - Security implementation responsibilities
 - [Environment Variables](../reference/config/ENV_VARIABLES.md) - Security-related configuration

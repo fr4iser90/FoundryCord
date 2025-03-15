@@ -1,6 +1,6 @@
 from .base_workflow import BaseWorkflow
 from app.shared.logging import logger
-from app.shared.database.migrations.init_db import init_db, migrate_existing_users
+from app.shared.infrastructure.database.migrations.init_db import init_db, migrate_existing_users
 
 class DatabaseWorkflow(BaseWorkflow):
     async def initialize(self):
@@ -36,7 +36,7 @@ class DatabaseWorkflow(BaseWorkflow):
     async def cleanup(self):
         """Cleanup database resources"""
         try:
-            from app.shared.database.models.config import close_engine
+            from app.shared.infrastructure.database.models.config import close_engine
             
             logger.debug("Closing database connections")
             await close_engine()
