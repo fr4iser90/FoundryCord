@@ -367,8 +367,8 @@ class TestAuthService:
         db_session = AsyncMock()
         redis_client = AsyncMock()
         config = {
-            "DISCORD_CLIENT_ID": "test_client_id",
-            "DISCORD_CLIENT_SECRET": "test_client_secret",
+            "DISCORD_BOT_ID": "test_client_id",
+            "DISCORD_BOT_SECRET": "test_client_secret",
             "DISCORD_REDIRECT_URI": "http://localhost/auth/callback",
             "JWT_SECRET": "test_jwt_secret"
         }

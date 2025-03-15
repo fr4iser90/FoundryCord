@@ -19,12 +19,6 @@ COPY app/bot /app/bot
 # Set environment variables
 ENV PYTHONPATH="/"
 
-#     # Set working directory
-# WORKDIR /app/bot
-
-# # Set Python path to allow imports from root
-# ENV PYTHONPATH="/"
-
 # Copy requirements and install
 COPY app/bot/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

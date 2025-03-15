@@ -15,7 +15,7 @@ Environment Configuration:
 - POSTGRES_HOST: Database host (default: postgres)
 - POSTGRES_PORT: Database port (default: 5432)
 - POSTGRES_DB: Database name (default: homelab)
-- APP_DB_USER: Application database user (default: app_user)
+- APP_DB_USER: Application database user (default: homelab_discord_bot)
 - APP_DB_PASSWORD: Application database password
 """
 

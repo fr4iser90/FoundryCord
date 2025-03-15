@@ -10,7 +10,7 @@ check_required_vars() {
   echo "Checking required environment variables..."
   
   # Array of required environment variables
-  required_vars=("DISCORD_TOKEN" "DISCORD_SERVER" "SUPER_ADMINS")
+  required_vars=("DISCORD_BOT_TOKEN" "DISCORD_SERVER" "SUPER_ADMINS")
   
   for var in "${required_vars[@]}"; do
     if [ -z "${!var}" ]; then

@@ -3,7 +3,7 @@
 
 | Variable | Description | Required | Security Considerations |
 |----------|-------------|----------|-------------------------|
-| `DISCORD_TOKEN` | Your Discord bot token | Yes | Rotate every 90 days |
+| `DISCORD_BOT_TOKEN` | Your Discord bot token | Yes | Rotate every 90 days |
 | `DISCORD_SERVER` | Your Discord server ID | Yes | - |
 | `HOMELAB_CATEGORY_ID` | Discord category ID for bot channels | Yes | Can set to "auto" for automatic creation | 
 | `SUPER_ADMINS` | Discord users with full access (NAME\|ID format) | Yes | Limit to trusted users |

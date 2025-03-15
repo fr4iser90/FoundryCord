@@ -99,8 +99,8 @@ create_project_templates() {
     print_info "Creating Bot template..."
     cat > ./templates/bot.env.template << EOF
 # Discord Bot Configuration
-DISCORD_TOKEN=your_token_here
-DISCORD_CLIENT_ID=your_client_id_here
+DISCORD_BOT_TOKEN=your_token_here
+DISCORD_BOT_ID=your_client_id_here
 DISCORD_GUILD_ID=your_guild_id_here
 
 # Database Configuration
@@ -130,8 +130,8 @@ EOF
     print_info "Creating Web template..."
     cat > ./templates/web.env.template << EOF
 # Web Application Configuration
-DISCORD_CLIENT_ID=your_client_id_here
-DISCORD_CLIENT_SECRET=your_client_secret_here
+DISCORD_BOT_ID=your_client_id_here
+DISCORD_BOT_SECRET=your_client_secret_here
 DISCORD_BOT_TOKEN=your_token_here
 DISCORD_REDIRECT_URI=http://localhost:8000/auth/callback
 

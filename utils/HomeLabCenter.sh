@@ -14,12 +14,12 @@ find utils -name "*.py" -type f -exec chmod +x {} \;
 echo "Permissions set successfully."
 
 # Check for Docker .env file and load if it exists
-if [ -f "./docker/.env" ]; then
-    echo "Loading environment variables from docker/.env..."
-    export $(grep -v '^#' ./docker/.env | xargs)
-elif [ -f "../docker/.env" ]; then
+if [ -f "../docker/.env" ]; then
     echo "Loading environment variables from ../docker/.env..."
-    export $(grep -v '^#' ../docker/.env | xargs)
+    # Only export valid VAR=VALUE lines, properly handling comments
+    set -a
+    source <(grep -E '^[A-Za-z0-9_]+=.+' ../docker/.env | sed '/^#/d')
+    set +a
 fi
 
 # Global Variables
@@ -160,7 +160,10 @@ parse_cli_args() {
                 export ENV_FILE="${arg#*=}"
                 if [ -f "$ENV_FILE" ]; then
                     echo "Loading environment variables from $ENV_FILE..."
-                    export $(grep -v '^#' "$ENV_FILE" | xargs)
+                    # Only export valid VAR=VALUE lines, properly handling comments
+                    set -a
+                    source <(grep -E '^[A-Za-z0-9_]+=.+' "$ENV_FILE" | sed '/^#/d')
+                    set +a
                 else
                     echo "Warning: Environment file $ENV_FILE not found"
                 fi

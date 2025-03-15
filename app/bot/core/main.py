@@ -63,7 +63,7 @@ async def on_ready():
 
 if __name__ == '__main__':
     try:
-        bot.run(env_config.discord_token)
+        bot.run(env_config.DISCORD_BOT_TOKEN)
     except Exception as e:
         logger.error(f"Failed to start bot: {str(e)}")
         sys.exit(1)

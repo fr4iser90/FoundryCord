@@ -11,7 +11,7 @@ class EnvConfig:
         self.environment = None
         self.is_development = False
         self.is_production = False
-        self.discord_token = None
+        self.DISCORD_BOT_TOKEN = None
         self.guild_id = None
         self.HOMELAB_CATEGORY_ID = None
         self.user_groups = {}
@@ -46,7 +46,7 @@ class EnvConfig:
             self.is_production = self.environment == 'production'
             
             # Load required variables
-            self.discord_token = self.load_required_env_var('DISCORD_TOKEN')
+            self.DISCORD_BOT_TOKEN = self.load_required_env_var('DISCORD_BOT_TOKEN')
             self.guild_id = self.load_int_env_var('DISCORD_SERVER')
             
             # HOMELAB_CATEGORY_ID is now optional with special handling

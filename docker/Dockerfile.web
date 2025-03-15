@@ -20,11 +20,9 @@ COPY app/web /app/web
 # Set environment variables
 ENV PYTHONPATH="/"
 
-
 # Install Python dependencies
 COPY app/web/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
 
 # Copy entrypoint script
 COPY docker/web/entrypoint.sh /entrypoint.sh

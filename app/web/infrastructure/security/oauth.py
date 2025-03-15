@@ -9,8 +9,8 @@ from datetime import datetime, timedelta
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 # Discord OAuth2 configuration
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")
+DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
+DISCORD_BOT_SECRET = os.getenv("DISCORD_BOT_SECRET")
 DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI")
 DISCORD_API_ENDPOINT = "https://discord.com/api/v10"
 
@@ -32,7 +32,7 @@ class User(BaseModel):
 # Generate Discord OAuth URL
 @router.get("/login")
 async def login():
-    auth_url = f"https://discord.com/api/oauth2/authorize?client_id={DISCORD_TOKEN}&redirect_uri={DISCORD_REDIRECT_URI}&response_type=code&scope=identify"
+    auth_url = f"https://discord.com/api/oauth2/authorize?client_id={DISCORD_BOT_TOKEN}&redirect_uri={DISCORD_REDIRECT_URI}&response_type=code&scope=identify"
     return {"auth_url": auth_url}
 
 # Handle OAuth callback
@@ -40,8 +40,8 @@ async def login():
 async def callback(code: str):
     # Exchange code for access token
     data = {
-        "client_id": DISCORD_TOKEN,
-        "client_secret": DISCORD_CLIENT_SECRET,
+        "client_id": DISCORD_BOT_TOKEN,
+        "client_secret": DISCORD_BOT_SECRET,
         "grant_type": "authorization_code",
         "code": code,
         "redirect_uri": DISCORD_REDIRECT_URI
@@ -56,10 +56,10 @@ async def callback(code: str):
             )
         
         token_data = response.json()
-        discord_token = token_data["access_token"]
+        DISCORD_BOT_TOKEN = token_data["access_token"]
         
         # Get user info from Discord
-        headers = {"Authorization": f"Bearer {discord_token}"}
+        headers = {"Authorization": f"Bearer {DISCORD_BOT_TOKEN}"}
         user_response = await client.get(f"{DISCORD_API_ENDPOINT}/users/@me", headers=headers)
         
         if user_response.status_code != 200:

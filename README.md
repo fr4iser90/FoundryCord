@@ -92,7 +92,7 @@ All other necessary configuration will be auto-generated at startup!
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `DISCORD_TOKEN` | Your Discord bot token | Yes |
+| `DISCORD_BOT_TOKEN` | Your Discord bot token | Yes |
 | `DISCORD_SERVER` | Your Discord server ID | Yes |
 | `SUPER_ADMINS` | Discord users with full access (NAME\|ID format) | Yes |
 

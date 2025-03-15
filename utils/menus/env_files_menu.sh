@@ -244,9 +244,9 @@ generate_template_env() {
     print_info "Creating a basic .env file with essential variables..."
     
     # Get user input for essential variables
-    local discord_token=$(get_string_input "Discord Bot Token" "")
-    local discord_client_id=$(get_string_input "Discord Client ID" "")
-    local discord_client_secret=$(get_string_input "Discord Client Secret" "")
+    local DISCORD_BOT_TOKEN=$(get_string_input "Discord Bot Token" "")
+    local DISCORD_BOT_ID=$(get_string_input "Discord Client ID" "")
+    local DISCORD_BOT_SECRET=$(get_string_input "Discord Client Secret" "")
     local postgres_password=$(get_string_input "PostgreSQL Password" "postgres")
     local jwt_secret=$(get_string_input "JWT Secret Key (for web)" "$(openssl rand -hex 32)")
     
@@ -255,9 +255,9 @@ generate_template_env() {
 # Generated on $(date)
 
 # Discord Configuration
-DISCORD_BOT_TOKEN=${discord_token}
-DISCORD_CLIENT_ID=${discord_client_id}
-DISCORD_CLIENT_SECRET=${discord_client_secret}
+DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+DISCORD_BOT_ID=${DISCORD_BOT_ID}
+DISCORD_BOT_SECRET=${DISCORD_BOT_SECRET}
 
 # Database Configuration
 POSTGRES_USER=postgres
