@@ -37,6 +37,9 @@ async def init_db(bot=None):
         # Run migrations for existing users
         await migrate_existing_users()
         
+        # Run dashboard components migration
+        await migrate_dashboard_components()
+        
         return True
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
@@ -86,6 +89,18 @@ async def migrate_existing_users():
     finally:
         # Session am Ende ordnungsgemäß schließen
         await async_session.close()
+
+async def migrate_dashboard_components():
+    """Migrate dashboard components from code to database"""
+    try:
+        # Import and run the existing dashboard components migration
+        from app.shared.infrastructure.database.migrations.dashboards import dashboard_components_migration
+        logger.info("Starting dashboard components migration...")
+        await dashboard_components_migration.main()
+        logger.info("Dashboard component migration completed successfully")
+    except Exception as e:
+        logger.error(f"Dashboard components migration failed: {e}")
+        raise
 
 # Wrapper für den Migrations-Code um einen eigenen Event-Loop zu verwenden
 def run_migration():

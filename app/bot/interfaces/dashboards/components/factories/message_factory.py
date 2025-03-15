@@ -1,6 +1,6 @@
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 import nextcord
-from ..base.base_factory import BaseFactory
+from app.bot.infrastructure.factories.base.base_factory import BaseFactory
 
 class MessageFactory(BaseFactory):
     async def create_embed(self, 

@@ -4,13 +4,13 @@ from ..service.service_factory import ServiceFactory
 from ..service.task_factory import TaskFactory
 from ..discord.channel_factory import ChannelFactory
 from ..discord.thread_factory import ThreadFactory
-from ..discord_ui.message_factory import MessageFactory
-from ..discord_ui.button_factory import ButtonFactory
-from ..discord_ui.view_factory import ViewFactory
-from ..discord_ui.menu_factory import MenuFactory
-from ..discord_ui.modal_factory import ModalFactory
-from ..discord_ui.dashboard_factory import DashboardFactory
-from ..discord_ui.embed_factory import EmbedFactory
+from ....interfaces.dashboards.components.factories.message_factory import MessageFactory
+from ....interfaces.dashboards.components.factories.button_factory import ButtonFactory
+from ....interfaces.dashboards.components.factories.view_factory import ViewFactory
+from ....interfaces.dashboards.components.factories.menu_factory import MenuFactory
+from ....interfaces.dashboards.components.factories.modal_factory import ModalFactory
+from ....interfaces.dashboards.components.factories.dashboard_factory import DashboardFactory
+from ....interfaces.dashboards.components.factories.embed_factory import EmbedFactory
 from app.shared.logging import logger
 
 logger = logging.getLogger(__name__)
@@ -18,26 +18,50 @@ logger = logging.getLogger(__name__)
 class BotComponentFactory:
     def __init__(self, bot):
         self.bot = bot
-        self.factories: Dict[str, Any] = {
-            # Discord Core
+        
+        # Infrastructure-layer factories
+        self.infrastructure_factories = {
             'channel': ChannelFactory(bot),
             'thread': ThreadFactory(bot),
-            
-            # Discord UI
-            'button': ButtonFactory(bot),
-            'dashboard': DashboardFactory(bot),
-            'embed': EmbedFactory(bot),
-            'menu': MenuFactory(bot),
-            'message': MessageFactory(bot),
-            'modal': ModalFactory(bot),
-            'view': ViewFactory(bot),
-            
-            # Services
             'service': ServiceFactory(bot),
-            'task': TaskFactory(bot)
+            'task': TaskFactory(bot),
+        }
+        
+        # Domain-layer factories
+        self.domain_factories = self._initialize_domain_factories()
+        
+        # Interface-layer factories
+        self.interface_factories = self._initialize_interface_factories()
+        
+        # Combined dict for backward compatibility
+        self.factories = {
+            **self.infrastructure_factories,
+            **self.domain_factories,
+            **self.interface_factories
         }
         self._component_creators = {}  # Stores dynamically registered component creators
         
+    def _initialize_domain_factories(self):
+        # Import domain factories here
+        from app.bot.domain.monitoring.factories.collector_factory import CollectorFactory
+        
+        return {
+            'collector': CollectorFactory(),
+            # Add other domain factories
+        }
+    
+    def _initialize_interface_factories(self):
+        # Import UI factories here to avoid circular imports
+        from app.bot.interfaces.dashboards.components.factories.button_factory import ButtonFactory
+        from app.bot.interfaces.dashboards.components.factories.dashboard_factory import DashboardFactory
+        # etc...
+        
+        return {
+            'button': ButtonFactory(self.bot),
+            'dashboard': DashboardFactory(self.bot),
+            # etc...
+        }
+
     def register_component_creator(self, component_type: str, creator_func: Callable):
         """Dynamically register new component types"""
         self._component_creators[component_type] = creator_func

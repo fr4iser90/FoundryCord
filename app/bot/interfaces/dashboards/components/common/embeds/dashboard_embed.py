@@ -4,7 +4,7 @@ from datetime import datetime
 from .base_embed import BaseEmbed
 
 class DashboardEmbed(BaseEmbed):
-    """Dashboard specific embed implementations with standardized footer"""
+    """Standard embed for dashboard UI components"""
     
     @classmethod
     def add_standard_footer(cls, embed: nextcord.Embed, text: str = "HomeLab Discord • Last Updated"):
@@ -14,20 +14,12 @@ class DashboardEmbed(BaseEmbed):
         return embed
     
     @classmethod
-    def create(
-        cls,
-        title: str,
-        description: str,
-        color: Optional[int] = None,
-        fields: Optional[dict] = None,
-        add_footer: bool = True
-    ) -> nextcord.Embed:
-        """Creates a dashboard embed with standard footer"""
-        embed = super().create(
+    def create_dashboard_embed(cls, title: str, description: Optional[str] = None, color: Optional[int] = None, add_footer: bool = True) -> nextcord.Embed:
+        """Creates a standard dashboard embed with optional footer"""
+        embed = cls.create(
             title=title,
             description=description,
             color=color or cls.INFO_COLOR,
-            fields=fields
         )
         
         if add_footer:

@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 import nextcord
-from ..base.base_factory import BaseFactory
+from app.bot.infrastructure.factories.base.base_factory import BaseFactory
 
 class ModalFactory(BaseFactory):
     def create_input_modal(self,

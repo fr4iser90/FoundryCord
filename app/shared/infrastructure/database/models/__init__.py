@@ -5,7 +5,8 @@ from .base import Base
 from .auth_models import User, Session, RateLimit
 from .audit_models import AuditLog
 from .discord_models import ChannelMapping, CategoryMapping
-from .dashboard_models import DashboardMessage
+from .dashboard_models import DashboardMessage  # Legacy model
+from .dashboards import Dashboard, DashboardComponent, ComponentLayout, ContentTemplate  # New models
 from .project_models import Project, Task
 from .monitoring_models import MetricModel, AlertModel
 
@@ -18,7 +19,11 @@ __all__ = [
     'AuditLog',
     'ChannelMapping',
     'CategoryMapping',
-    'DashboardMessage',
+    'DashboardMessage',  # Legacy
+    'Dashboard',
+    'DashboardComponent',
+    'ComponentLayout',
+    'ContentTemplate',
     'Project',
     'Task',
     'MetricModel',

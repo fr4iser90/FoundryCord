@@ -5,7 +5,7 @@ import asyncio
 from datetime import datetime, timedelta
 
 from app.shared.logging import logger
-from app.bot.infrastructure.factories.discord_ui.dashboard_factory import DashboardFactory
+from app.bot.interfaces.dashboards.components.factories import DashboardFactory
 from app.bot.infrastructure.config.channel_config import ChannelConfig
 
 from app.bot.infrastructure.monitoring.collectors.service.config.game_services import get_pufferpanel_services, get_standalone_services

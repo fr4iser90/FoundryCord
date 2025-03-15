@@ -305,25 +305,6 @@ class ProjectDashboardController(BaseDashboardController):
         logger.debug("Initializing Project Dashboard UI")
         return await super().initialize(channel_config_key='projects')
 
-    async def setup(self):
-        """Initialisiert das Dashboard"""
-        try:
-            # Initialize the dashboard properly
-            if not await self.initialize():
-                logger.error("Failed to initialize project dashboard")
-                return
-            
-            # Get project data
-            self.projects_data = await self.service.get_projects_by_status()
-            
-            # Display dashboard with our custom implementation
-            await self.display_dashboard()
-            logger.info("Project Dashboard setup completed")
-            
-        except Exception as e:
-            logger.error(f"Error in Project Dashboard setup: {e}")
-            raise
-
     async def on_new_project(self, interaction: nextcord.Interaction):
         """Handler für den Neues-Projekt-Button"""
         modal = self.create_new_project_modal()

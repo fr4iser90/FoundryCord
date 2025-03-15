@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional
 import nextcord
-from ..base.base_factory import BaseFactory
+from app.bot.infrastructure.factories.base.base_factory import BaseFactory
 from app.bot.interfaces.dashboards.components.common.embeds import BaseEmbed
 from app.bot.interfaces.dashboards.components.channels.projects.embeds import ProjectEmbed
 from app.bot.interfaces.dashboards.components.channels.monitoring.embeds import MonitoringEmbed

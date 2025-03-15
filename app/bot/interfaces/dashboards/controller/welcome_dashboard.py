@@ -443,48 +443,4 @@ class WelcomeDashboardController(BaseDashboardController):
         view.set_callback("server_info", self.on_server_info)
         view.set_callback("bot_info", self.on_bot_info)
         #view.set_callback("tech_select", self.on_tech_select)
-    
-    async def display_dashboard(self) -> None:
-        """Displays the welcome dashboard in the configured channel"""
-        try:
-            if not self.channel:
-                logger.error("No channel configured for welcome dashboard")
-                return
-            
-            # Clean up old dashboards first
-            await self.cleanup_old_dashboards(keep_count=1)
-            
-            # Create embed and view
-            embed = await self.create_embed()
-            view = self.create_view()
-            
-            # Register callbacks - with await
-            await self.register_callbacks(view)
-            
-            # If we have an existing message, update it
-            if self.message and hasattr(self.message, 'edit'):
-                try:
-                    await self.message.edit(embed=embed, view=view)
-                    logger.info(f"Updated existing welcome dashboard in {self.channel.name}")
-                    return
-                except Exception as e:
-                    logger.warning(f"Couldn't update existing message: {e}, creating new")
-            
-            # Otherwise send a new message
-            try:
-                message = await self.channel.send(embed=embed, view=view)
-                self.message = message
-                
-                # Track in dashboard manager
-                await self.bot.dashboard_manager.track_message(
-                    dashboard_type=self.DASHBOARD_TYPE,
-                    message_id=message.id,
-                    channel_id=self.channel.id
-                )
-                
-                logger.info(f"Welcome dashboard displayed in channel {self.channel.name}")
-            except Exception as e:
-                logger.error(f"Error sending welcome dashboard: {e}")
-            
-        except Exception as e:
-            logger.error(f"Error displaying welcome dashboard: {e}")
+

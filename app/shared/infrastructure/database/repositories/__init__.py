@@ -1,6 +1,7 @@
 # Import all repository classes
 from .auditlog_repository_impl import AuditLogRepository
 from .category_repository_impl import CategoryRepository
+from .dashboard_repository_impl import DashboardRepository
 from .key_repository_impl import KeyRepository
 from .monitoring_repository_impl import MonitoringRepositoryImpl
 from .project_repository_impl import ProjectRepository
@@ -13,6 +14,7 @@ from .user_repository_impl import UserRepository
 __all__ = [
     'AuditLogRepository',
     'CategoryRepository',
+    'DashboardRepository',
     'KeyRepository',
     'MonitoringRepositoryImpl',
     'ProjectRepository',

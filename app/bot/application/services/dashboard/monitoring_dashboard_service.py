@@ -1,7 +1,7 @@
 from typing import Dict, Any
 from nextcord.ext import commands
 from app.shared.logging import logger
-from app.bot.infrastructure.factories.discord_ui.dashboard_factory import DashboardFactory
+from app.bot.interfaces.dashboards.components.factories.dashboard_factory import DashboardFactory
 from app.bot.infrastructure.factories.monitoring import CollectorFactory
 
 from app.bot.interfaces.dashboards.controller.monitoring_dashboard import MonitoringDashboardController

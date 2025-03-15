@@ -1,27 +1,56 @@
 from typing import Dict, Any, Optional
+from app.bot.infrastructure.factories.base.base_factory import BaseFactory
 from app.bot.interfaces.dashboards.components.ui.table_builder import UnicodeTableBuilder
 from app.bot.interfaces.dashboards.components.ui.mini_graph import MiniGraph
 
-class UIComponentFactory:
+class UIComponentFactory(BaseFactory):
     """Factory for creating UI components following the factory pattern"""
     
-    @staticmethod
-    def create_table(title: Optional[str] = None, width: int = 40) -> UnicodeTableBuilder:
+    def __init__(self, bot):
+        super().__init__(bot)
+    
+    def create(self, name: str, **kwargs) -> Dict[str, Any]:
+        """Implementation of abstract create method from BaseFactory"""
+        component_type = kwargs.get('component_type', 'table')
+        
+        if component_type == 'table':
+            component = self.create_table(
+                title=kwargs.get('title'),
+                width=kwargs.get('width', 40)
+            )
+        elif component_type == 'mini_graph':
+            component = self.create_mini_graph(
+                values=kwargs.get('values', []),
+                max_height=kwargs.get('max_height', 8)
+            )
+        elif component_type == 'spark_line':
+            component = self.create_spark_line(
+                values=kwargs.get('values', []),
+                width=kwargs.get('width', 20)
+            )
+        else:
+            raise ValueError(f"Unknown UI component type: {component_type}")
+            
+        return {
+            'name': name,
+            'component': component,
+            'type': 'ui_component',
+            'config': kwargs
+        }
+    
+    def create_table(self, title: Optional[str] = None, width: int = 40) -> UnicodeTableBuilder:
         """Creates a new UnicodeTableBuilder instance"""
         return UnicodeTableBuilder(title=title, width=width)
     
-    @staticmethod
-    def create_mini_graph(values: list, max_height: int = 8) -> str:
+    def create_mini_graph(self, values: list, max_height: int = 8) -> str:
         """Creates a mini bar graph for visualization"""
         return MiniGraph.create_bar_graph(values, max_height)
     
-    @staticmethod
-    def create_spark_line(values: list, width: int = 20) -> str:
+    def create_spark_line(self, values: list, width: int = 20) -> str:
         """Creates a spark line visualization"""
         return MiniGraph.create_spark_line(values, width)
     
-    @staticmethod
-    def format_cpu_details(metrics: Dict[str, Any]) -> str:
+    def format_cpu_details(self, metrics: Dict[str, Any]) -> str:
         """Creates a formatted CPU details display"""
         cpu_table = UnicodeTableBuilder("CPU Details", width=50)
         cpu_table.add_header_row("Property", "Value")
@@ -32,8 +61,7 @@ class UIComponentFactory:
         
         return cpu_table.build()
     
-    @staticmethod
-    def format_memory_details(metrics: Dict[str, Any]) -> str:
+    def format_memory_details(self, metrics: Dict[str, Any]) -> str:
         """Creates a formatted memory details display"""
         memory_table = UnicodeTableBuilder("Memory Details", width=45)
         memory_table.add_header_row("Property", "Value")

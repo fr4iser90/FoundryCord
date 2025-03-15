@@ -1,6 +1,6 @@
 from typing import Optional, Dict, Any
 import nextcord
-from ..base.base_factory import BaseFactory
+from app.bot.infrastructure.factories.base.base_factory import BaseFactory
 
 class ButtonFactory(BaseFactory):
     def create(self, name: str, **kwargs) -> Dict[str, Any]:

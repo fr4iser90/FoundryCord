@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 import nextcord
 from datetime import datetime
 from app.shared.logging import logger
@@ -120,58 +120,55 @@ class BaseDashboardController:
         except Exception as e:
             logger.error(f"Error cleaning up old dashboard messages: {e}")
     
-    async def display_dashboard(self):
-        """Display or update the dashboard"""
+    async def display_dashboard(self) -> Optional[nextcord.Message]:
+        """Displays or updates the dashboard in the configured channel
+        
+        Returns:
+            The dashboard message object if successful, None otherwise
+        """
         try:
-            if not self.initialized and not await self.initialize():
+            if not self.channel:
+                logger.error(f"No channel configured for {self.DASHBOARD_TYPE} dashboard")
                 return None
             
-            # First attempt to find existing dashboard
-            if not self.message:
-                self.message = await self.find_existing_dashboard()
+            # Clean up old dashboards first
+            await self.cleanup_old_dashboards(keep_count=1)
             
-            # If we still don't have a message (none found or recovered)
-            if not self.message:
-                # Delete any existing dashboards in this channel of the same type
-                try:
-                    deleted = 0
-                    async for message in self.channel.history(limit=10):
-                        if message.author.id == self.bot.user.id and message.embeds:
-                            for embed in message.embeds:
-                                if embed.title and self.TITLE_IDENTIFIER in embed.title:
-                                    await message.delete()
-                                    deleted += 1
-                                    logger.info(f"Deleted old {self.DASHBOARD_TYPE} dashboard")
-                                    break
-                    if deleted > 0:
-                        logger.info(f"Cleaned up {deleted} old {self.DASHBOARD_TYPE} dashboards")
-                except Exception as e:
-                    logger.error(f"Error cleaning up old dashboards: {e}")
-            
-            # Create/update dashboard
+            # Create embed and view
             embed = await self.create_embed()
             view = self.create_view()
             
-            if self.message:
+            # Register callbacks if method exists in the subclass
+            if hasattr(self, 'register_callbacks'):
+                await self.register_callbacks(view)
+            
+            # If we have an existing message, update it
+            if self.message and hasattr(self.message, 'edit'):
                 try:
                     await self.message.edit(embed=embed, view=view)
-                    logger.info(f"Updated existing {self.DASHBOARD_TYPE} dashboard")
-                except nextcord.NotFound:
-                    self.message = await self.channel.send(embed=embed, view=view)
-                    logger.info(f"Recreated {self.DASHBOARD_TYPE} dashboard")
-            else:
-                self.message = await self.channel.send(embed=embed, view=view)
-                logger.info(f"Created new {self.DASHBOARD_TYPE} dashboard")
+                    logger.info(f"Updated existing {self.DASHBOARD_TYPE} dashboard in {self.channel.name}")
+                    return self.message
+                except Exception as e:
+                    logger.warning(f"Couldn't update existing {self.DASHBOARD_TYPE} message: {e}, creating new")
             
-            # Track the message in database
-            if self.message:
+            # Otherwise send a new message
+            try:
+                message = await self.channel.send(embed=embed, view=view)
+                self.message = message
+                
+                # Track in dashboard manager
                 await self.bot.dashboard_manager.track_message(
-                    self.DASHBOARD_TYPE,
-                    self.message.id,
-                    self.channel.id
+                    dashboard_type=self.DASHBOARD_TYPE,
+                    message_id=message.id,
+                    channel_id=self.channel.id
                 )
+                
+                logger.info(f"{self.DASHBOARD_TYPE} dashboard displayed in channel {self.channel.name}")
+                return message
+            except Exception as e:
+                logger.error(f"Error sending {self.DASHBOARD_TYPE} dashboard: {e}")
+                return None
             
-            return self.message
         except Exception as e:
             logger.error(f"Error displaying {self.DASHBOARD_TYPE} dashboard: {e}")
             return None
@@ -198,7 +195,7 @@ class BaseDashboardController:
         )
         
         # Add standard footer
-        DashboardEmbed.add_standard_footer(embed)
+        self.apply_standard_footer(embed)
         
         return embed
     
@@ -211,7 +208,7 @@ class BaseDashboardController:
         )
         
         # Add standard footer
-        DashboardEmbed.add_standard_footer(embed)
+        self.apply_standard_footer(embed)
         
         return embed
     
@@ -277,4 +274,10 @@ class BaseDashboardController:
             return False
         
         return True
+
+    def apply_standard_footer(self, embed: nextcord.Embed, custom_text: Optional[str] = None) -> nextcord.Embed:
+        """Applies a standardized footer to any embed"""
+        footer_text = custom_text or "HomeLab Discord • Last Updated"
+        DashboardEmbed.add_standard_footer(embed, footer_text)
+        return embed
 
