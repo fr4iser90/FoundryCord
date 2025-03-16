@@ -11,6 +11,17 @@ fi
 export CONFIG_LOADED=1
 
 # ------------------------------------------------------
+# Load Local Configuration First
+# ------------------------------------------------------
+# This allows local_config.sh to override any defaults below
+if [ -f "./utils/config/local_config.sh" ]; then
+    source "./utils/config/local_config.sh"
+elif [ -f "$(dirname "$0")/local_config.sh" ]; then
+    source "$(dirname "$0")/local_config.sh"
+fi
+# Local mode settings
+export RUN_LOCALLY="true"
+# ------------------------------------------------------
 # Server Configuration
 # ------------------------------------------------------
 export SERVER_USER="${SERVER_USER:-docker}"
@@ -21,14 +32,16 @@ export SERVER_KEY="${SERVER_KEY:-$HOME/.ssh/id_rsa}"
 # ------------------------------------------------------
 # Project Paths - COMPLETE CONFIGURATION
 # ------------------------------------------------------
-export LOCAL_GIT_DIR="$HOME/Documents/Git/NCC-DiscordBot"
-export PROJECT_ROOT_DIR="/home/docker/docker/companion-management/homelab-discord-bot"
+# These use defaults that can be overridden from local_config.sh
+export LOCAL_GIT_DIR="${LOCAL_GIT_DIR:-$HOME/Documents/Git/NCC-DiscordBot}"
+export PROJECT_ROOT_DIR="${PROJECT_ROOT_DIR:-/home/docker/docker/companion-management/homelab-discord-bot}"
 
 # Bot paths
 export DOCKER_DIR="${PROJECT_ROOT_DIR}/docker"
 export APP_DIR="${PROJECT_ROOT_DIR}/app"
 export BOT_DIR="${PROJECT_ROOT_DIR}/app/bot"
 export WEB_DIR="${PROJECT_ROOT_DIR}/app/web"
+export TEST_DIR="${PROJECT_ROOT_DIR}/app/tests"
 
 # Database paths
 export POSTGRES_DIR="${PROJECT_ROOT_DIR}/app/postgres"
@@ -107,6 +120,8 @@ export ENV_FILE="${DOCKER_DIR}/.env"
 export WEB_COMPOSE_FILE="${PROJECT_ROOT_DIR}/docker/docker-compose.yml"
 export WEB_DOCKERFILE="${DOCKER_DIR}/Dockerfile.web"
 
+export TEST_COMPOSE_FILE="${PROJECT_ROOT_DIR}/docker/docker-compose.yml"
+export TEST_DOCKERFILE="${DOCKER_DIR}/Dockerfile.test"
 
 # ------------------------------------------------------
 # Docker Runtime Options

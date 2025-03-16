@@ -41,7 +41,18 @@ __all__ = [
 ]
 
 # ===== Test Categories =====
+@pytest.hookimpl(tryfirst=True)
 def pytest_configure(config):
+    """Disable pytest capturing mechanisms to avoid file descriptor issues in containers."""
+    if os.path.exists('/.dockerenv'):
+        config.option.capture = "no"  # Disable capturing
+        
+        # Force create clean temporary directory
+        if not os.path.exists('/tmp'):
+            os.makedirs('/tmp', mode=0o777)
+        else:
+            os.chmod('/tmp', 0o777)
+
     """Register custom markers to categorize tests."""
     config.addinivalue_line("markers", "unit: mark test as a unit test")
     config.addinivalue_line("markers", "integration: mark test as an integration test")

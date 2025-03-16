@@ -448,3 +448,128 @@ run_unit_tests_safely() {
     docker exec ${BOT_CONTAINER} /app/tests/run_unit_tests.sh
     return $?
 }
+
+# Run tests using the dedicated test Docker container
+run_tests_with_docker_container() {
+    local test_type="${1:-all}"
+    local test_pattern="${2:-}"
+    
+    print_section_header "Running Tests with Docker Test Container"
+    
+    if [ "$fail_fast" = true ]; then
+        pytest_cmd="${pytest_cmd} -xvs"  # Stop on first failure
+    else
+        pytest_cmd="${pytest_cmd} -vs"   # Run all tests
+    fi
+    
+    # Step 1: Build the test container if needed
+    log_info "Building test Docker container..."
+    docker compose -f ${LOCAL_PROJECT_DIR}/docker/test/docker-compose.yml build
+    
+    if [ $? -ne 0 ]; then
+        log_error "Failed to build test Docker container"
+        return 1
+    fi
+    
+    # Step 2: Start the test container
+    log_info "Starting test Docker container..."
+    docker compose -f ${LOCAL_PROJECT_DIR}/docker/test/docker-compose.yml up -d
+    
+    if [ $? -ne 0 ]; then
+        log_error "Failed to start test Docker container"
+        return 1
+    fi
+    
+    # Step 3: Run tests based on type
+    log_info "Running ${test_type} tests in Docker test container..."
+    
+    # Create results directory if it doesn't exist
+    mkdir -p test-results
+    
+    # Timestamp for unique results file
+    local timestamp=$(date +"%Y%m%d_%H%M%S")
+    local results_file="test-results/test_results_${test_type}_${timestamp}.txt"
+    
+    # Build the pytest command based on test type
+    local pytest_cmd="python -m pytest"
+    
+    case "$test_type" in
+        "unit")
+            pytest_cmd="${pytest_cmd} -m unit"
+            ;;
+        "integration")
+            pytest_cmd="${pytest_cmd} -m integration"
+            ;;
+        "functional")
+            pytest_cmd="${pytest_cmd} -m functional"
+            ;;
+        "performance")
+            pytest_cmd="${pytest_cmd} -m performance"
+            ;;
+        "dashboard")
+            pytest_cmd="${pytest_cmd} -m dashboard"
+            ;;
+        "commands")
+            pytest_cmd="${pytest_cmd} -m commands"
+            ;;
+        "core")
+            pytest_cmd="${pytest_cmd} -m core"
+            ;;
+        "system")
+            pytest_cmd="${pytest_cmd} -m system"
+            ;;
+        "all"|*)
+            # For 'all', don't specify a marker to run everything
+            ;;
+    esac
+    
+    # Add verbosity flags for better output
+    pytest_cmd="${pytest_cmd} -vs"
+    
+    # Add test pattern if specified
+    if [ -n "$test_pattern" ]; then
+        pytest_cmd="${pytest_cmd} -k \"${test_pattern}\""
+    fi
+    
+    # Execute the tests
+    log_info "Running: docker exec homelab-tests ${pytest_cmd}"
+    docker exec homelab-tests ${pytest_cmd} | tee "$results_file"
+    local exit_code=${PIPESTATUS[0]}
+    
+    if [ $exit_code -eq 0 ]; then
+        log_success "All tests completed successfully!"
+    else
+        log_error "Tests failed with exit code: $exit_code"
+    fi
+    
+    log_info "Test results saved to: $results_file"
+    return $exit_code
+}
+
+# Add this function to run tests in sequence without stopping
+run_sequential_tests() {
+    local test_type="${1:-all}"
+    
+    print_section_header "Running Sequential Tests"
+    
+    # Build and start test container (existing code)...
+    
+    # Create results directory and timestamp (existing code)...
+    
+    # Find all test files based on test type
+    log_info "Discovering test files for type: ${test_type}"
+    
+    # Execute tests one directory at a time
+    if [ "$test_type" = "all" ]; then
+        # Run tests by category in sequence
+        docker exec homelab-tests python -m pytest -xvs unit/ | tee -a "$results_file"
+        docker exec homelab-tests python -m pytest -xvs integration/ | tee -a "$results_file"
+        docker exec homelab-tests python -m pytest -xvs functional/ | tee -a "$results_file"
+        docker exec homelab-tests python -m pytest -xvs performance/ | tee -a "$results_file"
+    else
+        # Run just the specified category
+        docker exec homelab-tests python -m pytest -xvs "${test_type}/" | tee "$results_file"
+    fi
+    
+    log_info "All test sequences completed. Results saved to: $results_file"
+}

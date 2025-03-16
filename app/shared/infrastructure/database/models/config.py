@@ -6,10 +6,10 @@ from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 import asyncio
 
-# Debug-Logging für Datenbankverbindung
+# Debug logging for database connection
 logger.info("=== Database Connection Setup ===")
 
-# Umgebungsvariablen direkt auslesen
+# Read environment variables directly
 env_vars = {
     'APP_DB_USER': os.environ.get('APP_DB_USER'),
     'APP_DB_PASSWORD': os.environ.get('APP_DB_PASSWORD'),
@@ -18,8 +18,8 @@ env_vars = {
     'POSTGRES_DB': os.environ.get('POSTGRES_DB')
 }
 
-# Umgebungsvariablen ausgeben (ohne sensible Daten)
-logger.info("Umgebungsvariablen für Datenbankverbindung:")
+# Output environment variables (without sensitive data)
+logger.info("Environment variables for database connection:")
 for key, value in env_vars.items():
     if 'PASSWORD' not in key:
         logger.info(f"{key}: {value if value else '[NOT SET]'}")
@@ -27,7 +27,7 @@ for key, value in env_vars.items():
 # Construct database URL
 DATABASE_URL = f"postgresql+asyncpg://{env_vars['APP_DB_USER']}:{env_vars['APP_DB_PASSWORD']}@{env_vars['POSTGRES_HOST']}:{env_vars['POSTGRES_PORT']}/{env_vars['POSTGRES_DB']}"
 
-# Log safe version of URL (ohne Passwort)
+# Log safe version of URL (without password)
 safe_url = DATABASE_URL.replace(env_vars['APP_DB_PASSWORD'] or "", '[HIDDEN]')
 logger.info(f"Attempting database connection with URL: {safe_url}")
 
@@ -95,15 +95,15 @@ async def get_session():
 
 async def get_async_session():
     """Create and return a new async session for isolated processes"""
-    # Erstellt eine isolierte Session mit eigener Verbindung
+    # Creates an isolated session with its own connection
     engine = create_async_engine(
         DATABASE_URL,
         echo=False,
         future=True,
-        pool_pre_ping=True  # Prüft, ob die Verbindung noch funktioniert
+        pool_pre_ping=True  # Checks if the connection is still working
     )
     
-    # Eigene Session-Factory pro Aufruf
+    # Custom session factory per call
     session_factory = sessionmaker(
         engine, 
         class_=AsyncSession, 

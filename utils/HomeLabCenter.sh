@@ -201,9 +201,9 @@ parse_cli_args() {
                 export DIRECT_DEPLOY=true
                 run_quick_deploy_with_auto_start
                 ;;
-            --test-all)
+            --test-ALL)
                 export DIRECT_ACTION=true
-                run_all_tests
+                run_tests_with_docker_container "all"
                 exit $?
                 ;;
             --test-unit)
@@ -239,6 +239,11 @@ parse_cli_args() {
                 log_info "Synchronizing test results between directories..."
                 sync_test_results
                 exit 0
+                ;;
+            --sequential-tests)
+                export DIRECT_ACTION=true
+                run_sequential_tests
+                exit $?
                 ;;
             *)
                 # Pass other arguments to the common parser

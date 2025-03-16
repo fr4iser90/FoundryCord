@@ -35,14 +35,12 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - bot_config:/app/bot/config
       - /etc/localtime:/etc/localtime:ro
-      - ../app/tests:/app/tests
-      - ../app/tests/test-results:/app/tests/test-results
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-
+        
   web:
     build:
       context: ..
@@ -134,7 +132,7 @@ services:
         reservations:
           cpus: '0.1'
           memory: 128M
-          
+
 networks:
   homelab-net:
     driver: bridge

@@ -21,6 +21,7 @@ show_testing_menu() {
         print_menu_item "8" "Show Test Results"
         print_menu_item "9" "Server Status Tests"
         print_menu_item "10" "Run Tests in Priority Order"
+        print_menu_item "11" "Run Tests with Docker Test Container"
         
         print_back_option
         
@@ -59,6 +60,10 @@ show_testing_menu() {
             9) test_server ;;
             10)
                 run_ordered_tests
+                press_enter_to_continue
+                ;;
+            11)
+                run_tests_with_docker_container "all"
                 press_enter_to_continue
                 ;;
             0) show_main_menu ;;

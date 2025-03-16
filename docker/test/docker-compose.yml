@@ -1,0 +1,20 @@
+services:
+  test:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.test
+    image: homelab-discord-bot-tests:latest
+    container_name: homelab-tests
+    networks:
+      - homelab-net
+    env_file:
+      - ../.env
+    environment:
+      - ENVIRONMENT=test
+    volumes:
+      - ../../app/tests:/app/tests
+      - ../../app/tests/test-results:/app/tests/test-results
+
+networks:
+  homelab-net:
+    driver: bridge

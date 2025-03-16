@@ -167,9 +167,19 @@ def fix_container_tmpdir():
         os.environ['TMPDIR'] = '/tmp'
         tempfile.tempdir = '/tmp'
         
-        # Create directory if it doesn't exist
+        # Create directory if it doesn't exist and set permissions
         if not os.path.exists('/tmp'):
-            os.makedirs('/tmp')
+            os.makedirs('/tmp', mode=0o777)
+        else:
+            os.chmod('/tmp', 0o777)
+            
+        # Create a fresh temp file to verify permissions
+        try:
+            with tempfile.NamedTemporaryFile(delete=True) as tmp:
+                tmp.write(b'test')
+            print("Temporary file access verified.")
+        except Exception as e:
+            print(f"Warning: Temporary file verification failed: {e}")
 
 # Apply container fixes
 fix_container_tmpdir()
@@ -193,25 +203,41 @@ def generate_fake_message(**kwargs):
 # Add a helper function to check and create directory structures
 
 def ensure_test_module_structure():
-    """Ensure all required module directories exist for testing purposes"""
+    """Ensures that all test directories have proper package structure."""
     import os
     
-    # Create base directories if they don't exist
-    required_dirs = [
-        "app/bot/interfaces",
-        "app/bot/interfaces/web",
-        "app/bot/interfaces/commands"
+    # Create __init__.py files in test directories if they don't exist
+    test_dirs = [
+        "app/tests",
+        "app/tests/unit",
+        "app/tests/unit/auth",
+        "app/tests/unit/commands",
+        "app/tests/unit/dashboard",
+        "app/tests/unit/infrastructure",
+        "app/tests/unit/web",
+        "app/tests/integration",
+        "app/tests/functional",
+        "app/tests/performance"
+    ]
+    bot_dir = [
+        "app/bot"
+    ]
+    web_dir = [
+        "app/web"
     ]
     
-    for directory in required_dirs:
+    for directory in test_dirs:
+        # Create directory if it doesn't exist
         if not os.path.exists(directory):
-            os.makedirs(directory, exist_ok=True)
+            os.makedirs(directory)
             print(f"Created directory: {directory}")
             
-    # Create __init__.py files to make them proper modules
-    for directory in required_dirs:
+        # Create __init__.py if it doesn't exist
         init_file = os.path.join(directory, "__init__.py")
         if not os.path.exists(init_file):
-            with open(init_file, "w") as f:
-                f.write("# Auto-generated module file for testing\n")
-            print(f"Created module file: {init_file}") 
+            with open(init_file, 'w') as f:
+                f.write("# Test package\n")
+            print(f"Created __init__.py in {directory}")
+    
+    print("Test module structure verified")
+    return True 
