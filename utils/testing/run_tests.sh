@@ -15,7 +15,7 @@ source "./utils/lib/common.sh"
 # Command-line Arguments Parsing
 # ------------------------------------------------------
 TEST_TYPE="all"
-DEPLOY_FIRST=false
+DEPLOY_FIRST=true
 SKIP_CHECKS=false
 
 parse_test_args() {
@@ -130,3 +130,5 @@ main() {
 
 # Run the main function
 main 
+
+

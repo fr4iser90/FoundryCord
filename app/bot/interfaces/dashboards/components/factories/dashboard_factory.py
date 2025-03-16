@@ -1,16 +1,18 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import nextcord
-from app.bot.infrastructure.factories.base.base_factory import BaseFactory
-import logging
-from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOARD_SERVICES
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
-logger = logging.getLogger(__name__)
+# Remove ALL imports that lead to circular dependencies
+# from app.bot.infrastructure.factories.base.base_factory import BaseFactory
+# from .base_dashboard_factory import BaseDashboardFactory
 
-class DashboardFactory(BaseFactory):
+class DashboardFactory:
+    """Factory for creating dashboard components"""
+    
     def __init__(self, bot):
-        super().__init__(bot)
+        self.bot = bot
+        self._registry = {}  # Local registry without BaseFactory dependency
         
     @property
     def view_factory(self):
@@ -31,6 +33,15 @@ class DashboardFactory(BaseFactory):
     @property
     def modal_factory(self):
         return self.bot.component_factory.factories['modal']
+        
+    def register(self, key: str, component: Any) -> None:
+        """Register a component in the factory registry"""
+        self._registry[key] = component
+        logger.debug(f"Registered {key} in DashboardFactory")
+        
+    def get(self, key: str) -> Any:
+        """Get a registered component"""
+        return self._registry.get(key)
 
     async def create_dashboard(self,
         title: str,
@@ -46,17 +57,6 @@ class DashboardFactory(BaseFactory):
             title: Dashboard title
             description: Dashboard description
             components: List of component configs
-                [
-                    {
-                        'type': 'button'|'role_menu'|'user_menu'|'text_input',
-                        'style': nextcord.ButtonStyle,
-                        'label': str,
-                        'custom_id': str,
-                        'emoji': str,
-                        'placeholder': str,
-                        ...
-                    }
-                ]
             color: Embed color
             timeout: View timeout in seconds
         """
@@ -97,66 +97,12 @@ class DashboardFactory(BaseFactory):
 
         return embed, view
 
-    async def create_settings_dashboard(self,
-        guild_name: str,
-        settings: Dict[str, Any]
-    ) -> tuple[nextcord.Embed, nextcord.ui.View]:
-        """Predefined settings dashboard template"""
-        components = [
-            {
-                'type': 'button',
-                'label': 'General Settings',
-                'custom_id': 'general_settings',
-                'emoji': '⚙️'
-            },
-            {
-                'type': 'button',
-                'label': 'Permissions',
-                'custom_id': 'permissions',
-                'emoji': '🔒'
-            },
-            {
-                'type': 'role_menu',
-                'custom_id': 'admin_roles',
-                'placeholder': 'Configure admin roles'
-            }
-        ]
-        
-        return await self.create_dashboard(
-            title=f"Settings - {guild_name}",
-            description="Configure your server settings here.",
-            components=components
-        )
-
-    async def create_help_dashboard(self,
-        commands: List[Dict[str, str]]
-    ) -> tuple[nextcord.Embed, nextcord.ui.View]:
-        """Predefined help dashboard template"""
-        components = [
-            {
-                'type': 'button',
-                'label': 'Commands',
-                'custom_id': 'view_commands',
-                'emoji': '📜'
-            },
-            {
-                'type': 'button',
-                'label': 'Support',
-                'custom_id': 'get_support',
-                'emoji': '❓'
-            }
-        ]
-        
-        return await self.create_dashboard(
-            title="Help Center",
-            description="Get help and information about the bot.",
-            components=components
-        )
-
     async def create(self, dashboard_type: str, **kwargs) -> Dict[str, Any]:
+        """Implementation of create method without BaseFactory dependency"""
         try:
             # Ensure dashboard manager exists
             if not hasattr(self.bot, 'dashboard_manager'):
+                # Lazy import to avoid circular dependency
                 from app.bot.infrastructure.managers.dashboard_manager import DashboardManager
                 logger.warning("Dashboard manager not initialized, creating now")
                 self.bot.dashboard_manager = await DashboardManager.setup(self.bot)
@@ -171,22 +117,34 @@ class DashboardFactory(BaseFactory):
                     'type': 'dashboard'
                 }
             
-            # Create new if doesn't exist
-            service_name = DASHBOARD_SERVICES.get(dashboard_type)
-            if not service_name:
-                logger.warning(f"Unknown dashboard type: {dashboard_type}")
+            # Lazy import the dashboard service
+            try:
+                # Import DASHBOARD_SERVICES constant at runtime
+                from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOARD_SERVICES
+                
+                service_name = DASHBOARD_SERVICES.get(dashboard_type)
+                if not service_name:
+                    logger.warning(f"Unknown dashboard type: {dashboard_type}")
+                    return None
+                
+                # Dynamically import the service class
+                module_name = f"app.bot.application.services.dashboard.{dashboard_type}_dashboard_service"
+                service_module = __import__(module_name, fromlist=[service_name])
+                service_class = getattr(service_module, service_name)
+                
+                # Create and register new dashboard
+                dashboard = service_class(self.bot)
+                await dashboard.initialize()
+                self.bot.dashboard_manager.register_dashboard(dashboard_type, dashboard)
+                
+                return {
+                    'name': dashboard_type,
+                    'dashboard': dashboard,
+                    'type': 'dashboard'
+                }
+            except ImportError as e:
+                logger.error(f"Failed to import dashboard service: {e}")
                 return None
-            
-            # Create and register new dashboard
-            dashboard = service_class(self.bot, self)
-            await dashboard.initialize()
-            self.bot.dashboard_manager.register_dashboard(dashboard_type, dashboard)
-            
-            return {
-                'name': dashboard_type,
-                'dashboard': dashboard,
-                'type': 'dashboard'
-            }
         except Exception as e:
             logger.error(f"Failed to create dashboard {dashboard_type}: {e}")
             return None

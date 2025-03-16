@@ -329,4 +329,12 @@ show_help() {
     echo "  --no-restart        Don't automatically restart services"
     echo "  --rebuild           Force rebuild of Docker containers"
     echo "  --help              Show this help message"
+}
+
+# Log a section header
+log_section() {
+    local message="$1"
+    echo ""
+    echo -e "${YELLOW}=== ${message} ===${NC}"
+    echo ""
 } 

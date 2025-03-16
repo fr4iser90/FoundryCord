@@ -201,6 +201,39 @@ parse_cli_args() {
                 export DIRECT_DEPLOY=true
                 run_quick_deploy_with_auto_start
                 ;;
+            --test-all)
+                export DIRECT_ACTION=true
+                run_all_tests
+                exit $?
+                ;;
+            --test-unit)
+                export DIRECT_ACTION=true
+                run_unit_tests
+                exit $?
+                ;;
+            --test-integration)
+                export DIRECT_ACTION=true
+                run_integration_tests
+                exit $?
+                ;;
+            --test-system)
+                export DIRECT_ACTION=true
+                run_system_tests
+                exit $?
+                ;;
+            --test-dashboard)
+                run_dashboard_tests
+                exit 0
+                ;;
+            --test-simple)
+                run_simple_test
+                exit 0
+                ;;
+            --test-ordered)
+                export DIRECT_ACTION=true
+                run_ordered_tests
+                exit $?
+                ;;
             *)
                 # Pass other arguments to the common parser
                 ;;

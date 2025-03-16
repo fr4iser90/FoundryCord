@@ -228,3 +228,31 @@ class DynamicDashboardController(BaseDashboardController):
                 error_code="DYNAMIC-REFRESH-ERR"
             )
             await interaction.followup.send(embed=error_embed, ephemeral=True)
+
+    async def load_components(self):
+        """Load all UI components from database based on dashboard type"""
+        try:
+            async with self.bot.db_session() as session:
+                from app.shared.infrastructure.database.repositories.dashboard_repository_impl import DashboardRepository
+                repository = DashboardRepository(session)
+                
+                # Load buttons
+                buttons = await repository.get_components_by_type(
+                    dashboard_type=self.dashboard_id,
+                    component_type="button"
+                )
+                for button in buttons:
+                    self.components[f"button_{button.id}"] = self.ui_factory.create_button(
+                        label=button.title,
+                        custom_id=button.custom_id,
+                        style=button.style,
+                        emoji=button.emoji
+                    )
+                
+                # Load embeds, views, selectors similarly
+                # ...
+                
+            return True
+        except Exception as e:
+            logger.error(f"Failed to load components for {self.dashboard_id}: {e}")
+            return False

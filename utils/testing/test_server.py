@@ -9,7 +9,7 @@ def run_tests_on_server(server_user, server_host, server_dir):
     print(f"Running tests on {server_user}@{server_host}:{server_dir}")
     
     # Command to run tests on the server
-    cmd = f"ssh {server_user}@{server_host} 'cd {server_dir} && docker exec homelab-discord-bot pytest -xvs app/bot/tests/'"
+    cmd = f"ssh {server_user}@{server_host} 'cd {server_dir} && docker exec homelab-discord-bot pytest -xvs app/shared/tests/'"
     
     # Execute the command
     process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
