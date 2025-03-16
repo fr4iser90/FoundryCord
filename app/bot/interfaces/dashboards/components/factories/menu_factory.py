@@ -1,8 +1,13 @@
-from typing import Dict, Any
+from typing import Optional, Dict, Any
 import nextcord
-from app.bot.infrastructure.factories.base.base_factory import BaseFactory
 
-class MenuFactory(BaseFactory):
+class MenuFactory:
+    def __init__(self, bot=None):
+        self.bot = bot
+        # Import BaseFactory here to avoid circular import
+        from app.bot.infrastructure.factories.base.base_factory import BaseFactory
+        self.base_factory = BaseFactory()
+        
     def create(self, name: str, **kwargs) -> Dict[str, Any]:
         """Implementation of abstract create method from BaseFactory"""
         menu_type = kwargs.get('menu_type', 'role')

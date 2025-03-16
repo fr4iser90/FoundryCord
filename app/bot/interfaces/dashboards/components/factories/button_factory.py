@@ -1,10 +1,16 @@
 from typing import Optional, Dict, Any
 import nextcord
-from app.bot.infrastructure.factories.base.base_factory import BaseFactory
 
-class ButtonFactory(BaseFactory):
+# Import inside method implementation, not at module level
+class ButtonFactory:
+    def __init__(self, bot=None):
+        self.bot = bot
+        # Import BaseFactory here to avoid circular import
+        from app.bot.infrastructure.factories.base.base_factory import BaseFactory
+        self.base_factory = BaseFactory()
+        
     def create(self, name: str, **kwargs) -> Dict[str, Any]:
-        """Implementation of abstract create method from BaseFactory"""
+        """Implementation of factory create method"""
         button_type = kwargs.get('button_type', 'confirm')
         
         if button_type == 'confirm':

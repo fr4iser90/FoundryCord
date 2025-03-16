@@ -103,6 +103,10 @@ main() {
         exit 1
     fi
     
+    # Add this before running tests to clear Python cache
+    find /app -name "__pycache__" -type d -exec rm -rf {} +  2>/dev/null || true
+    find /app -name "*.pyc" -delete
+    
     # Run tests based on type
     log_section "STEP 4: Running tests"
     
@@ -130,5 +134,16 @@ main() {
 
 # Run the main function
 main 
+
+# Add trap to ensure file descriptors are properly closed
+trap 'echo "Cleaning up..."; sleep 1' EXIT
+
+# Add a short delay after each test group to allow file descriptors to close
+run_test_group() {
+  pytest $@
+  local result=$?
+  sleep 1  # Allow file descriptors to properly close
+  return $result
+}
 
 

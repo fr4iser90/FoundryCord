@@ -36,6 +36,7 @@ services:
       - bot_config:/app/bot/config
       - /etc/localtime:/etc/localtime:ro
       - ../tests:/app/shared/tests
+      - ./test-results:/app/test-results
     depends_on:
       postgres:
         condition: service_healthy

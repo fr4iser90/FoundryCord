@@ -385,7 +385,7 @@ run_ordered_tests() {
     local results_file="test-results/test_results_ordered_${timestamp}.txt"
     
     # Create shared results directory in container
-    docker exec ${BOT_CONTAINER} mkdir -p /app/shared-results
+    docker exec ${BOT_CONTAINER} mkdir -p /app/test-results
     
     # Copy the test order script to the bot container if it's not already there
     docker cp app/tests/run_tests.sh ${BOT_CONTAINER}:/app/tests/
@@ -400,7 +400,7 @@ run_ordered_tests() {
     
     # Download the test results from the container's shared volume
     log_info "Retrieving test results from container..."
-    docker cp ${BOT_CONTAINER}:/app/shared-results/. test-results/
+    docker cp ${BOT_CONTAINER}:/app/test-results/. test-results/
     
     if [ $exit_code -eq 0 ]; then
         log_success "All tests completed successfully!"
@@ -409,5 +409,43 @@ run_ordered_tests() {
     fi
     
     log_info "Test results saved to: $results_file"
+    
+    # IMPORTANT: Explicitly run the sync script
+    log_info "Synchronizing test results to Git repository..."
+    chmod +x "./utils/testing/sync_test_results.sh"
+    bash "./utils/testing/sync_test_results.sh"
+    
+    # Create required directories
+    mkdir -p "$LOCAL_GIT_DIR/test-results"
+    
+    # Direct fallback copy if sync script fails
+    if [ ! "$(ls -A "$LOCAL_GIT_DIR/test-results/")" ]; then
+        log_warning "Sync script may have failed, trying direct copy"
+        cp -f "$LOCAL_PROJECT_DIR/docker/test-results/"* "$LOCAL_GIT_DIR/test-results/" 2>/dev/null || true
+    fi
+    
     return $exit_code
+}
+
+# Add this function to utils/functions/testing_functions.sh
+run_unit_tests_safely() {
+    clear
+    print_section_header "Run Unit Tests (Safe Mode)"
+    
+    # Get the name of the bot container
+    BOT_CONTAINER="homelab-discord-bot"
+    
+    # Make sure container exists and is running
+    if ! docker ps | grep -q "${BOT_CONTAINER}"; then
+        log_error "Bot container '${BOT_CONTAINER}' is not running. Start it first."
+        return 1
+    fi
+    
+    # Copy the special unit test script
+    docker cp app/tests/run_unit_tests.sh ${BOT_CONTAINER}:/app/tests/
+    docker exec ${BOT_CONTAINER} chmod +x /app/tests/run_unit_tests.sh
+    
+    # Run the special unit test script
+    docker exec ${BOT_CONTAINER} /app/tests/run_unit_tests.sh
+    return $?
 }

@@ -234,6 +234,12 @@ parse_cli_args() {
                 run_ordered_tests
                 exit $?
                 ;;
+            --sync-results)
+                export DIRECT_ACTION=true
+                chmod +x "./utils/testing/sync_test_results.sh" 
+                bash "./utils/testing/sync_test_results.sh"
+                exit 0
+                ;;
             *)
                 # Pass other arguments to the common parser
                 ;;

@@ -69,4 +69,46 @@ show_testing_menu() {
                 ;;
         esac
     done
+}
+
+# Add this function to utils/menus/testing_menu.sh
+show_test_results() {
+    clear
+    print_section_header "Test Results"
+    
+    # Create results directory if it doesn't exist
+    mkdir -p "$LOCAL_GIT_DIR/test-results"
+    
+    # Check if we have any test results
+    if [ ! "$(ls -A "$LOCAL_GIT_DIR/test-results/")" ]; then
+        print_warning "No test results found in $LOCAL_GIT_DIR/test-results/"
+        press_enter_to_continue
+        return
+    fi
+    
+    # Show the available results files
+    echo "Available test results:"
+    ls -1t "$LOCAL_GIT_DIR/test-results/" | nl
+    
+    # Ask user which file to view
+    echo ""
+    local choice=$(get_numeric_input "Enter the number of the file to view (0 to go back): ")
+    
+    if [ "$choice" = "0" ]; then
+        return
+    fi
+    
+    # Get the filename from the list
+    local file=$(ls -1t "$LOCAL_GIT_DIR/test-results/" | sed -n "${choice}p")
+    
+    if [ -n "$file" ]; then
+        clear
+        print_section_header "Test Results: $file"
+        cat "$LOCAL_GIT_DIR/test-results/$file"
+        echo ""
+        press_enter_to_continue
+    else
+        print_error "Invalid selection"
+        sleep 1
+    fi
 } 

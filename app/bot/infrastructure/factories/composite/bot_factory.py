@@ -4,13 +4,6 @@ from ..service.service_factory import ServiceFactory
 from ..service.task_factory import TaskFactory
 from ..discord.channel_factory import ChannelFactory
 from ..discord.thread_factory import ThreadFactory
-from ....interfaces.dashboards.components.factories.message_factory import MessageFactory
-from ....interfaces.dashboards.components.factories.button_factory import ButtonFactory
-from ....interfaces.dashboards.components.factories.view_factory import ViewFactory
-from ....interfaces.dashboards.components.factories.menu_factory import MenuFactory
-from ....interfaces.dashboards.components.factories.modal_factory import ModalFactory
-from ....interfaces.dashboards.components.factories.dashboard_factory import DashboardFactory
-from ....interfaces.dashboards.components.factories.embed_factory import EmbedFactory
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
@@ -54,13 +47,21 @@ class BotComponentFactory:
     def _initialize_interface_factories(self):
         # Import UI factories here to avoid circular imports
         from app.bot.interfaces.dashboards.components.factories.button_factory import ButtonFactory
+        from app.bot.interfaces.dashboards.components.factories.message_factory import MessageFactory
+        from app.bot.interfaces.dashboards.components.factories.menu_factory import MenuFactory
+        from app.bot.interfaces.dashboards.components.factories.view_factory import ViewFactory
+        from app.bot.interfaces.dashboards.components.factories.modal_factory import ModalFactory
         from app.bot.interfaces.dashboards.components.factories.dashboard_factory import DashboardFactory
-        # etc...
+        from app.bot.interfaces.dashboards.components.factories.embed_factory import EmbedFactory
         
         return {
             'button': ButtonFactory(self.bot),
+            'message': MessageFactory(self.bot),
+            'menu': MenuFactory(self.bot),
+            'view': ViewFactory(self.bot),
+            'modal': ModalFactory(self.bot),
             'dashboard': DashboardFactory(self.bot),
-            # etc...
+            'embed': EmbedFactory(self.bot),
         }
 
     def register_component_creator(self, component_type: str, creator_func: Callable):

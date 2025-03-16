@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 import asyncio
+import unittest
 
 # Mark all tests in this file as functional tests
 pytestmark = pytest.mark.functional
@@ -12,26 +13,26 @@ These tests verify complete user flows from start to finish,
 simulating how users would interact with the bot in real scenarios.
 """
 
+@pytest.fixture
+def mock_bot_client():
+    """Create a mock bot client for testing user flows"""
+    client = MagicMock()
+    client.get_channel = MagicMock(return_value=MagicMock())
+    client.user = MagicMock()
+    client.user.id = 123456789
+    return client
+
+@pytest.fixture
+def mock_user():
+    """Create a mock Discord user"""
+    user = MagicMock()
+    user.id = 987654321
+    user.name = "TestUser"
+    user.display_name = "Test User"
+    return user
+
 class TestDashboardUserFlows:
     """Test class for dashboard-related user flows"""
-    
-    @pytest.fixture
-    async def mock_bot_client(self):
-        """Create a mock bot client for testing user flows"""
-        client = MagicMock()
-        client.get_channel = MagicMock(return_value=MagicMock())
-        client.user = MagicMock()
-        client.user.id = 123456789
-        return client
-    
-    @pytest.fixture
-    async def mock_user(self):
-        """Create a mock Discord user"""
-        user = MagicMock()
-        user.id = 987654321
-        user.name = "TestUser"
-        user.display_name = "Test User"
-        return user
     
     @pytest.mark.asyncio
     async def test_dashboard_creation_and_interaction(self, mock_bot_client, mock_user):
