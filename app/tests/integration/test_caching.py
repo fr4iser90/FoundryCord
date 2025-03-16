@@ -112,7 +112,8 @@ class TestRedisCache:
         }
         
         # Set multiple hash fields
-        redis_client.hmset(test_key, test_hash)
+        for field, value in test_hash.items():
+            redis_client.hset(test_key, field, value)
         
         # Get individual field
         assert redis_client.hget(test_key, "field1") == "value1"

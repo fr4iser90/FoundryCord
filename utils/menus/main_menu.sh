@@ -154,9 +154,9 @@ run_initial_setup() {
         print_error "Docker is not installed on the remote server."
         print_info "Please install Docker on your server before continuing."
         return 1
-    } else {
+    else
         print_success "Docker is installed on the remote server."
-    }
+    fi
     
     # Check if Docker Compose is installed
     print_info "Checking for Docker Compose installation..."
@@ -167,15 +167,15 @@ run_initial_setup() {
             print_error "Docker Compose is not installed on the remote server."
             print_info "Please install Docker Compose on your server before continuing."
             return 1
-        } else {
+        else
             print_success "Docker Compose V1 is installed on the remote server."
             print_info "Consider upgrading to Docker Compose V2 for better performance."
             # Update DOCKER_COMPOSE_CMD for V1
             export DOCKER_COMPOSE_CMD="docker-compose"
-        }
-    } else {
+        fi
+    else
         print_success "Docker Compose V2 is installed on the remote server."
-    }
+    fi
     
     # 1. Create necessary directories on remote server with proper permissions
     print_info "Creating directory structure with proper permissions..."
@@ -259,14 +259,14 @@ run_initial_setup() {
         if ! get_yes_no "Do you want to auto-start all services?"; then
             print_info "Please select which services to auto-start in the next menu."
             AUTO_START_SERVICES="bot,postgres,redis"
-        }
+        fi
         
         # Ask about build options
         if get_yes_no "Do you want to enable automatic rebuilding before starting?"; then
             AUTO_BUILD_ENABLED="true"
-        } else {
+        else
             AUTO_BUILD_ENABLED="false"
-        }
+        fi
         
         # Ask about feedback level
         echo "Select feedback level during auto-start:"
@@ -284,10 +284,10 @@ run_initial_setup() {
         
         # Save auto-start configuration
         save_auto_start_config "${AUTO_START}" "${AUTO_START_SERVICES}" "${AUTO_START_FEEDBACK}"
-    } else {
+    else
         AUTO_START="false"
         save_auto_start_config "false" "none" "none"
-    }
+    fi
     
     # 6. Ask if user wants to build and start containers
     if get_yes_no "Would you like to build and start the containers now?"; then

@@ -35,8 +35,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - bot_config:/app/bot/config
       - /etc/localtime:/etc/localtime:ro
-      - ../tests:/app/shared/tests
-      - ./test-results:/app/test-results
+      - ../app/tests:/app/tests
+      - ../app/tests/test-results:/app/tests/test-results
     depends_on:
       postgres:
         condition: service_healthy

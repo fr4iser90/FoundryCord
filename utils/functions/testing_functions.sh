@@ -368,10 +368,8 @@ run_ordered_tests() {
     clear
     print_section_header "Run Tests in Ordered Sequence"
     
-    log_info "Running tests in priority order (core → unit → integration → functional → performance)..."
-    
     # Get the name of the bot container
-    BOT_CONTAINER="homelab-discord-bot"
+    BOT_CONTAINER="${BOT_CONTAINER:-homelab-discord-bot}"
     
     # Make sure container exists and is running
     if ! docker ps | grep -q "${BOT_CONTAINER}"; then
@@ -379,52 +377,53 @@ run_ordered_tests() {
         return 1
     fi
     
-    # Create test results directory
+    # Create results directory
     mkdir -p test-results
     local timestamp=$(date +"%Y%m%d_%H%M%S")
-    local results_file="test-results/test_results_ordered_${timestamp}.txt"
+    local results_file="test-results/ordered_tests_${timestamp}.txt"
     
-    # Create shared results directory in container
-    docker exec ${BOT_CONTAINER} mkdir -p /app/test-results
-    
-    # Copy the test order script to the bot container if it's not already there
-    docker cp app/tests/run_tests.sh ${BOT_CONTAINER}:/app/tests/
-    
-    # Make it executable
-    docker exec ${BOT_CONTAINER} chmod +x /app/tests/run_tests.sh
-    
-    # Run the ordered tests inside the bot container
-    log_info "Executing ordered test sequence..."
-    docker exec ${BOT_CONTAINER} /app/tests/run_tests.sh all | tee "$results_file"
+    # Run the tests using the mounted run_tests.sh script
+    log_info "Running ordered tests in container..."
+    docker exec ${BOT_CONTAINER} bash /app/tests/run_tests.sh all | tee "$results_file"
     local exit_code=${PIPESTATUS[0]}
     
-    # Download the test results from the container's shared volume
-    log_info "Retrieving test results from container..."
-    docker cp ${BOT_CONTAINER}:/app/test-results/. test-results/
-    
     if [ $exit_code -eq 0 ]; then
-        log_success "All tests completed successfully!"
+        log_success "Ordered tests completed successfully!"
     else
-        log_error "Tests failed with exit code: $exit_code"
+        log_error "Ordered tests failed with exit code: $exit_code"
     fi
     
     log_info "Test results saved to: $results_file"
     
-    # IMPORTANT: Explicitly run the sync script
-    log_info "Synchronizing test results to Git repository..."
-    chmod +x "./utils/testing/sync_test_results.sh"
-    bash "./utils/testing/sync_test_results.sh"
-    
-    # Create required directories
-    mkdir -p "$LOCAL_GIT_DIR/test-results"
-    
-    # Direct fallback copy if sync script fails
-    if [ ! "$(ls -A "$LOCAL_GIT_DIR/test-results/")" ]; then
-        log_warning "Sync script may have failed, trying direct copy"
-        cp -f "$LOCAL_PROJECT_DIR/docker/test-results/"* "$LOCAL_GIT_DIR/test-results/" 2>/dev/null || true
-    fi
+    # Sync results across directories
+    sync_test_results
     
     return $exit_code
+}
+
+# Sync test results between development and git directories
+sync_test_results() {
+    log_info "Synchronizing test results using framework SCP..."
+    
+    # Ensure target directories exist
+    mkdir -p "$LOCAL_GIT_DIR/test-results"
+    
+    # First get the results from the remote server
+    if [ "$RUN_LOCALLY" = false ]; then
+        # Using the framework's SSH/SCP functions to get results from server
+        run_remote_command "mkdir -p ${PROJECT_ROOT_DIR}/test-results"
+        run_remote_command "cp -f ${PROJECT_ROOT_DIR}/docker/test-results/* ${PROJECT_ROOT_DIR}/test-results/ 2>/dev/null || true"
+        scp_from_server "${PROJECT_ROOT_DIR}/test-results/*" "${LOCAL_GIT_DIR}/test-results/"
+        log_success "Test results retrieved from remote server using SCP"
+    else
+        # We're in local mode, just copy from docker directory to git directory
+        if [ -d "$LOCAL_PROJECT_DIR/docker/test-results" ]; then
+            cp -f "$LOCAL_PROJECT_DIR/docker/test-results/"* "$LOCAL_GIT_DIR/test-results/" 2>/dev/null || true
+            log_success "Test results copied from local Docker directory"
+        else
+            log_warning "No test results found in local Docker directory"
+        fi
+    fi
 }
 
 # Add this function to utils/functions/testing_functions.sh

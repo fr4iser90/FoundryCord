@@ -18,16 +18,19 @@ INTEGRATION_TESTS="$SCRIPT_DIR/integration/"
 FUNCTIONAL_TESTS="$SCRIPT_DIR/functional/"
 PERFORMANCE_TESTS="$SCRIPT_DIR/performance/"
 
-# Create central test results directory - accessible from host
-RESULTS_DIR="/app/test-results"
-mkdir -p "$RESULTS_DIR"
+# Create logs directory in the app/tests folder
+LOGS_DIR="$SCRIPT_DIR/logs"
+mkdir -p "$LOGS_DIR"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-RESULTS_FILE="$RESULTS_DIR/test_results_${TIMESTAMP}.txt"
+RESULTS_FILE="$LOGS_DIR/test_results_${TIMESTAMP}.txt"
+
+# Start capturing all output to the results file
+exec > >(tee -a "$RESULTS_FILE") 2>&1
 
 # Log start of test execution
-echo "[$(date)] Starting test execution..." | tee -a "$RESULTS_FILE"
-echo "Test type: $1" | tee -a "$RESULTS_FILE"
-echo "Environment: $(env | grep -i python)" | tee -a "$RESULTS_FILE"
+echo "[$(date)] Starting test execution..."
+echo "Test type: $1"
+echo "Environment: $(env | grep -i python)"
 
 # Verify directories exist before running tests
 check_directory() {
@@ -173,5 +176,5 @@ case "$1" in
 esac
 
 # Save test results to the standard directory
-echo "Test execution completed at $(date)" >> "$RESULTS_FILE"
+echo "Test execution completed at $(date)"
 echo "Results saved to: $RESULTS_FILE" 

@@ -1,0 +1,43 @@
+name: Docker Tests
+
+on:
+  push:
+    branches: [ main, development ]
+  pull_request:
+    branches: [ main, development ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Build and start containers
+        run: |
+          docker-compose -f docker/docker-compose.yml up -d --build
+      
+      - name: Run tests in container
+        run: |
+          docker exec homelab-discord-bot bash /app/tests/run_tests.sh all
+          
+      - name: Collect test results
+        if: always()
+        run: |
+          mkdir -p test-results
+          docker cp homelab-discord-bot:/app/tests/test-results/. test-results/
+          
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: test-results/
+          
+      - name: Stop containers
+        if: always()
+        run: |
+          docker-compose -f docker/docker-compose.yml down 

@@ -236,8 +236,8 @@ parse_cli_args() {
                 ;;
             --sync-results)
                 export DIRECT_ACTION=true
-                chmod +x "./utils/testing/sync_test_results.sh" 
-                bash "./utils/testing/sync_test_results.sh"
+                log_info "Synchronizing test results between directories..."
+                sync_test_results
                 exit 0
                 ;;
             *)

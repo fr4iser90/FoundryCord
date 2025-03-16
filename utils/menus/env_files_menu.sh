@@ -87,7 +87,7 @@ edit_env_file() {
             fi
         fi
         print_info "Found .env file in Docker directory"
-    }
+    fi
     
     # Download .env file to a temporary file
     local temp_env_file="/tmp/homelab_env"
@@ -132,9 +132,9 @@ edit_env_file() {
             run_remote_command "cd ${DOCKER_DIR} && docker compose restart"
             print_success "Services restarted"
         fi
-    } else {
+    else
         print_info "Changes discarded."
-    }
+    fi
     
     # Clean up
     rm -f "$temp_env_file"
@@ -217,7 +217,7 @@ download_env_file() {
             return
         fi
         print_info "Found .env file in Docker directory"
-    }
+    fi
     
     # Get timestamp for unique filename
     local timestamp=$(date +"%Y%m%d_%H%M%S")
