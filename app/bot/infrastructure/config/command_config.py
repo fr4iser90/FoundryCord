@@ -18,7 +18,7 @@ class CommandConfig:
             #    {'name': 'System Monitoring', 'setup': setup_monitoring},
             #    {'name': 'Authentication', 'setup': setup_auth},
             #    {'name': 'Wireguard', 'setup': setup_wireguard},
-                {'name': 'Homelab Commands', 'setup': setup_homelab},
+            #    {'name': 'Homelab Commands', 'setup': setup_homelab},
                 # Add other command modules here
             ]
         except Exception as e:

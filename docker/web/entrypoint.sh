@@ -13,5 +13,5 @@ else
 fi
 
 # Start the web application
-echo "Starting Web Interface..."
-exec python -m app.web.core.main
+#echo "Starting Web Interface..."
+#exec python -m app.web.core.main

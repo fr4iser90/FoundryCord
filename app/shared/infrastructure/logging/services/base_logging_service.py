@@ -13,8 +13,12 @@ class BaseLoggingService(LoggingService):
     
     def _configure_logger(self) -> None:
         """Configure the logger with handlers based on current config"""
-        # Implementation that configures handlers based on config
-        # ...
+        # Basic configuration to make sure it works
+        if not logging.getLogger().handlers:
+            logging.basicConfig(
+                level=logging.INFO,
+                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            )
     
     def log(self, message: str, level: str, **context) -> None:
         """Log a message with the specified level and context"""
@@ -40,3 +44,8 @@ class BaseLoggingService(LoggingService):
     def warning(self, message: str, **context) -> None:
         """Log a warning message"""
         self.log(message, "WARNING", **context)
+        
+    def get_child(self, name: str) -> 'BaseLoggingService':
+        """Get a child logger with the specified name"""
+        logger_name = f"{self.logger.name}.{name}"
+        return BaseLoggingService(logger_name)

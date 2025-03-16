@@ -2,11 +2,12 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from app.shared.infrastructure.database.models import Base
 from app.shared.infrastructure.database.models.config import initialize_engine, initialize_session
 import asyncio
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interface.logging.api import get_db_logger
 
 from sqlalchemy import select, inspect, text
 
-logger = get_bot_logger()
+logger = get_db_logger()
+
 async def is_database_empty():
     """Check if database has no tables (is empty)"""
     engine = await initialize_engine()

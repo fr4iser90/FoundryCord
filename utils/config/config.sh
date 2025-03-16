@@ -59,7 +59,7 @@ export DOCKER_COMPOSE_CMD="docker compose"
 # ------------------------------------------------------
 # Bot Docker Compose Commands
 # ------------------------------------------------------
-export BOT_COMPOSE_UP="${DOCKER_COMPOSE_CMD} -f ${PROJECT_ROOT_DIR}/docker/docker-compose.yml up -d"
+export BOT_COMPOSE_UP="${DOCKER_COMPOSE_CMD} -f ${PROJECT_ROOT_DIR}/docker/docker-compose.yml up"
 export BOT_COMPOSE_DOWN="${DOCKER_COMPOSE_CMD} -f ${PROJECT_ROOT_DIR}/docker/docker-compose.yml down"
 export BOT_COMPOSE_DOWN_VOLUMES="${DOCKER_COMPOSE_CMD} -f ${PROJECT_ROOT_DIR}/docker/docker-compose.yml down -v"
 export BOT_COMPOSE_BUILD="${DOCKER_COMPOSE_CMD} -f ${PROJECT_ROOT_DIR}/docker/docker-compose.yml build"

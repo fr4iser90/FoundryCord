@@ -1,4 +1,3 @@
-from .env_config import EnvConfig
 from .dashboard_config import DashboardConfig
 from .service_config import ServiceConfig
 from .task_config import TaskConfig
@@ -8,7 +7,6 @@ from .services import *
 from .command_config import CommandConfig
 
 __all__ = [
-    'EnvConfig',
     'ServiceConfig', 
     'TaskConfig',
     'ChannelConfig',

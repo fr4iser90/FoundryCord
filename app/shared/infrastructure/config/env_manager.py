@@ -2,6 +2,12 @@
 import os
 import logging
 from typing import Dict, Any, Optional
+from app.shared.interface.logging.api import get_db_logger
+import time
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
+
+logger = get_db_logger()
 
 class EnvManager:
     """
@@ -83,3 +89,32 @@ class EnvManager:
         if not value:
             return default
         return [item.strip() for item in value.split(separator)]
+
+def configure_database():
+    """Configure database connection with proper retry logic"""
+    db_url = get_database_url()
+    max_retries = int(os.getenv('DB_CONNECTION_RETRIES', '5'))
+    retry_interval = int(os.getenv('DB_CONNECTION_RETRY_INTERVAL', '5'))
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            engine = create_engine(db_url, echo=False)
+            # Test connection
+            with engine.connect() as conn:
+                pass
+            
+            # Create and configure session factory
+            session_factory = sessionmaker(bind=engine)
+            Session = scoped_session(session_factory)
+            
+            # Register Session for app-wide use
+            from app.shared.domain.models import Base
+            Base.metadata.bind = engine
+            
+            return engine, Session
+        except Exception as e:
+            logging.warning(f"Database connection attempt {attempt} failed: {str(e)}")
+            if attempt < max_retries:
+                time.sleep(retry_interval)
+            else:
+                raise RuntimeError(f"Failed to connect to database after {max_retries} attempts") from e

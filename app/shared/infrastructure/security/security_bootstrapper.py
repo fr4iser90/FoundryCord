@@ -2,9 +2,10 @@ import os
 import base64
 from cryptography.fernet import Fernet
 from app.shared.interface.logging.api import get_bot_logger
-logger = get_bot_logger()
+
 from app.shared.infrastructure.database.repositories.key_repository_impl import KeyRepository
 
+logger = get_bot_logger()
 class SecurityBootstrapper:
     """Handles security initialization and key bootstrapping"""
     

@@ -3,7 +3,11 @@ import asyncio
 import sys
 from pathlib import Path
 import os
+from app.shared.interface.logging.api import get_db_logger
 
+
+
+logger = get_db_logger()
 # Add project root to path to allow imports
 project_root = Path(__file__).parents[6]
 sys.path.insert(0, str(project_root))
@@ -20,7 +24,7 @@ from .common import DEFAULT_BUTTONS, DEFAULT_EMBEDS, DEFAULT_MODALS, DEFAULT_SEL
 
 async def migrate_dashboard(dashboard_type, name, description, buttons, embeds, modals, selectors, views):
     """Migrate dashboard components to database"""
-    print(f"Migrating {dashboard_type} dashboard...")
+    logger.info(f"Migrating {dashboard_type} dashboard...")
     async_session = await get_async_session()
     try:
         repository = DashboardRepository(async_session)
@@ -195,10 +199,10 @@ async def migrate_dashboard(dashboard_type, name, description, buttons, embeds, 
                         variables=content.get("variables", {})
                     )
         
-        print(f"Dashboard {dashboard_type} migrated successfully")
+        logger.info(f"Dashboard {dashboard_type} migrated successfully")
         
     except Exception as e:
-        print(f"Error migrating dashboard {dashboard_type}: {e}")
+        logger.error(f"Error migrating dashboard {dashboard_type}: {e}")
         raise
     finally:
         await async_session.close()
@@ -263,7 +267,7 @@ async def main():
     
 
 
-    print("Dashboard component migration complete!")
+    logger.info("Dashboard component migration complete!")
 
 if __name__ == "__main__":
     asyncio.run(main())

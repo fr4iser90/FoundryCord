@@ -5,7 +5,7 @@ from app.shared.infrastructure.database.models import CategoryMapping
 from app.shared.infrastructure.database.models.config import get_session
 from sqlalchemy import select, update
 from app.bot.infrastructure.config.constants.category_constants import CATEGORIES
-from app.bot.infrastructure.config.env_config import EnvConfig
+from app.shared.infrastructure.config.env_config import EnvConfig
 import os
 
 class CategoryConfig:

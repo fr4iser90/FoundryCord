@@ -6,10 +6,9 @@ import logging
 import asyncio
 from app.shared.infrastructure.config.env_manager import EnvManager
 from app.shared.infrastructure.security.security_bootstrapper import SecurityBootstrapper
+from app.shared.interface.logging.api import get_db_logger
 
-logging.basicConfig(level=logging.INFO, 
-                   format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger("homelab.entrypoint")
+logger = get_db_logger()
 
 async def _bootstrap_bot_async():
     """Async implementation of bootstrap_bot"""
@@ -71,18 +70,48 @@ async def _bootstrap_web_async():
     env_manager = EnvManager()
     config = env_manager.configure()
     
-    # Initialize database and key storage
-    logger.info("Initializing security key storage...")
-    security = SecurityBootstrapper(auto_db_key_management=True)
-    await security.initialize()
-    
-    logger.info("Web interface initialization complete")
-    return config
+    # Initialize database connection first
+    logger.info("Establishing database connection...")
+    try:
+        from app.shared.infrastructure.config.env_manager import configure_database
+        engine, Session = configure_database()
+        logger.info("Database connection established successfully")
+        
+        # Store the session factory for global use
+        from app.shared.infrastructure.database.session import set_session_factory
+        set_session_factory(Session)
+        
+        # Initialize database if needed
+        logger.info("Starting database initialization...")
+        from app.shared.infrastructure.database.migrations.init_db import init_db
+        if not await init_db(engine=engine, session=Session):
+            logger.error("Database initialization failed")
+            return None
+            
+        # Now initialize security bootstrapper with database support
+        logger.info("Initializing security key storage...")
+        security = SecurityBootstrapper(auto_db_key_management=True)
+        await security.initialize()
+        
+        logger.info("Web interface initialization complete")
+        return config
+    except Exception as e:
+        logger.error(f"Database connection failed: {e}")
+        return None
 
 def bootstrap_web():
     """Entrypoint for the web container"""
     try:
-        return asyncio.run(_bootstrap_web_async())
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        config = loop.run_until_complete(_bootstrap_web_async())
+        
+        if config is None:
+            logger.error("Web initialization failed")
+            sys.exit(1)
+            
+        logger.info("Web initialization successful")
+        return config
     except Exception as e:
         logger.error(f"Initialization failed: {e}")
         sys.exit(1)

@@ -2,7 +2,6 @@
 # docker/bot/entrypoint.sh
 set -e
 
-echo "===== Homelab Discord Bot Initialization ====="
 
 # Run Python bootstrap
 if python -m app.shared.infrastructure.docker.entrypoint bot; then
