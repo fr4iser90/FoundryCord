@@ -106,3 +106,12 @@ async def get_database_status():
             "error": str(e),
             "details": "Failed to connect to PostgreSQL database"
         }
+
+# Add the missing database connection setup function
+async def setup_database_connection():
+    """
+    Set up and return a database connection for use in application components.
+    This function centralizes database connection logic.
+    """
+    from app.shared.infrastructure.database.models.config import get_async_session
+    return await get_async_session()
