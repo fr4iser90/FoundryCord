@@ -101,4 +101,24 @@ case "$1" in
   *)
     echo "Usage: $0 {all|core|unit|integration|functional|performance|dashboard|commands|coverage}"
     exit 1
-esac 
+esac
+
+# Save test results to a file
+RESULTS_DIR="$PROJECT_ROOT/test-results"
+mkdir -p "$RESULTS_DIR"
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+RESULTS_FILE="$RESULTS_DIR/test_results_ordered_${TIMESTAMP}.txt"
+
+# Create a download function
+download_results() {
+  if [ -f "$RESULTS_FILE" ]; then
+    echo "Test results saved to: $RESULTS_FILE"
+    # If running in an environment with a download mechanism, add it here
+    # For example: scp, curl, or other file transfer command
+  else
+    echo "No test results file found to download."
+  fi
+}
+
+# Call the download function
+download_results 

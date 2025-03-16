@@ -35,4 +35,5 @@ redis==5.0.1  # Updated from 4.5.1 to match web component
 
 # Testing
 pytest==7.4.3
+pytest-asyncio==0.21.1
 pytest-cov==4.1.0

@@ -362,9 +362,7 @@ EOL
     
     log_info "Test results saved to: $results_file"
     return $exit_code
-}
-
-# Add this new function to call the ordered test script
+} 
 
 run_ordered_tests() {
     clear
@@ -386,6 +384,9 @@ run_ordered_tests() {
     local timestamp=$(date +"%Y%m%d_%H%M%S")
     local results_file="test-results/test_results_ordered_${timestamp}.txt"
     
+    # Create shared results directory in container
+    docker exec ${BOT_CONTAINER} mkdir -p /app/shared-results
+    
     # Copy the test order script to the bot container if it's not already there
     docker cp app/tests/run_tests.sh ${BOT_CONTAINER}:/app/tests/
     
@@ -397,6 +398,10 @@ run_ordered_tests() {
     docker exec ${BOT_CONTAINER} /app/tests/run_tests.sh all | tee "$results_file"
     local exit_code=${PIPESTATUS[0]}
     
+    # Download the test results from the container's shared volume
+    log_info "Retrieving test results from container..."
+    docker cp ${BOT_CONTAINER}:/app/shared-results/. test-results/
+    
     if [ $exit_code -eq 0 ]; then
         log_success "All tests completed successfully!"
     else
@@ -405,4 +410,4 @@ run_ordered_tests() {
     
     log_info "Test results saved to: $results_file"
     return $exit_code
-} 
+}
