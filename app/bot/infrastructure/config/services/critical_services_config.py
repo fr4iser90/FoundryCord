@@ -1,9 +1,10 @@
 from typing import List
-from app.shared.logging import setup as setup_logging
+from app.shared.loggingOLD import setup as setup_logging
 from app.shared.domain.auth.services import setup as setup_auth
 from app.shared.infrastructure.encryption import setup as setup_encryption
 from app.bot.infrastructure.rate_limiting import setup as setup_rate_limiting
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 
 class CriticalServicesConfig:
     @staticmethod

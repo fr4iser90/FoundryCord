@@ -1,5 +1,6 @@
 from typing import Dict, List, Optional, Any
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 from nextcord.ext import commands
 import nextcord
 from nextcord import Message

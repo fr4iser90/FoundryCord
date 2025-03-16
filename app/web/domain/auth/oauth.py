@@ -14,7 +14,8 @@ from app.shared.infrastructure.database.constants import (
 from app.web.infrastructure.config.env_loader import (
     ensure_web_env_loaded, get_discord_oauth_config, get_jwt_config
 )
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 from app.web.domain.auth.dependencies import auth_service
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])

@@ -1,4 +1,5 @@
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 from app.bot.infrastructure.config.channels.game_server_config import GameServerChannelConfig
 
 class GameServerChannelService:

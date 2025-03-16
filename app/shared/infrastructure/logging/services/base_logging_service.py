@@ -1,8 +1,8 @@
 import logging
 from typing import Optional, Dict, Any, Type
-from ....domain.services.logging_service import LoggingService
-from ....domain.entities.log_entry import LogEntry
-from ....application.log_config import get_config
+from app.shared.domain.logging.services.logging_service import LoggingService
+from app.shared.domain.logging.entities.log_entry import LogEntry
+from app.shared.application.logging.log_config import get_config
 
 class BaseLoggingService(LoggingService):
     """Base implementation of the logging service that uses Python's logging"""

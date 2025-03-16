@@ -1,7 +1,8 @@
 # app/bot/domain/gameservers/models/gameserver_metrics.py
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 
 class GameServerStatus:
     """Status of a game server"""

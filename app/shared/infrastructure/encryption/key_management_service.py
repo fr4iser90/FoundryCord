@@ -2,7 +2,8 @@ from cryptography.fernet import Fernet
 from datetime import datetime, timedelta
 import base64
 import os
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 from app.shared.infrastructure.database.repositories.key_repository_impl import KeyRepository
 
 class KeyManagementService:

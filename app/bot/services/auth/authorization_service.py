@@ -1,4 +1,5 @@
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 from app.shared.domain.auth.models import User, Role, Permission
 from app.shared.domain.auth.policies import is_authorized
 

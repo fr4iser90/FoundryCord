@@ -1,6 +1,7 @@
 from .config_commands import WireguardConfigCommands
 from .qr_commands import WireguardQRCommands
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 
 async def setup(bot):
     """Setup function for the WireGuard commands"""

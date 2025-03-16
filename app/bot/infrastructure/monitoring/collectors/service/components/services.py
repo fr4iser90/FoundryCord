@@ -6,7 +6,8 @@ from app.bot.infrastructure.monitoring.collectors.service.config.game_services i
 from app.bot.infrastructure.monitoring.collectors.service.config.web_services import get_public_services, get_private_services
 from app.bot.infrastructure.monitoring.checkers.game_service_checker import check_pufferpanel_games, check_standalone_games
 from app.bot.infrastructure.monitoring.checkers.web_service_checker import check_web_services
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 
 async def check_services_status(include_private=False):
     """Überprüft den Status wichtiger Dienste."""

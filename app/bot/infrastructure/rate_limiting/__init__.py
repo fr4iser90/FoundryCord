@@ -1,6 +1,7 @@
 from .rate_limiting_service import RateLimitingService
 from .rate_limiting_middleware import RateLimitingMiddleware
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 
 __all__ = ['RateLimitingService', 'RateLimitingMiddleware', 'setup']
 

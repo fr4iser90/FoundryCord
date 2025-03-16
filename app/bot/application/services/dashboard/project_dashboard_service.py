@@ -1,6 +1,7 @@
 from typing import Dict, List, Optional, Any
 from datetime import datetime
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 from app.shared.infrastructure.database.models import Project, Task
 from app.shared.infrastructure.database.repositories.project_repository_impl import ProjectRepository
 from sqlalchemy.ext.asyncio import AsyncSession

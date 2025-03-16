@@ -8,7 +8,8 @@ from .components import docker
 from .components import security  
 from .components import services
 from .components.base import collect_service_data
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 from app.bot.domain.monitoring.collectors.interfaces.service_collector_interface import ServiceCollectorInterface
 
 class ServiceCollector(ServiceCollectorInterface):

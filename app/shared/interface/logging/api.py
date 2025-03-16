@@ -1,7 +1,8 @@
 from typing import Optional, Dict, Any
-from ..domain.services.logging_service import LoggingService
-from ..application.log_config import update_config
-from .factories import create_bot_logging_service, create_web_logging_service
+from app.shared.domain.logging.services.logging_service import LoggingService
+from app.shared.application.logging.log_config import update_config
+# Don't import factories directly
+# from app.shared.interface.logging.factories import create_bot_logging_service, create_web_logging_service
 
 # Default service instances
 _bot_service: Optional[LoggingService] = None
@@ -12,7 +13,7 @@ def get_bot_logger() -> LoggingService:
     """Get the bot logging service"""
     global _bot_service
     if _bot_service is None:
-        from ..infrastructure.services.base_logging_service import BaseLoggingService
+        from app.shared.infrastructure.logging.services.base_logging_service import BaseLoggingService
         _bot_service = BaseLoggingService("homelab.bot")
     return _bot_service
 
@@ -20,7 +21,7 @@ def get_web_logger() -> LoggingService:
     """Get the web logging service"""
     global _web_service
     if _web_service is None:
-        from ..infrastructure.services.base_logging_service import BaseLoggingService
+        from app.shared.infrastructure.logging.services.base_logging_service import BaseLoggingService
         _web_service = BaseLoggingService("homelab.web")
     return _web_service
 
@@ -38,6 +39,8 @@ def enable_db_logging(level: str = "WARNING") -> None:
 
 async def setup_bot_logging(bot) -> LoggingService:
     """Set up bot logging"""
+    # Import the factory function only when needed
+    from app.shared.interface.logging.factories import create_bot_logging_service
     service = create_bot_logging_service(bot)
     bot.add_cog(service)
     global _bot_service

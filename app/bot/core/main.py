@@ -5,7 +5,7 @@ import sys
 import asyncio
 from nextcord.ext import commands
 from app.bot.infrastructure.config import ServiceConfig, TaskConfig, ChannelConfig, CategoryConfig, DashboardConfig, ModuleServicesConfig
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger, setup_bot_logging
 from app.bot.infrastructure.factories import BotComponentFactory, ServiceFactory, TaskFactory, DashboardFactory
 from app.bot.core.lifecycle.lifecycle_manager import BotLifecycleManager
 from app.shared.infrastructure.database.migrations.init_db import init_db
@@ -13,6 +13,9 @@ from app.bot.infrastructure.managers.dashboard_manager import DashboardManager
 from app.bot.infrastructure.config.command_config import CommandConfig
 from app.shared.infrastructure.config.env_config import EnvConfig  # Import the shared EnvConfig
 
+
+# Get a reference to the logger
+logger = get_bot_logger()
 
 # Load environment configuration
 env_config = EnvConfig()
@@ -55,6 +58,7 @@ async def initialize_bot():
 @bot.event
 async def on_ready():
     try:
+        # Just keep this - the service workflow will handle logging setup
         await initialize_bot()
     except Exception as e:
         logger.error(f"Startup error: {e}")

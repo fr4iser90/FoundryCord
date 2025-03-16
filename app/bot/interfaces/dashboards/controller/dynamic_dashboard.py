@@ -3,7 +3,8 @@ import nextcord
 from datetime import datetime
 import json
 
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 from .base_dashboard import BaseDashboardController
 from app.bot.interfaces.dashboards.components.common.embeds import DashboardEmbed
 from app.bot.interfaces.dashboards.components.factories.ui_component_factory import UIComponentFactory

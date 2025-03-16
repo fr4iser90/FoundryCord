@@ -4,7 +4,8 @@ from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import sessionmaker
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 
 class DatabaseConnection:
     """Connection wrapper for database operations"""

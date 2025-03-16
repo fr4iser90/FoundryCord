@@ -1,6 +1,7 @@
 
 import os
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 
 def get_user_config(config_path, username):
     user_dir = os.path.join(config_path, f"peer_{username}")

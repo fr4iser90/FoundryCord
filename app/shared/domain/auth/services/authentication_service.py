@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
 import jwt as PyJWT
 import os
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 from app.shared.infrastructure.encryption import get_key_management_service
 # Then use:
 KeyManagementService = get_key_management_service()

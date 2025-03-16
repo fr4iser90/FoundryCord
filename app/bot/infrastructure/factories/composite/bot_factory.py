@@ -11,7 +11,8 @@ from ....interfaces.dashboards.components.factories.menu_factory import MenuFact
 from ....interfaces.dashboards.components.factories.modal_factory import ModalFactory
 from ....interfaces.dashboards.components.factories.dashboard_factory import DashboardFactory
 from ....interfaces.dashboards.components.factories.embed_factory import EmbedFactory
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 
 logger = logging.getLogger(__name__)
 

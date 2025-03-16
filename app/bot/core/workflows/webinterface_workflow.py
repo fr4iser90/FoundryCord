@@ -1,5 +1,6 @@
 from app.bot.core.workflows.base_workflow import BaseWorkflow
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 from app.bot.infrastructure.web.server import WebInterfaceServer
 
 class WebInterfaceWorkflow(BaseWorkflow):

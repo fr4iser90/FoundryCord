@@ -5,7 +5,8 @@ import jwt as PyJWT
 import os
 from typing import Optional, Dict
 from datetime import datetime, timedelta
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 from app.shared.infrastructure.encryption import get_key_management_service
 from app.shared.infrastructure.database.management.connection import get_db_connection
 

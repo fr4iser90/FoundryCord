@@ -4,7 +4,8 @@ import nextcord
 import asyncio
 from datetime import datetime, timedelta
 
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 from app.bot.interfaces.dashboards.components.factories import DashboardFactory
 from app.bot.infrastructure.config.channel_config import ChannelConfig
 

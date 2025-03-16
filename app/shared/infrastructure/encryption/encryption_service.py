@@ -10,7 +10,8 @@ import base64
 import tempfile
 from typing import Union, Optional
 import asyncio
-from app.shared.logging.logger import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 
 # Define AUTO_KEY_MANAGEMENT as a constant in the code
 # When True: Use automatic key management only, ignore environment variables

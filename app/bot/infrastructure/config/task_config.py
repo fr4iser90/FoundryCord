@@ -2,7 +2,8 @@ from typing import List
 #from app.bot.application.tasks.system_status_task import system_status_task
 #from app.bot.application.tasks.cleanup_task import cleanup_task
 #from app.bot.application.tasks.cleanup_dm_task import cleanup_dm_task
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 
 class TaskConfig:
     @staticmethod

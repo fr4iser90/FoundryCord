@@ -1,7 +1,8 @@
 from app.shared.infrastructure.database.models.config import get_session
 from app.shared.infrastructure.database.repositories.project_repository_impl import ProjectRepository
 from app.shared.infrastructure.database.repositories.task_repository import TaskRepository
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 
 async def get_projects_data():
     """Lädt die Projekte und Aufgaben aus der Datenbank"""

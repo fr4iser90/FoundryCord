@@ -3,7 +3,8 @@ import nextcord
 from app.bot.infrastructure.factories.base.base_factory import BaseFactory
 import logging
 from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOARD_SERVICES
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 
 logger = logging.getLogger(__name__)
 

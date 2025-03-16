@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 
 class BaseWorkflow(ABC):
     def __init__(self, bot):

@@ -4,7 +4,8 @@ import secrets
 import base64
 from cryptography.fernet import Fernet
 from typing import Dict
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 
 class EnvConfig:
     def __init__(self):

@@ -5,7 +5,8 @@ from dataclasses import dataclass, field
 class LoggingConfig:
     """Configuration for logging system"""
     format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    date_format: str = "%d-%m %H:%M:%S"
+    #"date_format": "%Y-%m-%d %H:%M:%S", # YYYY-MM-DD HH:MM:SS
+    date_format: str = "%d-%m %H:%M:%S", # DD-MM HH:MM:SS
     console_level: str = "INFO"
     file_level: str = "INFO"
     debug_level: str = "DEBUG"

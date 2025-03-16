@@ -1,7 +1,8 @@
 import os
 import nextcord
 from nextcord.ext import commands
-from app.shared.logging import logger
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
 from app.bot.utils.decorators.auth import super_admin_or_higher, user_or_higher
 from app.bot.interfaces.commands.wireguard.utils import get_user_config
 import asyncio
