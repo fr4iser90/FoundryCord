@@ -11,13 +11,23 @@ from .base_workflow import BaseWorkflow
 from app.bot.infrastructure.migrations.dashboard_migration import DashboardMigration
 from app.bot.application.services.dashboard.dashboard_service import DashboardService
 from app.shared.infrastructure.database.migrations.dashboards.dashboard_components_migration import wait_for_initialization
+from app.bot.domain.dashboards.repositories.dashboard_repository import DashboardRepository
+from app.shared.infrastructure.database.session import get_session, session_context
 
 class DashboardWorkflow(BaseWorkflow):
     """Workflow for initializing and managing dashboards."""
     
     def __init__(self, bot):
+        """Initialize the dashboard workflow.
+        
+        Args:
+            bot: The Discord bot instance
+        """
         super().__init__(bot)
         self.dashboard_manager = None
+        self.repository = None
+        self.service = None
+        self.dashboards = []
         
     async def initialize(self):
         """Initialize the dashboard workflow."""
@@ -27,112 +37,48 @@ class DashboardWorkflow(BaseWorkflow):
             # Wait for database migrations to complete before proceeding
             await wait_for_initialization()
             
-            # Initialize dashboard service
-            self.dashboard_service = DashboardService(self.bot)
+            # Create a database session factory for the repository
+            session_factory = get_session
             
-            # Initialize dashboard manager
-            logger.info("Initializing dashboard workflow")
+            # Create repository with session factory
+            self.repository = DashboardRepository(session_factory)
             
-            # Initialize dashboard repository
-            logger.info("Initializing dashboard repository")
-            dashboard_repo = {
-                'name': 'dashboard_repository',
-                'type': 'dashboard_repository' 
-            }
-            repository = await self.bot.lifecycle._initialize_service(dashboard_repo)
+            # Create service with component and data source registries
+            from app.bot.infrastructure.factories.component_registry import ComponentRegistry
+            from app.bot.infrastructure.factories.data_source_registry import DataSourceRegistry
             
-            if not repository:
-                logger.error("Failed to initialize dashboard repository")
-                return False
-                
-            # Initialize dashboard builder service
-            logger.info("Initializing dashboard builder service")
-            dashboard_builder = {
-                'name': 'dashboard_builder',
-                'type': 'dashboard_builder'
-            }
-            builder = await self.bot.lifecycle._initialize_service(dashboard_builder)
+            component_registry = ComponentRegistry()
+            data_source_registry = DataSourceRegistry()
             
-            if not builder:
-                logger.error("Failed to initialize dashboard builder")
-                return False
-                
-            # Get dashboard manager from bot
-            self.dashboard_manager = getattr(self.bot, 'dashboard_manager', None)
-            if not self.dashboard_manager:
-                logger.error("Dashboard manager not found")
-                return False
-                
-            # Run dashboard migration
-            await self._run_dashboard_migration()
-                
-            # Activate initial dashboards
-            await self._activate_initial_dashboards()
-                
-            logger.info("Dashboard workflow initialized")
+            self.service = DashboardService(
+                bot=self.bot,
+                repository=self.repository,
+                component_registry=component_registry,
+                data_source_registry=data_source_registry
+            )
+            
+            # Register as global service
+            self.bot.register_service('dashboard_service', self.service)
+            
+            # Initialize dashboard services
+            await self._initialize_dashboard_services()
+            
+            logger.info("Dashboard workflow initialized successfully")
             return True
             
         except Exception as e:
             logger.error(f"Error initializing dashboard workflow: {e}")
+            import traceback
+            logger.debug(traceback.format_exc())
             return False
             
-    async def _run_dashboard_migration(self):
-        """Run dashboard migration if needed."""
+    async def _initialize_dashboard_services(self):
+        """Initialize dashboard services."""
         try:
-            # Check if we need to migrate
-            migration = DashboardMigration(self.bot)
-            await migration.initialize()
+            logger.info("Initializing dashboard services")
             
-            # Create welcome dashboard if it doesn't exist
-            welcome_created = await migration.create_welcome_dashboard()
-            if welcome_created:
-                logger.info("Welcome dashboard created")
-                
-            return True
-            
-        except Exception as e:
-            logger.error(f"Error running dashboard migration: {e}")
-            return False
-            
-    async def _activate_initial_dashboards(self):
-        """Activate initial dashboards."""
-        try:
-            # This would normally fetch and activate dashboards from the database
-            # For now, we'll just wait for the migration to handle it
-            logger.info("Initial dashboards activated")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Error activating initial dashboards: {e}")
-            return False
-    
-    async def cleanup(self):
-        """Clean up dashboard resources."""
-        try:
-            if self.dashboard_manager:
-                # Deactivate all dashboards
-                # This is a simple implementation - in a real application,
-                # we'd properly track which channels have active dashboards
-                logger.info("Dashboard workflow cleaned up")
-                
-            return True
-            
-        except Exception as e:
-            logger.error(f"Error cleaning up dashboard workflow: {e}")
-            return False
-
-    async def execute(self) -> None:
-        """Initialize all dashboard services"""
-        try:
-            logger.info("Initializing dashboard services...")
-            
-            # OLD NO HARDCODED DASHBOARDS ANYMORE
-            # Initialize existing dashboard services
-            #self.bot.welcome_dashboard_service = await welcome_setup(self.bot)
-            #self.bot.monitoring_dashboard_service = await monitoring_setup(self.bot)
-            #self.bot.project_dashboard_service = await project_setup(self.bot)
-            #self.bot.gamehub_dashboard_service = await gameservers_setup(self.bot)
-            
+            # The specific dashboard service implementations will be loaded here
+            # For now, we just use the generic dashboard service
             
             logger.info("Dashboard services initialized")
         except Exception as e:
@@ -145,18 +91,27 @@ class DashboardWorkflow(BaseWorkflow):
             # Check if tables exist first
             try:
                 # Attempt to load dashboards if tables exist
-                if self.dashboard_repository:
-                    dashboards = await self.dashboard_repository.list_all()
-                    self.logger.info(f"Loaded {len(dashboards)} dashboards from repository")
+                if self.repository:
+                    dashboards = await self.repository.get_all_dashboards()
+                    logger.info(f"Loaded {len(dashboards)} dashboards from repository")
                     return dashboards
             except Exception as e:
                 if "relation" in str(e) and "does not exist" in str(e):
-                    self.logger.warning("Dashboard tables don't exist yet, skipping dashboard load")
+                    logger.warning("Dashboard tables don't exist yet, skipping dashboard load")
                 else:
-                    self.logger.error(f"Error retrieving all dashboard configs: {str(e)}")
+                    logger.error(f"Error retrieving all dashboard configs: {str(e)}")
             
             # Return empty list as fallback
             return []
         except Exception as e:
-            self.logger.error(f"Error in load_dashboards: {str(e)}")
+            logger.error(f"Error in load_dashboards: {str(e)}")
             return []
+
+    async def start_background_tasks(self):
+        """Start background tasks for dashboards."""
+        logger.info("Starting dashboard background tasks")
+        # We'll implement dashboard update tasks here
+        
+    async def shutdown(self):
+        """Clean up resources before shutdown."""
+        pass

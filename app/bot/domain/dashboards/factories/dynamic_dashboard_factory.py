@@ -11,6 +11,7 @@ from app.bot.interfaces.dashboards.controller.base_dashboard import BaseDashboar
 from app.bot.interfaces.dashboards.controller.dynamic_dashboard import DynamicDashboard
 from app.bot.domain.dashboards.models.dashboard_model import DashboardModel
 from app.bot.domain.dashboards.repositories.dashboard_repository import DashboardRepository
+from app.shared.infrastructure.database.session import get_session
 
 logger = get_bot_logger()
 
@@ -22,7 +23,8 @@ class DynamicDashboardFactory:
         self.bot = bot
         self.component_registry = component_registry
         self.data_source_registry = data_source_registry
-        self.dashboard_repository = DashboardRepository()
+        # Pass session_factory to repository
+        self.dashboard_repository = DashboardRepository(session_factory=get_session)
         
         # Register default dashboard controllers
         self.dashboard_controllers = {}

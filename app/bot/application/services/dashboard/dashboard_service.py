@@ -2,6 +2,7 @@
 from typing import Dict, Any, List, Optional
 import nextcord
 from datetime import datetime
+import asyncio
 
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
@@ -10,27 +11,28 @@ from app.bot.domain.dashboards.models.dashboard_model import DashboardModel
 from app.bot.domain.dashboards.repositories.dashboard_repository import DashboardRepository
 from app.bot.infrastructure.factories.component_registry import ComponentRegistry
 from app.bot.infrastructure.factories.data_source_registry import DataSourceRegistry
+from app.shared.infrastructure.database.session import get_session
 
 class DashboardService:
     """Core service for dashboard operations."""
     
     def __init__(self, 
                  bot,
-                 dashboard_repository: DashboardRepository,
+                 repository: DashboardRepository,
                  component_registry: ComponentRegistry,
                  data_source_registry: DataSourceRegistry):
         self.bot = bot
-        self.dashboard_repository = dashboard_repository
+        self.repository = repository
         self.component_registry = component_registry
         self.data_source_registry = data_source_registry
         
     async def get_dashboard(self, dashboard_id: str) -> Optional[DashboardModel]:
         """Get a dashboard by ID."""
-        return await self.dashboard_repository.get_by_id(dashboard_id)
+        return await self.repository.get_by_id(dashboard_id)
     
     async def get_dashboard_by_channel(self, channel_id: int) -> Optional[DashboardModel]:
         """Get a dashboard for a channel."""
-        return await self.dashboard_repository.get_by_channel_id(channel_id)
+        return await self.repository.get_by_channel_id(channel_id)
     
     async def create_dashboard(self, dashboard_data: Dict[str, Any]) -> DashboardModel:
         """Create a new dashboard from configuration."""
@@ -38,14 +40,14 @@ class DashboardService:
         dashboard = self._create_dashboard_model(dashboard_data)
         
         # Save to repository
-        saved_dashboard = await self.dashboard_repository.save(dashboard)
+        saved_dashboard = await self.repository.save(dashboard)
         
         logger.info(f"Created new dashboard: {saved_dashboard.id} ({saved_dashboard.title})")
         return saved_dashboard
     
     async def update_dashboard(self, dashboard_id: str, dashboard_data: Dict[str, Any]) -> Optional[DashboardModel]:
         """Update an existing dashboard."""
-        dashboard = await self.dashboard_repository.get_by_id(dashboard_id)
+        dashboard = await self.repository.get_by_id(dashboard_id)
         if not dashboard:
             logger.warning(f"Attempted to update non-existent dashboard: {dashboard_id}")
             return None
@@ -59,25 +61,29 @@ class DashboardService:
         dashboard.updated_at = datetime.now()
         
         # Save updated dashboard
-        updated_dashboard = await self.dashboard_repository.save(dashboard)
+        updated_dashboard = await self.repository.save(dashboard)
         
         logger.info(f"Updated dashboard: {updated_dashboard.id}")
         return updated_dashboard
     
     async def delete_dashboard(self, dashboard_id: str) -> bool:
         """Delete a dashboard."""
-        result = await self.dashboard_repository.delete(dashboard_id)
+        result = await self.repository.delete(dashboard_id)
         if result:
             logger.info(f"Deleted dashboard: {dashboard_id}")
         return result
     
     async def get_all_dashboards(self) -> List[DashboardModel]:
         """Get all dashboards."""
-        return await self.dashboard_repository.get_all()
+        try:
+            return await self.repository.get_all_dashboards()
+        except Exception as e:
+            logger.error(f"Error getting all dashboards: {e}")
+            return []
     
     async def refresh_dashboard_data(self, dashboard_id: str) -> Dict[str, Any]:
         """Refresh data for a dashboard."""
-        dashboard = await self.dashboard_repository.get_by_id(dashboard_id)
+        dashboard = await self.repository.get_by_id(dashboard_id)
         if not dashboard:
             logger.warning(f"Attempted to refresh non-existent dashboard: {dashboard_id}")
             return {}

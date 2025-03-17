@@ -6,8 +6,8 @@ from app.shared.interface.logging.api import get_db_logger
 
 from sqlalchemy import select, inspect, text
 
-# Neuer Import:
-from app.shared.infrastructure.database.management.connection import get_db_connection
+# Import our new database migration wait function
+from app.shared.infrastructure.database.migrations.dashboards.dashboard_components_migration import wait_for_initialization
 
 logger = get_db_logger()
 
@@ -29,22 +29,20 @@ async def init_db(bot=None):
     try:
         engine = await initialize_engine()
         
-        # First check if we can connect
+        # Create a schema in PostgreSQL
         async with engine.begin() as conn:
-            await conn.execute(text('SELECT 1'))
-        
-        # Then create tables
-        async with engine.begin() as conn:
+            # Create tables using SQLAlchemy models
             await conn.run_sync(Base.metadata.create_all)
+            
+        logger.info("Database schema created successfully")
         
-        await initialize_session()
-        logger.info("Database tables created successfully")
+        # If database was empty, run initial data migrations
+        if await is_database_empty():
+            logger.info("Running initial data migrations for empty database")
+            await migrate_existing_users()
         
-        # Run migrations for existing users
-        await migrate_existing_users()
-        
-        # Run dashboard components migration
-        await migrate_dashboard_components()
+        # Now wait for dashboard migrations to complete (whether they're running in another process or not)
+        await wait_for_initialization()
         
         return True
     except Exception as e:
@@ -52,43 +50,59 @@ async def init_db(bot=None):
         raise
 
 async def migrate_existing_users():
-    """Migrate existing users from env to database"""
-    # Import innerhalb der Funktion, um zirkuläre Importe zu vermeiden
-    from app.shared.infrastructure.database.constants.user_constants import (
-        SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
-    )
-    from app.shared.infrastructure.database.models import User
-    from app.shared.infrastructure.database.models.config import get_async_session
-
-    # Neue Session für diesen spezifischen Prozess erstellen
-    async_session = await get_async_session()
+    """
+    Migrate existing users from environment variables to database.
+    This is for initial setup only.
+    """
+    import os
+    from app.shared.infrastructure.database.models.user import User
+    
+    # Create an async session for user migration
+    async_session = await initialize_session()
     
     try:
-        for role_group, role_name in [
-            (SUPER_ADMINS, 'super_admin'),
-            (ADMINS, 'admin'),
-            (MODERATORS, 'moderator'),
-            (USERS, 'user'),
-            (GUESTS, 'guest')
-        ]:
-            for username, discord_id in role_group.items():
-                # Prüfen ob Benutzer bereits existiert
-                existing_user = await async_session.execute(
-                    select(User).where(User.discord_id == discord_id)
+        # Get super admin user IDs from environment
+        super_admins_env = os.environ.get('SUPER_ADMINS', '')
+        
+        if not super_admins_env:
+            logger.warning("No SUPER_ADMINS defined in environment variables")
+            return
+        
+        # Parse super admins from environment (format: "NAME|ID,NAME2|ID2")
+        super_admins = []
+        for admin_entry in super_admins_env.split(','):
+            if '|' in admin_entry:
+                name, discord_id = admin_entry.split('|', 1)
+                super_admins.append((name.strip(), discord_id.strip()))
+        
+        if not super_admins:
+            logger.warning("No valid super admin entries found in SUPER_ADMINS environment variable")
+            return
+        
+        # Migrate each super admin
+        for name, discord_id in super_admins:
+            # Check if user already exists
+            existing_user = await async_session.execute(
+                select(User).where(User.discord_id == discord_id)
+            )
+            existing_user = existing_user.scalars().first()
+            
+            if existing_user:
+                logger.info(f"Super admin {name} (ID: {discord_id}) already exists in database")
+                # Update roles if needed
+                if 'super_admin' not in existing_user.roles:
+                    existing_user.roles.append('super_admin')
+                    logger.info(f"Updated roles for {name} (ID: {discord_id})")
+            else:
+                # Create new user
+                new_user = User(
+                    discord_id=discord_id,
+                    username=name,
+                    roles=['super_admin'],
+                    is_active=True
                 )
-                existing_user = existing_user.scalar_one_or_none()
-                
-                if existing_user is None:
-                    # Nur hinzufügen wenn der Benutzer noch nicht existiert
-                    user = User(
-                        discord_id=discord_id,
-                        username=username,
-                        role=role_name
-                    )
-                    async_session.add(user)
-                    logger.info(f"Added new user: {username} with role {role_name}")
-                else:
-                    logger.debug(f"User {username} already exists, skipping")
+                async_session.add(new_user)
+                logger.info(f"Created super admin user: {name} (ID: {discord_id})")
         
         await async_session.commit()
         logger.info("User migration completed successfully")
@@ -96,17 +110,8 @@ async def migrate_existing_users():
         # Session am Ende ordnungsgemäß schließen
         await async_session.close()
 
-async def migrate_dashboard_components():
-    """Migrate dashboard components from code to database"""
-    try:
-        # Import and run the existing dashboard components migration
-        from app.shared.infrastructure.database.migrations.dashboards import dashboard_components_migration
-        logger.info("Starting dashboard components migration...")
-        await dashboard_components_migration.main()
-        logger.info("Dashboard component migration completed successfully")
-    except Exception as e:
-        logger.error(f"Dashboard components migration failed: {e}")
-        raise
+# Let the dashboard_components_migration.py handle itself separately
+# No need to call it from here as it has its own initialization system now
 
 # Wrapper für den Migrations-Code um einen eigenen Event-Loop zu verwenden
 def run_migration():
