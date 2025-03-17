@@ -1,6 +1,8 @@
 import logging
 import discord
+import asyncio
 from typing import Dict, Optional, List
+from sqlalchemy import text
 from app.bot.core.workflows.base_workflow import BaseWorkflow
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.bot.domain.categories.repositories.category_repository import CategoryRepository
@@ -8,8 +10,9 @@ from app.bot.infrastructure.repositories.category_repository_impl import Categor
 from app.bot.application.services.category.category_builder import CategoryBuilder
 from app.bot.application.services.category.category_setup_service import CategorySetupService
 from app.shared.infrastructure.database.migrations.categories.seed_categories import seed_categories
+from app.shared.interface.logging.api import get_bot_logger
 
-logger = logging.getLogger("homelab.bot")
+logger = get_bot_logger()
 
 class CategoryWorkflow(BaseWorkflow):
     """Workflow for category setup and management"""
@@ -30,6 +33,36 @@ class CategoryWorkflow(BaseWorkflow):
         if not db_service:
             logger.error("Database service not available, cannot initialize category workflow")
             return False
+            
+        # First, check if the categories table exists
+        # If not, create it using SQLAlchemy's create_all()
+        engine = db_service.get_engine()
+        try:
+            # Check if the categories table exists
+            table_exists = False
+            async with engine.connect() as conn:
+                result = await conn.execute(text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'categories')"))
+                table_exists = await result.scalar()
+                
+            if not table_exists:
+                logger.info("Categories table doesn't exist, creating core tables...")
+                # Import all models to make sure they're registered with the metadata
+                from app.bot.infrastructure.database.models import CategoryEntity, ChannelEntity
+                from app.shared.infrastructure.database.models.base import Base
+                
+                # Create all tables
+                async with engine.begin() as conn:
+                    await conn.run_sync(Base.metadata.create_all)
+                logger.info("Core database tables created successfully")
+                
+                # Sleep briefly to ensure tables are fully created
+                await asyncio.sleep(0.5)
+            else:
+                logger.info("Categories table already exists")
+            
+        except Exception as e:
+            logger.error(f"Error checking/creating database tables: {e}")
+            return False
         
         # Create the repository
         self.category_repository = CategoryRepositoryImpl(db_service)
@@ -41,12 +74,26 @@ class CategoryWorkflow(BaseWorkflow):
         self.category_setup_service = CategorySetupService(self.category_repository, category_builder)
         
         # Check if any categories exist, if not seed the database
-        categories = self.category_repository.get_all_categories()
-        if not categories:
-            logger.info("No categories found in database, seeding default categories")
-            # Use the seed function from the migration script
-            seed_categories()
-            logger.info("Default categories seeded successfully")
+        try:
+            # Use a more robust check for categories
+            categories_exist = False
+            try:
+                async with engine.connect() as conn:
+                    result = await conn.execute(text("SELECT COUNT(*) FROM categories"))
+                    count = await result.scalar()
+                    categories_exist = count > 0
+            except Exception as e:
+                logger.warning(f"Error checking categories count: {e}")
+                categories_exist = False
+            
+            if not categories_exist:
+                logger.info("No categories found in database, seeding default categories")
+                # Use the seed function from the migration script
+                seed_categories()
+                logger.info("Default categories seeded successfully")
+        except Exception as e:
+            logger.error(f"Error seeding categories: {e}")
+            return False
             
         return True
     
