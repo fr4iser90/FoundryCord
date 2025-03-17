@@ -34,11 +34,11 @@ class TaskWorkflow(BaseWorkflow):
             self.task_service = TaskService(self.bot)
             self.project_service = ProjectService(self.bot)
             
-            # Initialize task service
-            await self.task_service.initialize()
+            # TaskService hat keine initialize()-Methode, also überspringen wir diesen Aufruf
+            # await self.task_service.initialize()
             
-            # Initialize project service
-            await self.project_service.initialize()
+            # ProjectService hat möglicherweise auch keine initialize()-Methode
+            # await self.project_service.initialize()
             
             self.running = True
             
@@ -50,6 +50,8 @@ class TaskWorkflow(BaseWorkflow):
             
         except Exception as e:
             logger.error(f"Error initializing task workflow: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return False
     
     async def cleanup(self):
@@ -58,11 +60,11 @@ class TaskWorkflow(BaseWorkflow):
         
         try:
             # Cleanup task service
-            if self.task_service:
+            if self.task_service and hasattr(self.task_service, 'cleanup'):
                 await self.task_service.cleanup()
             
             # Cleanup project service
-            if self.project_service:
+            if self.project_service and hasattr(self.project_service, 'cleanup'):
                 await self.project_service.cleanup()
             
             # Set running flag to false so tasks can exit
@@ -106,10 +108,10 @@ class TaskWorkflow(BaseWorkflow):
                 logger.error(f"Error in background task: {e}")
                 await asyncio.sleep(60)  # Sleep before retrying
     
-    async def get_task_service(self):
+    def get_task_service(self):
         """Get the task service"""
         return self.task_service
     
-    async def get_project_service(self):
+    def get_project_service(self):
         """Get the project service"""
         return self.project_service

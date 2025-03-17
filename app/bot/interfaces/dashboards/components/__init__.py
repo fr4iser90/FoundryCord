@@ -8,8 +8,6 @@ from .common.embeds.error_embed import ErrorEmbed
 from .common.buttons.refresh_button import RefreshButton
 from .base_component import BaseComponent, DashboardComponent
 
-# Import channels module for backward compatibility
-from . import channels
 
 # Export symbols
 __all__ = [
@@ -18,5 +16,4 @@ __all__ = [
     'DashboardEmbed',
     'ErrorEmbed',
     'RefreshButton',
-    'channels'  # Include for backward compatibility
 ] 

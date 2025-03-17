@@ -268,7 +268,6 @@ from datetime import datetime
 from app.shared.logging import logger
 from app.bot.infrastructure.config.channel_config import ChannelConfig
 from .base_dashboard import BaseDashboardController
-from app.bot.interfaces.dashboards.components.channels.example.views import ExampleView
 from app.bot.domain.example.models.example_metrics import ExampleMetrics
 from app.bot.interfaces.dashboards.components.common.embeds import ErrorEmbed, DashboardEmbed
 class ExampleDashboardController(BaseDashboardController):

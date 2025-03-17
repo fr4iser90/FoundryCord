@@ -23,6 +23,9 @@ class CategoryWorkflow(BaseWorkflow):
         self.database_workflow = database_workflow
         self.category_repository = None
         self.category_setup_service = None
+        
+        # Define dependencies
+        self.add_dependency("database")
     
     async def initialize(self):
         """Initialize the category workflow"""
@@ -41,9 +44,9 @@ class CategoryWorkflow(BaseWorkflow):
             # Check if the categories table exists
             table_exists = False
             async with engine.connect() as conn:
-                # Properly handle the asyncio result - fixed the Row object error
+                # Korrektur: first() ist nicht asynchron in SQLAlchemy 2.0
                 result = await conn.execute(text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'categories')"))
-                row = await result.first()  # Use first() instead of fetchone() to get the Row object
+                row = result.first()  # Kein await hier
                 if row is not None:
                     table_exists = row[0]  # Get the boolean value from the first column
                 
@@ -71,6 +74,8 @@ class CategoryWorkflow(BaseWorkflow):
             
         except Exception as e:
             logger.error(f"Error checking/creating database tables: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return False
         
         # Create the repository
@@ -84,12 +89,12 @@ class CategoryWorkflow(BaseWorkflow):
         
         # Check if any categories exist, if not seed the database
         try:
-            # Use a more robust check for categories
+            # Korrektur: Verwende eine robustere Methode zum Prüfen auf Kategorien
             categories_exist = False
             try:
                 async with engine.connect() as conn:
                     result = await conn.execute(text("SELECT COUNT(*) FROM categories"))
-                    row = await result.first()  # Changed from fetchone() to first()
+                    row = result.first()  # Kein await hier
                     count = row[0] if row else 0
                     categories_exist = count > 0
                     logger.info(f"Found {count} categories in database")
@@ -111,11 +116,8 @@ class CategoryWorkflow(BaseWorkflow):
     async def cleanup(self):
         """Cleanup resources used by the category workflow"""
         logger.info("Cleaning up category workflow resources")
-        # Not much to clean up here since we don't have any persistent connections
-        # Just reset the objects
-        self.category_repository = None
-        self.category_setup_service = None
-    
+        # Nothing to clean up for now
+        
     async def setup_categories(self, guild: nextcord.Guild) -> Dict[str, nextcord.CategoryChannel]:
         """Set up all categories for the guild"""
         if not self.category_setup_service:

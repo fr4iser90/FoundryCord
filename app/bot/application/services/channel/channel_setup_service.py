@@ -13,12 +13,13 @@ class ChannelSetupService:
     """Service for managing Discord channel setup and synchronization"""
     
     def __init__(self, channel_repository: ChannelRepository, 
-                category_repository: CategoryRepository,
-                category_setup_service: CategorySetupService):
+                channel_builder: ChannelBuilder,
+                category_workflow):
         self.channel_repository = channel_repository
-        self.category_repository = category_repository
-        self.category_setup_service = category_setup_service
-        self.channel_builder = ChannelBuilder(channel_repository, category_repository)
+        self.category_workflow = category_workflow
+        self.category_repository = category_workflow.get_category_repository()
+        self.category_setup_service = category_workflow.get_category_setup_service()
+        self.channel_builder = channel_builder
         self.channels_cache: Dict[str, ChannelModel] = {}
     
     async def setup_channels(self, guild: discord.Guild) -> Dict[str, discord.abc.GuildChannel]:

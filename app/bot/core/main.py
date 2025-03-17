@@ -4,17 +4,16 @@ import logging
 import asyncio
 import nextcord
 from nextcord.ext import commands
-from typing import Dict, List, Any, Optional
+import sys
+from typing import Dict, Any, Optional, List
+from app.shared.interface.logging.api import get_bot_logger
 from app.bot.core.shutdown_handler import ShutdownHandler
-from app.bot.core.lifecycle.lifecycle_manager import LifecycleManager
 from app.bot.core.workflow_manager import WorkflowManager
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.bot.core.workflows.category_workflow import CategoryWorkflow
 from app.bot.core.workflows.channel_workflow import ChannelWorkflow
 from app.bot.core.workflows.dashboard_workflow import DashboardWorkflow
 from app.bot.core.workflows.task_workflow import TaskWorkflow
-from app.bot.core.workflows.slash_commands_workflow import SlashCommandsWorkflow
-from app.shared.interface.logging.api import get_bot_logger
 from app.shared.infrastructure.config.env_config import EnvConfig
 
 logger = get_bot_logger()
@@ -48,7 +47,7 @@ class HomelabBot(commands.Bot):
         self.database_workflow = DatabaseWorkflow(self)
         self.category_workflow = CategoryWorkflow(self.database_workflow)
         self.channel_workflow = ChannelWorkflow(self.database_workflow, self.category_workflow)
-        self.dashboard_workflow = DashboardWorkflow(self.database_workflow)
+        self.dashboard_workflow = DashboardWorkflow(self.database_workflow, bot=self)
         self.task_workflow = TaskWorkflow(self)
         self.slash_commands_workflow = SlashCommandsWorkflow(self)
         
@@ -127,33 +126,115 @@ class HomelabBot(commands.Bot):
         logger.info("Bot resources cleaned up successfully")
 
 async def main():
-    """
-    Main entry point for the bot application.
-    """
+    """Main entry point for the bot"""
     try:
-        # Configure bot with appropriate settings
-        intents = nextcord.Intents.default()
-        intents.members = True
-        intents.message_content = True
+        # Lade Umgebungsvariablen mit EnvConfig
+        env_config = EnvConfig().load()
         
-        # Create bot instance
-        bot = HomelabBot(command_prefix="!", intents=intents)
+        # Set up intents
+        intents = env_config.get_intents()
         
-        # Get token from environment variable
-        token = os.environ.get("DISCORD_BOT_TOKEN")
-        if not token:
-            logger.error("DISCORD_BOT_TOKEN environment variable not set. Cannot start bot.")
-            return
-
-        # Start the bot
+        # Create the bot
+        bot = commands.Bot(command_prefix="!", intents=intents)
+        
+        # Set up shutdown handler
+        shutdown_handler = ShutdownHandler(bot)
+        
+        # Initialize workflow manager
+        workflow_manager = WorkflowManager()
+        
+        # Register workflows
+        database_workflow = DatabaseWorkflow(bot)
+        workflow_manager.register_workflow(database_workflow)
+        
+        category_workflow = CategoryWorkflow(database_workflow)
+        workflow_manager.register_workflow(category_workflow)
+        
+        channel_workflow = ChannelWorkflow(category_workflow, database_workflow)
+        workflow_manager.register_workflow(channel_workflow)
+        
+        # Wichtig: Hier den Bot-Parameter übergeben
+        dashboard_workflow = DashboardWorkflow(database_workflow, bot=bot)
+        workflow_manager.register_workflow(dashboard_workflow)
+        
+        task_workflow = TaskWorkflow(bot)
+        workflow_manager.register_workflow(task_workflow)
+        
+        # Set initialization order
+        workflow_manager.set_initialization_order([
+            "database",
+            "category",
+            "channel",
+            "dashboard",
+            "task",
+            "slash_commands"  # This might not be registered yet
+        ])
+        
+        # Store workflow manager on bot for access
+        bot.workflow_manager = workflow_manager
+        
+        # Add cleanup method to bot
+        bot.cleanup = workflow_manager.cleanup_all
+        
+        @bot.event
+        async def on_ready():
+            """Called when the bot is ready"""
+            logger.info(f"Logged in as {bot.user.name}#{bot.user.discriminator} (ID: {bot.user.id})")
+            
+            # Log connected guilds
+            guilds = bot.guilds
+            logger.info(f"Connected to {len(guilds)} guilds")
+            for guild in guilds:
+                logger.info(f"Connected to guild: {guild.name} (ID: {guild.id})")
+            
+            # Initialize workflows
+            logger.info("Starting bot initialization")
+            try:
+                logger.info("Initializing all workflows")
+                if await workflow_manager.initialize_all():
+                    logger.info("All workflows initialized successfully")
+                    
+                    # Set up categories and channels for each guild
+                    for guild in bot.guilds:
+                        # Get category workflow
+                        category_wf = workflow_manager.get_workflow("category")
+                        if category_wf:
+                            # Set up categories
+                            categories = await category_wf.setup_categories(guild)
+                            logger.info(f"Set up {len(categories)} categories for guild {guild.name}")
+                            
+                            # Sync with Discord
+                            await category_wf.sync_with_discord(guild)
+                            
+                        # Get channel workflow
+                        channel_wf = workflow_manager.get_workflow("channel")
+                        if channel_wf:
+                            # Set up channels
+                            channels = await channel_wf.setup_channels(guild)
+                            logger.info(f"Set up {len(channels)} channels for guild {guild.name}")
+                            
+                            # Sync with Discord
+                            await channel_wf.sync_with_discord(guild)
+                else:
+                    logger.error("Bot initialization failed")
+            except Exception as e:
+                logger.error(f"Error during bot initialization: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+        
+        # Run the bot
         logger.info("Starting the bot...")
-        await bot.start(token)
+        
+        # Run dashboard migration if needed
+        logger.info("Skipping dashboard migration")
+        
+        # Start the bot mit dem Token aus env_config
+        await bot.start(env_config.DISCORD_BOT_TOKEN)
         
     except Exception as e:
-        logger.error(f"Fatal error in main bot process: {e}")
+        logger.error(f"Error starting bot: {e}")
         import traceback
         logger.error(traceback.format_exc())
-        
     finally:
         logger.info("Bot shutdown complete")
 

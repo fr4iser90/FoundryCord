@@ -2,6 +2,7 @@ import logging
 import asyncio
 from typing import Dict, Any, Optional
 import nextcord  # Geändert von discord zu nextcord
+from sqlalchemy import text  # Wichtig: text direkt importieren
 
 from app.bot.core.workflows.base_workflow import BaseWorkflow
 from app.shared.interface.logging.api import get_bot_logger
@@ -27,20 +28,25 @@ class DatabaseWorkflow(BaseWorkflow):
             # Create database service
             self.db_service = DatabaseService()
             
-            # Verify database connection - DatabaseService doesn't have initialize()
-            # so we'll just check if it's ready directly
-            for attempt in range(1, 6):
-                logger.info(f"Verifying database connection (attempt {attempt}/5)...")
-                if await self.db_service.is_ready():
+            # Da weder initialize() noch is_ready() existieren, 
+            # versuchen wir, eine einfache Verbindung herzustellen
+            # um zu prüfen, ob die Datenbank verfügbar ist
+            try:
+                # Prüfen, ob wir eine Engine bekommen können
+                engine = self.db_service.get_engine()
+                if engine:
+                    # Versuchen, eine einfache Abfrage auszuführen
+                    async with engine.connect() as conn:
+                        # Einfache Abfrage, um zu prüfen, ob die Verbindung funktioniert
+                        await conn.execute(text("SELECT 1"))  # text() direkt verwenden
                     logger.info("Database connection verified successfully")
                     return True
-                
-                if attempt < 5:
-                    logger.warning(f"Database not ready, retrying in 2 seconds...")
-                    await asyncio.sleep(2)
-            
-            logger.error("Failed to verify database connection after 5 attempts")
-            return False
+                else:
+                    logger.error("Failed to get database engine")
+                    return False
+            except Exception as db_error:
+                logger.error(f"Database connection test failed: {db_error}")
+                return False
             
         except Exception as e:
             logger.error(f"Error initializing database workflow: {e}")
@@ -57,10 +63,16 @@ class DatabaseWorkflow(BaseWorkflow):
                 # Check if cleanup method exists before calling it
                 if hasattr(self.db_service, 'cleanup') and callable(self.db_service.cleanup):
                     await self.db_service.cleanup()
+                elif hasattr(self.db_service, 'close') and callable(self.db_service.close):
+                    await self.db_service.close()
+                elif hasattr(self.db_service, 'dispose') and callable(self.db_service.dispose):
+                    await self.db_service.dispose()
                 else:
-                    # If no cleanup method, try to close connections if possible
-                    if hasattr(self.db_service, 'close') and callable(self.db_service.close):
-                        await self.db_service.close()
+                    # Wenn keine Cleanup-Methode vorhanden ist, versuchen wir,
+                    # die Engine zu schließen, falls sie existiert
+                    engine = getattr(self.db_service, 'engine', None)
+                    if engine and hasattr(engine, 'dispose'):
+                        await engine.dispose()
             
             logger.info("Database resources cleaned up")
             
