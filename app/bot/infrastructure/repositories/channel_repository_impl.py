@@ -5,7 +5,7 @@ from app.bot.domain.channels.models.channel_model import (
 )
 from app.bot.domain.channels.repositories.channel_repository import ChannelRepository
 from app.bot.infrastructure.database.models.channel_entity import ChannelEntity, ChannelPermissionEntity
-from app.shared.infrastructure.database.database_service import DatabaseService
+from app.shared.infrastructure.database.service import DatabaseService
 
 
 class ChannelRepositoryImpl(ChannelRepository):

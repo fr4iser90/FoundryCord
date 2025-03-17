@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.bot.domain.categories.models.category_model import CategoryModel, CategoryTemplate, CategoryPermission
 from app.bot.domain.categories.repositories.category_repository import CategoryRepository
 from app.bot.infrastructure.database.models.category_entity import CategoryEntity, CategoryPermissionEntity
-from app.shared.infrastructure.database.database_service import DatabaseService
+from app.shared.infrastructure.database.service import DatabaseService
 
 
 class CategoryRepositoryImpl(CategoryRepository):

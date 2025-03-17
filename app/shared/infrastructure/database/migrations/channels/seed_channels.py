@@ -10,7 +10,7 @@ from app.bot.domain.channels.models.channel_model import (
 from app.bot.infrastructure.repositories.channel_repository_impl import ChannelRepositoryImpl
 from app.bot.domain.categories.repositories.category_repository import CategoryRepository
 from app.bot.infrastructure.repositories.category_repository_impl import CategoryRepositoryImpl
-from app.shared.infrastructure.database.database_service import DatabaseService
+from app.shared.infrastructure.database.service import DatabaseService
 from app.shared.interface.logging.api import get_db_logger
 
 logger = get_db_logger()

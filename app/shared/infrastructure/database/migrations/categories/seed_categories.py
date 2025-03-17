@@ -5,7 +5,7 @@ This helps in migrating from the existing hardcoded approach to the new data-dri
 
 from app.bot.domain.categories.models.category_model import CategoryTemplate, CategoryPermissionLevel, CategoryPermission
 from app.bot.infrastructure.repositories.category_repository_impl import CategoryRepositoryImpl
-from app.shared.infrastructure.database.database_service import DatabaseService
+from app.shared.infrastructure.database.service import DatabaseService
 from app.shared.interface.logging.api import get_db_logger
 
 logger = get_db_logger()

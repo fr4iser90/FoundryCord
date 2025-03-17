@@ -55,66 +55,42 @@ class HomelabBot(commands.Bot):
         await self.start_initialization()
     
     async def start_initialization(self):
-        """Initialize the bot components"""
-        logger.info("Starting bot initialization...")
+        """Start the bot initialization process"""
+        logger.info("Starting bot initialization")
         
-        # Initialize database
-        logger.info("Initializing database connections...")
-        await self.database_workflow.initialize()
-        
-        # Initialize services
-        logger.info("Initializing services...")
-        logger.info("Creating config service")
-        # TODO: Add config service initialization
-        
-        logger.info("Creating event service")
-        # TODO: Add event service initialization
-        
-        # Initialize workflows
-        logger.info("Initializing workflows...")
-        
-        # Initialize category workflow
-        await self.category_workflow.initialize()
-        
-        # Initialize channel workflow
-        logger.info("Creating channel workflow")
-        logger.info("Initializing channel workflow")
-        await self.channel_workflow.initialize()
-        
-        # Initialize dashboard workflow
-        logger.info("Creating dashboard workflow with domain model integration")
-        self.dashboard_workflow = DashboardWorkflow(self)
-        logger.info("Initializing dashboard workflow with domain model")
-        await self.dashboard_workflow.initialize()
-        
-        # Initialize command workflow
-        logger.info("Creating command workflow")
-        self.slash_commands_workflow = SlashCommandsWorkflow(self)
-        logger.info("Initializing command workflow")
-        await self.slash_commands_workflow.initialize()
-        
-        # Initialize task workflow
-        logger.info("Creating task workflow")
-        self.task_workflow = TaskWorkflow(self)
-        logger.info("Initializing task workflow")
-        await self.task_workflow.initialize()
-        
-        # Start background tasks
-        logger.info("Starting background tasks...")
-        
-        # Start dashboard background tasks
-        logger.info("Starting dashboard background tasks")
-        self.dashboard_workflow.start_background_tasks()
-        
-        # Start task background tasks
-        logger.info("Starting task background tasks")
-        self.task_workflow.start_background_tasks()
-        
-        # Sync channels and categories for each guild
-        for guild in self.guilds:
-            await self.sync_guild_data(guild)
-        
-        logger.info("Initialization sequence completed")
+        try:
+            # Initialize database
+            if not await self.database_workflow.initialize():
+                logger.error("Failed to initialize database")
+                return False
+            
+            # Initialize config service (using the correct path)
+            # Import the correct config service module
+            from app.bot.application.services.config.config_service import ConfigService
+            self.config_service = ConfigService(self)
+            await self.config_service.initialize()
+            
+            # Initialize remaining components
+            await self.category_workflow.initialize()
+            await self.channel_workflow.initialize()
+            
+            # Initialize dashboard workflow after database is ready
+            self.dashboard_workflow = DashboardWorkflow(self.database_workflow)
+            await self.dashboard_workflow.initialize()
+            
+            # Initialize task workflow
+            self.task_workflow = TaskWorkflow()
+            await self.task_workflow.initialize(self)
+            
+            # Initialize slash commands workflow last
+            self.slash_commands_workflow = SlashCommandsWorkflow(self)
+            await self.slash_commands_workflow.initialize()
+            
+            logger.info("Bot initialization completed successfully")
+            return True
+        except Exception as e:
+            logger.error(f"Error during bot initialization: {e}")
+            return False
     
     async def sync_guild_data(self, guild: discord.Guild):
         """Synchronize database with Discord guild data"""

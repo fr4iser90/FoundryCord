@@ -8,7 +8,7 @@ from app.bot.core.workflows.base_workflow import BaseWorkflow
 from app.shared.infrastructure.database.models.base import Base
 from app.bot.infrastructure.database.models.category_entity import CategoryEntity, CategoryPermissionEntity
 from app.bot.infrastructure.database.models.channel_entity import ChannelEntity, ChannelPermissionEntity
-from app.shared.infrastructure.database.database_service import DatabaseService
+from app.shared.infrastructure.database.service import DatabaseService
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 from app.shared.infrastructure.database.migrations.init_db import init_db, migrate_existing_users
