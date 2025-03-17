@@ -27,6 +27,11 @@ from .project import PROJECT_BUTTONS, PROJECT_EMBEDS, PROJECT_MODALS, PROJECT_SE
 from .gamehub import GAMEHUB_BUTTONS, GAMEHUB_EMBEDS, GAMEHUB_MODALS, GAMEHUB_SELECTORS, GAMEHUB_VIEWS
 from .common import DEFAULT_BUTTONS, DEFAULT_EMBEDS, DEFAULT_MODALS, DEFAULT_SELECTORS, DEFAULT_VIEWS
 
+# Global initialization state
+_initialization_lock = asyncio.Lock()
+_is_initialized = False
+_initialization_complete = asyncio.Event()
+
 @asynccontextmanager
 async def get_migration_session():
     """Kontext-Manager für die Datenbanksitzung während der Migration."""
@@ -56,13 +61,68 @@ async def execute_migration_query(query, params=None):
             logger.error(f"Migration query error: {e}")
             raise
 
-async def main():
-    """Main migration function for dashboard components"""
-    # Stelle sicher, dass wir eine gültige Datenbankverbindung haben
-    logger.info(f"Using database URL: {DATABASE_URL.replace(os.environ.get('APP_DB_PASSWORD', ''), '[HIDDEN]')}")
+async def wait_for_database():
+    """Wait for the database to be ready, with a proper connection test."""
+    max_attempts = 30
+    attempt = 0
+    delay = 1.0  # Start with 1 second delay
     
-    # Ensure dashboard tables exist before trying to access them
-    await ensure_dashboard_tables_exist()
+    while attempt < max_attempts:
+        try:
+            engine = await initialize_engine()
+            async with engine.begin() as conn:
+                await conn.execute(text("SELECT 1"))
+                logger.info("Database is ready and accepting connections")
+                return True
+        except Exception as e:
+            attempt += 1
+            if attempt >= max_attempts:
+                logger.error(f"Database connection failed after {max_attempts} attempts: {e}")
+                return False
+            
+            # Exponential backoff with a cap
+            delay = min(delay * 1.5, 5.0)
+            logger.info(f"Waiting for database to be ready (attempt {attempt}/{max_attempts})... retrying in {delay:.1f}s")
+            await asyncio.sleep(delay)
+    
+    return False
+
+async def initialize_migration_system():
+    """Initialize the migration system with proper coordination."""
+    global _is_initialized
+    
+    # Only one initialization process can run at a time
+    async with _initialization_lock:
+        if _is_initialized:
+            return True
+        
+        # Wait for database to be ready
+        if not await wait_for_database():
+            logger.error("Failed to establish database connection for migration")
+            return False
+        
+        logger.info(f"Using database URL: {DATABASE_URL.replace(os.environ.get('APP_DB_PASSWORD', ''), '[HIDDEN]')}")
+        
+        try:
+            # Ensure tables exist
+            if not await ensure_dashboard_tables_exist():
+                logger.error("Failed to create dashboard tables")
+                return False
+            
+            # Mark initialization as complete
+            _is_initialized = True
+            _initialization_complete.set()
+            return True
+        except Exception as e:
+            logger.error(f"Migration system initialization failed: {e}")
+            return False
+
+async def main():
+    """Main migration function for dashboard components with proper orchestration"""
+    # Initialize the migration system first
+    if not await initialize_migration_system():
+        logger.error("Migration system initialization failed")
+        return False
     
     # Continue with existing migration logic
     try:
@@ -76,97 +136,53 @@ async def main():
         await migrate_gamehub_dashboard(discord_server_id)
         
         logger.info("Dashboard components migration completed successfully")
+        return True
     except Exception as e:
         logger.error(f"Dashboard components migration failed: {e}")
-        raise
+        return False
+
+async def wait_for_initialization():
+    """Wait for the migration system to be initialized."""
+    if not _is_initialized:
+        logger.info("Waiting for dashboard migration system to initialize...")
+        await _initialization_complete.wait()
+    return _is_initialized
 
 async def ensure_dashboard_tables_exist():
-    """Ensure dashboard tables exist before trying to access them"""
-    # Direkter Zugriff mit der neuen Methode
-    session = await get_async_session()
-    try:
-        # First check and fix schema issues with component_layouts
-        # This prevents the "column" reserved word error
-        await fix_component_layouts_table(session)
-        
-        # Now proceed with normal checks and creations
-        logger.info("Verifying dashboard tables exist...")
-        
-        # Explicitly check for each table with proper error handling
-        tables_to_check = [
-            ("dashboards", create_dashboards_table),
-            ("dashboard_components", create_dashboard_components_table),
-        ]
-        
-        for table_name, create_func in tables_to_check:
-            try:
-                # Check if the table exists
-                result = await session.execute(text(f"""
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.tables 
-                        WHERE table_name = '{table_name}'
-                    );
-                """))
-                exists = result.scalar()
-                
-                if not exists:
-                    logger.info(f"Table {table_name} does not exist, creating it...")
-                    await create_func(session)
-                else:
-                    logger.info(f"Table {table_name} already exists")
-                    
-                await session.commit()
-            except Exception as e:
-                logger.error(f"Error checking/creating table {table_name}: {e}")
-                await session.rollback()
-                raise
+    """Ensure all dashboard-related tables exist in the database."""
+    logger.info("Verifying dashboard tables exist...")
+    
+    async with get_migration_session() as session:
+        try:
+            # Check if dashboards table exists
+            result = await session.execute(text("SELECT to_regclass('public.dashboards')"))
+            if result.scalar() is None:
+                logger.info("Table dashboards does not exist, creating it...")
+                await create_dashboards_table(session)
             
-    except Exception as e:
-        logger.error(f"Error ensuring dashboard tables exist: {e}")
-        await session.rollback()
-        raise
-    finally:
-        await session.close()
-
-async def fix_component_layouts_table(session):
-    """Check and fix component_layouts table if it exists with the 'column' issue"""
-    try:
-        # Check if the table exists
-        result = await session.execute(text("""
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_name = 'component_layouts'
-            );
-        """))
-        exists = result.scalar()
-        
-        if exists:
-            # Drop the table to recreate it with the correct column names
-            logger.info("Dropping component_layouts table to fix 'column' reserved word issue")
-            await session.execute(text("DROP TABLE IF EXISTS component_layouts;"))
+            # Check if dashboard_components table exists
+            result = await session.execute(text("SELECT to_regclass('public.dashboard_components')"))
+            if result.scalar() is None:
+                logger.info("Table dashboard_components does not exist, creating it...")
+                await create_dashboard_components_table(session)
+            
+            # Check if component_layouts table exists
+            result = await session.execute(text("SELECT to_regclass('public.component_layouts')"))
+            if result.scalar() is None:
+                logger.info("Table component_layouts does not exist, creating it...")
+                await create_component_layouts_table(session)
+            
             await session.commit()
-        
-        # Create table with correct column names
-        await session.execute(text("""
-            CREATE TABLE IF NOT EXISTS component_layouts (
-                id SERIAL PRIMARY KEY,
-                component_id INTEGER REFERENCES dashboard_components(id) ON DELETE CASCADE,
-                row_position INTEGER DEFAULT 0,
-                col_position INTEGER DEFAULT 0,
-                width INTEGER DEFAULT 1,
-                height INTEGER DEFAULT 1,
-                style VARCHAR(50),
-                additional_props JSONB
-            );
-        """))
-        await session.commit()
-        logger.info("Component layouts table fixed successfully")
-    except Exception as e:
-        logger.error(f"Error fixing component_layouts table: {e}")
-        await session.rollback()
+            logger.info("Dashboard tables created successfully")
+            return True
+        except Exception as e:
+            await session.rollback()
+            logger.error(f"Error ensuring dashboard tables exist: {e}")
+            return False
 
 async def create_dashboards_table(session):
-    """Create the dashboards table"""
+    """Create dashboards table with separate statements to avoid the multi-statement error."""
+    # Create table first
     await session.execute(text("""
         CREATE TABLE IF NOT EXISTS dashboards (
             id SERIAL PRIMARY KEY,
@@ -180,20 +196,24 @@ async def create_dashboards_table(session):
             config JSONB,
             created_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP DEFAULT NOW()
-        );
-        
-        -- Create indexes
-        CREATE INDEX IF NOT EXISTS idx_dashboards_dashboard_type 
-        ON dashboards(dashboard_type);
-        
-        CREATE INDEX IF NOT EXISTS idx_dashboards_guild_id 
-        ON dashboards(guild_id);
+        )
     """))
-    await session.commit()
-    logger.info("Dashboards table created successfully")
+    
+    # Create index for dashboard_type in a separate statement
+    await session.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_dashboards_dashboard_type 
+        ON dashboards(dashboard_type)
+    """))
+    
+    # Create index for guild_id in a separate statement
+    await session.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_dashboards_guild_id 
+        ON dashboards(guild_id)
+    """))
 
 async def create_dashboard_components_table(session):
-    """Create the dashboard_components table"""
+    """Create dashboard_components table with separate statements."""
+    # Create table first
     await session.execute(text("""
         CREATE TABLE IF NOT EXISTS dashboard_components (
             id SERIAL PRIMARY KEY,
@@ -202,168 +222,173 @@ async def create_dashboard_components_table(session):
             component_name VARCHAR(100) NOT NULL,
             custom_id VARCHAR(100),
             position INTEGER DEFAULT 0,
-            is_active BOOLEAN DEFAULT TRUE,
             config JSONB,
+            is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP DEFAULT NOW()
-        );
-        
-        -- Create indexes
-        CREATE INDEX IF NOT EXISTS idx_dashboard_components_dashboard_id
-        ON dashboard_components(dashboard_id);
-        
-        CREATE INDEX IF NOT EXISTS idx_dashboard_components_type
-        ON dashboard_components(component_type);
+        )
     """))
-    await session.commit()
-    logger.info("Dashboard components table created successfully")
+    
+    # Create indexes in separate statements
+    await session.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_components_dashboard_id 
+        ON dashboard_components(dashboard_id)
+    """))
+    
+    await session.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_components_component_type 
+        ON dashboard_components(component_type)
+    """))
+    
+    await session.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_components_custom_id 
+        ON dashboard_components(custom_id)
+    """))
 
-# Split the migrate_dashboard function into separate functions for each dashboard type
-async def migrate_welcome_dashboard(guild_id):
-    """Migrate welcome dashboard"""
-    logger.info("Migrating welcome dashboard")
-    session = await get_async_session()
-    try:
-        await migrate_dashboard(
-            session=session,
-            dashboard_type="welcome",
-            name="Welcome Dashboard",
-            description="Welcome dashboard for new users",
-            buttons=WELCOME_BUTTONS,
-            embeds=WELCOME_EMBEDS,
-            modals=WELCOME_MODALS,
-            selectors=WELCOME_SELECTORS,
-            views=WELCOME_VIEWS,
-            guild_id=guild_id
+async def create_component_layouts_table(session):
+    """Create component_layouts table with separate statements."""
+    # Create table first
+    await session.execute(text("""
+        CREATE TABLE IF NOT EXISTS component_layouts (
+            id SERIAL PRIMARY KEY,
+            dashboard_id INTEGER REFERENCES dashboards(id) ON DELETE CASCADE,
+            layout_name VARCHAR(100) NOT NULL,
+            layout_data JSONB,
+            created_at TIMESTAMP DEFAULT NOW(),
+            updated_at TIMESTAMP DEFAULT NOW()
         )
-    finally:
-        await session.close()
+    """))
+    
+    # Create indexes in separate statements
+    await session.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_layouts_dashboard_id 
+        ON component_layouts(dashboard_id)
+    """))
 
-async def migrate_monitoring_dashboard(guild_id):
-    """Migrate monitoring dashboard"""
-    logger.info("Migrating monitoring dashboard")
-    session = await get_async_session()
-    try:
-        await migrate_dashboard(
-            session=session,
-            dashboard_type="monitoring",
-            name="Monitoring Dashboard",
-            description="System monitoring dashboard",
-            buttons=MONITORING_BUTTONS,
-            embeds=MONITORING_EMBEDS,
-            modals=MONITORING_MODALS,
-            selectors=MONITORING_SELECTORS,
-            views=MONITORING_VIEWS,
-            guild_id=guild_id
-        )
-    finally:
-        await session.close()
+async def migrate_welcome_dashboard(discord_server_id):
+    """Migrate welcome dashboard components to database"""
+    await migrate_dashboard_components(
+        dashboard_type="welcome",
+        name="Welcome Dashboard",
+        description="Dashboard for server welcome and onboarding",
+        guild_id=discord_server_id,
+        buttons=WELCOME_BUTTONS,
+        embeds=WELCOME_EMBEDS,
+        modals=WELCOME_MODALS,
+        selectors=WELCOME_SELECTORS,
+        views=WELCOME_VIEWS
+    )
 
-async def migrate_project_dashboard(guild_id):
-    """Migrate project dashboard"""
-    logger.info("Migrating project dashboard")
-    session = await get_async_session()
-    try:
-        await migrate_dashboard(
-            session=session,
-            dashboard_type="project",
-            name="Project Dashboard",
-            description="Project management dashboard",
-            buttons=PROJECT_BUTTONS,
-            embeds=PROJECT_EMBEDS,
-            modals=PROJECT_MODALS,
-            selectors=PROJECT_SELECTORS,
-            views=PROJECT_VIEWS,
-            guild_id=guild_id
-        )
-    finally:
-        await session.close()
+async def migrate_monitoring_dashboard(discord_server_id):
+    """Migrate monitoring dashboard components to database"""
+    await migrate_dashboard_components(
+        dashboard_type="monitoring",
+        name="System Monitoring Dashboard",
+        description="Dashboard for system monitoring and status",
+        guild_id=discord_server_id,
+        buttons=MONITORING_BUTTONS,
+        embeds=MONITORING_EMBEDS,
+        modals=MONITORING_MODALS,
+        selectors=MONITORING_SELECTORS,
+        views=MONITORING_VIEWS
+    )
 
-async def migrate_gamehub_dashboard(guild_id):
-    """Migrate gamehub dashboard"""
-    logger.info("Migrating gamehub dashboard")
-    session = await get_async_session()
-    try:
-        await migrate_dashboard(
-            session=session,
-            dashboard_type="gamehub",
-            name="Game Hub Dashboard",
-            description="Game server management dashboard",
-            buttons=GAMEHUB_BUTTONS,
-            embeds=GAMEHUB_EMBEDS,
-            modals=GAMEHUB_MODALS,
-            selectors=GAMEHUB_SELECTORS,
-            views=GAMEHUB_VIEWS,
-            guild_id=guild_id
-        )
-    finally:
-        await session.close()
+async def migrate_project_dashboard(discord_server_id):
+    """Migrate project dashboard components to database"""
+    await migrate_dashboard_components(
+        dashboard_type="project",
+        name="Project Management Dashboard",
+        description="Dashboard for project management and tracking",
+        guild_id=discord_server_id,
+        buttons=PROJECT_BUTTONS,
+        embeds=PROJECT_EMBEDS,
+        modals=PROJECT_MODALS,
+        selectors=PROJECT_SELECTORS,
+        views=PROJECT_VIEWS
+    )
 
-async def migrate_dashboard(session, dashboard_type, name, description, buttons, embeds, modals, selectors, views, guild_id=None):
-    """Migrate a dashboard template to the database"""
-    try:
-        # Check if dashboard already exists
-        result = await session.execute(text("""
-            SELECT id FROM dashboards
-            WHERE dashboard_type = :dashboard_type
-            AND (guild_id = :guild_id OR (guild_id IS NULL AND :guild_id IS NULL))
-        """), {
-            "dashboard_type": dashboard_type,
-            "guild_id": guild_id
-        })
-        
-        dashboard_id = result.scalar()
-        
-        if dashboard_id:
-            logger.info(f"{dashboard_type} dashboard already exists with ID {dashboard_id}, updating")
-            # Update existing dashboard
-            await session.execute(text("""
-                UPDATE dashboards
-                SET name = :name,
-                    description = :description,
-                    is_active = TRUE,
-                    updated_at = NOW()
-                WHERE id = :id
-            """), {
-                "name": name,
-                "description": description,
-                "id": dashboard_id
-            })
-        else:
-            # Create new dashboard
+async def migrate_gamehub_dashboard(discord_server_id):
+    """Migrate gamehub dashboard components to database"""
+    await migrate_dashboard_components(
+        dashboard_type="gamehub",
+        name="Game Server Hub",
+        description="Dashboard for game server management",
+        guild_id=discord_server_id,
+        buttons=GAMEHUB_BUTTONS,
+        embeds=GAMEHUB_EMBEDS,
+        modals=GAMEHUB_MODALS,
+        selectors=GAMEHUB_SELECTORS,
+        views=GAMEHUB_VIEWS
+    )
+
+async def migrate_dashboard_components(dashboard_type, name, description, guild_id, buttons=None, embeds=None, modals=None, selectors=None, views=None):
+    """Migrate all components for a specific dashboard type"""
+    async with get_migration_session() as session:
+        try:
+            # Check if dashboard already exists
             result = await session.execute(text("""
-                INSERT INTO dashboards
-                (dashboard_type, name, description, guild_id, is_active)
-                VALUES (:dashboard_type, :name, :description, :guild_id, TRUE)
-                RETURNING id
+                SELECT id FROM dashboards
+                WHERE dashboard_type = :dashboard_type AND guild_id = :guild_id
             """), {
                 "dashboard_type": dashboard_type,
-                "name": name,
-                "description": description,
                 "guild_id": guild_id
             })
             
             dashboard_id = result.scalar()
-            logger.info(f"Created new {dashboard_type} dashboard with ID {dashboard_id}")
             
-        await session.commit()
-        
-        # Migrate components
-        if dashboard_id:
+            if dashboard_id:
+                # Update existing dashboard
+                await session.execute(text("""
+                    UPDATE dashboards
+                    SET name = :name, 
+                        description = :description,
+                        is_active = TRUE,
+                        updated_at = NOW()
+                    WHERE id = :id
+                """), {
+                    "name": name,
+                    "description": description,
+                    "id": dashboard_id
+                })
+                logger.info(f"Updated existing dashboard: {name} (ID: {dashboard_id})")
+            else:
+                # Create new dashboard
+                result = await session.execute(text("""
+                    INSERT INTO dashboards
+                    (dashboard_type, name, description, guild_id, is_active)
+                    VALUES (:dashboard_type, :name, :description, :guild_id, TRUE)
+                    RETURNING id
+                """), {
+                    "dashboard_type": dashboard_type,
+                    "name": name,
+                    "description": description,
+                    "guild_id": guild_id
+                })
+                dashboard_id = result.scalar()
+                logger.info(f"Created new dashboard: {name} (ID: {dashboard_id})")
+            
+            # Commit the dashboard creation/update before proceeding with components
+            await session.commit()
+            
+            # Migrate all component types
             if buttons:
                 await migrate_components(session, dashboard_id, "button", buttons)
+            
             if embeds:
                 await migrate_components(session, dashboard_id, "embed", embeds)
+                
             if modals:
                 await migrate_components(session, dashboard_id, "modal", modals)
+                
             if selectors:
                 await migrate_components(session, dashboard_id, "selector", selectors)
+                
             if views:
                 await migrate_components(session, dashboard_id, "view", views)
-    except Exception as e:
-        await session.rollback()
-        logger.error(f"Error migrating dashboard {dashboard_type}: {e}")
-        raise
+        except Exception as e:
+            await session.rollback()
+            logger.error(f"Error migrating dashboard {dashboard_type}: {e}")
+            raise
 
 async def migrate_components(session, dashboard_id, component_type, components_dict):
     """Migrate components of a specific type to the database"""

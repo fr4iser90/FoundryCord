@@ -10,6 +10,7 @@ from .base_workflow import BaseWorkflow
 #from app.bot.application.services.dashboard import welcome_setup, monitoring_setup, project_setup, gameservers_setup
 from app.bot.infrastructure.migrations.dashboard_migration import DashboardMigration
 from app.bot.application.services.dashboard.dashboard_service import DashboardService
+from app.shared.infrastructure.database.migrations.dashboards.dashboard_components_migration import wait_for_initialization
 
 class DashboardWorkflow(BaseWorkflow):
     """Workflow for initializing and managing dashboards."""
@@ -21,6 +22,11 @@ class DashboardWorkflow(BaseWorkflow):
     async def initialize(self):
         """Initialize the dashboard workflow."""
         try:
+            logger.info("Initializing dashboard workflow with domain model")
+            
+            # Wait for database migrations to complete before proceeding
+            await wait_for_initialization()
+            
             # Initialize dashboard service
             self.dashboard_service = DashboardService(self.bot)
             
@@ -67,7 +73,7 @@ class DashboardWorkflow(BaseWorkflow):
             return True
             
         except Exception as e:
-            logger.error(f"Failed to initialize dashboard workflow: {e}")
+            logger.error(f"Error initializing dashboard workflow: {e}")
             return False
             
     async def _run_dashboard_migration(self):
@@ -132,3 +138,25 @@ class DashboardWorkflow(BaseWorkflow):
         except Exception as e:
             logger.error(f"Error initializing dashboard services: {e}")
             raise
+
+    async def load_dashboards(self):
+        """Load all dashboards from the repository."""
+        try:
+            # Check if tables exist first
+            try:
+                # Attempt to load dashboards if tables exist
+                if self.dashboard_repository:
+                    dashboards = await self.dashboard_repository.list_all()
+                    self.logger.info(f"Loaded {len(dashboards)} dashboards from repository")
+                    return dashboards
+            except Exception as e:
+                if "relation" in str(e) and "does not exist" in str(e):
+                    self.logger.warning("Dashboard tables don't exist yet, skipping dashboard load")
+                else:
+                    self.logger.error(f"Error retrieving all dashboard configs: {str(e)}")
+            
+            # Return empty list as fallback
+            return []
+        except Exception as e:
+            self.logger.error(f"Error in load_dashboards: {str(e)}")
+            return []

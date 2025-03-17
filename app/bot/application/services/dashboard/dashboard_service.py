@@ -153,3 +153,67 @@ class DashboardService:
         dashboard.interactive_components = data.get('interactive_components', [])
         
         return dashboard 
+
+    async def ensure_dashboard_tables_exist(self):
+        """Ensure all required dashboard tables exist in the database."""
+        try:
+            # Create dashboards table first
+            await self.db.execute("""
+                CREATE TABLE IF NOT EXISTS dashboards (
+                    id SERIAL PRIMARY KEY,
+                    dashboard_type VARCHAR(50) NOT NULL,
+                    name VARCHAR(100) NOT NULL,
+                    description TEXT,
+                    guild_id VARCHAR(50),
+                    channel_id VARCHAR(50),
+                    is_active BOOLEAN DEFAULT TRUE,
+                    update_frequency INTEGER DEFAULT 300,
+                    config JSONB,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            
+            # Create indexes separately
+            await self.db.execute("""
+                CREATE INDEX IF NOT EXISTS idx_dashboards_dashboard_type 
+                ON dashboards(dashboard_type)
+            """)
+            
+            await self.db.execute("""
+                CREATE INDEX IF NOT EXISTS idx_dashboards_guild_id 
+                ON dashboards(guild_id)
+            """)
+            
+            # Create dashboard_components table before component_layouts
+            await self.db.execute("""
+                CREATE TABLE IF NOT EXISTS dashboard_components (
+                    id SERIAL PRIMARY KEY,
+                    dashboard_id INTEGER REFERENCES dashboards(id) ON DELETE CASCADE,
+                    component_type VARCHAR(50) NOT NULL,
+                    title VARCHAR(100),
+                    config JSONB,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            
+            # Now create component_layouts
+            await self.db.execute("""
+                CREATE TABLE IF NOT EXISTS component_layouts (
+                    id SERIAL PRIMARY KEY,
+                    component_id INTEGER REFERENCES dashboard_components(id) ON DELETE CASCADE,
+                    row_position INTEGER DEFAULT 0,
+                    col_position INTEGER DEFAULT 0,
+                    width INTEGER DEFAULT 1,
+                    height INTEGER DEFAULT 1,
+                    style VARCHAR(50),
+                    additional_props JSONB
+                )
+            """)
+            
+            self.logger.info("Dashboard tables created successfully")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error ensuring dashboard tables exist: {e}")
+            return False 
