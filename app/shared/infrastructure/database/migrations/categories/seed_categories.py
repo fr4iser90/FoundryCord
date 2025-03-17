@@ -46,95 +46,95 @@ DEFAULT_CATEGORIES = [
         }
     ),
     
-    # Example: COMMUNITY category
-    CategoryTemplate(
-        name="COMMUNITY",
-        position=1,
-        permission_level=CategoryPermissionLevel.MEMBER,
-        permissions=[
-            CategoryPermission(
-                role_id=EVERYONE_ROLE_ID,
-                view=False
-            ),
-            CategoryPermission(
-                role_id=MEMBER_ROLE_ID,
-                view=True,
-                send_messages=True
-            ),
-            CategoryPermission(
-                role_id=ADMIN_ROLE_ID,
-                view=True,
-                send_messages=True,
-                manage_messages=True,
-                manage_channels=True
-            )
-        ],
-        metadata={
-            "description": "Community discussion channels",
-            "icon": "💬"
-        }
-    ),
+    # # Example: COMMUNITY category
+    # CategoryTemplate(
+    #     name="COMMUNITY",
+    #     position=1,
+    #     permission_level=CategoryPermissionLevel.MEMBER,
+    #     permissions=[
+    #         CategoryPermission(
+    #             role_id=EVERYONE_ROLE_ID,
+    #             view=False
+    #         ),
+    #         CategoryPermission(
+    #             role_id=MEMBER_ROLE_ID,
+    #             view=True,
+    #             send_messages=True
+    #         ),
+    #         CategoryPermission(
+    #             role_id=ADMIN_ROLE_ID,
+    #             view=True,
+    #             send_messages=True,
+    #             manage_messages=True,
+    #             manage_channels=True
+    #         )
+    #     ],
+    #     metadata={
+    #         "description": "Community discussion channels",
+    #         "icon": "💬"
+    #     }
+    # ),
     
-    # Example: PROJECTS category
-    CategoryTemplate(
-        name="PROJECTS",
-        position=2,
-        permission_level=CategoryPermissionLevel.MEMBER,
-        permissions=[
-            CategoryPermission(
-                role_id=MEMBER_ROLE_ID,
-                view=True,
-                send_messages=True
-            )
-        ],
-        metadata={
-            "description": "Project collaboration channels",
-            "icon": "🛠️"
-        }
-    ),
+    # # Example: PROJECTS category
+    # CategoryTemplate(
+    #     name="PROJECTS",
+    #     position=2,
+    #     permission_level=CategoryPermissionLevel.MEMBER,
+    #     permissions=[
+    #         CategoryPermission(
+    #             role_id=MEMBER_ROLE_ID,
+    #             view=True,
+    #             send_messages=True
+    #         )
+    #     ],
+    #     metadata={
+    #         "description": "Project collaboration channels",
+    #         "icon": "🛠️"
+    #     }
+    # ),
     
-    # Example: GAME SERVERS category
-    CategoryTemplate(
-        name="GAME SERVERS",
-        position=3,
-        permission_level=CategoryPermissionLevel.MEMBER,
-        permissions=[
-            CategoryPermission(
-                role_id=MEMBER_ROLE_ID,
-                view=True,
-                send_messages=True
-            )
-        ],
-        metadata={
-            "description": "Game server information and management",
-            "icon": "🎮"
-        }
-    ),
+    # # Example: GAME SERVERS category
+    # CategoryTemplate(
+    #     name="GAME SERVERS",
+    #     position=3,
+    #     permission_level=CategoryPermissionLevel.MEMBER,
+    #     permissions=[
+    #         CategoryPermission(
+    #             role_id=MEMBER_ROLE_ID,
+    #             view=True,
+    #             send_messages=True
+    #         )
+    #     ],
+    #     metadata={
+    #         "description": "Game server information and management",
+    #         "icon": "🎮"
+    #     }
+    # ),
     
-    # Example: ADMIN category
-    CategoryTemplate(
-        name="ADMIN",
-        position=4,
-        permission_level=CategoryPermissionLevel.ADMIN,
-        permissions=[
-            CategoryPermission(
-                role_id=EVERYONE_ROLE_ID,
-                view=False
-            ),
-            CategoryPermission(
-                role_id=ADMIN_ROLE_ID,
-                view=True,
-                send_messages=True,
-                manage_messages=True,
-                manage_channels=True,
-                manage_category=True
-            )
-        ],
-        metadata={
-            "description": "Administrative channels",
-            "icon": "⚙️"
-        }
-    ),
+    # # Example: ADMIN category
+    # CategoryTemplate(
+    #     name="ADMIN",
+    #     position=4,
+    #     permission_level=CategoryPermissionLevel.ADMIN,
+    #     permissions=[
+    #         CategoryPermission(
+    #             role_id=EVERYONE_ROLE_ID,
+    #             view=False
+    #         ),
+    #         CategoryPermission(
+    #             role_id=ADMIN_ROLE_ID,
+    #             view=True,
+    #             send_messages=True,
+    #             manage_messages=True,
+    #             manage_channels=True,
+    #             manage_category=True
+    #         )
+    #     ],
+    #     metadata={
+    #         "description": "Administrative channels",
+    #         "icon": "⚙️"
+    #     }
+    # ),
 ]
 
 

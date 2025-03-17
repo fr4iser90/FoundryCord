@@ -87,321 +87,321 @@ DEFAULT_CHANNELS = [
         }
     ),
     
-    ChannelTemplate(
-        name="announcements",
-        description="Server announcements",
-        category_name="WELCOME",
-        type=ChannelType.ANNOUNCEMENT,
-        position=2,
-        permission_level=ChannelPermissionLevel.PUBLIC,
-        permissions=[
-            ChannelPermission(
-                role_id=EVERYONE_ROLE_ID,
-                view=True,
-                read_messages=True,
-                send_messages=False
-            ),
-            ChannelPermission(
-                role_id=ADMIN_ROLE_ID,
-                view=True,
-                read_messages=True,
-                send_messages=True,
-                manage_messages=True,
-                manage_channel=True
-            )
-        ],
-        topic="Important server announcements",
-        metadata={
-            "description": "Server announcements channel",
-            "icon": "📢"
-        }
-    ),
+    # ChannelTemplate(
+    #     name="announcements",
+    #     description="Server announcements",
+    #     category_name="WELCOME",
+    #     type=ChannelType.ANNOUNCEMENT,
+    #     position=2,
+    #     permission_level=ChannelPermissionLevel.PUBLIC,
+    #     permissions=[
+    #         ChannelPermission(
+    #             role_id=EVERYONE_ROLE_ID,
+    #             view=True,
+    #             read_messages=True,
+    #             send_messages=False
+    #         ),
+    #         ChannelPermission(
+    #             role_id=ADMIN_ROLE_ID,
+    #             view=True,
+    #             read_messages=True,
+    #             send_messages=True,
+    #             manage_messages=True,
+    #             manage_channel=True
+    #         )
+    #     ],
+    #     topic="Important server announcements",
+    #     metadata={
+    #         "description": "Server announcements channel",
+    #         "icon": "📢"
+    #     }
+    # ),
     
-    # COMMUNITY category channels
-    ChannelTemplate(
-        name="general",
-        description="General discussion",
-        category_name="COMMUNITY",
-        type=ChannelType.TEXT,
-        position=0,
-        permission_level=ChannelPermissionLevel.MEMBER,
-        permissions=[
-            ChannelPermission(
-                role_id=MEMBER_ROLE_ID,
-                view=True,
-                read_messages=True,
-                send_messages=True,
-                add_reactions=True,
-                embed_links=True,
-                attach_files=True
-            )
-        ],
-        topic="General discussion for all topics",
-        metadata={
-            "description": "General chat channel",
-            "icon": "💬"
-        }
-    ),
+    # # COMMUNITY category channels
+    # ChannelTemplate(
+    #     name="general",
+    #     description="General discussion",
+    #     category_name="COMMUNITY",
+    #     type=ChannelType.TEXT,
+    #     position=0,
+    #     permission_level=ChannelPermissionLevel.MEMBER,
+    #     permissions=[
+    #         ChannelPermission(
+    #             role_id=MEMBER_ROLE_ID,
+    #             view=True,
+    #             read_messages=True,
+    #             send_messages=True,
+    #             add_reactions=True,
+    #             embed_links=True,
+    #             attach_files=True
+    #         )
+    #     ],
+    #     topic="General discussion for all topics",
+    #     metadata={
+    #         "description": "General chat channel",
+    #         "icon": "💬"
+    #     }
+    # ),
     
-    ChannelTemplate(
-        name="help",
-        description="Get help with your Homelab",
-        category_name="COMMUNITY",
-        type=ChannelType.TEXT,
-        position=1,
-        permission_level=ChannelPermissionLevel.MEMBER,
-        permissions=[
-            ChannelPermission(
-                role_id=MEMBER_ROLE_ID,
-                view=True,
-                read_messages=True,
-                send_messages=True,
-                add_reactions=True,
-                embed_links=True,
-                attach_files=True
-            )
-        ],
-        topic="Ask for help with your Homelab projects",
-        metadata={
-            "description": "Help channel",
-            "icon": "❓"
-        }
-    ),
+    # ChannelTemplate(
+    #     name="help",
+    #     description="Get help with your Homelab",
+    #     category_name="COMMUNITY",
+    #     type=ChannelType.TEXT,
+    #     position=1,
+    #     permission_level=ChannelPermissionLevel.MEMBER,
+    #     permissions=[
+    #         ChannelPermission(
+    #             role_id=MEMBER_ROLE_ID,
+    #             view=True,
+    #             read_messages=True,
+    #             send_messages=True,
+    #             add_reactions=True,
+    #             embed_links=True,
+    #             attach_files=True
+    #         )
+    #     ],
+    #     topic="Ask for help with your Homelab projects",
+    #     metadata={
+    #         "description": "Help channel",
+    #         "icon": "❓"
+    #     }
+    # ),
     
-    ChannelTemplate(
-        name="showcase",
-        description="Show off your Homelab",
-        category_name="COMMUNITY",
-        type=ChannelType.TEXT,
-        position=2,
-        permission_level=ChannelPermissionLevel.MEMBER,
-        permissions=[
-            ChannelPermission(
-                role_id=MEMBER_ROLE_ID,
-                view=True,
-                read_messages=True,
-                send_messages=True,
-                add_reactions=True,
-                embed_links=True,
-                attach_files=True
-            )
-        ],
-        topic="Show off your Homelab setup and projects",
-        metadata={
-            "description": "Homelab showcase channel",
-            "icon": "🖼️"
-        }
-    ),
+    # ChannelTemplate(
+    #     name="showcase",
+    #     description="Show off your Homelab",
+    #     category_name="COMMUNITY",
+    #     type=ChannelType.TEXT,
+    #     position=2,
+    #     permission_level=ChannelPermissionLevel.MEMBER,
+    #     permissions=[
+    #         ChannelPermission(
+    #             role_id=MEMBER_ROLE_ID,
+    #             view=True,
+    #             read_messages=True,
+    #             send_messages=True,
+    #             add_reactions=True,
+    #             embed_links=True,
+    #             attach_files=True
+    #         )
+    #     ],
+    #     topic="Show off your Homelab setup and projects",
+    #     metadata={
+    #         "description": "Homelab showcase channel",
+    #         "icon": "🖼️"
+    #     }
+    # ),
     
-    # PROJECTS category channels
-    ChannelTemplate(
-        name="projects-discussion",
-        description="Discuss ongoing projects",
-        category_name="PROJECTS",
-        type=ChannelType.TEXT,
-        position=0,
-        permission_level=ChannelPermissionLevel.MEMBER,
-        permissions=[
-            ChannelPermission(
-                role_id=MEMBER_ROLE_ID,
-                view=True,
-                read_messages=True,
-                send_messages=True,
-                add_reactions=True,
-                embed_links=True,
-                attach_files=True
-            )
-        ],
-        topic="Discuss ongoing Homelab projects",
-        metadata={
-            "description": "Project discussion channel",
-            "icon": "🛠️"
-        }
-    ),
+    # # PROJECTS category channels
+    # ChannelTemplate(
+    #     name="projects-discussion",
+    #     description="Discuss ongoing projects",
+    #     category_name="PROJECTS",
+    #     type=ChannelType.TEXT,
+    #     position=0,
+    #     permission_level=ChannelPermissionLevel.MEMBER,
+    #     permissions=[
+    #         ChannelPermission(
+    #             role_id=MEMBER_ROLE_ID,
+    #             view=True,
+    #             read_messages=True,
+    #             send_messages=True,
+    #             add_reactions=True,
+    #             embed_links=True,
+    #             attach_files=True
+    #         )
+    #     ],
+    #     topic="Discuss ongoing Homelab projects",
+    #     metadata={
+    #         "description": "Project discussion channel",
+    #         "icon": "🛠️"
+    #     }
+    # ),
     
-    ChannelTemplate(
-        name="project-ideas",
-        description="Share and discuss project ideas",
-        category_name="PROJECTS",
-        type=ChannelType.FORUM,
-        position=1,
-        permission_level=ChannelPermissionLevel.MEMBER,
-        permissions=[
-            ChannelPermission(
-                role_id=MEMBER_ROLE_ID,
-                view=True,
-                read_messages=True,
-                send_messages=True,
-                add_reactions=True,
-                embed_links=True,
-                attach_files=True
-            )
-        ],
-        topic="Share and discuss project ideas",
-        thread_config=ThreadConfig(
-            default_auto_archive_duration=10080,  # 7 days
-            default_thread_slowmode_delay=0,
-            require_tag=True,
-            available_tags=[
-                {"name": "Hardware", "emoji": "🔌"},
-                {"name": "Software", "emoji": "💻"},
-                {"name": "Network", "emoji": "🌐"},
-                {"name": "Storage", "emoji": "💾"},
-                {"name": "Automation", "emoji": "🤖"}
-            ]
-        ),
-        metadata={
-            "description": "Project ideas forum",
-            "icon": "💡"
-        }
-    ),
+    # ChannelTemplate(
+    #     name="project-ideas",
+    #     description="Share and discuss project ideas",
+    #     category_name="PROJECTS",
+    #     type=ChannelType.FORUM,
+    #     position=1,
+    #     permission_level=ChannelPermissionLevel.MEMBER,
+    #     permissions=[
+    #         ChannelPermission(
+    #             role_id=MEMBER_ROLE_ID,
+    #             view=True,
+    #             read_messages=True,
+    #             send_messages=True,
+    #             add_reactions=True,
+    #             embed_links=True,
+    #             attach_files=True
+    #         )
+    #     ],
+    #     topic="Share and discuss project ideas",
+    #     thread_config=ThreadConfig(
+    #         default_auto_archive_duration=10080,  # 7 days
+    #         default_thread_slowmode_delay=0,
+    #         require_tag=True,
+    #         available_tags=[
+    #             {"name": "Hardware", "emoji": "🔌"},
+    #             {"name": "Software", "emoji": "💻"},
+    #             {"name": "Network", "emoji": "🌐"},
+    #             {"name": "Storage", "emoji": "💾"},
+    #             {"name": "Automation", "emoji": "🤖"}
+    #         ]
+    #     ),
+    #     metadata={
+    #         "description": "Project ideas forum",
+    #         "icon": "💡"
+    #     }
+    # ),
     
-    # GAME SERVERS category channels
-    ChannelTemplate(
-        name="minecraft",
-        description="Minecraft server discussion",
-        category_name="GAME SERVERS",
-        type=ChannelType.TEXT,
-        position=0,
-        permission_level=ChannelPermissionLevel.MEMBER,
-        permissions=[
-            ChannelPermission(
-                role_id=MEMBER_ROLE_ID,
-                view=True,
-                read_messages=True,
-                send_messages=True,
-                add_reactions=True,
-                embed_links=True,
-                attach_files=True
-            )
-        ],
-        topic="Minecraft server discussion and updates",
-        metadata={
-            "description": "Minecraft server channel",
-            "icon": "⛏️",
-            "game_type": "minecraft"
-        }
-    ),
+    # # GAME SERVERS category channels
+    # ChannelTemplate(
+    #     name="minecraft",
+    #     description="Minecraft server discussion",
+    #     category_name="GAME SERVERS",
+    #     type=ChannelType.TEXT,
+    #     position=0,
+    #     permission_level=ChannelPermissionLevel.MEMBER,
+    #     permissions=[
+    #         ChannelPermission(
+    #             role_id=MEMBER_ROLE_ID,
+    #             view=True,
+    #             read_messages=True,
+    #             send_messages=True,
+    #             add_reactions=True,
+    #             embed_links=True,
+    #             attach_files=True
+    #         )
+    #     ],
+    #     topic="Minecraft server discussion and updates",
+    #     metadata={
+    #         "description": "Minecraft server channel",
+    #         "icon": "⛏️",
+    #         "game_type": "minecraft"
+    #     }
+    # ),
     
-    ChannelTemplate(
-        name="game-server-requests",
-        description="Request new game servers",
-        category_name="GAME SERVERS",
-        type=ChannelType.TEXT,
-        position=1,
-        permission_level=ChannelPermissionLevel.MEMBER,
-        permissions=[
-            ChannelPermission(
-                role_id=MEMBER_ROLE_ID,
-                view=True,
-                read_messages=True,
-                send_messages=True,
-                add_reactions=True,
-                embed_links=True,
-                attach_files=True
-            ),
-            ChannelPermission(
-                role_id=ADMIN_ROLE_ID,
-                view=True,
-                read_messages=True,
-                send_messages=True,
-                manage_messages=True,
-                manage_channel=True
-            )
-        ],
-        topic="Request new game servers to be added",
-        metadata={
-            "description": "Game server requests",
-            "icon": "🎮"
-        }
-    ),
+    # ChannelTemplate(
+    #     name="game-server-requests",
+    #     description="Request new game servers",
+    #     category_name="GAME SERVERS",
+    #     type=ChannelType.TEXT,
+    #     position=1,
+    #     permission_level=ChannelPermissionLevel.MEMBER,
+    #     permissions=[
+    #         ChannelPermission(
+    #             role_id=MEMBER_ROLE_ID,
+    #             view=True,
+    #             read_messages=True,
+    #             send_messages=True,
+    #             add_reactions=True,
+    #             embed_links=True,
+    #             attach_files=True
+    #         ),
+    #         ChannelPermission(
+    #             role_id=ADMIN_ROLE_ID,
+    #             view=True,
+    #             read_messages=True,
+    #             send_messages=True,
+    #             manage_messages=True,
+    #             manage_channel=True
+    #         )
+    #     ],
+    #     topic="Request new game servers to be added",
+    #     metadata={
+    #         "description": "Game server requests",
+    #         "icon": "🎮"
+    #     }
+    # ),
     
-    # ADMIN category channels
-    ChannelTemplate(
-        name="admin-chat",
-        description="Admin discussion",
-        category_name="ADMIN",
-        type=ChannelType.TEXT,
-        position=0,
-        permission_level=ChannelPermissionLevel.ADMIN,
-        permissions=[
-            ChannelPermission(
-                role_id=EVERYONE_ROLE_ID,
-                view=False
-            ),
-            ChannelPermission(
-                role_id=ADMIN_ROLE_ID,
-                view=True,
-                read_messages=True,
-                send_messages=True,
-                manage_messages=True,
-                manage_channel=True,
-                embed_links=True,
-                attach_files=True,
-                add_reactions=True
-            )
-        ],
-        topic="Admin discussion channel",
-        metadata={
-            "description": "Admin chat channel",
-            "icon": "⚙️"
-        }
-    ),
+    # # ADMIN category channels
+    # ChannelTemplate(
+    #     name="admin-chat",
+    #     description="Admin discussion",
+    #     category_name="ADMIN",
+    #     type=ChannelType.TEXT,
+    #     position=0,
+    #     permission_level=ChannelPermissionLevel.ADMIN,
+    #     permissions=[
+    #         ChannelPermission(
+    #             role_id=EVERYONE_ROLE_ID,
+    #             view=False
+    #         ),
+    #         ChannelPermission(
+    #             role_id=ADMIN_ROLE_ID,
+    #             view=True,
+    #             read_messages=True,
+    #             send_messages=True,
+    #             manage_messages=True,
+    #             manage_channel=True,
+    #             embed_links=True,
+    #             attach_files=True,
+    #             add_reactions=True
+    #         )
+    #     ],
+    #     topic="Admin discussion channel",
+    #     metadata={
+    #         "description": "Admin chat channel",
+    #         "icon": "⚙️"
+    #     }
+    # ),
     
-    ChannelTemplate(
-        name="bot-commands",
-        description="Bot commands channel",
-        category_name="ADMIN",
-        type=ChannelType.TEXT,
-        position=1,
-        permission_level=ChannelPermissionLevel.ADMIN,
-        permissions=[
-            ChannelPermission(
-                role_id=EVERYONE_ROLE_ID,
-                view=False
-            ),
-            ChannelPermission(
-                role_id=ADMIN_ROLE_ID,
-                view=True,
-                read_messages=True,
-                send_messages=True,
-                manage_messages=True,
-                use_bots=True
-            )
-        ],
-        topic="Channel for bot commands",
-        metadata={
-            "description": "Bot commands channel",
-            "icon": "🤖"
-        }
-    ),
+    # ChannelTemplate(
+    #     name="bot-commands",
+    #     description="Bot commands channel",
+    #     category_name="ADMIN",
+    #     type=ChannelType.TEXT,
+    #     position=1,
+    #     permission_level=ChannelPermissionLevel.ADMIN,
+    #     permissions=[
+    #         ChannelPermission(
+    #             role_id=EVERYONE_ROLE_ID,
+    #             view=False
+    #         ),
+    #         ChannelPermission(
+    #             role_id=ADMIN_ROLE_ID,
+    #             view=True,
+    #             read_messages=True,
+    #             send_messages=True,
+    #             manage_messages=True,
+    #             use_bots=True
+    #         )
+    #     ],
+    #     topic="Channel for bot commands",
+    #     metadata={
+    #         "description": "Bot commands channel",
+    #         "icon": "🤖"
+    #     }
+    # ),
     
-    ChannelTemplate(
-        name="server-logs",
-        description="Server logs channel",
-        category_name="ADMIN",
-        type=ChannelType.TEXT,
-        position=2,
-        permission_level=ChannelPermissionLevel.ADMIN,
-        permissions=[
-            ChannelPermission(
-                role_id=EVERYONE_ROLE_ID,
-                view=False
-            ),
-            ChannelPermission(
-                role_id=ADMIN_ROLE_ID,
-                view=True,
-                read_messages=True,
-                send_messages=False
-            )
-        ],
-        topic="Server logs and events",
-        metadata={
-            "description": "Server logs channel",
-            "icon": "📋",
-            "is_log_channel": True
-        }
-    ),
+    # ChannelTemplate(
+    #     name="server-logs",
+    #     description="Server logs channel",
+    #     category_name="ADMIN",
+    #     type=ChannelType.TEXT,
+    #     position=2,
+    #     permission_level=ChannelPermissionLevel.ADMIN,
+    #     permissions=[
+    #         ChannelPermission(
+    #             role_id=EVERYONE_ROLE_ID,
+    #             view=False
+    #         ),
+    #         ChannelPermission(
+    #             role_id=ADMIN_ROLE_ID,
+    #             view=True,
+    #             read_messages=True,
+    #             send_messages=False
+    #         )
+    #     ],
+    #     topic="Server logs and events",
+    #     metadata={
+    #         "description": "Server logs channel",
+    #         "icon": "📋",
+    #         "is_log_channel": True
+    #     }
+    # ),
 ]
 
 

@@ -13,13 +13,25 @@ class CategoryPermissionLevel(Enum):
 
 @dataclass
 class CategoryPermission:
-    """Represents permissions for a specific role within a category"""
-    role_id: int
-    view: bool = False
-    send_messages: bool = False
-    manage_messages: bool = False
-    manage_channels: bool = False
-    manage_category: bool = False
+    """Permission settings for a category"""
+    
+    def __init__(self, role_id: int, view: bool = False, send_messages: bool = False,
+                 manage_messages: bool = False, manage_channels: bool = False,
+                 manage_category: bool = False):
+        self.role_id = role_id
+        self.view = view
+        self.send_messages = send_messages
+        self.manage_messages = manage_messages
+        self.manage_channels = manage_channels
+        self.manage_category = manage_category
+    
+    def get(self, permission_name: str, default=None):
+        """Get a permission value by name"""
+        return getattr(self, permission_name, default)
+    
+    def __getitem__(self, key):
+        """Allow dictionary-like access to permissions"""
+        return self.get(key)
 
 
 @dataclass

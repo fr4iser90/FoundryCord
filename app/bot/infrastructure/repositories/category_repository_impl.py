@@ -4,6 +4,9 @@ from app.bot.domain.categories.models.category_model import CategoryModel, Categ
 from app.bot.domain.categories.repositories.category_repository import CategoryRepository
 from app.bot.infrastructure.database.models.category_entity import CategoryEntity, CategoryPermissionEntity
 from app.shared.infrastructure.database.service import DatabaseService
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class CategoryRepositoryImpl(CategoryRepository):
@@ -202,4 +205,18 @@ class CategoryRepositoryImpl(CategoryRepository):
             
             session.commit()
             
-            return self._entity_to_model(entity) 
+            return self._entity_to_model(entity)
+    
+    def mark_as_created(self, category_id: int) -> bool:
+        """Mark a category as created in Discord"""
+        try:
+            session = self.db_service.get_session()
+            category = session.query(CategoryEntity).filter(CategoryEntity.id == category_id).first()
+            if category:
+                category.is_created = True
+                session.commit()
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Error marking category as created: {e}")
+            return False 

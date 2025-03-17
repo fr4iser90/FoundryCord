@@ -6,6 +6,9 @@ from app.bot.domain.channels.models.channel_model import (
 from app.bot.domain.channels.repositories.channel_repository import ChannelRepository
 from app.bot.infrastructure.database.models.channel_entity import ChannelEntity, ChannelPermissionEntity
 from app.shared.infrastructure.database.service import DatabaseService
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ChannelRepositoryImpl(ChannelRepository):
@@ -33,6 +36,17 @@ class ChannelRepositoryImpl(ChannelRepository):
                 )
             )
         
+        # Convert thread_config from JSON to ThreadConfig object
+        thread_config = None
+        if entity.thread_config:
+            thread_config = ThreadConfig(
+                default_auto_archive_duration=entity.thread_config.get('default_auto_archive_duration', 1440),
+                default_thread_slowmode_delay=entity.thread_config.get('default_thread_slowmode_delay', 0),
+                default_reaction_emoji=entity.thread_config.get('default_reaction_emoji'),
+                require_tag=entity.thread_config.get('require_tag', False),
+                available_tags=entity.thread_config.get('available_tags', [])
+            )
+        
         return ChannelModel(
             id=entity.id,
             discord_id=entity.discord_id,
@@ -49,8 +63,8 @@ class ChannelRepositoryImpl(ChannelRepository):
             nsfw=entity.nsfw,
             slowmode_delay=entity.slowmode_delay,
             topic=entity.topic,
-            thread_config=ThreadConfig(**entity.thread_config) if entity.thread_config else None,
-            metadata=entity.metadata_json or {}  # Changed from metadata to metadata_json
+            thread_config=thread_config,
+            metadata=entity.metadata_json or {}  # Use metadata_json here
         )
     
     def _model_to_entity(self, model: ChannelModel) -> ChannelEntity:
@@ -150,45 +164,165 @@ class ChannelRepositoryImpl(ChannelRepository):
     def save_channel(self, channel: ChannelModel) -> ChannelModel:
         """Save a channel to the database (create or update)"""
         with self.db_service.session() as session:
-            entity = self._model_to_entity(channel)
+            # Convert ThreadConfig to dict for JSON serialization
+            thread_config_dict = None
+            if channel.thread_config:
+                thread_config_dict = {
+                    'default_auto_archive_duration': channel.thread_config.default_auto_archive_duration,
+                    'default_thread_slowmode_delay': channel.thread_config.default_thread_slowmode_delay,
+                    'default_reaction_emoji': channel.thread_config.default_reaction_emoji,
+                    'require_tag': channel.thread_config.require_tag,
+                    'available_tags': channel.thread_config.available_tags or []
+                }
             
+            # Check if this is an update (existing ID)
             if channel.id:
-                # Update existing
                 existing = session.query(ChannelEntity).filter(ChannelEntity.id == channel.id).first()
                 if existing:
-                    # Update fields
-                    existing.name = entity.name
-                    existing.discord_id = entity.discord_id
-                    existing.description = entity.description
-                    existing.category_id = entity.category_id
-                    existing.category_discord_id = entity.category_discord_id
-                    existing.type = entity.type
-                    existing.position = entity.position
-                    existing.permission_level = entity.permission_level
-                    existing.is_enabled = entity.is_enabled
-                    existing.is_created = entity.is_created
-                    existing.nsfw = entity.nsfw
-                    existing.slowmode_delay = entity.slowmode_delay
-                    existing.topic = entity.topic
-                    existing.thread_config = entity.thread_config
-                    existing.metadata_json = entity.metadata_json
+                    # Update existing entity
+                    existing.name = channel.name
+                    existing.description = channel.description
+                    existing.category_id = channel.category_id
+                    existing.category_discord_id = channel.category_discord_id
+                    existing.type = channel.type
+                    existing.position = channel.position
+                    existing.permission_level = channel.permission_level
+                    existing.is_enabled = channel.is_enabled
+                    existing.is_created = channel.is_created
+                    existing.nsfw = channel.nsfw
+                    existing.slowmode_delay = channel.slowmode_delay
+                    existing.topic = channel.topic
+                    existing.thread_config = thread_config_dict  # Use the dict instead of the object
+                    existing.metadata_json = channel.metadata
                     
-                    # Handle permissions - delete old ones and add new ones
-                    session.query(ChannelPermissionEntity).filter(
-                        ChannelPermissionEntity.channel_id == existing.id
-                    ).delete()
+                    # Update permissions
+                    # First, remove all existing permissions
+                    for perm in existing.permissions:
+                        session.delete(perm)
                     
-                    for perm in entity.permissions:
-                        perm.channel_id = existing.id
-                        session.add(perm)
+                    # Then add the new permissions
+                    for perm in channel.permissions:
+                        perm_entity = ChannelPermissionEntity(
+                            channel_id=existing.id,
+                            role_id=perm.role_id,
+                            view=perm.view,
+                            send_messages=perm.send_messages,
+                            read_messages=perm.read_messages,
+                            manage_messages=perm.manage_messages,
+                            manage_channel=perm.manage_channel,
+                            use_bots=perm.use_bots,
+                            embed_links=perm.embed_links,
+                            attach_files=perm.attach_files,
+                            add_reactions=perm.add_reactions
+                        )
+                        session.add(perm_entity)
                     
                     session.commit()
                     return self._entity_to_model(existing)
             
-            # Create new
+            # If we get here, we need to create a new channel
+            # But first, check if a channel with the same name and category already exists
+            existing_by_name = None
+            if channel.category_id:
+                existing_by_name = session.query(ChannelEntity).filter(
+                    ChannelEntity.name == channel.name,
+                    ChannelEntity.category_id == channel.category_id
+                ).first()
+            
+            if existing_by_name:
+                # Update the existing channel instead of creating a new one
+                existing_by_name.description = channel.description
+                existing_by_name.category_discord_id = channel.category_discord_id
+                existing_by_name.type = channel.type
+                existing_by_name.position = channel.position
+                existing_by_name.permission_level = channel.permission_level
+                existing_by_name.is_enabled = channel.is_enabled
+                existing_by_name.is_created = channel.is_created
+                existing_by_name.nsfw = channel.nsfw
+                existing_by_name.slowmode_delay = channel.slowmode_delay
+                existing_by_name.topic = channel.topic
+                existing_by_name.thread_config = thread_config_dict  # Use the dict instead of the object
+                existing_by_name.metadata_json = channel.metadata
+                
+                # Update permissions
+                # First, remove all existing permissions
+                for perm in existing_by_name.permissions:
+                    session.delete(perm)
+                
+                # Then add the new permissions
+                for perm in channel.permissions:
+                    perm_entity = ChannelPermissionEntity(
+                        channel_id=existing_by_name.id,
+                        role_id=perm.role_id,
+                        view=perm.view,
+                        send_messages=perm.send_messages,
+                        read_messages=perm.read_messages,
+                        manage_messages=perm.manage_messages,
+                        manage_channel=perm.manage_channel,
+                        use_bots=perm.use_bots,
+                        embed_links=perm.embed_links,
+                        attach_files=perm.attach_files,
+                        add_reactions=perm.add_reactions
+                    )
+                    session.add(perm_entity)
+                
+                session.commit()
+                return self._entity_to_model(existing_by_name)
+            
+            # Create a new entity
+            entity = ChannelEntity(
+                name=channel.name,
+                description=channel.description,
+                category_id=channel.category_id,
+                category_discord_id=channel.category_discord_id,
+                discord_id=channel.discord_id,
+                type=channel.type,
+                position=channel.position,
+                permission_level=channel.permission_level,
+                is_enabled=channel.is_enabled,
+                is_created=channel.is_created,
+                nsfw=channel.nsfw,
+                slowmode_delay=channel.slowmode_delay,
+                topic=channel.topic,
+                thread_config=thread_config_dict,  # Use the dict instead of the object
+                metadata_json=channel.metadata
+            )
+            
+            # Don't set the ID manually - let the database assign it
+            # This prevents duplicate key errors
+            if channel.id:
+                # Only set the ID if we're sure it doesn't exist
+                check = session.query(ChannelEntity).filter(ChannelEntity.id == channel.id).first()
+                if not check:
+                    entity.id = channel.id
+            
             session.add(entity)
-            session.commit()
-            session.refresh(entity)
+            session.flush()  # This assigns an ID if we didn't set one
+            
+            # Add permissions
+            for perm in channel.permissions:
+                perm_entity = ChannelPermissionEntity(
+                    channel_id=entity.id,
+                    role_id=perm.role_id,
+                    view=perm.view,
+                    send_messages=perm.send_messages,
+                    read_messages=perm.read_messages,
+                    manage_messages=perm.manage_messages,
+                    manage_channel=perm.manage_channel,
+                    use_bots=perm.use_bots,
+                    embed_links=perm.embed_links,
+                    attach_files=perm.attach_files,
+                    add_reactions=perm.add_reactions
+                )
+                session.add(perm_entity)
+            
+            try:
+                session.commit()
+            except Exception as e:
+                logger.error(f"Error saving channel: {e}")
+                session.rollback()
+                raise
+            
             return self._entity_to_model(entity)
     
     def update_discord_id(self, channel_id: int, discord_id: int) -> bool:

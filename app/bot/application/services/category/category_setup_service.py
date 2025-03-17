@@ -39,18 +39,27 @@ class CategorySetupService:
         """Set up a single category"""
         logger.info(f"Setting up category: {category_model.name}")
         
-        # Skip if already created
-        if category_model.is_created and category_model.discord_id:
-            try:
-                # Try to get the existing category
-                existing = guild.get_channel(category_model.discord_id)
-                if existing:
-                    logger.info(f"Category {category_model.name} already exists with ID {category_model.discord_id}")
-                    return existing
-            except Exception as e:
-                logger.error(f"Error getting existing category {category_model.name}: {e}")
+        # First check if the category already exists in Discord by name
+        existing_by_name = discord.utils.get(guild.categories, name=category_model.name)
+        if existing_by_name:
+            logger.info(f"Found existing category with name {category_model.name} (ID: {existing_by_name.id})")
+            
+            # Update our database with this Discord ID if needed
+            if category_model.discord_id != existing_by_name.id:
+                self.category_repository.update_discord_id(category_model.id, existing_by_name.id)
+                self.category_repository.update_category_status(category_model.id, True)
+                logger.info(f"Updated category {category_model.name} with Discord ID {existing_by_name.id}")
+            
+            return existing_by_name
         
-        # Create the category
+        # If not found by name, check if we have a Discord ID and try to find by that
+        if category_model.discord_id:
+            existing_by_id = discord.utils.get(guild.categories, id=category_model.discord_id)
+            if existing_by_id:
+                logger.info(f"Found existing category with ID {category_model.discord_id} (Name: {existing_by_id.name})")
+                return existing_by_id
+        
+        # If we get here, we need to create the category
         try:
             discord_category = await self.category_builder.create_category(
                 guild=guild,
@@ -64,7 +73,7 @@ class CategorySetupService:
                 category_model.discord_id = discord_category.id
                 category_model.is_created = True
                 self.category_repository.update_discord_id(category_model.id, discord_category.id)
-                self.category_repository.mark_as_created(category_model.id)
+                self.category_repository.update_category_status(category_model.id, True)
                 
                 logger.info(f"Created category: {category_model.name} with ID {discord_category.id}")
                 return discord_category

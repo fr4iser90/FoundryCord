@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, JSON, Enum, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Boolean, JSON, Enum, ForeignKey, BigInteger
 from sqlalchemy.orm import relationship
 from app.shared.infrastructure.database.models.base import Base
 from app.bot.domain.channels.models.channel_model import ChannelType, ChannelPermissionLevel
@@ -9,11 +9,11 @@ class ChannelEntity(Base):
     __tablename__ = "channels"
     
     id = Column(Integer, primary_key=True)
-    discord_id = Column(Integer, nullable=True, unique=True)
+    discord_id = Column(BigInteger, nullable=True, unique=True)
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
-    category_discord_id = Column(Integer, nullable=True)
+    category_discord_id = Column(BigInteger, nullable=True)
     type = Column(Enum(ChannelType), nullable=False, default=ChannelType.TEXT)
     position = Column(Integer, nullable=False, default=0)
     permission_level = Column(Enum(ChannelPermissionLevel), nullable=False, 
@@ -22,7 +22,7 @@ class ChannelEntity(Base):
     is_created = Column(Boolean, nullable=False, default=False)
     nsfw = Column(Boolean, nullable=False, default=False)
     slowmode_delay = Column(Integer, nullable=False, default=0)
-    topic = Column(Text, nullable=True)
+    topic = Column(String, nullable=True)
     thread_config = Column(JSON, nullable=True)
     metadata_json = Column(JSON, nullable=True)
     
@@ -38,7 +38,7 @@ class ChannelPermissionEntity(Base):
     
     id = Column(Integer, primary_key=True)
     channel_id = Column(Integer, ForeignKey("channels.id"), nullable=False)
-    role_id = Column(Integer, nullable=False)
+    role_id = Column(BigInteger, nullable=False)
     view = Column(Boolean, nullable=False, default=False)
     send_messages = Column(Boolean, nullable=False, default=False)
     read_messages = Column(Boolean, nullable=False, default=False)

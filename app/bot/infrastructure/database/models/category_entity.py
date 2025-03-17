@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, JSON, Enum, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, JSON, Enum, ForeignKey, BigInteger
 from sqlalchemy.orm import relationship
 from app.shared.infrastructure.database.models.base import Base
 from app.bot.domain.categories.models.category_model import CategoryPermissionLevel
@@ -9,7 +9,7 @@ class CategoryEntity(Base):
     __tablename__ = "categories"
     
     id = Column(Integer, primary_key=True)
-    discord_id = Column(Integer, nullable=True, unique=True)
+    discord_id = Column(BigInteger, nullable=True, unique=True)
     name = Column(String, nullable=False)
     position = Column(Integer, nullable=False, default=0)
     permission_level = Column(Enum(CategoryPermissionLevel), nullable=False, default=CategoryPermissionLevel.PUBLIC)

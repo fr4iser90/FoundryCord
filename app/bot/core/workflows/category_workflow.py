@@ -41,39 +41,47 @@ class CategoryWorkflow(BaseWorkflow):
         # If not, create it using SQLAlchemy's create_all()
         engine = db_service.get_engine()
         try:
-            # Check if the categories table exists
-            table_exists = False
-            async with engine.connect() as conn:
-                # Korrektur: first() ist nicht asynchron in SQLAlchemy 2.0
-                result = await conn.execute(text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'categories')"))
-                row = result.first()  # Kein await hier
-                if row is not None:
-                    table_exists = row[0]  # Get the boolean value from the first column
-                
-            if not table_exists:
-                logger.info("Categories table doesn't exist, creating core tables...")
-                # Import all models to make sure they're registered with the metadata
-                from app.bot.infrastructure.database.models import CategoryEntity, ChannelEntity
-                from app.shared.infrastructure.database.models.base import Base
-                
-                # Create all tables
-                async with engine.begin() as conn:
-                    await conn.run_sync(Base.metadata.create_all)
-                logger.info("Core database tables created successfully")
-                
-                # Sleep briefly to ensure tables are fully created
-                await asyncio.sleep(0.5)
-                
-                # After table creation, seed with default categories
-                logger.info("Seeding default categories...")
-                # We need to use a synchronous approach for seeding since the seed function is synchronous
-                seed_categories()
-                logger.info("Default categories seeded successfully")
-            else:
-                logger.info("Categories table already exists")
+            # Drop the categories table if it exists
+            async with engine.begin() as conn:
+                await conn.execute(text("DROP TABLE IF EXISTS category_permissions CASCADE"))
+                await conn.execute(text("DROP TABLE IF EXISTS categories CASCADE"))
             
+            # Import all models to make sure they're registered with the metadata
+            from app.bot.infrastructure.database.models import CategoryEntity, CategoryPermissionEntity
+            from app.shared.infrastructure.database.models.base import Base
+            
+            # Create all tables
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            logger.info("Categories table recreated with correct column types")
+            
+            # Sleep briefly to ensure tables are fully created
+            await asyncio.sleep(0.5)
+            
+            # Seed with default categories
+            logger.info("Seeding default categories...")
+            seed_categories()
+            logger.info("Default categories seeded successfully")
+            
+            # Check if we need to alter the discord_id column type
+            async with engine.connect() as conn:
+                # Check the column type
+                result = await conn.execute(text("""
+                    SELECT data_type 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'categories' AND column_name = 'discord_id'
+                """))
+                row = result.first()
+                column_type = row[0] if row else None
+                
+                # If it's not bigint, alter it
+                if column_type and column_type.lower() != 'bigint':
+                    logger.info(f"Altering discord_id column type from {column_type} to BIGINT")
+                    async with engine.begin() as conn:
+                        await conn.execute(text("ALTER TABLE categories ALTER COLUMN discord_id TYPE BIGINT"))
+                    logger.info("Column type altered successfully")
         except Exception as e:
-            logger.error(f"Error checking/creating database tables: {e}")
+            logger.error(f"Error recreating categories table: {e}")
             import traceback
             logger.error(traceback.format_exc())
             return False

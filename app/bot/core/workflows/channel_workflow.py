@@ -41,21 +41,72 @@ class ChannelWorkflow(BaseWorkflow):
             from app.bot.infrastructure.repositories.channel_repository_impl import ChannelRepositoryImpl
             from app.bot.application.services.channel.channel_builder import ChannelBuilder
             from app.bot.application.services.channel.channel_setup_service import ChannelSetupService
-            from app.shared.infrastructure.database.migrations.channels.seed_channels import seed_channels
+            from app.shared.infrastructure.database.migrations.channels.seed_channels import check_and_seed_channels
             
-            # Get category repository from category workflow
+            # Get the category repository from the category workflow
             category_repository = self.category_workflow.get_category_repository()
-            if not category_repository:
-                logger.error("Category repository not available, cannot initialize channel workflow")
-                return False
             
-            # Create repository
+            # Create channel repository
             self.channel_repository = ChannelRepositoryImpl(db_service)
             
+            # Check if the channels table exists and has the correct schema
+            engine = db_service.get_engine()
+            try:
+                # Check if the channels table exists
+                table_exists = False
+                async with engine.connect() as conn:
+                    result = await conn.execute(text("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.tables 
+                            WHERE table_name = 'channels'
+                        )
+                    """))
+                    row = result.first()
+                    table_exists = row[0] if row else False
+                
+                # Check if discord_id and category_discord_id columns are BigInteger
+                if table_exists:
+                    async with engine.connect() as conn:
+                        result = await conn.execute(text("""
+                            SELECT column_name, data_type 
+                            FROM information_schema.columns 
+                            WHERE table_name = 'channels' AND column_name IN ('discord_id', 'category_discord_id')
+                        """))
+                        columns = {row[0]: row[1] for row in result}
+                        
+                        # If columns exist but are not bigint, drop the table to recreate it
+                        if ('discord_id' in columns and columns['discord_id'].lower() != 'bigint') or \
+                           ('category_discord_id' in columns and columns['category_discord_id'].lower() != 'bigint'):
+                            logger.info("Channel table exists but has incorrect column types, recreating...")
+                            table_exists = False
+                            async with engine.begin() as conn:
+                                await conn.execute(text("DROP TABLE IF EXISTS channel_permissions CASCADE"))
+                                await conn.execute(text("DROP TABLE IF EXISTS channels CASCADE"))
+                
+                # Create the table if it doesn't exist or needs to be recreated
+                if not table_exists:
+                    logger.info("Creating channels table with correct schema")
+                    # Import all models to make sure they're registered with the metadata
+                    from app.bot.infrastructure.database.models import ChannelEntity, ChannelPermissionEntity
+                    from app.shared.infrastructure.database.models.base import Base
+                    
+                    # Create all tables
+                    async with engine.begin() as conn:
+                        await conn.run_sync(Base.metadata.create_all)
+                    logger.info("Channels table created with correct column types")
+                    
+                    # Sleep briefly to ensure tables are fully created
+                    await asyncio.sleep(0.5)
+            except Exception as e:
+                logger.error(f"Error checking/creating channels table: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+                return False
+                
             # Create channel builder with both repositories
             channel_builder = ChannelBuilder(
                 self.channel_repository,
-                category_repository  # Pass the category repository here
+                category_repository
             )
             
             # Create channel setup service
@@ -66,19 +117,8 @@ class ChannelWorkflow(BaseWorkflow):
             )
             
             # Check if channels exist, if not seed the database
-            engine = db_service.get_engine()
             try:
-                channels_exist = False
-                async with engine.connect() as conn:
-                    result = await conn.execute(text("SELECT COUNT(*) FROM channels"))
-                    row = result.first()
-                    count = row[0] if row else 0
-                    channels_exist = count > 0
-                
-                if not channels_exist:
-                    logger.info("No channels found in database, seeding default channels")
-                    seed_channels()
-                    logger.info("Default channels seeded successfully")
+                check_and_seed_channels()
             except Exception as e:
                 logger.error(f"Error checking/seeding channels: {e}")
                 return False
@@ -86,7 +126,7 @@ class ChannelWorkflow(BaseWorkflow):
             return True
             
         except Exception as e:
-            logger.error(f"Error initializing workflow channel: {e}")
+            logger.error(f"Error initializing channel workflow: {e}")
             import traceback
             logger.error(traceback.format_exc())
             return False
