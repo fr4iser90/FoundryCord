@@ -20,10 +20,11 @@ async def setup_security():
 async def run_dashboard_migrations():
     """Run dashboard migrations to populate the database"""
     try:
-        # Check if we're running in the bot container to avoid duplicate migrations
+        # Check if we're running in the bot container
         container_type = os.environ.get("CONTAINER_TYPE", "unknown")
-        logger.info(f"Current container type: {container_type}")
+        logger.info(f"Dashboard migration in {container_type} container")
         
+        # Only the bot container should run dashboard migrations
         if container_type != "bot":
             logger.info(f"Skipping dashboard migrations in {container_type} container")
             return True
@@ -41,18 +42,58 @@ async def run_dashboard_migrations():
 async def run_database_migrations():
     """Run database migrations to ensure tables exist"""
     try:
-        logger.info("Starting database migrations...")
+        # Check container type
+        container_type = os.environ.get("CONTAINER_TYPE", "unknown")
+        logger.info(f"Database migration in {container_type} container")
+        
+        # Only the web container should create database tables
+        if container_type != "web":
+            logger.info(f"Checking if database is ready ({container_type} container)...")
+            # Bot container should wait for database to be ready but not create tables
+            from app.shared.infrastructure.database.core.init import wait_for_database
+            max_retries = 5
+            retry_delay = 2
+            
+            for attempt in range(1, max_retries + 1):
+                logger.info(f"Database readiness check (attempt {attempt}/{max_retries})...")
+                if await wait_for_database():
+                    logger.info("Database is ready")
+                    return True
+                if attempt < max_retries:
+                    logger.info(f"Waiting {retry_delay}s before retrying...")
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2
+            
+            logger.error("Database not ready after maximum retries")
+            return False
+        
+        # From here, only WEB container code runs
+        logger.info("Starting database migrations (web container)...")
         from app.shared.infrastructure.database.models.base import initialize_engine, initialize_tables
         
         # Initialize database engine
         engine = await initialize_engine()
         logger.info("Database engine created successfully")
         
-        # Create database tables
-        await initialize_tables()
-        logger.info("Database tables created successfully")
+        # Create database tables with retry logic
+        max_retries = 3
+        retry_delay = 2
+        for attempt in range(1, max_retries + 1):
+            try:
+                await initialize_tables()
+                logger.info("Database tables created successfully")
+                break
+            except Exception as e:
+                if attempt < max_retries:
+                    logger.warning(f"Database table creation failed (attempt {attempt}): {e}")
+                    logger.info(f"Waiting {retry_delay}s before retrying...")
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2
+                else:
+                    logger.error(f"Database table creation failed after {max_retries} attempts: {e}")
+                    return False
         
-        # Now run the specific migration processes
+        # Run init_db only after tables are created
         from app.shared.infrastructure.database.migrations.init_db import init_db
         await init_db()
         
@@ -74,19 +115,15 @@ async def main():
         security = await setup_security()
         logger.info("Security bootstrapping completed")
         
-        # Run database migrations with a timeout
-        logger.info("Starting database migrations...")
-        migration_task = asyncio.create_task(run_database_migrations())
-        try:
-            # Set a timeout to avoid hanging forever on migrations
-            await asyncio.wait_for(migration_task, timeout=30.0)
-            logger.info("Database migrations completed")
-        except asyncio.TimeoutError:
-            logger.warning("Database migrations timed out, but continuing with bot startup")
+        # Check if database is ready - do NOT create tables from bot container
+        logger.info("Checking database readiness...")
+        db_ready = await run_database_migrations()
+        if not db_ready:
+            logger.warning("Database not ready, but continuing with bot startup")
         
         # Start the bot without waiting for dashboard migrations to complete
         logger.info("Starting bot...")
-        # Run dashboard migrations in the background without blocking bot startup
+        # Run dashboard migrations in the background 
         asyncio.create_task(run_dashboard_migrations())
         
         from app.bot.core.main import main as bot_main
@@ -125,16 +162,10 @@ async def _bootstrap_web_async():
         from app.shared.infrastructure.database.session import set_session_factory
         set_session_factory(Session)
         
-        # Initialize database if needed
-        logger.info("Starting database initialization...")
-        from app.shared.infrastructure.database.migrations.init_db import init_db
-        if not await init_db(engine=engine, session=Session):
-            logger.error("Database initialization failed")
-            return None
+        # WEB container does initialize the database
+        logger.info("Starting database initialization (web container)...")
+        await run_database_migrations()
         
-        # We explicitly skip dashboard migrations in web container now
-        logger.info("Web container will not run dashboard migrations")
-            
         # Now initialize security bootstrapper with database support
         logger.info("Initializing security key storage...")
         security = SecurityBootstrapper(auto_db_key_management=True)

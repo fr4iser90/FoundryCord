@@ -1,9 +1,16 @@
 # Export services for top-level package imports
 
-# Category setup
-from .category_setup.category_setup_service import CategorySetupService
+# Category services
+from .category.category_builder import CategoryBuilder
+from .category.category_setup_service import CategorySetupService
+
+# Channel services
+from .channel.channel_builder import ChannelBuilder
+from .channel.channel_factory import ChannelFactory
+from .channel.channel_setup_service import ChannelSetupService
 from .channel.game_server_channel_service import GameServerChannelService
-from .channel_setup.channel_setup_service import ChannelSetupService
+
+# Configuration services
 from .config.config_service import ConfigService
 
 # Dashboard services
@@ -18,26 +25,42 @@ from .dashboard.component_loader_service import ComponentLoaderService
 from .monitoring.system_monitoring import SystemMonitoringService
 from .system_metrics.system_metrics_service import SystemMetricsService
 
+# Project management services
+from .project_management.project_service import ProjectService
+from .project_management.task_service import TaskService
+
 # VPN services
 from .wireguard.wireguard_service import WireguardService
 
 # Make all services available at the module level
 __all__ = [
+    # Category services
+    'CategoryBuilder',
     'CategorySetupService',
-    'GameServerChannelService',
+    
+    # Channel services
+    'ChannelBuilder',
+    'ChannelFactory',
     'ChannelSetupService',
+    'GameServerChannelService',
+    
+    # Configuration services
     'ConfigService',
     
-    # Dashboard infrastructure
+    # Dashboard services
     'DashboardBuilder',
     'DashboardBuilderService',
     'DashboardLifecycleService', 
     'DashboardRepository',
     'DashboardService',
+    'ComponentLoaderService',
+    
+    # Project management services
+    'ProjectService',
+    'TaskService',
     
     # System services
     'SystemMonitoringService',
     'SystemMetricsService',
     'WireguardService',
-    'ComponentLoaderService',
 ]

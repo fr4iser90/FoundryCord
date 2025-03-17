@@ -12,6 +12,27 @@ async def create_tables(engine: AsyncEngine) -> bool:
     try:
         logger.info("Checking for existing database tables...")
         
+        # Connection check with retry logic
+        async def check_connection(max_retries=3):
+            for attempt in range(1, max_retries + 1):
+                try:
+                    async with engine.connect() as conn:
+                        result = await conn.execute(text("SELECT 1"))
+                        return True
+                except Exception as e:
+                    if attempt < max_retries:
+                        wait_time = 2 * attempt
+                        logger.warning(f"Connection attempt {attempt} failed: {e}. Retrying in {wait_time}s...")
+                        await asyncio.sleep(wait_time)
+                    else:
+                        logger.error(f"Failed to connect to database after {max_retries} attempts: {e}")
+                        return False
+            return False
+            
+        # Make sure we can connect before proceeding
+        if not await check_connection():
+            return False
+        
         # First, check if tables already exist
         async with engine.connect() as conn:
             # Check if the categories table exists (as a representative table)
@@ -34,78 +55,6 @@ async def create_tables(engine: AsyncEngine) -> bool:
             # Create all tables defined in Base
             await conn.run_sync(Base.metadata.create_all)
             
-            # Execute explicit SQL to verify table creation
-            await conn.execute(text("""
-            DO $$
-            BEGIN
-                -- Create category tables if they don't exist
-                IF NOT EXISTS (SELECT FROM pg_tables WHERE tablename = 'categories') THEN
-                    CREATE TABLE categories (
-                        id SERIAL PRIMARY KEY,
-                        discord_id BIGINT UNIQUE,
-                        name VARCHAR(255) NOT NULL,
-                        position INTEGER NOT NULL DEFAULT 0,
-                        permission_level VARCHAR(50) NOT NULL,
-                        is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-                        is_created BOOLEAN NOT NULL DEFAULT FALSE,
-                        metadata_json JSONB
-                    );
-                END IF;
-                
-                IF NOT EXISTS (SELECT FROM pg_tables WHERE tablename = 'category_permissions') THEN
-                    CREATE TABLE category_permissions (
-                        id SERIAL PRIMARY KEY,
-                        category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
-                        role_id BIGINT NOT NULL,
-                        view BOOLEAN NOT NULL DEFAULT FALSE,
-                        send_messages BOOLEAN NOT NULL DEFAULT FALSE,
-                        manage_messages BOOLEAN NOT NULL DEFAULT FALSE,
-                        manage_channels BOOLEAN NOT NULL DEFAULT FALSE,
-                        manage_category BOOLEAN NOT NULL DEFAULT FALSE
-                    );
-                END IF;
-                
-                -- Create channel tables if they don't exist
-                IF NOT EXISTS (SELECT FROM pg_tables WHERE tablename = 'channels') THEN
-                    CREATE TABLE channels (
-                        id SERIAL PRIMARY KEY,
-                        discord_id BIGINT UNIQUE,
-                        name VARCHAR(255) NOT NULL,
-                        description TEXT,
-                        category_id INTEGER REFERENCES categories(id),
-                        category_discord_id BIGINT,
-                        type VARCHAR(50) NOT NULL,
-                        position INTEGER NOT NULL DEFAULT 0,
-                        permission_level VARCHAR(50) NOT NULL,
-                        is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-                        is_created BOOLEAN NOT NULL DEFAULT FALSE,
-                        nsfw BOOLEAN NOT NULL DEFAULT FALSE,
-                        slowmode_delay INTEGER NOT NULL DEFAULT 0,
-                        topic TEXT,
-                        thread_config JSONB,
-                        metadata_json JSONB
-                    );
-                END IF;
-                
-                IF NOT EXISTS (SELECT FROM pg_tables WHERE tablename = 'channel_permissions') THEN
-                    CREATE TABLE channel_permissions (
-                        id SERIAL PRIMARY KEY,
-                        channel_id INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
-                        role_id BIGINT NOT NULL,
-                        view BOOLEAN NOT NULL DEFAULT FALSE,
-                        send_messages BOOLEAN NOT NULL DEFAULT FALSE,
-                        read_messages BOOLEAN NOT NULL DEFAULT FALSE,
-                        manage_messages BOOLEAN NOT NULL DEFAULT FALSE,
-                        manage_channel BOOLEAN NOT NULL DEFAULT FALSE,
-                        use_bots BOOLEAN NOT NULL DEFAULT FALSE,
-                        embed_links BOOLEAN NOT NULL DEFAULT FALSE,
-                        attach_files BOOLEAN NOT NULL DEFAULT FALSE,
-                        add_reactions BOOLEAN NOT NULL DEFAULT FALSE
-                    );
-                END IF;
-            END $$;
-            """))
-        
         # Verify tables exist
         async with engine.connect() as conn:
             # Test categories table
@@ -131,4 +80,35 @@ async def create_tables(engine: AsyncEngine) -> bool:
         logger.error(f"Error in database table operation: {e}")
         import traceback
         logger.error(traceback.format_exc())
+        return False 
+
+async def wait_for_database(max_retries=5):
+    """Wait for database to be available"""
+    from sqlalchemy import text
+    from app.shared.infrastructure.database.models.base import initialize_engine
+
+    try:
+        logger.info("Checking database availability...")
+        engine = await initialize_engine()
+        
+        # Test connection with simple query
+        for attempt in range(1, max_retries + 1):
+            try:
+                async with engine.connect() as conn:
+                    result = await conn.execute(text("SELECT 1"))
+                    if result.scalar() == 1:
+                        logger.info("Database connection verified")
+                        return True
+            except Exception as e:
+                if attempt < max_retries:
+                    wait_time = 2 ** attempt
+                    logger.warning(f"Database not available (attempt {attempt}/{max_retries}): {e}")
+                    await asyncio.sleep(wait_time)
+                else:
+                    logger.error(f"Database not available after {max_retries} attempts: {e}")
+                    return False
+        
+        return False
+    except Exception as e:
+        logger.error(f"Error checking database availability: {e}")
         return False 

@@ -36,7 +36,7 @@ class CategoryRepositoryImpl(CategoryRepository):
             permissions=permissions,
             is_enabled=entity.is_enabled,
             is_created=entity.is_created,
-            metadata=entity.metadata_json or {}  # Changed from metadata to metadata_json
+            metadata=entity.metadata_json or {}  # Use metadata_json here
         )
     
     def _model_to_entity(self, model: CategoryModel) -> CategoryEntity:
@@ -48,7 +48,7 @@ class CategoryRepositoryImpl(CategoryRepository):
             permission_level=model.permission_level,
             is_enabled=model.is_enabled,
             is_created=model.is_created,
-            metadata_json=model.metadata or {}
+            metadata_json=model.metadata or {}  # Store in metadata_json
         )
         
         if model.id:

@@ -6,7 +6,7 @@ import discord
 from discord.ext import commands
 from typing import Dict, List, Any, Optional
 from app.bot.core.shutdown_handler import ShutdownHandler
-from app.bot.core.lifecycle_manager import LifecycleManager
+from app.bot.core.lifecycle.lifecycle_manager import LifecycleManager
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.bot.core.workflows.category_workflow import CategoryWorkflow
 from app.bot.core.workflows.channel_workflow import ChannelWorkflow

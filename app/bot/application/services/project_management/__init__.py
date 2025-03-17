@@ -1,4 +1,8 @@
-from app.bot.application.services.project_management.project_service import ProjectService
-from app.bot.application.services.project_management.task_service import TaskService
+# Project management services exports
+from .project_service import ProjectService
+from .task_service import TaskService
 
-__all__ = ['ProjectService', 'TaskService'] 
+__all__ = [
+    'ProjectService',
+    'TaskService',
+] 

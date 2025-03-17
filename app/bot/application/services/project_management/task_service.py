@@ -3,7 +3,7 @@ from typing import List, Optional, Dict
 from datetime import datetime
 import discord
 from app.shared.infrastructure.database.service import DatabaseService
-from app.shared.infrastructure.database.repositories.task_repository_impl import TaskRepositoryImpl
+from app.shared.infrastructure.database.repositories.task_repository_impl import TaskRepository
 from app.shared.infrastructure.database.models.project.task import Task
 
 logger = logging.getLogger("homelab.bot")
@@ -13,7 +13,7 @@ class TaskService:
     
     def __init__(self, db_service: DatabaseService):
         self.db_service = db_service
-        self.task_repository = TaskRepositoryImpl(db_service)
+        self.task_repository = TaskRepository(db_service)
     
     async def create_task(
         self, 

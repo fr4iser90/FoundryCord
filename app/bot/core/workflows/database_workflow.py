@@ -1,21 +1,15 @@
 import logging
 import asyncio
 from typing import Optional
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.engine import Engine
 from sqlalchemy import text
 from app.bot.core.workflows.base_workflow import BaseWorkflow
-from app.shared.infrastructure.database.models.base import Base
-from app.bot.infrastructure.database.models.category_entity import CategoryEntity, CategoryPermissionEntity
-from app.bot.infrastructure.database.models.channel_entity import ChannelEntity, ChannelPermissionEntity
 from app.shared.infrastructure.database.service import DatabaseService
 from app.shared.interface.logging.api import get_bot_logger
+
 logger = get_bot_logger()
-from app.shared.infrastructure.database.migrations.init_db import init_db, migrate_existing_users
-from app.shared.infrastructure.database.core.init import create_tables
 
 class DatabaseWorkflow(BaseWorkflow):
-    """Workflow for database initialization and management"""
+    """Workflow for database connection management - NOT for migrations"""
     
     def __init__(self, bot=None):
         super().__init__(bot)
@@ -24,29 +18,41 @@ class DatabaseWorkflow(BaseWorkflow):
         self.is_initialized = False
     
     async def initialize(self):
-        """Initialize the database connection and create tables"""
+        """Initialize database connection (NOT for table creation)"""
         logger.info("Initializing database connection")
         
         try:
             # Initialize the database service
             self.db_service = DatabaseService()
             
-            # Create tables using our dedicated function
-            if not await create_tables(self.db_service.engine):
-                logger.error("Failed to create database tables")
-                return False
+            # Verify connection with retry logic
+            max_retries = 5
+            for attempt in range(1, max_retries + 1):
+                try:
+                    logger.info(f"Verifying database connection (attempt {attempt}/{max_retries})...")
+                    
+                    # Test the connection with a simple query
+                    session = await self.db_service.async_session()
+                    async with session as session:
+                        await session.execute(text("SELECT 1"))
+                        await session.commit()
+                    
+                    logger.info("Database connection verified successfully")
+                    self.is_initialized = True
+                    return True
+                    
+                except Exception as e:
+                    if "Connect call failed" in str(e) and attempt < max_retries:
+                        wait_time = 2 ** attempt  # Exponential backoff
+                        logger.warning(f"Database connection error: {str(e)}")
+                        logger.info(f"Waiting {wait_time} seconds before retry...")
+                        await asyncio.sleep(wait_time)
+                    else:
+                        logger.error(f"Error verifying database connection: {str(e)}")
+                        if attempt >= max_retries:
+                            return False
             
-            logger.info("Database connection initialized successfully")
-            self.is_initialized = True
-            
-            # Verify connection by running a simple query
-            session = await self.db_service.async_session()
-            async with session as session:
-                await session.execute(text("SELECT 1"))
-                await session.commit()
-            
-            logger.info("Database connection established successfully")
-            return True
+            return False
             
         except Exception as e:
             logger.error(f"Error initializing database: {str(e)}")
@@ -59,22 +65,29 @@ class DatabaseWorkflow(BaseWorkflow):
             return None
         return self.db_service
 
-    async def _verify_database_integrity(self):
-        """Verify database integrity and run necessary data checks"""
+    async def verify_database_health(self) -> bool:
+        """Verify database is healthy and accessible"""
+        if not self.is_initialized or not self.db_service:
+            logger.error("Database service not initialized")
+            return False
+            
         try:
-            # Implement database verification logic here
-            # For example: check if required tables exist, check critical data
-            logger.info("Database integrity verified")
+            # Test the connection with a simple query
+            session = await self.db_service.async_session()
+            async with session as session:
+                await session.execute(text("SELECT 1"))
+                await session.commit()
+            
+            return True
         except Exception as e:
-            logger.error(f"Database integrity verification failed: {e}")
-            raise
+            logger.error(f"Database health check failed: {e}")
+            return False
             
     async def cleanup(self):
         """Cleanup database resources"""
         try:
-            from app.shared.infrastructure.database.core.connection import close_engine
-            logger.debug("Closing database connections")
-            await close_engine()
-            logger.info("Database connections closed")
+            if self.db_service:
+                await self.db_service.close()
+                logger.info("Database connections closed")
         except Exception as e:
             logger.error(f"Database cleanup failed: {e}")
