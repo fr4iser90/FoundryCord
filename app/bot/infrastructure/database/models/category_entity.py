@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, JSON, Enum, ForeignKey
 from sqlalchemy.orm import relationship
-from app.shared.infrastructure.database.base import Base
+from app.shared.infrastructure.database.models.base import Base
 from app.bot.domain.categories.models.category_model import CategoryPermissionLevel
 
 
