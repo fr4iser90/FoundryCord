@@ -7,39 +7,57 @@ from app.bot.infrastructure.config.channel_config import ChannelConfig
 from app.bot.interfaces.dashboards.components.common.buttons.refresh_button import RefreshButton
 from app.bot.interfaces.dashboards.components.common.embeds import ErrorEmbed, DashboardEmbed  # Add this import
 import asyncio
+import discord
+import logging
 
+logger = logging.getLogger("homelab.dashboards")
 
 class BaseDashboardController:
-    """Base controller for all dashboard implementations."""
+    """Base controller for all dashboard types"""
     
     # Constants for inherited classes to override
     DASHBOARD_TYPE = "base"
     TITLE_IDENTIFIER = "Base Dashboard"
     
-    def __init__(self, bot):
-        self.bot = bot
-        self.service = None
-        self.title = "Dashboard"
-        self.description = ""
-        self.channel = None
+    def __init__(self, dashboard_id: str, channel_id: int, **kwargs):
+        """Initialize the dashboard controller"""
+        # Dashboard identification
+        self.dashboard_id = dashboard_id
+        self.channel_id = channel_id
+        self.guild_id = kwargs.get('guild_id')
+        
+        # Configuration
+        self.config = kwargs.get('config', {})
+        self.title = kwargs.get('title', "Dashboard")
+        self.description = kwargs.get('description', "")
+        
+        # State tracking
+        self.bot = None
+        self.message_id = kwargs.get('message_id', None)
         self.message = None
+        self.components = {}
+        self.service = None
         self.initialized = False
         self.rate_limits = {}
+        
+        logger.info(f"Initialized base dashboard controller for dashboard {dashboard_id}")
     
-    async def initialize(self):
-        """Initialize the dashboard controller. Override in subclasses."""
+    async def initialize(self, bot):
+        """Initialize the dashboard controller"""
+        self.bot = bot
+        
+        # Load components for this dashboard if needed
+        await self.load_components()
         self.initialized = True
+        
         return True
     
-    async def set_service(self, service):
-        """Set the service for this dashboard."""
-        self.service = service
-        return self
-    
-    async def set_channel(self, channel):
-        """Set the channel for this dashboard."""
-        self.channel = channel
-        return self
+    async def load_components(self):
+        """Load components for this dashboard"""
+        # This would typically load from the database
+        # For now, we'll just use a simple placeholder implementation
+        logger.info(f"Loading components for dashboard {self.dashboard_id}")
+        return True
     
     async def create_embed(self):
         """Create the dashboard embed. Override in subclasses."""
@@ -59,14 +77,39 @@ class BaseDashboardController:
         """Refresh dashboard data. Override in subclasses."""
         pass
     
+    async def refresh(self, interaction: Optional[discord.Interaction] = None):
+        """Refresh the dashboard display"""
+        logger.info(f"Refreshing dashboard {self.dashboard_id}")
+        # Update data
+        await self.refresh_data()
+        
+        # Update display
+        return await self.display_dashboard()
+    
+    async def get_channel(self) -> Optional[discord.TextChannel]:
+        """Get the channel for this dashboard"""
+        if not self.bot:
+            logger.error(f"Dashboard {self.dashboard_id} has no bot reference")
+            return None
+            
+        try:
+            channel = self.bot.get_channel(self.channel_id)
+            if not channel:
+                logger.warning(f"Channel {self.channel_id} not found for dashboard {self.dashboard_id}")
+            return channel
+        except Exception as e:
+            logger.error(f"Error getting channel for dashboard {self.dashboard_id}: {str(e)}")
+            return None
+    
     async def display_dashboard(self):
         """Display or update the dashboard in the channel."""
         if not self.initialized:
             logger.error(f"Attempted to display uninitialized dashboard: {self.DASHBOARD_TYPE}")
             return None
             
-        if not self.channel:
-            logger.error(f"No channel set for dashboard: {self.DASHBOARD_TYPE}")
+        channel = await self.get_channel()
+        if not channel:
+            logger.error(f"No channel available for dashboard: {self.dashboard_id}")
             return None
             
         try:
@@ -80,15 +123,24 @@ class BaseDashboardController:
                     await self.message.edit(embed=embed, view=view)
                 except (nextcord.NotFound, nextcord.HTTPException):
                     # Message was deleted, create new one
-                    self.message = await self.channel.send(embed=embed, view=view)
+                    self.message = await channel.send(embed=embed, view=view)
+            elif self.message_id:
+                try:
+                    self.message = await channel.fetch_message(self.message_id)
+                    await self.message.edit(embed=embed, view=view)
+                except (nextcord.NotFound, nextcord.HTTPException):
+                    # Message was deleted, create new one
+                    self.message = await channel.send(embed=embed, view=view)
+                    self.message_id = self.message.id
             else:
                 # No existing message, create new one
-                self.message = await self.channel.send(embed=embed, view=view)
+                self.message = await channel.send(embed=embed, view=view)
+                self.message_id = self.message.id
                 
             return self.message
             
         except Exception as e:
-            logger.error(f"Error displaying dashboard {self.DASHBOARD_TYPE}: {e}")
+            logger.error(f"Error displaying dashboard {self.dashboard_id}: {e}")
             return None
             
     def apply_standard_footer(self, embed):

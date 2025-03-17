@@ -8,6 +8,9 @@ logger = get_bot_logger()
 from app.bot.domain.dashboards.models.dashboard_model import DashboardModel, ComponentConfig
 from app.bot.domain.dashboards.repositories.dashboard_repository import DashboardRepository
 
+# Import debug components
+from app.bot import debug_component_registry, debug_component_factory
+
 class WorkflowFactory:
     """Factory for creating bot workflows."""
     
@@ -47,6 +50,17 @@ class WorkflowFactory:
                 self.repository = None
                 self.dashboard_controllers = {}
                 
+                # Ensure component factory exists
+                if not hasattr(self.bot, 'component_registry'):
+                    from app.bot.infrastructure.factories.component_registry import ComponentRegistry
+                    self.bot.component_registry = ComponentRegistry()
+                    logger.info("Created component registry directly in workflow")
+                    
+                if not hasattr(self.bot, 'component_factory'):
+                    from app.bot.infrastructure.factories.component_factory import ComponentFactory
+                    self.bot.component_factory = ComponentFactory(self.bot.component_registry)
+                    logger.info("Created component factory directly in workflow")
+                    
             async def initialize(self):
                 logger.info("Initializing dashboard workflow with domain model")
                 
@@ -76,7 +90,20 @@ class WorkflowFactory:
             async def create_dashboard_controller(self, dashboard: DashboardModel):
                 """Create a controller for a dashboard model"""
                 try:
+                    # Debug logging
+                    logger.info(f"Creating dashboard controller for dashboard: {dashboard.id}, type: {getattr(dashboard, 'type', 'unknown')}")
+                    
+                    # Make sure dashboard has all required attributes
+                    if not hasattr(dashboard, 'type') or not dashboard.type:
+                        logger.warning(f"Dashboard {dashboard.id} missing type, setting default")
+                        dashboard.type = "default"
+                        
                     # Use component factory to create dashboard controller
+                    if not hasattr(self.bot, 'component_factory'):
+                        logger.warning("Bot missing component factory, using debug instance")
+                        self.bot.component_factory = debug_component_factory
+                        self.bot.component_registry = debug_component_registry
+                        
                     controller = await self.bot.component_factory.create(
                         'dashboard', 
                         dashboard_id=dashboard.id,
@@ -89,7 +116,9 @@ class WorkflowFactory:
                         logger.info(f"Created controller for dashboard {dashboard.id}")
                     
                 except Exception as e:
-                    logger.error(f"Error creating dashboard controller: {e}")
+                    logger.error(f"Error creating dashboard controller: {str(e)}")
+                    import traceback
+                    logger.error(traceback.format_exc())
                 
             async def cleanup(self):
                 logger.info("Cleaning up dashboard workflow")

@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any, Union
 from dataclasses import dataclass, field
 from enum import Enum
+import uuid
 
 class ComponentType(Enum):
     """Types of components available in dashboards."""
@@ -19,9 +20,9 @@ class ComponentType(Enum):
 
 @dataclass
 class ComponentConfig:
-    """Configuration for a dashboard component."""
+    """Component configuration within a dashboard"""
     id: str
-    component_type: str
+    type: str
     config: Dict[str, Any] = field(default_factory=dict)
     position: Dict[str, Any] = field(default_factory=dict)
 
@@ -43,24 +44,29 @@ class DataSourceConfig:
 
 @dataclass
 class DashboardModel:
-    """Core domain model for a dashboard."""
+    """Domain model for dashboard configurations"""
     id: str
-    type: str
-    title: str
+    name: str
+    channel_id: int
+    guild_id: int
+    type: str = "default"  # Add default type
     description: Optional[str] = None
-    channel_id: Optional[int] = None
-    guild_id: Optional[int] = None
-    category_name: Optional[str] = None
-    channel_name: Optional[str] = None
-    message_id: Optional[int] = None
-    created_at: datetime = field(default_factory=datetime.now)
-    updated_at: datetime = field(default_factory=datetime.now)
     components: List[ComponentConfig] = field(default_factory=list)
-    data_sources: Dict[str, DataSourceConfig] = field(default_factory=dict)
-    layout: List[LayoutItem] = field(default_factory=list)
-    embed: Dict[str, Any] = field(default_factory=dict)
-    permissions: Dict[str, Any] = field(default_factory=dict)
-    interactive_components: List[str] = field(default_factory=list)
+    message_id: Optional[int] = None
+    config: Dict[str, Any] = field(default_factory=dict)
+    
+    @classmethod
+    def create_new(cls, name: str, channel_id: int, guild_id: int, 
+                  dashboard_type: str = "default", description: Optional[str] = None):
+        """Factory method to create a new dashboard"""
+        return cls(
+            id=str(uuid.uuid4()),
+            name=name,
+            channel_id=channel_id,
+            guild_id=guild_id,
+            type=dashboard_type,
+            description=description
+        )
     
     def add_component(self, component: ComponentConfig):
         """Add a component to the dashboard."""
