@@ -10,6 +10,7 @@ import asyncio
 
 from app.shared.interface.logging.api import get_bot_logger
 from app.shared.infrastructure.database.models import Config
+from .config import get_database_url
 
 logger = get_bot_logger()
 
@@ -87,20 +88,23 @@ class DatabaseConnection:
             cls._session_factory = None
         return cls._instance
     
-    def initialize(self, connection_string=None):
+    async def initialize(self, connection_string=None):
         """Initialize database connection.
         
         Args:
             connection_string: PostgreSQL connection string.
-            If None, uses DATABASE_URL environment variable.
+            If None, uses environment variables.
         """
         if connection_string is None:
-            connection_string = get_database_connection_string()
+            connection_string = get_database_url()
             
         if not connection_string:
             raise ValueError("No database connection string provided")
             
-        logger.info(f"Initializing database with connection string: {connection_string.replace(os.environ.get('APP_DB_PASSWORD', ''), '[HIDDEN]')}")
+        logger.info(f"Initializing database connection")
+        
+        # Create engine with proper SQLAlchemy imports
+        from sqlalchemy.ext.asyncio import create_async_engine
             
         self._engine = create_async_engine(
             connection_string, 
@@ -124,7 +128,7 @@ class DatabaseConnection:
             AsyncSession: Database session.
         """
         if self._session_factory is None:
-            self.initialize()
+            await self.initialize()
             
         session = self._session_factory()
         try:
@@ -139,7 +143,7 @@ class DatabaseConnection:
             AsyncSession: Database session.
         """
         if self._session_factory is None:
-            self.initialize()
+            await self.initialize()
             
         return self._session_factory()
     
@@ -156,7 +160,7 @@ class DatabaseConnection:
             SessionProxy: Session proxy with active transaction.
         """
         if self._session_factory is None:
-            self.initialize()
+            await self.initialize()
             
         session = self._session_factory()
         session_proxy = SessionProxy(session)
@@ -253,7 +257,7 @@ async def ensure_db_initialized():
     
     for attempt in range(1, max_retries + 1):
         try:
-            conn = get_db_connection()
+            conn = await get_db_connection()
             async with conn.session() as session:
                 # Try a simple query to verify connection
                 await session.execute(select(1))
@@ -271,7 +275,7 @@ async def ensure_db_initialized():
 # Singleton instance
 _connection = None
 
-def get_db_connection():
+async def get_db_connection():
     """Get database connection singleton.
     
     Returns:
@@ -290,7 +294,7 @@ async def get_session():
     Yields:
         SQLAlchemy async session
     """
-    conn = get_db_connection()
+    conn = await get_db_connection()
     async with conn.session() as session:
         yield session
 
@@ -300,7 +304,7 @@ async def get_async_session():
     Returns:
         AsyncSession: Database session.
     """
-    conn = get_db_connection()
+    conn = await get_db_connection()
     return await conn.get_session()
 
 # Config utility functions

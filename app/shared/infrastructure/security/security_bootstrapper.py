@@ -7,7 +7,7 @@ import asyncio
 from app.shared.interface.logging.api import get_bot_logger
 
 from app.shared.infrastructure.database.repositories.key_repository_impl import KeyRepository
-from app.shared.infrastructure.database.management.connection import get_db_connection, ensure_db_initialized
+from app.shared.infrastructure.database.core.connection import get_db_connection, ensure_db_initialized
 
 logger = get_bot_logger()
 

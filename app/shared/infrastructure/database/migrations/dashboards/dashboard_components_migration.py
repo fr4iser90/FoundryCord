@@ -14,11 +14,15 @@ logger = get_db_logger()
 project_root = Path(__file__).parents[6]
 sys.path.insert(0, str(project_root))
 
-# Importiere die direkte Verbindungskonfiguration
-from app.shared.infrastructure.database.management.connection_config import (
-    get_async_session, initialize_engine, DATABASE_URL
+# Import the direct connection configuration
+from app.shared.infrastructure.database.core.config import (
+    get_database_url, create_db_engine  # Changed from DATABASE_URL
 )
+from app.shared.infrastructure.database.core.config import get_async_session, initialize_engine
 from app.shared.infrastructure.database.repositories.dashboard_repository_impl import DashboardRepository
+
+# Get the database URL
+DATABASE_URL = get_database_url()  # Add this line to define DATABASE_URL
 
 # Import dashboard components from definition files
 from .welcome import WELCOME_BUTTONS, WELCOME_EMBEDS, WELCOME_MODALS, WELCOME_SELECTORS, WELCOME_VIEWS

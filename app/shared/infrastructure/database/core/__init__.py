@@ -12,14 +12,14 @@ from .connection import (
 )
 
 # Import from credential_provider.py
-from .credential_provider import (
+from .credentials import (
     DatabaseCredentialManager, 
     AUTO_DB_CREDENTIAL_MANAGEMENT
 )
 
 # Import alternate connection config for migrations and specific non-singleton cases
 # These will be used only where specifically requested
-from .connection_config import (
+from .config import (
     # Renamed imports to avoid conflicts with connection.py
     get_async_session as get_direct_async_session,
     get_session as get_direct_session,
@@ -27,6 +27,15 @@ from .connection_config import (
     initialize_session as initialize_direct_session,
     create_db_engine
 )
+
+# Import from config.py
+from .config import (
+    get_database_url,
+    create_db_engine
+)
+
+# Add DATABASE_URL for backward compatibility
+DATABASE_URL = get_database_url()
 
 __all__ = [
     # From connection.py
@@ -40,10 +49,15 @@ __all__ = [
     "DatabaseCredentialManager",
     "AUTO_DB_CREDENTIAL_MANAGEMENT",
     
-    # From connection_config.py (with unique names)
+    # From config.py (with unique names)
     "get_direct_async_session",
     "get_direct_session",
     "initialize_direct_engine",
     "initialize_direct_session",
-    "create_db_engine"
+    "create_db_engine",
+    
+    # From config.py
+    "get_database_url",
+    "create_db_engine",
+    "DATABASE_URL",  # Added for backward compatibility
 ]

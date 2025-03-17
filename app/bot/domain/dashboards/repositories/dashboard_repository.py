@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from app.bot.domain.dashboards.models.orm_models import Dashboard
 from app.shared.interface.logging.api import get_db_logger
-from app.shared.infrastructure.database.management.connection import DatabaseConnection
+from app.shared.infrastructure.database.core.connection import DatabaseConnection
 
 logger = get_db_logger()
 

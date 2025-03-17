@@ -77,7 +77,7 @@ class LifecycleManager:
         logger.info("Initializing database connections...")
         
         # Import here to avoid circular imports
-        from app.shared.infrastructure.database.management.connection import ensure_db_initialized
+        from app.shared.infrastructure.database.core.connection import ensure_db_initialized
         
         # Ensure database is initialized
         await ensure_db_initialized()

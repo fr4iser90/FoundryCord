@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 from app.shared.infrastructure.encryption import get_key_management_service
-from app.shared.infrastructure.database.management.connection import get_db_connection
+from app.shared.infrastructure.database.core.connection import get_db_connection
 
 # OAuth2 token URL and scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token", auto_error=False)

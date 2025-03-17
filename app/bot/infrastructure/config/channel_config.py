@@ -13,7 +13,7 @@ from app.bot.infrastructure.config.constants.channel_constants import CHANNELS
 from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOARD_MAPPINGS
 
 # Fix import to use the correct model location
-from app.shared.infrastructure.database.management.connection import get_session
+from app.shared.infrastructure.database.core.connection import get_session
 
 # Import ChannelMapping explizit hier
 from app.shared.infrastructure.database.models import ChannelMapping, AutoThreadChannel

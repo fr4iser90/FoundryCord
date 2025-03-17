@@ -8,7 +8,7 @@ from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
 #from app.shared.infrastructure.database.models.config import get_config, set_config
-from app.shared.infrastructure.database.management.connection import get_config, set_config
+from app.shared.infrastructure.database.core.connection import get_config, set_config
 
 class DashboardRepository:
     """Repository for storing and retrieving dashboard configurations."""

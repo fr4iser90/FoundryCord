@@ -51,6 +51,21 @@ from app.shared.infrastructure.database.repositories import (
     UserRepository
 )
 
+# Import API functions
+from .api import (
+    get_db,
+    get_session,
+    session_context,
+    execute_query,
+    fetch_all,
+    fetch_one
+)
+
+# Import core functions
+from .core import (
+    ensure_db_initialized
+)
+
 # Export all components for easy imports elsewhere
 __all__ = [
     # Models
@@ -80,7 +95,18 @@ __all__ = [
     # Database initialization
     'init_db',
     'is_database_empty',
-    'wait_for_postgres'
+    'wait_for_postgres',
+    
+    # API functions
+    'get_db',
+    'get_session',
+    'session_context',
+    'execute_query',
+    'fetch_all',
+    'fetch_one',
+    
+    # Core functions
+    'ensure_db_initialized'
 ]
 
 # Database utility functions

@@ -39,7 +39,7 @@ class DatabaseWorkflow(BaseWorkflow):
         try:
             #from app.shared.infrastructure.database.models import close_engine
 
-            from app.shared.infrastructure.database.management.connection import close_engine
+            from app.shared.infrastructure.database.core.connection import close_engine
             logger.debug("Closing database connections")
             await close_engine()
             logger.info("Database connections closed")

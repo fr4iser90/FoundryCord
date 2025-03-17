@@ -1,4 +1,4 @@
-from app.shared.infrastructure.database.management.connection import get_session
+from app.shared.infrastructure.database.core.connection import get_session
 
 from app.shared.infrastructure.database.repositories.project_repository_impl import ProjectRepository
 from app.shared.infrastructure.database.repositories.task_repository import TaskRepository

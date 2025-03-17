@@ -11,7 +11,7 @@ from app.web.domain.auth.dependencies import get_current_user, require_moderator
 from app.web.domain.dashboard_builder.models import Dashboard
 from app.web.application.services.dashboard import DashboardService
 from app.web.infrastructure.database.repositories import SQLAlchemyDashboardRepository
-from app.shared.infrastructure.database.management.connection import get_db_connection
+from app.shared.infrastructure.database.core.connection import get_db_connection
 
 router = APIRouter(tags=["Web UI"])
 
