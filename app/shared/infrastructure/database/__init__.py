@@ -20,7 +20,7 @@ Environment Configuration:
 """
 
 # First import the essentials for database connection
-from app.shared.infrastructure.database.management import (
+from app.shared.infrastructure.database.core import (
     DatabaseConnection, get_db_connection,
     DatabaseCredentialManager, AUTO_DB_CREDENTIAL_MANAGEMENT
 )

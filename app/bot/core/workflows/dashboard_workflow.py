@@ -7,8 +7,6 @@ logger = get_bot_logger()
 from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOARD_MAPPINGS
 from app.bot.infrastructure.factories.service.service_resolver import ServiceResolver
 from .base_workflow import BaseWorkflow
-#from app.bot.application.services.dashboard import welcome_setup, monitoring_setup, project_setup, gameservers_setup
-from app.bot.infrastructure.migrations.dashboard_migration import DashboardMigration
 from app.bot.application.services.dashboard.dashboard_service import DashboardService
 from app.shared.infrastructure.database.migrations.dashboards.dashboard_components_migration import wait_for_initialization
 from app.bot.domain.dashboards.repositories.dashboard_repository import DashboardRepository

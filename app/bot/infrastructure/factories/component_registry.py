@@ -3,7 +3,7 @@ import logging
 from typing import Dict, Type, Any, Optional
 from dataclasses import dataclass
 
-from app.bot.interfaces.dashboards.components.common.base_component import BaseComponent
+from app.bot.interfaces.dashboards.components.base_component import BaseComponent
 
 logger = logging.getLogger("homelab.components")
 

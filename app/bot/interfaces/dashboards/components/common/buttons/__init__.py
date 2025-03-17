@@ -1,7 +1,8 @@
-from .base_button import BaseButton
+"""Common button components."""
+
+# Import specific buttons
 from .refresh_button import RefreshButton
 
 __all__ = [
-    'BaseButton',
-    'RefreshButton'
+    'RefreshButton',
 ] 

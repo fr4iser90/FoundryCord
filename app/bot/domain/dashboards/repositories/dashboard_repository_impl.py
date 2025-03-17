@@ -21,39 +21,39 @@ class DashboardRepositoryImpl(DashboardRepository):
         """Get all dashboard configurations"""
         async with self.session_factory() as session:
             # This is a simplified example - replace with actual SQL query
-            # For now, create sample data
+            # For now, create sample data that matches the migration script types
             dashboards = [
                 DashboardModel(
                     id="dashboard-1",
-                    name="System Dashboard",
-                    type="system",  # Make sure type is set
+                    name="System Monitoring Dashboard",
+                    type="monitoring",  # Match the migration script type
                     channel_id=123456789,
                     guild_id=987654321,
                     description="System monitoring dashboard"
                 ),
                 DashboardModel(
                     id="dashboard-2",
-                    name="Server Status",
-                    type="server",  # Make sure type is set
+                    name="Welcome Dashboard",
+                    type="welcome",  # Match the migration script type
                     channel_id=123456790,
                     guild_id=987654321,
-                    description="Server status dashboard"
+                    description="Dashboard for server welcome and onboarding"
                 ),
                 DashboardModel(
                     id="dashboard-3", 
-                    name="Project Tracker",
-                    type="project",  # Make sure type is set
+                    name="Project Management Dashboard",
+                    type="project",  # Match the migration script type
                     channel_id=123456791,
                     guild_id=987654321,
-                    description="Project tracking dashboard"
+                    description="Dashboard for project management and tracking"
                 ),
                 DashboardModel(
                     id="dashboard-4",
-                    name="Welcome Dashboard",
-                    type="welcome",  # Make sure type is set
+                    name="Game Server Hub",
+                    type="gamehub",  # Match the migration script type
                     channel_id=123456792,
                     guild_id=987654321,
-                    description="Welcome dashboard for new members"
+                    description="Dashboard for game server management"
                 )
             ]
             return dashboards

@@ -1,76 +1,144 @@
-from typing import Optional, Dict, Any
-import nextcord
-from datetime import datetime
-from .base_embed import BaseEmbed
-from app.bot.interfaces.dashboards.components.common.base_component import BaseComponent
+"""Dashboard embed component for displaying dashboard content."""
+
+import discord
+from typing import Optional, Dict, Any, ClassVar, List, Union
+
+from app.shared.interface.logging.api import get_bot_logger
+from app.bot.interfaces.dashboards.components.base_component import BaseComponent
+
+logger = get_bot_logger()
 
 class DashboardEmbed(BaseComponent):
-    """Standard embed for dashboard UI components"""
+    """Main dashboard embed for displaying dashboard content."""
+    
+    # Class variables
+    COMPONENT_TYPE: ClassVar[str] = "dashboard_embed"
+    
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        """Initialize the dashboard embed.
+        
+        Args:
+            config: Configuration for the dashboard embed
+                - title: The title of the embed
+                - description: The description of the embed
+                - color: The color of the embed (in integer form)
+                - fields: List of fields to add to the embed
+                - image_url: Optional URL for the embed image
+                - thumbnail_url: Optional URL for the embed thumbnail
+                - footer: Optional footer text
+                - author: Optional author configuration
+        """
+        default_config = {
+            "title": "Dashboard",
+            "description": "Dashboard information",
+            "color": discord.Color.blurple().value,
+            "fields": [],
+            "image_url": None,
+            "thumbnail_url": None,
+            "footer": None,
+            "author": None,
+            "visible": True,
+            "enabled": True,
+        }
+        
+        super().__init__(config=config, default_config=default_config)
+    
+    def build(self) -> discord.Embed:
+        """Build and return the Discord embed object.
+        
+        Returns:
+            The built Discord embed
+        """
+        try:
+            # Create the base embed
+            embed = discord.Embed(
+                title=self.config.get("title", "Dashboard"),
+                description=self.config.get("description", ""),
+                color=self.config.get("color", discord.Color.blurple().value)
+            )
+            
+            # Add fields if provided
+            fields = self.config.get("fields", [])
+            for field in fields:
+                embed.add_field(
+                    name=field.get("name", "\u200b"),
+                    value=field.get("value", "\u200b"),
+                    inline=field.get("inline", True)
+                )
+            
+            # Add image if provided
+            if self.config.get("image_url"):
+                embed.set_image(url=self.config["image_url"])
+            
+            # Add thumbnail if provided
+            if self.config.get("thumbnail_url"):
+                embed.set_thumbnail(url=self.config["thumbnail_url"])
+            
+            # Add footer if provided
+            if self.config.get("footer"):
+                if isinstance(self.config["footer"], dict):
+                    embed.set_footer(
+                        text=self.config["footer"].get("text", ""),
+                        icon_url=self.config["footer"].get("icon_url")
+                    )
+                else:
+                    embed.set_footer(text=str(self.config["footer"]))
+                
+            # Add author if provided
+            if self.config.get("author"):
+                if isinstance(self.config["author"], dict):
+                    embed.set_author(
+                        name=self.config["author"].get("name", ""),
+                        url=self.config["author"].get("url"),
+                        icon_url=self.config["author"].get("icon_url")
+                    )
+                else:
+                    embed.set_author(name=str(self.config["author"]))
+            
+            # Add timestamp
+            if self.config.get("timestamp", True):
+                embed.timestamp = discord.utils.utcnow()
+                
+            return embed
+            
+        except Exception as e:
+            logger.error(f"Error building dashboard embed: {str(e)}")
+            # Return a minimal embed if we had an error building the proper one
+            return discord.Embed(
+                title="Dashboard Error",
+                description="An error occurred while building this dashboard embed.",
+                color=discord.Color.dark_gray()
+            )
+    
+    def add_field(self, name: str, value: str, inline: bool = True) -> None:
+        """Add a field to the embed configuration.
+        
+        Args:
+            name: The name of the field
+            value: The value of the field
+            inline: Whether the field should be inline
+        """
+        if "fields" not in self.config:
+            self.config["fields"] = []
+            
+        self.config["fields"].append({
+            "name": name,
+            "value": value,
+            "inline": inline
+        })
+    
+    def clear_fields(self) -> None:
+        """Clear all fields from the embed configuration."""
+        self.config["fields"] = []
     
     @classmethod
-    def add_standard_footer(cls, embed: nextcord.Embed, text: str = "HomeLab Discord • Last Updated"):
-        """Adds the standard footer with timestamp to an embed"""
-        embed.set_footer(text=text)
-        embed.timestamp = nextcord.utils.utcnow()
-        return embed
-    
-    @classmethod
-    def create_dashboard_embed(cls, title: str, description: Optional[str] = None, color: Optional[int] = None, add_footer: bool = True) -> nextcord.Embed:
-        """Creates a standard dashboard embed with optional footer"""
-        embed = cls.create(
-            title=title,
-            description=description,
-            color=color or cls.INFO_COLOR,
-        )
+    def deserialize(cls, data: Dict[str, Any]) -> 'DashboardEmbed':
+        """Create a DashboardEmbed from serialized data.
         
-        if add_footer:
-            cls.add_standard_footer(embed)
+        Args:
+            data: The serialized data
             
-        return embed
-
-    async def create(self, ctx: Optional[nextcord.Interaction] = None) -> nextcord.Embed:
-        """Create a dashboard embed"""
-        title = self.get_config_value('title', 'Dashboard')
-        description = self.get_config_value('description', '')
-        color = self.get_config_value('color', nextcord.Color.blurple())
-        
-        if isinstance(color, str) and color.startswith('#'):
-            # Convert hex color to nextcord.Color
-            color = nextcord.Color.from_str(color)
-        elif isinstance(color, int):
-            color = nextcord.Color(color)
-        
-        embed = nextcord.Embed(
-            title=title,
-            description=description,
-            color=color
-        )
-        
-        # Add fields if defined in config
-        fields = self.get_config_value('fields', [])
-        for field in fields:
-            name = field.get('name', 'Field')
-            value = field.get('value', 'No value')
-            inline = field.get('inline', False)
-            embed.add_field(name=name, value=value, inline=inline)
-            
-        # Add footer if defined
-        footer_text = self.get_config_value('footer', None)
-        if footer_text:
-            embed.set_footer(text=footer_text)
-            
-        # Add timestamp if enabled
-        if self.get_config_value('timestamp', False):
-            embed.timestamp = nextcord.utils.utcnow()
-            
-        return embed
-    
-    async def update(self, data: Any, ctx: Optional[nextcord.Interaction] = None) -> nextcord.Embed:
-        """Update the embed with new data"""
-        # For embeds, we'll typically recreate it with updated config
-        if isinstance(data, dict):
-            # Update config with new data
-            self.config.update(data)
-        
-        # Create a fresh embed with updated config
-        return await self.create(ctx)
+        Returns:
+            The created DashboardEmbed instance
+        """
+        return cls(config=data.get("config", {})) 

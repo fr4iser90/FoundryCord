@@ -1,9 +1,10 @@
-from .base_embed import BaseEmbed
+"""Common embed components for dashboards."""
+
+# Import specific embeds
 from .error_embed import ErrorEmbed
 from .dashboard_embed import DashboardEmbed
 
 __all__ = [
-    'BaseEmbed',
     'ErrorEmbed',
     'DashboardEmbed'
 ] 

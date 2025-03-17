@@ -1,90 +1,125 @@
 # app/bot/infrastructure/dashboards/dashboard_registry.py
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, Optional
+import nextcord
+
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
 class DashboardRegistry:
-    """Central registry for all available dashboards"""
+    """Registry for managing active dashboard instances."""
     
     def __init__(self, bot):
         self.bot = bot
-        self.active_dashboards = {}
-        self.dashboard_configs = {}
-    
+        self.active_dashboards = {}  # channel_id -> dashboard controller
+        self.logger = logger
+        
     async def initialize(self):
-        """Load all dashboard configurations from database"""
+        """Initialize the dashboard registry."""
         try:
-            # Fetch all dashboard types from database
-            async with self.bot.db_session() as session:
-                from app.shared.infrastructure.database.repositories.dashboard_repository_impl import DashboardRepository
-                repository = DashboardRepository(session)
-                dashboard_types = await repository.get_all_dashboard_types()
-                
-                # Load config for each dashboard type
-                for dashboard_type in dashboard_types:
-                    self.dashboard_configs[dashboard_type] = await repository.get_dashboard_config(dashboard_type)
-                
-            logger.info(f"Loaded {len(self.dashboard_configs)} dashboard configurations")
+            # Load dashboards from database
+            if hasattr(self.bot, 'service_factory'):
+                dashboard_repo = self.bot.service_factory.get_service('dashboard_repository')
+                if dashboard_repo:
+                    dashboards = await dashboard_repo.get_all_dashboards()
+                    for dashboard in dashboards:
+                        if dashboard.get('auto_activate', False):
+                            await self.activate_dashboard(
+                                dashboard_type=dashboard.get('dashboard_type'),
+                                channel_id=dashboard.get('channel_id'),
+                                **dashboard
+                            )
+                            
+            self.logger.info(f"Dashboard registry initialized with {len(self.active_dashboards)} active dashboards")
             return True
         except Exception as e:
-            logger.error(f"Failed to initialize dashboard registry: {e}")
+            self.logger.error(f"Error initializing dashboard registry: {e}")
             return False
-    
-    async def activate_dashboard(self, dashboard_type: str, channel_id: int) -> Optional[Dict]:
-        """Activate a dashboard for a specific channel"""
+        
+    async def activate_dashboard(self, dashboard_type: str, channel_id: int, **kwargs) -> bool:
+        """Activate a dashboard in a channel."""
         try:
-            if dashboard_type not in self.dashboard_configs:
-                logger.warning(f"Dashboard type '{dashboard_type}' not found in registry")
-                return None
+            # Check if channel exists
+            channel = self.bot.get_channel(channel_id)
+            if not channel:
+                self.logger.warning(f"Channel {channel_id} not found for dashboard activation")
+                return False
+                
+            # Check if dashboard already exists for this channel
+            if channel_id in self.active_dashboards:
+                self.logger.info(f"Dashboard already active in channel {channel_id}")
+                return True
+                
+            # Create dashboard controller
+            from app.bot.interfaces.dashboards.controller import UniversalDashboardController
             
-            # Create the dashboard using the dynamic controller
-            dashboard = await self.bot.dashboard_factory.create_dynamic(
-                dashboard_type=dashboard_type,
+            dashboard_id = f"{dashboard_type}_{channel_id}"
+            controller = UniversalDashboardController(
+                dashboard_id=dashboard_id,
                 channel_id=channel_id,
-                config=self.dashboard_configs[dashboard_type]
+                dashboard_type=dashboard_type,
+                **kwargs
             )
             
-            if dashboard:
-                self.active_dashboards[channel_id] = dashboard
-                await dashboard.setup()
-                return dashboard
+            # Initialize controller
+            await controller.initialize(self.bot)
             
-            return None
+            # Display dashboard
+            await controller.display_dashboard()
+            
+            # Register in active dashboards
+            self.active_dashboards[channel_id] = controller
+            self.logger.info(f"Activated {dashboard_type} dashboard in channel {channel_id}")
+            
+            return True
+            
         except Exception as e:
-            logger.error(f"Failed to activate dashboard {dashboard_type}: {e}")
-            return None
-    
-    async def deactivate_dashboard(self, dashboard_type=None, channel_id=None):
-        """Deactivate dashboard by type or channel ID"""
+            self.logger.error(f"Error activating dashboard: {e}")
+            return False
+            
+    async def deactivate_dashboard(self, dashboard_type=None, channel_id=None) -> bool:
+        """Deactivate a dashboard."""
         try:
-            # If channel_id is provided, deactivate that specific dashboard
-            if channel_id is not None and channel_id in self.active_dashboards:
-                dashboard = self.active_dashboards[channel_id]
-                await dashboard.cleanup()
-                del self.active_dashboards[channel_id]
-                logger.info(f"Deactivated dashboard in channel {channel_id}")
-                return True
+            # Get dashboards to deactivate
+            to_deactivate = []
             
-            # If dashboard_type is provided, deactivate all dashboards of that type
+            if channel_id is not None:
+                # Deactivate by channel ID
+                if channel_id in self.active_dashboards:
+                    to_deactivate.append((channel_id, self.active_dashboards[channel_id]))
+                    
             elif dashboard_type is not None:
-                deactivated = False
-                # Find all channels with this dashboard type
-                channels_to_remove = []
-                for ch_id, dashboard in self.active_dashboards.items():
-                    if hasattr(dashboard, 'DASHBOARD_TYPE') and dashboard.DASHBOARD_TYPE == dashboard_type:
-                        await dashboard.cleanup()
-                        channels_to_remove.append(ch_id)
-                        deactivated = True
+                # Deactivate all dashboards of given type
+                for ch_id, controller in list(self.active_dashboards.items()):
+                    if controller.dashboard_type == dashboard_type:
+                        to_deactivate.append((ch_id, controller))
+                        
+            else:
+                # Deactivate all dashboards
+                to_deactivate = list(self.active_dashboards.items())
                 
-                # Remove from active dashboards
-                for ch_id in channels_to_remove:
-                    del self.active_dashboards[ch_id]
+            # Perform deactivation
+            for ch_id, controller in to_deactivate:
+                # Clean up controller resources
+                await controller.cleanup()
                 
-                if deactivated:
-                    logger.info(f"Deactivated all dashboards of type {dashboard_type}")
-                return deactivated
+                # Remove from registry
+                del self.active_dashboards[ch_id]
+                
+                self.logger.info(f"Deactivated dashboard in channel {ch_id}")
+                
+            return True
             
-            return False
         except Exception as e:
-            logger.error(f"Failed to deactivate dashboard: {e}")
+            self.logger.error(f"Error deactivating dashboard: {e}")
             return False
+            
+    async def get_dashboard(self, channel_id: int):
+        """Get dashboard controller for a channel."""
+        return self.active_dashboards.get(channel_id)
+        
+    async def get_dashboard_by_type(self, dashboard_type: str):
+        """Get first dashboard controller of given type."""
+        for controller in self.active_dashboards.values():
+            if controller.dashboard_type == dashboard_type:
+                return controller
+        return None

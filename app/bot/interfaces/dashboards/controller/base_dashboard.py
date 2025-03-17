@@ -54,10 +54,25 @@ class BaseDashboardController:
     
     async def load_components(self):
         """Load components for this dashboard"""
-        # This would typically load from the database
-        # For now, we'll just use a simple placeholder implementation
-        logger.info(f"Loading components for dashboard {self.dashboard_id}")
-        return True
+        try:
+            logger.info(f"Loading components for dashboard {self.dashboard_id}")
+            
+            # Get dashboard repository from bot's service factory
+            if hasattr(self.bot, 'service_factory'):
+                repository = self.bot.service_factory.get_service('dashboard_repository')
+                if repository:
+                    # Fetch components from database
+                    components = await repository.get_components_for_dashboard(self.dashboard_id)
+                    if components:
+                        logger.info(f"Loaded {len(components)} components from database")
+                        self.components = {comp.component_id: comp for comp in components}
+                        return True
+            
+            logger.warning(f"No components found for dashboard {self.dashboard_id}")
+            return False
+        except Exception as e:
+            logger.error(f"Error loading components: {e}")
+            return False
     
     async def create_embed(self):
         """Create the dashboard embed. Override in subclasses."""

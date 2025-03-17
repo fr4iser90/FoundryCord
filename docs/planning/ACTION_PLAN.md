@@ -1,86 +1,226 @@
-Web-Frontend Implementierung für HomeLab Bot
+# Homelab Discord Bot Implementation Action Plan
 
-1. Technische Planung
+## 1. Overview
 
-🔄 Evaluierung von Frontend-Technologien (React, Vue oder Svelte).✅ Entscheidung für FastAPI als Backend-Framework.
+This action plan outlines our strategy for implementing data-driven architecture in the Homelab Discord Bot. We're migrating from hardcoded configuration to a database-driven approach, where all configuration is stored in PostgreSQL and managed through the web frontend.
 
-2. Authentifizierungssystem
+## 2. Implementation Sequence
 
-[🔄] Discord OAuth oder eigenes Login-System implementieren
+We will implement the data-driven architecture in the following sequence:
 
-[🔄] JWT oder Session-basierte Authentifizierung nutzen
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  1. Category    │───▶│  2. Channel     │───▶│  3. Dashboard   │
+│     Service     │    │     Service     │    │     Service     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
 
-[🔄] Nutzerrollen und Berechtigungen definieren
+This sequence is designed to build a strong foundation first (categories), then add complexity (channels), and finally implement the most complex and user-facing components (dashboards).
 
-3. API & Datenbankanbindung
+## 3. Phase 1: Category Service (Week 1)
 
-[🔄] API für Datenbankanfragen erstellen (CRUD für Dashboards)
+Categories form the foundation of our Discord server structure.
 
-[🔄] Secure WebSockets für Echtzeit-Updates evaluieren
+### Tasks:
+1. **Domain Layer (Days 1-2)**
+   - Create `CategoryModel` and `CategoryTemplate` in `app/bot/domain/categories/models/`
+   - Define repository interface in `app/bot/domain/categories/repositories/`
+   - Implement validation rules in domain services
 
-4. Web-UI Grundlagen
+2. **Infrastructure Layer (Days 3-4)**
+   - Implement `CategoryRepositoryImpl` in `app/bot/infrastructure/repositories/`
+   - Create database seed migration for category data from `category_constants.py`
+   - Set up category-channel mappings in database
 
-[🔄] UI-Design und Mockups erstellen
+3. **Application Layer (Days 4-5)**
+   - Refactor `CategorySetupService` to use the repository
+   - Create `CategoryBuilder` to build from templates
+   - Implement backward compatibility with constants
 
-[🔄] Dashboard-Editor implementieren
+### Success Criteria:
+- Categories can be created from database definitions
+- All existing hardcoded categories are available in the database
+- The system falls back to constants if database is unavailable
 
-[🔄] Frontend mit API verknüpfen
+## 4. Phase 2: Channel Service (Week 2)
 
-5. Rollen & Tools
+Channels depend on categories and form the structure for user interaction.
 
-5.1. Rollen
+### Tasks:
+1. **Domain Layer (Days 1-2)**
+   - Create `ChannelModel` and `ChannelTemplate` in `app/bot/domain/channels/models/`
+   - Define repository interface in `app/bot/domain/channels/repositories/`
+   - Implement channel type and thread models
 
-Python-Experte (Spezialisiert auf FastAPI & Backend)
+2. **Infrastructure Layer (Days 3-4)**
+   - Implement `ChannelRepositoryImpl` in `app/bot/infrastructure/repositories/`
+   - Create database seed migration for channel data from `channel_constants.py`
+   - Set up thread template data in database
 
-Entwicklung der API-Endpoints
+3. **Application Layer (Days 4-5)**
+   - Refactor `ChannelSetupService` to use the repository
+   - Create `ChannelBuilder` to build from templates
+   - Ensure proper sequencing with category creation
 
-Implementierung der Authentifizierung
+### Success Criteria:
+- Channels can be created from database definitions
+- Thread configurations are properly handled
+- Channel-to-category relationships are maintained
+- Game server channels are correctly configured
 
-Optimierung der Datenbankanbindung
+## 5. Phase 3: Dashboard Service (Weeks 3-4)
 
-Frontend-Entwickler (React/Vue/Svelte)
+Dashboards are the most complex and visible component of our system.
 
-Erstellung der Benutzeroberfläche
+### Tasks:
+1. **Domain Layer (Days 1-3)**
+   - Create dashboard and component models in `app/bot/domain/dashboards/models/`
+   - Define repository interfaces for dashboards and components
+   - Implement data source abstractions
 
-Anbindung des Frontends an die API
+2. **Component Registry (Days 4-6)**
+   - Create component registry system in infrastructure
+   - Implement factory pattern for component creation
+   - Set up data source providers
 
-UI/UX-Optimierung
+3. **Dashboard Builder (Days 7-9)**
+   - Create dashboard builder to assemble dashboards from database
+   - Implement view model generation for components
+   - Set up refresh/lifecycle management
 
-Security-Spezialist
+4. **Migration & Testing (Days 10-14)**
+   - Use existing migration data from `app/shared/infrastructure/database/migrations/dashboards/`
+   - Run existing `dashboard_components_migration.py`
+   - Test all dashboard types: welcome, monitoring, gamehub, project
 
-Absicherung der API und Authentifizierung
+### Success Criteria:
+- All dashboard types can be created from database definitions
+- Components are dynamically loaded based on database configuration
+- Data sources correctly provide information to components
+- Dashboards maintain state and can be refreshed
 
-Durchführung von Sicherheitstests
+## 6. Dashboard Controller Structure
 
-Implementierung von Rate-Limiting & Schutzmechanismen
+```
+┌───────────────────┐    ┌───────────────────┐    ┌───────────────────┐
+│  DashboardManager │────│ DynamicDashboard  │────│  ComponentRegistry│
+│   (Coordinator)   │    │   Controller      │    │  (Factory)        │
+└───────────────────┘    └───────────────────┘    └───────────────────┘
+         │                        │                        │
+         │                        │                        │
+┌───────────────────┐    ┌───────────────────┐    ┌───────────────────┐
+│    Dashboard      │    │    Dashboard      │    │    Component      │
+│    Repository     │────│     Builder       │────│    Instances      │
+│  (Data Storage)   │    │ (Assembler)       │    │  (UI Elements)    │
+└───────────────────┘    └───────────────────┘    └───────────────────┘
+         │                        │                        │
+         │                        │                        │
+┌───────────────────┐    ┌───────────────────┐    ┌───────────────────┐
+│   Data Source     │    │    View Model     │    │    Interaction    │
+│    Registry       │────│     Builder       │────│     Handlers      │
+│ (Data Providers)  │    │ (Data Formatter)  │    │   (Callbacks)     │
+└───────────────────┘    └───────────────────┘    └───────────────────┘
+```
 
-5.2. Tools
+## 7. Directory Structure
 
-Backend: FastAPI, SQLAlchemy, Alembic
+```
+app/bot/
+├── domain/
+│   └── dashboards/
+│       ├── models/
+│       │   ├── dashboard_model.py           # Core dashboard domain models
+│       │   ├── component_model.py           # Component domain models
+│       │   └── data_source_model.py         # Data source domain models
+│       ├── repositories/                    # Repository interfaces
+│       │   └── dashboard_repository.py      # Dashboard repository interface
+│       └── services/                        # Domain services
+│           ├── data_processor_service.py    # Processing data for display
+│           └── component_service.py         # Component business logic
+│
+├── application/
+│   └── services/
+│       └── dashboard/
+│           ├── dashboard_service.py         # Dashboard orchestration
+│           ├── dashboard_builder.py         # Dashboard assembly 
+│           ├── data_source_service.py       # Data retrieval coordination
+│           └── component_service.py         # Component service (uses domain)
+│
+├── infrastructure/
+│   ├── repositories/
+│   │   └── dashboard_repository_impl.py     # Repository implementation
+│   ├── discord/
+│   │   ├── message_tracker.py              # Discord message tracking
+│   │   └── dashboard_channel.py            # Dashboard channel management
+│   ├── factories/
+│   │   ├── component_registry.py           # Component registration
+│   │   └── data_source_registry.py         # Data source registration
+│   ├── data_sources/                       # Data source implementations
+│   │   ├── system_data_source.py           # System metrics source
+│   │   └── minecraft_data_source.py        # Game server metrics source
+│   └── persistence/                        # Database entities/schemas
+│       └── dashboard_entity.py             # DB entity for dashboard
+│
+└── interfaces/
+    └── dashboards/
+        ├── controller/
+        │   ├── base_dashboard.py           # Base controller
+        │   ├── dynamic_dashboard.py        # Dynamic controller
+        │   └── system_dashboard.py         # Specialized controller
+        └── components/
+            ├── common/
+            │   ├── buttons/
+            │   │   ├── refresh_button.py   # Shared refresh button
+            │   │   └── navigation_button.py # Navigation buttons
+            │   ├── embeds/
+            │   │   ├── dashboard_embed.py  # Dashboard embed template
+            │   │   └── error_embed.py      # Error embed template
+            │   └── views/
+            │       └── base_view.py        # Base Discord view
+            └── specific/
+                ├── status_indicator.py     # Status indicator component
+                ├── metric_display.py       # Metric display component
+                └── chart_component.py      # Chart component
+```
 
-Frontend: React/Vue/Svelte, TailwindCSS, Zustand/Redux
+## 8. Implementation Timeline
 
-Datenbank: PostgreSQL, Redis (Caching & Session-Management)
+```
+Week 1: Category Service
+┌───────────────┐
+│ Domain Models │──────┐
+└───────────────┘      │
+                       ▼
+┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+│ Repositories  │───▶│ Setup Service │───▶│ Database Seed │
+└───────────────┘    └───────────────┘    └───────────────┘
 
-Sicherheit: JWT, OAuth2, Rate-Limiting, HTTPS
+Week 2: Channel Service
+┌───────────────┐
+│ Domain Models │──────┐
+└───────────────┘      │
+                       ▼
+┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+│ Repositories  │───▶│ Channel       │───▶│ Database Seed │
+└───────────────┘    │ Builder       │    └───────────────┘
+                     └───────────────┘
 
-Entwicklung & Tests: Pytest, Postman, Docker
+Week 3-4: Dashboard Service
+┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+│ Domain Models │───▶│ Component     │───▶│ Dashboard     │
+└───────────────┘    │ Registry      │    │ Builder       │
+                     └───────────────┘    └───────────────┘
+                                               │
+┌───────────────┐    ┌───────────────┐         │
+│ Use Existing  │◀───┤ Dashboard     │◀────────┘
+│ Migration Data│    │ Service       │
+└───────────────┘    └───────────────┘
+```
 
-6. Implementierungsstrategie
+## 9. Resources and References
 
-Phase 1: Analyse & Vorbereitung
-
-✅ Detaillierte Code-Analyse abgeschlossen.✅ Backup der aktuellen Funktionalität erstellt.✅ Dokumentation der aktuellen Architektur.
-
-Phase 2: Umsetzung
-
-🔄 API-Endpoints für Web-Frontend vorbereiten.🔄 Authentifizierung implementieren.
-
-Phase 3: Test & Verifikation
-
-🔄 API-Tests für Web-Frontend.🔄 Sicherheitstests durchführen.
-
-Phase 4: Dokumentation & Bereinigung
-
-🔄 Finale Code-Dokumentation und Wissensweitergabe erstellen.
-
+- Category Service Plan: `docs/planning/services/category-service-plan.md`
+- Channel Service Plan: `docs/planning/services/channel-service-plan.md`
+- Dashboard Service Plan: `docs/planning/services/dashboard-service-plan.md`
+- General Service Plan: `docs/planning/services/general-service-plan.md`
+- Existing Dashboard Components: `app/shared/infrastructure/database/migrations/dashboards/`

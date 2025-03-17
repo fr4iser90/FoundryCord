@@ -4,7 +4,7 @@ from typing import Dict, Any, Optional, List
 import discord
 
 from app.bot.infrastructure.factories.component_registry import ComponentRegistry
-from app.bot.interfaces.dashboards.components.common.base_component import BaseComponent
+from app.bot.interfaces.dashboards.components.base_component import BaseComponent
 
 logger = logging.getLogger("homelab.components")
 
@@ -30,31 +30,19 @@ class ComponentFactory:
     
     async def create_dashboard_controller(self, dashboard_id: str, dashboard_type: str, 
                                          channel_id: int, **kwargs):
-        """Create a dashboard controller"""
+        """Create a dashboard controller using the universal controller"""
         try:
-            # Import here to avoid circular imports
-            from app.bot.interfaces.dashboards.controller.base_dashboard import BaseDashboardController
-            from app.bot.interfaces.dashboards.controller.system_dashboard import SystemDashboardController
+            # Import the universal dashboard controller
+            from app.bot.interfaces.dashboards.controller.universal_dashboard import UniversalDashboardController
             
-            # Map dashboard types to their controller classes
-            controller_map = {
-                'system': SystemDashboardController,
-                'server': SystemDashboardController,  # Reuse system for server for now
-                'project': BaseDashboardController,   # Use base for project for now
-                'welcome': BaseDashboardController,   # Use base for welcome for now
-                'default': BaseDashboardController
-            }
-            
-            # Get the appropriate controller class or fall back to base
-            controller_class = controller_map.get(dashboard_type, controller_map['default'])
-            
-            # Log the dashboard type being created
+            # Create the controller with the appropriate type
             logger.info(f"Creating {dashboard_type} dashboard controller for dashboard {dashboard_id}")
             
             # Create and return the controller
-            controller = controller_class(
+            controller = UniversalDashboardController(
                 dashboard_id=dashboard_id,
                 channel_id=channel_id,
+                dashboard_type=dashboard_type,
                 **kwargs
             )
             logger.info(f"Created {dashboard_type} dashboard controller for dashboard {dashboard_id}")

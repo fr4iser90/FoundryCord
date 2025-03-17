@@ -6,6 +6,7 @@ import os
 from app.shared.interface.logging.api import get_db_logger
 from typing import Dict, Any, List, Optional
 import json
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
 from contextlib import asynccontextmanager
 
@@ -14,15 +15,12 @@ logger = get_db_logger()
 project_root = Path(__file__).parents[6]
 sys.path.insert(0, str(project_root))
 
-# Import the direct connection configuration
-from app.shared.infrastructure.database.core.config import (
-    get_database_url, create_db_engine  # Changed from DATABASE_URL
-)
-from app.shared.infrastructure.database.core.config import get_async_session, initialize_engine
-from app.shared.infrastructure.database.repositories.dashboard_repository_impl import DashboardRepository
+# Import the direct connection configuration and define DATABASE_URL right away at the top
+from app.shared.infrastructure.database.core.config import get_database_url, create_db_engine
+DATABASE_URL = get_database_url()  # Define this at the top of the file
 
-# Get the database URL
-DATABASE_URL = get_database_url()  # Add this line to define DATABASE_URL
+from app.shared.infrastructure.database.core.config import get_async_session as get_config_async_session, initialize_engine
+from app.shared.infrastructure.database.repositories.dashboard_repository_impl import DashboardRepository
 
 # Import dashboard components from definition files
 from .welcome import WELCOME_BUTTONS, WELCOME_EMBEDS, WELCOME_MODALS, WELCOME_SELECTORS, WELCOME_VIEWS
@@ -44,6 +42,28 @@ async def get_migration_session():
         yield session
     finally:
         await session.close()
+
+async def get_async_session():
+    """Create and return a new async session for isolated processes with migration-specific URL"""
+    # Create isolated session with own connection using the migration's DATABASE_URL
+    engine = create_async_engine(
+        DATABASE_URL,
+        echo=False,
+        future=True,
+        pool_pre_ping=True
+    )
+    
+    # Own session factory per call
+    from sqlalchemy.ext.asyncio import AsyncSession
+    from sqlalchemy.orm import sessionmaker
+    
+    session_factory = sessionmaker(
+        engine, 
+        class_=AsyncSession, 
+        expire_on_commit=False
+    )
+    
+    return session_factory()
 
 async def execute_migration_query(query, params=None):
     """Führt eine SQL-Abfrage aus und kümmert sich um Session-Management.

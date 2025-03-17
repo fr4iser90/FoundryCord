@@ -53,6 +53,7 @@ async def main():
         await run_dashboard_migrations()
         
         # Import and start the bot
+        logger.info("Starting bot...")
         from app.bot.core.main import main as bot_main
         await bot_main()
         

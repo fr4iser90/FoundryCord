@@ -12,6 +12,7 @@ from .dashboard.dashboard_builder_service import DashboardBuilderService
 from .dashboard.dashboard_lifecycle_service import DashboardLifecycleService
 from .dashboard.dashboard_repository import DashboardRepository
 from .dashboard.dashboard_service import DashboardService
+from .dashboard.component_loader_service import ComponentLoaderService
 
 # Monitoring services
 from .monitoring.system_monitoring import SystemMonitoringService
@@ -38,4 +39,5 @@ __all__ = [
     'SystemMonitoringService',
     'SystemMetricsService',
     'WireguardService',
+    'ComponentLoaderService',
 ]

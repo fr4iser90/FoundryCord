@@ -1,15 +1,22 @@
-# Import from the new structure
-from .common import *
-from .channels import *
-from .factories import UIComponentFactory
-from .ui import UnicodeTableBuilder, MiniGraph
+"""
+Dashboard components package.
+Provides UI components for dashboard interfaces.
+"""
+# Re-export common components
+from .common.embeds.dashboard_embed import DashboardEmbed
+from .common.embeds.error_embed import ErrorEmbed
+from .common.buttons.refresh_button import RefreshButton
+from .base_component import BaseComponent, DashboardComponent
 
-# Export everything for backward compatibility
+# Import channels module for backward compatibility
+from . import channels
+
+# Export symbols
 __all__ = [
-    'common',
-    'channels',
-    'factories',
-    'UIComponentFactory',
-    'UnicodeTableBuilder',
-    'MiniGraph'
-]
+    'BaseComponent',
+    'DashboardComponent',
+    'DashboardEmbed',
+    'ErrorEmbed',
+    'RefreshButton',
+    'channels'  # Include for backward compatibility
+] 

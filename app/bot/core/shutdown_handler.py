@@ -34,6 +34,16 @@ class ShutdownHandler:
         try:
             logger.info("Starting bot cleanup process...")
             
+            # Check if bot is fully initialized before attempting cleanup
+            if not hasattr(self.bot, 'is_ready') or not self.bot.is_ready():
+                logger.warning("Bot not fully initialized, performing limited cleanup...")
+                # Still attempt to close connection if it exists
+                if hasattr(self.bot, 'close'):
+                    await self.bot.close()
+                
+                logger.info("Limited shutdown complete, exiting process")
+                sys.exit(1)  # Exit with error code
+            
             # 1. Save all current channel and category data to DB
             logger.info("Saving channel and category data to database...")
             await self._save_channel_data()

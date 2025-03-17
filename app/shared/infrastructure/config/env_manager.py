@@ -6,6 +6,7 @@ from app.shared.interface.logging.api import get_db_logger
 import time
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
+from app.shared.infrastructure.database.core.config import get_database_url
 
 logger = get_db_logger()
 
