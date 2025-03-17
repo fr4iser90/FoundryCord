@@ -15,31 +15,22 @@ class ChannelRepositoryImpl(ChannelRepository):
         self.db_service = db_service
     
     def _entity_to_model(self, entity: ChannelEntity) -> ChannelModel:
-        """Convert database entity to domain model"""
-        permissions = [
-            ChannelPermission(
-                role_id=perm.role_id,
-                view=perm.view,
-                send_messages=perm.send_messages,
-                read_messages=perm.read_messages,
-                manage_messages=perm.manage_messages,
-                manage_channel=perm.manage_channel,
-                use_bots=perm.use_bots,
-                embed_links=perm.embed_links,
-                attach_files=perm.attach_files,
-                add_reactions=perm.add_reactions
-            )
-            for perm in entity.permissions
-        ]
-        
-        thread_config = None
-        if entity.thread_config:
-            thread_config = ThreadConfig(
-                default_auto_archive_duration=entity.thread_config.get('default_auto_archive_duration', 1440),
-                default_thread_slowmode_delay=entity.thread_config.get('default_thread_slowmode_delay', 0),
-                default_reaction_emoji=entity.thread_config.get('default_reaction_emoji'),
-                require_tag=entity.thread_config.get('require_tag', False),
-                available_tags=entity.thread_config.get('available_tags', [])
+        """Convert a database entity to a domain model"""
+        permissions = []
+        for perm_entity in entity.permissions:
+            permissions.append(
+                ChannelPermission(
+                    role_id=perm_entity.role_id,
+                    view=perm_entity.view,
+                    send_messages=perm_entity.send_messages,
+                    read_messages=perm_entity.read_messages,
+                    manage_messages=perm_entity.manage_messages,
+                    manage_channel=perm_entity.manage_channel,
+                    use_bots=perm_entity.use_bots,
+                    embed_links=perm_entity.embed_links,
+                    attach_files=perm_entity.attach_files,
+                    add_reactions=perm_entity.add_reactions
+                )
             )
         
         return ChannelModel(
@@ -58,8 +49,8 @@ class ChannelRepositoryImpl(ChannelRepository):
             nsfw=entity.nsfw,
             slowmode_delay=entity.slowmode_delay,
             topic=entity.topic,
-            thread_config=thread_config,
-            metadata=entity.metadata or {}
+            thread_config=ThreadConfig(**entity.thread_config) if entity.thread_config else None,
+            metadata=entity.metadata_json or {}  # Changed from metadata to metadata_json
         )
     
     def _model_to_entity(self, model: ChannelModel) -> ChannelEntity:
@@ -89,7 +80,7 @@ class ChannelRepositoryImpl(ChannelRepository):
             slowmode_delay=model.slowmode_delay,
             topic=model.topic,
             thread_config=thread_config_dict,
-            metadata=model.metadata
+            metadata_json=model.metadata
         )
         
         if model.id:
@@ -180,7 +171,7 @@ class ChannelRepositoryImpl(ChannelRepository):
                     existing.slowmode_delay = entity.slowmode_delay
                     existing.topic = entity.topic
                     existing.thread_config = entity.thread_config
-                    existing.metadata = entity.metadata
+                    existing.metadata_json = entity.metadata_json
                     
                     # Handle permissions - delete old ones and add new ones
                     session.query(ChannelPermissionEntity).filter(
@@ -252,4 +243,50 @@ class ChannelRepositoryImpl(ChannelRepository):
     def get_channel_mapping(self) -> Dict[str, ChannelModel]:
         """Get a mapping of channel names to channel models"""
         channels = self.get_all_channels()
-        return {channel.name: channel for channel in channels} 
+        return {channel.name: channel for channel in channels}
+
+    def create_channel(self, channel: ChannelModel) -> ChannelModel:
+        """Create a new channel"""
+        with self.db_service.session() as session:
+            # Create the channel entity
+            entity = ChannelEntity(
+                discord_id=channel.discord_id,
+                name=channel.name,
+                description=channel.description,
+                category_id=channel.category_id,
+                category_discord_id=channel.category_discord_id,
+                type=channel.type,
+                position=channel.position,
+                permission_level=channel.permission_level,
+                is_enabled=channel.is_enabled,
+                is_created=channel.is_created,
+                nsfw=channel.nsfw,
+                slowmode_delay=channel.slowmode_delay,
+                topic=channel.topic,
+                thread_config=channel.thread_config.to_dict() if channel.thread_config else None,
+                metadata_json=channel.metadata or {}  # Changed from metadata to metadata_json
+            )
+            
+            session.add(entity)
+            session.flush()
+            
+            # Create the permissions
+            for permission in channel.permissions:
+                perm_entity = ChannelPermissionEntity(
+                    channel_id=entity.id,
+                    role_id=permission.role_id,
+                    view=permission.view,
+                    send_messages=permission.send_messages,
+                    read_messages=permission.read_messages,
+                    manage_messages=permission.manage_messages,
+                    manage_channel=permission.manage_channel,
+                    use_bots=permission.use_bots,
+                    embed_links=permission.embed_links,
+                    attach_files=permission.attach_files,
+                    add_reactions=permission.add_reactions
+                )
+                session.add(perm_entity)
+            
+            session.commit()
+            
+            return self._entity_to_model(entity) 

@@ -24,7 +24,7 @@ class ChannelEntity(Base):
     slowmode_delay = Column(Integer, nullable=False, default=0)
     topic = Column(Text, nullable=True)
     thread_config = Column(JSON, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column(JSON, nullable=True)
     
     # Relationships
     category = relationship("CategoryEntity", back_populates="channels")

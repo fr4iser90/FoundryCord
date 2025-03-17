@@ -15,7 +15,7 @@ class CategoryEntity(Base):
     permission_level = Column(Enum(CategoryPermissionLevel), nullable=False, default=CategoryPermissionLevel.PUBLIC)
     is_enabled = Column(Boolean, nullable=False, default=True)
     is_created = Column(Boolean, nullable=False, default=False)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column(JSON, nullable=True)
     
     # Relationships
     permissions = relationship("CategoryPermissionEntity", back_populates="category", cascade="all, delete-orphan")

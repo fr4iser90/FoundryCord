@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 from sqlalchemy.orm import Session
 from app.bot.domain.categories.models.category_model import CategoryModel, CategoryTemplate, CategoryPermission
 from app.bot.domain.categories.repositories.category_repository import CategoryRepository
@@ -13,18 +13,19 @@ class CategoryRepositoryImpl(CategoryRepository):
         self.db_service = db_service
     
     def _entity_to_model(self, entity: CategoryEntity) -> CategoryModel:
-        """Convert database entity to domain model"""
-        permissions = [
-            CategoryPermission(
-                role_id=perm.role_id,
-                view=perm.view,
-                send_messages=perm.send_messages,
-                manage_messages=perm.manage_messages,
-                manage_channels=perm.manage_channels,
-                manage_category=perm.manage_category
+        """Convert a database entity to a domain model"""
+        permissions = []
+        for perm_entity in entity.permissions:
+            permissions.append(
+                CategoryPermission(
+                    role_id=perm_entity.role_id,
+                    view=perm_entity.view,
+                    send_messages=perm_entity.send_messages,
+                    manage_messages=perm_entity.manage_messages,
+                    manage_channels=perm_entity.manage_channels,
+                    manage_category=perm_entity.manage_category
+                )
             )
-            for perm in entity.permissions
-        ]
         
         return CategoryModel(
             id=entity.id,
@@ -35,7 +36,7 @@ class CategoryRepositoryImpl(CategoryRepository):
             permissions=permissions,
             is_enabled=entity.is_enabled,
             is_created=entity.is_created,
-            metadata=entity.metadata or {}
+            metadata=entity.metadata_json or {}  # Changed from metadata to metadata_json
         )
     
     def _model_to_entity(self, model: CategoryModel) -> CategoryEntity:
@@ -47,7 +48,7 @@ class CategoryRepositoryImpl(CategoryRepository):
             permission_level=model.permission_level,
             is_enabled=model.is_enabled,
             is_created=model.is_created,
-            metadata=model.metadata
+            metadata_json=model.metadata or {}
         )
         
         if model.id:
@@ -107,7 +108,7 @@ class CategoryRepositoryImpl(CategoryRepository):
                     existing.permission_level = entity.permission_level
                     existing.is_enabled = entity.is_enabled
                     existing.is_created = entity.is_created
-                    existing.metadata = entity.metadata
+                    existing.metadata_json = entity.metadata_json
                     
                     # Handle permissions - delete old ones and add new ones
                     session.query(CategoryPermissionEntity).filter(
@@ -167,4 +168,38 @@ class CategoryRepositoryImpl(CategoryRepository):
         """Get all enabled categories"""
         with self.db_service.session() as session:
             categories = session.query(CategoryEntity).filter(CategoryEntity.is_enabled == True).all()
-            return [self._entity_to_model(category) for category in categories] 
+            return [self._entity_to_model(category) for category in categories]
+    
+    def create_category(self, category: CategoryModel) -> CategoryModel:
+        """Create a new category"""
+        with self.db_service.session() as session:
+            # Create the category entity
+            entity = CategoryEntity(
+                discord_id=category.discord_id,
+                name=category.name,
+                position=category.position,
+                permission_level=category.permission_level,
+                is_enabled=category.is_enabled,
+                is_created=category.is_created,
+                metadata_json=category.metadata or {}  # Changed from metadata to metadata_json
+            )
+            
+            session.add(entity)
+            session.flush()
+            
+            # Create the permissions
+            for permission in category.permissions:
+                perm_entity = CategoryPermissionEntity(
+                    category_id=entity.id,
+                    role_id=permission.role_id,
+                    view=permission.view,
+                    send_messages=permission.send_messages,
+                    manage_messages=permission.manage_messages,
+                    manage_channels=permission.manage_channels,
+                    manage_category=permission.manage_category
+                )
+                session.add(perm_entity)
+            
+            session.commit()
+            
+            return self._entity_to_model(entity) 
