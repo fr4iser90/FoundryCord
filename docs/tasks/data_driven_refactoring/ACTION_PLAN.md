@@ -219,8 +219,12 @@ Week 3-4: Dashboard Service
 
 ## 9. Resources and References
 
-- Category Service Plan: `docs/planning/services/category-service-plan.md`
-- Channel Service Plan: `docs/planning/services/channel-service-plan.md`
-- Dashboard Service Plan: `docs/planning/services/dashboard-service-plan.md`
-- General Service Plan: `docs/planning/services/general-service-plan.md`
-- Existing Dashboard Components: `app/shared/infrastructure/database/migrations/dashboards/`
+## Related Documentation
+- [Category Service Plan](./services/category-service-plan.md) - Architectural patterns
+- [Channel Service Plan](./services/channel-service-plan.md) - System layer organization
+- [Dashboard Service Plan](./services/dashboard-service-plan.md) - Security implementation requirements
+- [General Service Plan](./services/general-service-plan.md) - Language and documentation standards
+
+- [Data Flow](../../development/architecture/DATA_FLOW.md) - Data flow in dashboards
+- [Layer Definitions](../../development/architecture/LAYERS.md) - System layer organization
+- Existing Dashboard Components: `app/shared/infrastructure/database/migrations/dashboards/` 
