@@ -19,7 +19,8 @@ class CategoryEntity(Base):
     
     # Relationships
     permissions = relationship("CategoryPermissionEntity", back_populates="category", cascade="all, delete-orphan")
-    channels = relationship("ChannelEntity", back_populates="category", cascade="all, delete-orphan")
+    # Use string reference to avoid circular import
+    channels = relationship("ChannelEntity", back_populates="category")
 
 
 class CategoryPermissionEntity(Base):

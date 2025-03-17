@@ -28,7 +28,7 @@ class SecurityBootstrapper:
             if self.auto_db_key_management:
                 await self._initialize_db_keys()
                 
-            logger.info("Security bootstrapping completed")
+            
             return True
         except Exception as e:
             logger.error(f"Security bootstrapping failed: {e}")

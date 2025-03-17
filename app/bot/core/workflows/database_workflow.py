@@ -12,12 +12,13 @@ from app.shared.infrastructure.database.service import DatabaseService
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 from app.shared.infrastructure.database.migrations.init_db import init_db, migrate_existing_users
+from app.shared.infrastructure.database.core.init import create_tables
 
 class DatabaseWorkflow(BaseWorkflow):
     """Workflow for database initialization and management"""
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, bot=None):
+        super().__init__(bot)
         self.name = "database"
         self.db_service = None
         self.is_initialized = False
@@ -30,16 +31,17 @@ class DatabaseWorkflow(BaseWorkflow):
             # Initialize the database service
             self.db_service = DatabaseService()
             
-            # Create tables if they don't exist
-            async with self.db_service.engine.begin() as conn:
-                # Create all tables defined in the models
-                await conn.run_sync(Base.metadata.create_all)
+            # Create tables using our dedicated function
+            if not await create_tables(self.db_service.engine):
+                logger.error("Failed to create database tables")
+                return False
             
             logger.info("Database connection initialized successfully")
             self.is_initialized = True
             
             # Verify connection by running a simple query
-            async with self.db_service.async_session() as session:
+            session = await self.db_service.async_session()
+            async with session as session:
                 await session.execute(text("SELECT 1"))
                 await session.commit()
             

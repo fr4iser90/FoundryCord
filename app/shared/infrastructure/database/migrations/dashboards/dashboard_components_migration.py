@@ -32,7 +32,6 @@ from .common import DEFAULT_BUTTONS, DEFAULT_EMBEDS, DEFAULT_MODALS, DEFAULT_SEL
 # Global initialization state
 _initialization_lock = asyncio.Lock()
 _is_initialized = False
-_initialization_complete = asyncio.Event()
 
 @asynccontextmanager
 async def get_migration_session():
@@ -135,21 +134,37 @@ async def initialize_migration_system():
             
             # Mark initialization as complete
             _is_initialized = True
-            _initialization_complete.set()
             return True
         except Exception as e:
             logger.error(f"Migration system initialization failed: {e}")
             return False
 
-async def main():
-    """Main migration function for dashboard components with proper orchestration"""
-    # Initialize the migration system first
-    if not await initialize_migration_system():
-        logger.error("Migration system initialization failed")
-        return False
+async def wait_for_initialization():
+    """Wait until initialization is complete"""
+    global _is_initialized
     
-    # Continue with existing migration logic
+    # Simple polling approach that doesn't depend on Event objects
+    while not _is_initialized:
+        logger.debug("Waiting for dashboard initialization to complete...")
+        await asyncio.sleep(0.5)  # Sleep briefly and check again
+    
+    logger.info("Dashboard initialization completed")
+
+def mark_initialization_complete():
+    """Mark initialization as complete"""
+    global _is_initialized
+    _is_initialized = True
+    logger.info("Dashboard initialization marked as complete")
+
+async def main():
+    """Main entry point for dashboard components migration"""
     try:
+        # Initialize the migration system first
+        if not await initialize_migration_system():
+            logger.error("Migration system initialization failed")
+            return False
+        
+        # Continue with existing migration logic
         # Get Discord server ID from environment or use a placeholder
         discord_server_id = os.environ.get('DISCORD_SERVER', '151414244603068426')
         
@@ -160,17 +175,13 @@ async def main():
         await migrate_gamehub_dashboard(discord_server_id)
         
         logger.info("Dashboard components migration completed successfully")
+        
+        # When done, mark as complete instead of using Event.set()
+        mark_initialization_complete()
         return True
     except Exception as e:
-        logger.error(f"Dashboard components migration failed: {e}")
+        logger.error(f"Dashboard migration failed: {e}")
         return False
-
-async def wait_for_initialization():
-    """Wait for the migration system to be initialized."""
-    if not _is_initialized:
-        logger.info("Waiting for dashboard migration system to initialize...")
-        await _initialization_complete.wait()
-    return _is_initialized
 
 async def ensure_dashboard_tables_exist():
     """Ensure all dashboard-related tables exist in the database."""

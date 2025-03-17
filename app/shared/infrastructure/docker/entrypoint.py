@@ -39,38 +39,28 @@ async def run_dashboard_migrations():
         return False
 
 async def run_database_migrations():
-    """Run all database migrations in the correct order"""
+    """Run database migrations to ensure tables exist"""
     try:
-        # Check if we're running in the bot container to avoid duplicate migrations
-        container_type = os.environ.get("CONTAINER_TYPE", "unknown")
-        logger.info(f"Current container type: {container_type}")
-        
-        if container_type != "bot":
-            logger.info(f"Skipping database migrations in {container_type} container")
-            return True
-            
         logger.info("Starting database migrations...")
+        from app.shared.infrastructure.database.models.base import initialize_engine, initialize_tables
         
-        # 1. Run dashboard components migration first (existing code)
-        from app.shared.infrastructure.database.migrations.dashboards.dashboard_components_migration import main as run_dashboard_migration
-        await run_dashboard_migration()
-        logger.info("Dashboard components migration completed successfully")
+        # Initialize database engine
+        engine = await initialize_engine()
+        logger.info("Database engine created successfully")
         
-        # 2. Run category migration
-        logger.info("Starting category migration...")
-        from app.shared.infrastructure.database.migrations.categories.seed_categories import check_and_seed_categories
-        check_and_seed_categories()
-        logger.info("Category migration completed successfully")
+        # Create database tables
+        await initialize_tables()
+        logger.info("Database tables created successfully")
         
-        # 3. Run channel migration (depends on categories)
-        logger.info("Starting channel migration...")
-        from app.shared.infrastructure.database.migrations.channels.seed_channels import check_and_seed_channels
-        check_and_seed_channels()
-        logger.info("Channel migration completed successfully")
+        # Now run the specific migration processes
+        from app.shared.infrastructure.database.migrations.init_db import init_db
+        await init_db()
         
         return True
     except Exception as e:
         logger.error(f"Database migration failed: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return False
 
 async def main():
@@ -84,16 +74,28 @@ async def main():
         security = await setup_security()
         logger.info("Security bootstrapping completed")
         
-        # Run ALL migrations (not just dashboard migrations)
-        await run_database_migrations()
+        # Run database migrations with a timeout
+        logger.info("Starting database migrations...")
+        migration_task = asyncio.create_task(run_database_migrations())
+        try:
+            # Set a timeout to avoid hanging forever on migrations
+            await asyncio.wait_for(migration_task, timeout=30.0)
+            logger.info("Database migrations completed")
+        except asyncio.TimeoutError:
+            logger.warning("Database migrations timed out, but continuing with bot startup")
         
-        # Import and start the bot
+        # Start the bot without waiting for dashboard migrations to complete
         logger.info("Starting bot...")
+        # Run dashboard migrations in the background without blocking bot startup
+        asyncio.create_task(run_dashboard_migrations())
+        
         from app.bot.core.main import main as bot_main
         await bot_main()
         
     except Exception as e:
         logger.error(f"Initialization failed: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         sys.exit(1)
 
 async def _bootstrap_web_async():

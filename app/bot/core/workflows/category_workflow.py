@@ -31,27 +31,32 @@ class CategoryWorkflow(BaseWorkflow):
             logger.error("Database service not available, cannot initialize category workflow")
             return False
         
-        # Initialize the category repository
+        # Create the repository
         self.category_repository = CategoryRepositoryImpl(db_service)
         
-        # Initialize the category setup service
-        self.category_setup_service = CategorySetupService(self.category_repository)
+        # Create the category builder - pass the repository here
+        category_builder = CategoryBuilder(self.category_repository)
         
-        # We no longer seed here as it's done in the migration system
-        # await self.seed_categories_if_empty()
+        # Create the category setup service
+        self.category_setup_service = CategorySetupService(self.category_repository, category_builder)
         
-        logger.info("Category workflow initialized successfully")
-        return True
-    
-    async def seed_categories_if_empty(self):
-        """Seed default categories if none exist in the database"""
+        # Check if any categories exist, if not seed the database
         categories = self.category_repository.get_all_categories()
-        
         if not categories:
             logger.info("No categories found in database, seeding default categories")
             # Use the seed function from the migration script
             seed_categories()
             logger.info("Default categories seeded successfully")
+            
+        return True
+    
+    async def cleanup(self):
+        """Cleanup resources used by the category workflow"""
+        logger.info("Cleaning up category workflow resources")
+        # Not much to clean up here since we don't have any persistent connections
+        # Just reset the objects
+        self.category_repository = None
+        self.category_setup_service = None
     
     async def setup_categories(self, guild: discord.Guild) -> Dict[str, discord.CategoryChannel]:
         """Set up all categories for the guild"""

@@ -1,17 +1,25 @@
 from abc import ABC, abstractmethod
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
+import logging
+from typing import Optional
 
 class BaseWorkflow(ABC):
-    def __init__(self, bot):
+    """Base class for all workflows"""
+    
+    def __init__(self, bot=None):
+        """Initialize the workflow with optional bot reference"""
+        self.name = "base"
+        self.is_initialized = False
         self.bot = bot
         
     @abstractmethod
     async def initialize(self):
-        """Initialize workflow components"""
-        pass
+        """Initialize the workflow"""
+        self.is_initialized = True
+        return True
         
     @abstractmethod
     async def cleanup(self):
-        """Cleanup workflow resources"""
+        """Clean up resources"""
         pass

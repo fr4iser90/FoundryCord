@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands
 from typing import Dict, List, Any, Optional
 from app.bot.core.shutdown_handler import ShutdownHandler
+from app.bot.core.lifecycle_manager import LifecycleManager
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.bot.core.workflows.category_workflow import CategoryWorkflow
 from app.bot.core.workflows.channel_workflow import ChannelWorkflow
@@ -13,6 +14,7 @@ from app.bot.core.workflows.dashboard_workflow import DashboardWorkflow
 from app.bot.core.workflows.task_workflow import TaskWorkflow
 from app.bot.core.workflows.slash_commands_workflow import SlashCommandsWorkflow
 from app.shared.interface.logging.api import get_bot_logger
+from app.shared.infrastructure.config.env_config import EnvConfig
 
 logger = get_bot_logger()
 
@@ -26,6 +28,12 @@ class HomelabBot(commands.Bot):
             intents.message_content = True
         
         super().__init__(command_prefix=command_prefix, intents=intents)
+        
+        # Load environment configuration
+        self.env_config = EnvConfig().load()
+        
+        # Initialize lifecycle manager
+        self.lifecycle = LifecycleManager()
         
         # Initialize workflows
         self.database_workflow = DatabaseWorkflow()
@@ -111,28 +119,37 @@ class HomelabBot(commands.Bot):
         logger.info(f"Finished syncing guild data for: {guild.name}")
         return {"categories": categories, "channels": channels}
 
-async def start_bot():
-    """Start the bot"""
-    # Create bot instance
-    bot = HomelabBot()
-    
-    # Start the bot
-    token = os.getenv("DISCORD_TOKEN")
-    if not token:
-        logger.error("No Discord token provided. Please set the DISCORD_TOKEN environment variable.")
-        return
-    
+async def main():
+    """
+    Main entry point for the bot application.
+    """
     try:
-        await bot.start(token)
-    except Exception as e:
-        logger.error(f"Error starting bot: {str(e)}")
-    finally:
-        await bot.close()
+        # Configure bot with appropriate settings
+        intents = discord.Intents.default()
+        intents.members = True
+        intents.message_content = True
+        
+        # Create bot instance
+        bot = HomelabBot(command_prefix="!", intents=intents)
+        
+        # Get token from environment variable
+        token = os.environ.get("DISCORD_BOT_TOKEN")
+        if not token:
+            logger.error("DISCORD_BOT_TOKEN environment variable not set. Cannot start bot.")
+            return
 
-def run_bot():
-    """Run the bot"""
-    logger.info("Starting bot...")
-    asyncio.run(start_bot())
+        # Start the bot
+        logger.info("Starting the bot...")
+        await bot.start(token)
+        
+    except Exception as e:
+        logger.error(f"Fatal error in main bot process: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        
+    finally:
+        logger.info("Bot shutdown complete")
 
 if __name__ == "__main__":
-    run_bot()
+    # Run the bot
+    asyncio.run(main())

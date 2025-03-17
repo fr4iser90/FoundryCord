@@ -1,52 +1,58 @@
-from typing import Optional, List
+from typing import Optional, List, Dict
 import discord
 from app.bot.domain.categories.models.category_model import CategoryModel
 from app.bot.domain.categories.repositories.category_repository import CategoryRepository
+import logging
 
+logger = logging.getLogger("homelab.bot")
 
 class CategoryBuilder:
     """Service for building Discord categories from database models"""
     
     def __init__(self, category_repository: CategoryRepository):
+        """Initialize the category builder with a repository"""
         self.category_repository = category_repository
     
-    async def create_category(self, guild: discord.Guild, category: CategoryModel) -> Optional[discord.CategoryChannel]:
-        """Create a Discord category from a category model"""
-        if not category.is_valid:
-            print(f"Invalid category configuration: {category.name}")
-            return None
+    async def create_category(
+        self, guild: discord.Guild, 
+        name: str, 
+        position: int = 0, 
+        permissions: List[Dict] = None
+    ) -> Optional[discord.CategoryChannel]:
+        """Create a new category in the guild"""
+        logger.info(f"Creating category {name} at position {position}")
         
-        # Create category overwrites for permissions
-        overwrites = {}
-        for permission in category.permissions:
-            role = guild.get_role(permission.role_id)
-            if role:
-                overwrite = discord.PermissionOverwrite()
-                overwrite.view_channel = permission.view
-                overwrite.send_messages = permission.send_messages
-                overwrite.manage_messages = permission.manage_messages
-                overwrite.manage_channels = permission.manage_channels
-                overwrites[role] = overwrite
-        
+        # Create category with optional permissions
         try:
-            # Create the category in Discord
-            discord_category = await guild.create_category(
-                name=category.name,
-                overwrites=overwrites,
-                position=category.position
+            overwrites = {}
+            if permissions:
+                for perm in permissions:
+                    role = discord.utils.get(guild.roles, id=perm.get('role_id'))
+                    if role:
+                        overwrites[role] = discord.PermissionOverwrite(
+                            view_channel=perm.get('view', False),
+                            send_messages=perm.get('send_messages', False),
+                            manage_messages=perm.get('manage_messages', False),
+                            manage_channels=perm.get('manage_channels', False)
+                        )
+            
+            category = await guild.create_category(
+                name=name,
+                position=position,
+                overwrites=overwrites
             )
             
-            # Update the category in the database with the Discord ID
-            self.category_repository.update_discord_id(category.id, discord_category.id)
+            logger.info(f"Created category: {name} with ID {category.id}")
+            return category
             
-            print(f"Created category: {category.name} (ID: {discord_category.id})")
-            return discord_category
-        
         except discord.Forbidden:
-            print(f"Bot lacks permissions to create category: {category.name}")
+            logger.error(f"Bot does not have permission to create category: {name}")
             return None
         except discord.HTTPException as e:
-            print(f"Failed to create category {category.name}: {str(e)}")
+            logger.error(f"Failed to create category {name}: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error creating category {name}: {e}")
             return None
     
     async def setup_all_categories(self, guild: discord.Guild) -> List[discord.CategoryChannel]:
@@ -66,7 +72,7 @@ class CategoryBuilder:
                     continue
             
             # Create the category
-            discord_category = await self.create_category(guild, category)
+            discord_category = await self.create_category(guild, category.name, category.position, category.permissions)
             if discord_category:
                 created_categories.append(discord_category)
         

@@ -146,3 +146,10 @@ class ChannelWorkflow(BaseWorkflow):
             description=description,
             category_name=category_name
         )
+
+    async def cleanup(self):
+        """Cleanup resources used by the channel workflow"""
+        logger.info("Cleaning up channel workflow resources")
+        # Reset the objects
+        self.channel_repository = None
+        self.channel_setup_service = None
