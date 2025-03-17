@@ -1,94 +1,170 @@
 # app/bot/infrastructure/managers/dashboard_manager.py
 import asyncio
 import logging
-from typing import List, Optional
+from typing import List, Optional, Dict, Any, Callable
 from app.bot.interfaces.dashboards.controller.base_dashboard import BaseDashboardController
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 from app.shared.infrastructure.database.models import DashboardMessage
-from app.shared.infrastructure.database.models.config import get_session
+from app.shared.infrastructure.database.management.connection import get_session
 from sqlalchemy import select
 import nextcord
+import importlib
+import inspect
+import pkgutil
+from pathlib import Path
+import sys
 
 logger = logging.getLogger(__name__)
 
 class DashboardManager:
+    """Manager for registering and activating dashboard types."""
+    
     def __init__(self, bot):
         self.bot = bot
-        self._dashboards = {}
+        self.dashboard_registry = {}
+        self.active_dashboards = {}
+        self.initialized = False
         
-    async def get_dashboard_channels(self) -> List[str]:
-        """Holt die Dashboard-Kanäle dynamisch aus der Konfiguration"""
+    def register_dashboard(self, dashboard_type: str, dashboard_class):
+        """Register a dashboard type with its class."""
+        self.dashboard_registry[dashboard_type] = dashboard_class
+        logger.debug(f"Registered dashboard type: {dashboard_type}")
+        
+    def register_dashboards(self, dashboards: Dict[str, Any]):
+        """Register multiple dashboard types at once."""
+        for dashboard_type, dashboard_class in dashboards.items():
+            self.register_dashboard(dashboard_type, dashboard_class)
+            
+        logger.info(f"Registered {len(dashboards)} dashboard types")
+        
+    async def discover_dashboards(self):
+        """Discover and register dashboard classes from the dashboards directory."""
         try:
-            from app.bot.infrastructure.config.channel_config import ChannelConfig
-            
-            # Alle verfügbaren Kanäle aus der Datenbank holen
-            channels = await ChannelConfig.get_dashboard_channels()
-            
-            # Alle Kanäle zurückgeben, die in der Datenbank existieren
-            return list(channels.keys())
+            # Use the new dynamic dashboard system
+            self.initialized = True
+            logger.info(f"Dashboard Manager initialized")
+            return len(self.dashboard_registry)
             
         except Exception as e:
-            logger.error(f"Error getting dashboard channels: {e}")
-            return []
-        
-    async def cleanup_old_dashboards(self, guild, channel_names: Optional[List[str]] = None):
-        """Löscht alte Dashboard-Nachrichten in den angegebenen Kanälen"""
+            logger.error(f"Error discovering dashboards: {e}")
+            return 0
+            
+    async def activate_dashboard(self, dashboard_type: str, channel_id: int, **kwargs):
+        """Activate a dashboard in a channel."""
         try:
-            logger.info("Cleaning up old dashboard messages")
+            if dashboard_type not in self.dashboard_registry:
+                logger.error(f"Dashboard type not registered: {dashboard_type}")
+                return None
+                
+            # Get channel
+            channel = self.bot.get_channel(channel_id)
+            if not channel:
+                logger.error(f"Channel not found: {channel_id}")
+                return None
+                
+            # Create dashboard instance
+            dashboard_class = self.dashboard_registry[dashboard_type]
+            dashboard = dashboard_class(self.bot, channel)
             
-            # Wenn keine Kanäle angegeben wurden, hole sie aus der Konfiguration
-            if not channel_names:
-                channel_names = await self.get_dashboard_channels()
-                
-            if not channel_names:
-                logger.warning("No dashboard channels found in configuration")
-                return
+            # Pass any additional kwargs to initialize
+            await dashboard.initialize(**kwargs)
             
-            for channel_name in channel_names:
-                # Kanal-ID aus der Config holen
-                from app.bot.infrastructure.config.channel_config import ChannelConfig
-                channel_id = await ChannelConfig.get_channel_id(channel_name)
-                if not channel_id:
-                    continue
-                    
-                channel = self.bot.get_channel(channel_id)
-                if not channel:
-                    continue
+            # Store in active dashboards
+            self.active_dashboards[channel_id] = dashboard
+            
+            logger.info(f"Activated {dashboard_type} dashboard in channel {channel.name}")
+            return dashboard
+            
+        except Exception as e:
+            logger.error(f"Error activating dashboard: {e}")
+            return None
+            
+    async def deactivate_dashboard(self, channel_id: int):
+        """Deactivate a dashboard in a channel."""
+        try:
+            if channel_id not in self.active_dashboards:
+                logger.warning(f"No active dashboard in channel: {channel_id}")
+                return False
                 
-                # Hole alle getrackte Nachrichten für diesen Kanal
-                tracked_messages = []
-                async for session in get_session():
-                    result = await session.execute(
-                        select(DashboardMessage).where(DashboardMessage.channel_id == channel_id)
-                    )
-                    tracked_msgs = result.scalars().all()
-                    tracked_messages = [msg.message_id for msg in tracked_msgs]
+            dashboard = self.active_dashboards[channel_id]
+            
+            # Cleanup dashboard
+            await dashboard.cleanup()
+            
+            # Remove from active dashboards
+            del self.active_dashboards[channel_id]
+            
+            logger.info(f"Deactivated dashboard in channel {channel_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error deactivating dashboard: {e}")
+            return False
+            
+    def get_dashboard(self, channel_id: int):
+        """Get the active dashboard in a channel."""
+        return self.active_dashboards.get(channel_id)
+        
+    async def get_dashboard_channels(self) -> List[int]:
+        """Get list of channels with active dashboards."""
+        return list(self.active_dashboards.keys())
+        
+    async def refresh_dashboard(self, channel_id: int) -> bool:
+        """Refresh a dashboard by channel ID."""
+        try:
+            if channel_id not in self.active_dashboards:
+                logger.warning(f"No active dashboard in channel {channel_id}")
+                return False
                 
-                # Suche nach Nachrichten vom Bot in den letzten 100 Nachrichten
+            controller = self.active_dashboards[channel_id]
+            await controller.refresh_data()
+            await controller.display_dashboard()
+            
+            logger.debug(f"Refreshed dashboard in channel {channel_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error refreshing dashboard: {e}")
+            return False
+            
+    async def refresh_all_dashboards(self) -> int:
+        """Refresh all active dashboards."""
+        refreshed = 0
+        for channel_id in self.active_dashboards:
+            if await self.refresh_dashboard(channel_id):
+                refreshed += 1
+                
+        logger.info(f"Refreshed {refreshed}/{len(self.active_dashboards)} dashboards")
+        return refreshed
+        
+    async def cleanup_old_dashboards(self, guild, dashboard_channels=None) -> int:
+        """Clean up old dashboard messages from specified channels."""
+        if dashboard_channels is None:
+            dashboard_channels = await self.get_dashboard_channels()
+            
+        cleaned = 0
+        bot_id = self.bot.user.id
+        
+        for channel_id in dashboard_channels:
+            channel = guild.get_channel(channel_id)
+            if not channel:
+                continue
+                
+            try:
+                # Get all messages by the bot
                 async for message in channel.history(limit=100):
-                    # Überspringe getrackte Nachrichten
-                    if message.id in tracked_messages:
-                        continue
-                        
-                    if message.author.id == self.bot.user.id and message.embeds:
-                        # Lösche alle Bot-Nachrichten mit Embeds, die nicht getrackt sind
-                        await message.delete()
-                        logger.debug(f"Deleted old dashboard message {message.id} in {channel_name}")
-                        await asyncio.sleep(0.5)
-                                
-            logger.info("Dashboard cleanup completed")
-        except Exception as e:
-            logger.error(f"Error during dashboard cleanup: {e}")
+                    if message.author.id == bot_id:
+                        # Check if it's a dashboard message
+                        if message.embeds and any(embed.title for embed in message.embeds):
+                            await message.delete()
+                            cleaned += 1
+                            await asyncio.sleep(0.5)  # Rate limit protection
+            except Exception as e:
+                logger.error(f"Error cleaning up channel {channel_id}: {e}")
+                
+        logger.info(f"Cleaned up {cleaned} old dashboard messages")
+        return cleaned
 
-    def register_dashboard(self, dashboard_type: str, dashboard: BaseDashboardController):
-        """Register a dashboard instance"""
-        self._dashboards[dashboard_type] = dashboard
-        
-    def get_dashboard(self, dashboard_type: str) -> Optional[BaseDashboardController]:
-        """Get existing dashboard instance"""
-        return self._dashboards.get(dashboard_type)
-        
     async def track_message(self, dashboard_type: str, message_id: int, channel_id: int):
         """Track a dashboard message in the database"""
         try:
@@ -151,18 +227,3 @@ class DashboardManager:
         except Exception as e:
             logger.error(f"Error retrieving dashboard message from app.bot.database: {e}")
             return None
-
-    @staticmethod
-    async def setup(bot):
-        """Setup and attach a dashboard manager to the bot"""
-        logger.info("Setting up Dashboard Manager")
-        
-        # Check if dashboard manager already exists
-        if hasattr(bot, 'dashboard_manager'):
-            logger.info("Dashboard Manager already exists")
-            return bot.dashboard_manager
-        
-        # Create new dashboard manager and attach to bot
-        bot.dashboard_manager = DashboardManager(bot)
-        logger.info("Dashboard Manager initialized successfully")
-        return bot.dashboard_manager

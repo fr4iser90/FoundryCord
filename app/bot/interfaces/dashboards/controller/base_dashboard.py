@@ -6,279 +6,136 @@ logger = get_bot_logger()
 from app.bot.infrastructure.config.channel_config import ChannelConfig
 from app.bot.interfaces.dashboards.components.common.buttons.refresh_button import RefreshButton
 from app.bot.interfaces.dashboards.components.common.embeds import ErrorEmbed, DashboardEmbed  # Add this import
+import asyncio
 
 
 class BaseDashboardController:
-    """Base class for all dashboard UIs that handles lifecycle management"""
+    """Base controller for all dashboard implementations."""
     
-    DASHBOARD_TYPE = "base"  # Override in subclasses
-    TITLE_IDENTIFIER = "Dashboard"  # Text in embed title to identify this dashboard type
+    # Constants for inherited classes to override
+    DASHBOARD_TYPE = "base"
+    TITLE_IDENTIFIER = "Base Dashboard"
     
     def __init__(self, bot):
         self.bot = bot
-        self.message: Optional[nextcord.Message] = None
-        self.channel: Optional[nextcord.TextChannel] = None
         self.service = None
+        self.title = "Dashboard"
+        self.description = ""
+        self.channel = None
+        self.message = None
         self.initialized = False
+        self.rate_limits = {}
     
-    def set_service(self, service):
-        """Sets the service for this UI"""
+    async def initialize(self):
+        """Initialize the dashboard controller. Override in subclasses."""
+        self.initialized = True
+        return True
+    
+    async def set_service(self, service):
+        """Set the service for this dashboard."""
         self.service = service
         return self
     
-    async def initialize(self, channel_config_key: str = None):
-        """Initialize the dashboard UI"""
-        try:
-            if channel_config_key:
-                channel_id = await ChannelConfig.get_channel_id(channel_config_key)
-                if not channel_id:
-                    return False
-                    
-                self.channel = self.bot.get_channel(channel_id)
-                if not self.channel:
-                    return False
-            
-            # Try to recover existing message
-            self.message = await self.bot.dashboard_manager.get_tracked_message(self.DASHBOARD_TYPE)
-            if self.message:
-                logger.info(f"Recovered existing {self.DASHBOARD_TYPE} dashboard message")
-            
-            self.initialized = True
-            return True
-        except Exception as e:
-            logger.error(f"Error initializing {self.DASHBOARD_TYPE} dashboard UI: {e}")
-            return False
+    async def set_channel(self, channel):
+        """Set the channel for this dashboard."""
+        self.channel = channel
+        return self
     
-    async def find_existing_dashboard(self):
-        """Find an existing dashboard message to update instead of creating a new one"""
-        try:
-            if not self.channel:
-                return None
-            
-            # FIRST: Try to get message from dashboard manager
-            if hasattr(self.bot, 'dashboard_manager'):
-                self.message = await self.bot.dashboard_manager.get_tracked_message(self.DASHBOARD_TYPE)
-                if self.message:
-                    logger.info(f"Found existing {self.DASHBOARD_TYPE} dashboard using message reference")
-                    return self.message
-                    
-            # SECOND: Search channel history for dashboard with same title
-            async for message in self.channel.history(limit=20):
-                if message.author.id == self.bot.user.id and message.embeds:
-                    for embed in message.embeds:
-                        if embed.title and self.TITLE_IDENTIFIER in embed.title:
-                            self.message = message
-                            # Track this message for future reference
-                            if hasattr(self.bot, 'dashboard_manager'):
-                                await self.bot.dashboard_manager.track_message(
-                                    self.DASHBOARD_TYPE, message.id, self.channel.id
-                                )
-                            logger.info(f"Found existing {self.DASHBOARD_TYPE} dashboard by searching channel")
-                            return message
-            
-            return None
-        except Exception as e:
-            logger.error(f"Error finding existing dashboard: {e}")
-            return None
-    
-    async def cleanup_old_dashboards(self, keep_count=1):
-        """Clean up old dashboard messages, keeping only the most recent ones"""
-        try:
-            if not self.channel:
-                return
-                
-            dashboard_messages = []
-            
-            # Find all dashboard messages from the bot that match this dashboard type
-            async for message in self.channel.history(limit=20):
-                if message.author.id == self.bot.user.id and message.embeds:
-                    for embed in message.embeds:
-                        if embed.title and self.TITLE_IDENTIFIER in embed.title:
-                            dashboard_messages.append(message)
-                            break  # No need to check more embeds for this message
-            
-            # Log how many found
-            if dashboard_messages:
-                logger.debug(f"Found {len(dashboard_messages)} {self.DASHBOARD_TYPE} dashboard messages to consider for cleanup")
-                
-                # Sort by creation time (newest first)
-                dashboard_messages.sort(key=lambda m: m.created_at, reverse=True)
-                
-                # Keep track of messages being deleted
-                deleted_count = 0
-                
-                # Delete all but the most recent 'keep_count' messages
-                if len(dashboard_messages) > keep_count:
-                    for message in dashboard_messages[keep_count:]:
-                        try:
-                            await message.delete()
-                            deleted_count += 1
-                            logger.debug(f"Deleted old {self.DASHBOARD_TYPE} dashboard message: {message.id}")
-                        except Exception as e:
-                            logger.error(f"Error deleting old dashboard message: {e}")
-                
-                logger.info(f"Deleted {deleted_count} old {self.DASHBOARD_TYPE} dashboard messages")
-        except Exception as e:
-            logger.error(f"Error cleaning up old dashboard messages: {e}")
-    
-    async def display_dashboard(self) -> Optional[nextcord.Message]:
-        """Displays or updates the dashboard in the configured channel
-        
-        Returns:
-            The dashboard message object if successful, None otherwise
-        """
-        try:
-            if not self.channel:
-                logger.error(f"No channel configured for {self.DASHBOARD_TYPE} dashboard")
-                return None
-            
-            # Clean up old dashboards first
-            await self.cleanup_old_dashboards(keep_count=1)
-            
-            # Create embed and view
-            embed = await self.create_embed()
-            view = self.create_view()
-            
-            # Register callbacks if method exists in the subclass
-            if hasattr(self, 'register_callbacks'):
-                await self.register_callbacks(view)
-            
-            # If we have an existing message, update it
-            if self.message and hasattr(self.message, 'edit'):
-                try:
-                    await self.message.edit(embed=embed, view=view)
-                    logger.info(f"Updated existing {self.DASHBOARD_TYPE} dashboard in {self.channel.name}")
-                    return self.message
-                except Exception as e:
-                    logger.warning(f"Couldn't update existing {self.DASHBOARD_TYPE} message: {e}, creating new")
-            
-            # Otherwise send a new message
-            try:
-                message = await self.channel.send(embed=embed, view=view)
-                self.message = message
-                
-                # Track in dashboard manager
-                await self.bot.dashboard_manager.track_message(
-                    dashboard_type=self.DASHBOARD_TYPE,
-                    message_id=message.id,
-                    channel_id=self.channel.id
-                )
-                
-                logger.info(f"{self.DASHBOARD_TYPE} dashboard displayed in channel {self.channel.name}")
-                return message
-            except Exception as e:
-                logger.error(f"Error sending {self.DASHBOARD_TYPE} dashboard: {e}")
-                return None
-            
-        except Exception as e:
-            logger.error(f"Error displaying {self.DASHBOARD_TYPE} dashboard: {e}")
-            return None
-    
-    def create_error_embed(self, error_message: str, title: str = None, error_code: str = None) -> nextcord.Embed:
-        """Creates a standardized error embed for dashboards
-        
-        Args:
-            error_message: The error message to display
-            title: Optional custom title (defaults to dashboard-specific error title)
-            error_code: Optional error code for tracing
-            
-        Returns:
-            A formatted error embed with standard footer
-        """
-        dashboard_type = self.DASHBOARD_TYPE.replace('_', ' ').title()
-        default_title = f"⚠️ {dashboard_type} Error"
-        
-        embed = ErrorEmbed.create_error(
-            title=title or default_title,
-            description=f"An error occurred in the {dashboard_type} dashboard:",
-            error_details=error_message,
-            error_code=error_code or f"{self.DASHBOARD_TYPE.upper()}-ERR"
-        )
-        
-        # Add standard footer
-        self.apply_standard_footer(embed)
-        
-        return embed
-    
-    async def create_embed(self) -> nextcord.Embed:
-        """Override this method in subclasses to create the dashboard embed"""
+    async def create_embed(self):
+        """Create the dashboard embed. Override in subclasses."""
         embed = nextcord.Embed(
-            title=f"Base {self.TITLE_IDENTIFIER}",
-            description="This is a base dashboard. Override create_embed() in a subclass.",
+            title=self.title,
+            description=self.description,
             color=0x3498db
         )
-        
-        # Add standard footer
         self.apply_standard_footer(embed)
-        
         return embed
     
-    def create_view(self) -> nextcord.ui.View:
-        """Create a basic view with a refresh button - override for additional buttons"""
-        view = nextcord.ui.View(timeout=None)
-        
-        # Refresh Button
-        refresh_btn = RefreshButton(callback=self.on_refresh)
-        view.add_item(refresh_btn)
-        
-        return view
+    async def create_view(self):
+        """Create the dashboard view with buttons. Override in subclasses."""
+        return nextcord.ui.View(timeout=None)
     
-    async def on_refresh(self, interaction: nextcord.Interaction):
-        """Handler for the refresh button"""
-        # Check rate limiting first
-        if not await self.check_rate_limit(interaction, "refresh"):
-            return
-        
-        await interaction.response.defer(ephemeral=True)
-        
-        # Simply update the current dashboard
-        await self.display_dashboard()
-        
-        await interaction.followup.send(
-            f"{self.DASHBOARD_TYPE.capitalize()} Dashboard wurde aktualisiert!", 
-            ephemeral=True
-        )
-
-    async def check_rate_limit(self, interaction, action_type="dashboard"):
-        """Check if the interaction is within rate limits
-        
-        Args:
-            interaction: The nextcord interaction
-            action_type: The type of action for rate limiting
+    async def refresh_data(self):
+        """Refresh dashboard data. Override in subclasses."""
+        pass
+    
+    async def display_dashboard(self):
+        """Display or update the dashboard in the channel."""
+        if not self.initialized:
+            logger.error(f"Attempted to display uninitialized dashboard: {self.DASHBOARD_TYPE}")
+            return None
             
-        Returns:
-            bool: True if allowed, False if rate limited
-        """
-        if not hasattr(self.bot, 'rate_limiting'):
-            return True  # Allow if rate limiting is not enabled
-        
-        custom_id = getattr(interaction, 'custom_id', interaction.data.get('custom_id', 'unknown'))
-        action_name = f"{self.DASHBOARD_TYPE}_{action_type}_{custom_id}"
-        
-        allowed, message = await self.bot.rate_limiting.check_rate_limit(
-            interaction.user.id,
-            action_name,
-            'dashboard'
-        )
-        
-        if not allowed:
-            # Handle blocked interaction
-            try:
-                if not interaction.response.is_done():
-                    await interaction.response.send_message(message, ephemeral=True)
-                else:
-                    await interaction.followup.send(message, ephemeral=True)
-            except Exception as e:
-                logger.error(f"Failed to send rate limit message: {e}")
+        if not self.channel:
+            logger.error(f"No channel set for dashboard: {self.DASHBOARD_TYPE}")
+            return None
             
-            logger.warning(f"Rate limited user {interaction.user.id} for {action_name}")
+        try:
+            # Create embed and view
+            embed = await self.create_embed()
+            view = await self.create_view()
+            
+            # Update existing message or send new one
+            if self.message:
+                try:
+                    await self.message.edit(embed=embed, view=view)
+                except (nextcord.NotFound, nextcord.HTTPException):
+                    # Message was deleted, create new one
+                    self.message = await self.channel.send(embed=embed, view=view)
+            else:
+                # No existing message, create new one
+                self.message = await self.channel.send(embed=embed, view=view)
+                
+            return self.message
+            
+        except Exception as e:
+            logger.error(f"Error displaying dashboard {self.DASHBOARD_TYPE}: {e}")
+            return None
+            
+    def apply_standard_footer(self, embed):
+        """Apply standard footer to embed."""
+        embed.set_footer(text=f"HomeLab Discord Bot • Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        return embed
+    
+    async def check_rate_limit(self, interaction, action_type, cooldown_seconds=10):
+        """Check if an action is rate limited."""
+        user_id = interaction.user.id
+        current_time = datetime.now().timestamp()
+        
+        # Initialize user's rate limits if not exists
+        if user_id not in self.rate_limits:
+            self.rate_limits[user_id] = {}
+            
+        # Check if action is on cooldown
+        last_use = self.rate_limits[user_id].get(action_type, 0)
+        time_diff = current_time - last_use
+        
+        if time_diff < cooldown_seconds:
+            # Action is rate limited
+            remaining = int(cooldown_seconds - time_diff)
+            await interaction.response.send_message(
+                f"Please wait {remaining} seconds before using this action again.", 
+                ephemeral=True
+            )
             return False
-        
+            
+        # Update last use time
+        self.rate_limits[user_id][action_type] = current_time
         return True
-
-    def apply_standard_footer(self, embed: nextcord.Embed, custom_text: Optional[str] = None) -> nextcord.Embed:
-        """Applies a standardized footer to any embed"""
-        footer_text = custom_text or "HomeLab Discord • Last Updated"
-        DashboardEmbed.add_standard_footer(embed, footer_text)
+    
+    def create_error_embed(self, error_message, title="Error", error_code=None):
+        """Create a standardized error embed."""
+        embed = nextcord.Embed(
+            title=f"❌ {title}",
+            description=error_message,
+            color=0xe74c3c
+        )
+        
+        if error_code:
+            embed.set_footer(text=f"Error Code: {error_code}")
+            
         return embed
+    
+    async def cleanup(self):
+        """Clean up resources. Override in subclasses if needed."""
+        pass
 

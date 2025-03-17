@@ -37,8 +37,9 @@ class DatabaseWorkflow(BaseWorkflow):
     async def cleanup(self):
         """Cleanup database resources"""
         try:
-            from app.shared.infrastructure.database.models.config import close_engine
-            
+            #from app.shared.infrastructure.database.models import close_engine
+
+            from app.shared.infrastructure.database.management.connection import close_engine
             logger.debug("Closing database connections")
             await close_engine()
             logger.info("Database connections closed")

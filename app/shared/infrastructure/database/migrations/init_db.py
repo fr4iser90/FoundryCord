@@ -1,10 +1,13 @@
 from sqlalchemy.ext.asyncio import AsyncEngine
 from app.shared.infrastructure.database.models import Base
-from app.shared.infrastructure.database.models.config import initialize_engine, initialize_session
+from app.shared.infrastructure.database.management.connection_config import initialize_engine, initialize_session
 import asyncio
 from app.shared.interface.logging.api import get_db_logger
 
 from sqlalchemy import select, inspect, text
+
+# Neuer Import:
+from app.shared.infrastructure.database.management.connection import get_db_connection
 
 logger = get_db_logger()
 

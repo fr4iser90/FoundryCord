@@ -1,60 +1,49 @@
-from typing import Optional, Dict, Any
+"""Button factory for creating button UI components."""
+from typing import Dict, Any, Optional
 import nextcord
 
-# Import inside method implementation, not at module level
-class ButtonFactory:
-    def __init__(self, bot=None):
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
+
+from .base_factory import BaseFactory
+
+class ButtonFactory(BaseFactory):
+    """Factory for creating button UI components."""
+    
+    def __init__(self, bot):
         self.bot = bot
-        # Import BaseFactory here to avoid circular import
-        from app.bot.infrastructure.factories.base.base_factory import BaseFactory
-        self.base_factory = BaseFactory()
-        
-    def create(self, name: str, **kwargs) -> Dict[str, Any]:
-        """Implementation of factory create method"""
-        button_type = kwargs.get('button_type', 'confirm')
-        
-        if button_type == 'confirm':
-            button = self.create_confirm_button(
-                custom_id=kwargs.get('custom_id', f"{name}_confirm")
+    
+    def create(self, label: str, custom_id: str = None, style: str = "primary", 
+              emoji: str = None, disabled: bool = False, **kwargs):
+        """Create a button component."""
+        try:
+            # Convert style string to ButtonStyle enum
+            button_style = self._get_button_style(style)
+            
+            # Create button
+            button = nextcord.ui.Button(
+                label=label,
+                custom_id=custom_id,
+                style=button_style,
+                emoji=emoji,
+                disabled=disabled,
+                **kwargs
             )
-        elif button_type == 'cancel':
-            button = self.create_cancel_button(
-                custom_id=kwargs.get('custom_id', f"{name}_cancel")
-            )
-        elif button_type == 'link':
-            button = self.create_link_button(
-                label=kwargs.get('label', name),
-                url=kwargs.get('url', '')
-            )
-        else:
-            raise ValueError(f"Unknown button type: {button_type}")
-
-        return {
-            'name': name,
-            'button': button,
-            'type': 'button',
-            'config': kwargs
+            
+            return button
+            
+        except Exception as e:
+            logger.error(f"Error creating button: {e}")
+            return None
+    
+    def _get_button_style(self, style_name: str) -> nextcord.ButtonStyle:
+        """Convert style name to ButtonStyle enum."""
+        styles = {
+            "primary": nextcord.ButtonStyle.primary,
+            "secondary": nextcord.ButtonStyle.secondary,
+            "success": nextcord.ButtonStyle.success,
+            "danger": nextcord.ButtonStyle.danger,
+            "link": nextcord.ButtonStyle.link
         }
-
-    def create_confirm_button(self, custom_id: str = "confirm") -> nextcord.ui.Button:
-        return nextcord.ui.Button(
-            style=nextcord.ButtonStyle.green,
-            label="Confirm",
-            custom_id=custom_id,
-            emoji="✅"
-        )
-
-    def create_cancel_button(self, custom_id: str = "cancel") -> nextcord.ui.Button:
-        return nextcord.ui.Button(
-            style=nextcord.ButtonStyle.red,
-            label="Cancel",
-            custom_id=custom_id,
-            emoji="❌"
-        )
-
-    def create_link_button(self, label: str, url: str) -> nextcord.ui.Button:
-        return nextcord.ui.Button(
-            style=nextcord.ButtonStyle.link,
-            label=label,
-            url=url
-        )
+        
+        return styles.get(style_name.lower(), nextcord.ButtonStyle.primary)

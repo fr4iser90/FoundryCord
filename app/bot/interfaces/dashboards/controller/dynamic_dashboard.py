@@ -2,232 +2,251 @@ from typing import Dict, Any, Optional, List
 import nextcord
 from datetime import datetime
 import json
+import asyncio
+import uuid
 
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 from .base_dashboard import BaseDashboardController
 from app.bot.interfaces.dashboards.components.common.embeds import DashboardEmbed
 from app.bot.interfaces.dashboards.components.factories.ui_component_factory import UIComponentFactory
+from app.bot.application.services.dashboard.dashboard_service import DashboardService
+from app.bot.application.services.dashboard.dashboard_builder import DashboardBuilder
 
 
 class DynamicDashboardController(BaseDashboardController):
-    """Dynamically builds dashboards from database configurations"""
+    """Controller for dynamic, configurable dashboards."""
     
     DASHBOARD_TYPE = "dynamic"
     
-    def __init__(self, bot, dashboard_id):
+    def __init__(self, bot, config_id=None):
         super().__init__(bot)
-        self.dashboard_id = dashboard_id
-        self.config = None
+        self.config_id = config_id or str(uuid.uuid4())
+        self.config = {}
+        self.last_refresh = None
+        self.refresh_interval = 300  # Default: 5 minutes
+        self.refresh_task = None
+        self.dashboard_builder = None
+        self.dashboard_repository = None
+        self.data = {}
+        self.components_cache = None
+        self.dashboard = None
+        self.dashboard_service = None
+        self.channel = None
+        self.message = None
         self.components = {}
         self.ui_factory = UIComponentFactory()
     
     async def initialize(self):
-        """Load dashboard config from database"""
-        self.config = await self.service.get_dashboard_config(self.dashboard_id)
-        if not self.config:
-            logger.error(f"Dashboard configuration not found for ID: {self.dashboard_id}")
-            return False
+        """Initialize from configuration."""
+        try:
+            # Get required services
+            self.dashboard_builder = self.bot.service_factory.get_service('dashboard_builder')
+            self.dashboard_repository = self.bot.service_factory.get_service('dashboard_repository')
             
-        self.title = self.config.get("title", "Dynamic Dashboard")
-        self.TITLE_IDENTIFIER = self.title
-        
-        # Get channel from config
-        channel_id = self.config.get("channel_id")
-        if channel_id:
-            self.channel = self.bot.get_channel(int(channel_id))
-            if not self.channel:
-                logger.error(f"Channel not found for dashboard {self.dashboard_id}")
+            if not self.dashboard_builder:
+                logger.error("Dashboard Builder service not available")
                 return False
-        
-        self.initialized = True
-        return True
+                
+            if not self.dashboard_repository:
+                logger.error("Dashboard Repository service not available")
+                return False
+                
+            # Load configuration from repository
+            await self.load_config()
+            
+            # Set up attributes from config
+            self.title = self.config.get('title', 'Dynamic Dashboard')
+            self.description = self.config.get('description', '')
+            self.TITLE_IDENTIFIER = self.title
+            
+            # Set refresh interval if specified
+            if 'refresh_interval' in self.config:
+                self.refresh_interval = int(self.config['refresh_interval'])
+                
+            # Initial data refresh
+            await self.refresh_data()
+            
+            # Start refresh task
+            self._start_refresh_task()
+            
+            self.initialized = True
+            logger.info(f"Dynamic dashboard initialized: {self.config_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error initializing dynamic dashboard {self.config_id}: {e}")
+            return False
+    
+    async def load_config(self):
+        """Load dashboard configuration from repository."""
+        try:
+            # Get configuration from repository
+            self.config = await self.dashboard_repository.get_dashboard_config(self.config_id)
+            
+            if not self.config:
+                logger.error(f"Dashboard configuration not found: {self.config_id}")
+                raise ValueError(f"Dashboard configuration not found: {self.config_id}")
+                
+            logger.debug(f"Loaded dashboard configuration: {self.config_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error loading dashboard configuration {self.config_id}: {e}")
+            raise
+    
+    async def refresh_data(self):
+        """Refresh data from data sources."""
+        try:
+            # Get data from configuration
+            if not self.dashboard_builder:
+                logger.error("Dashboard Builder service not available for refresh")
+                return False
+                
+            # Fetch data from data sources
+            self.data = await self.dashboard_builder.fetch_data_sources(
+                self.config.get('data_sources', {})
+            )
+            
+            # Clear components cache so they'll be rebuilt with new data
+            self.components_cache = None
+            
+            # Update last refresh time
+            self.last_refresh = datetime.now()
+            
+            logger.debug(f"Refreshed data for dashboard {self.config_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error refreshing data for dashboard {self.config_id}: {e}")
+            return False
+    
+    def _start_refresh_task(self):
+        """Start the refresh task."""
+        if self.refresh_task and not self.refresh_task.done():
+            self.refresh_task.cancel()
+            
+        self.refresh_task = asyncio.create_task(self._refresh_loop())
+    
+    async def _refresh_loop(self):
+        """Periodically refresh dashboard data."""
+        try:
+            while True:
+                # Wait for refresh interval
+                await asyncio.sleep(self.refresh_interval)
+                
+                # Refresh data
+                await self.refresh_data()
+                
+                # Update display
+                await self.display_dashboard()
+                    
+        except asyncio.CancelledError:
+            logger.debug(f"Refresh task cancelled for dashboard {self.config_id}")
+        except Exception as e:
+            logger.error(f"Error in refresh loop for dashboard {self.config_id}: {e}")
     
     async def create_embed(self):
-        """Create embed from configuration"""
-        embed_config = self.config.get("embed", {})
-        
-        # Create base embed
-        embed = DashboardEmbed.create_dashboard_embed(
-            title=embed_config.get("title", self.title),
-            description=embed_config.get("description", ""),
-            color=int(embed_config.get("color", "0x3498db"), 16)
-        )
-        
-        # Add fields if defined
-        for field in embed_config.get("fields", []):
-            embed.add_field(
-                name=field.get("name", ""),
-                value=field.get("value", ""),
-                inline=field.get("inline", False)
-            )
-            
-        # Apply dynamic data processing if needed
-        if "dynamic_content" in embed_config:
-            await self._process_dynamic_content(embed, embed_config["dynamic_content"])
-            
-        # Add standard footer
-        self.apply_standard_footer(embed)
-            
-        return embed
-    
-    async def _process_dynamic_content(self, embed, dynamic_config):
-        """Process dynamic content for the embed"""
-        if not dynamic_config:
-            return
-            
-        content_type = dynamic_config.get("type")
-        
-        if content_type == "system_metrics":
-            # Fetch system metrics
-            metrics = await self.service.get_system_metrics()
-            # Add metrics to embed
-            embed.add_field(
-                name="CPU Usage",
-                value=f"{metrics.get('cpu_usage', 0)}%",
-                inline=True
-            )
-            embed.add_field(
-                name="Memory Usage",
-                value=f"{metrics.get('memory_used', 0)}%",
-                inline=True
-            )
-            # Add more metrics as needed
-            
-        elif content_type == "project_status":
-            # Get projects
-            projects = await self.service.get_projects()
-            # Format and add to embed
-            status_counts = {"Open": 0, "In Progress": 0, "Completed": 0}
-            for project in projects:
-                status = project.get("status", "Unknown")
-                if status in status_counts:
-                    status_counts[status] += 1
-                    
-            status_text = "\n".join([f"{status}: {count}" for status, count in status_counts.items()])
-            embed.add_field(
-                name="Project Status",
-                value=status_text or "No projects found",
-                inline=False
-            )
-        
-        # Add more dynamic content types as needed
-    
-    def create_view(self):
-        """Create view with components from configuration"""
-        view = nextcord.ui.View(timeout=None)
-        
-        # Add buttons based on config
-        for btn_config in self.config.get("buttons", []):
-            button_type = btn_config.get("type")
-            
-            if button_type == "refresh":
-                btn = RefreshButton(callback=self.on_refresh)
-                view.add_item(btn)
-            elif button_type == "custom":
-                btn = BaseButton(
-                    label=btn_config.get("label", "Button"),
-                    style=getattr(nextcord.ButtonStyle, btn_config.get("style", "primary")),
-                    custom_id=btn_config.get("custom_id", f"button_{btn_config.get('action')}"),
-                    row=btn_config.get("row", 0),
-                    callback=lambda i, action=btn_config.get("action"): self.handle_dynamic_action(i, action)
-                )
-                view.add_item(btn)
-                
-        # Add selects if configured
-        for select_config in self.config.get("selects", []):
-            select_type = select_config.get("type")
-            
-            if select_type == "string":
-                select = StringSelect(
-                    custom_id=select_config.get("custom_id", "string_select"),
-                    placeholder=select_config.get("placeholder", "Select an option"),
-                    options=[
-                        nextcord.SelectOption(
-                            label=option.get("label", "Option"),
-                            value=option.get("value", option.get("label", "Option")),
-                            description=option.get("description", ""),
-                            emoji=option.get("emoji")
-                        ) for option in select_config.get("options", [])
-                    ],
-                    callback=lambda i: self.handle_select(i)
-                )
-                view.add_item(select)
-                
-        return view
-    
-    async def handle_dynamic_action(self, interaction, action):
-        """Handle actions defined in the configuration"""
-        # First check rate limiting
-        if not await self.check_rate_limit(interaction, f"action_{action}"):
-            return
-
+        """Create embed from components."""
         try:
-            # Look up the action handler in the config
-            action_handlers = self.config.get("action_handlers", {})
+            # Build components if not cached
+            if not self.components_cache:
+                self.components_cache = await self.dashboard_builder.build_dashboard(self.config, self.data)
+                
+            return self.components_cache.get('embed')
             
-            if action in action_handlers:
-                handler_config = action_handlers[action]
-                await self._execute_action_handler(interaction, handler_config)
-            else:
-                # Default implementations for common actions
-                if action == "refresh":
-                    await self.on_refresh(interaction)
-                elif action == "show_details":
-                    await self.show_details(interaction)
-                else:
-                    await interaction.response.send_message(f"Action '{action}' not implemented", ephemeral=True)
         except Exception as e:
-            logger.error(f"Error in dynamic action handler: {e}")
-            await interaction.followup.send(f"An error occurred: {str(e)}", ephemeral=True)
+            logger.error(f"Error creating embed for dashboard {self.config_id}: {e}")
+            return super().create_embed()
     
-    async def _execute_action_handler(self, interaction, handler_config):
-        """Execute a configured action handler"""
-        handler_type = handler_config.get("type")
-        
-        if handler_type == "send_message":
-            await interaction.response.send_message(
-                handler_config.get("message", "Action executed"),
-                ephemeral=handler_config.get("ephemeral", True)
-            )
-        elif handler_type == "show_modal":
-            # Create a modal from config
-            modal_config = handler_config.get("modal", {})
-            modal = self._create_dynamic_modal(modal_config)
-            await interaction.response.send_modal(modal)
-        elif handler_type == "api_call":
-            # Call an API and show results
-            await interaction.response.defer(ephemeral=True)
-            # API call logic here
-            await interaction.followup.send("API call completed", ephemeral=True)
+    async def create_view(self):
+        """Create view from components."""
+        try:
+            # Build components if not cached
+            if not self.components_cache:
+                self.components_cache = await self.dashboard_builder.build_dashboard(self.config, self.data)
+                
+            return self.components_cache.get('view')
+            
+        except Exception as e:
+            logger.error(f"Error creating view for dashboard {self.config_id}: {e}")
+            return super().create_view()
     
     async def on_refresh(self, interaction: nextcord.Interaction):
-        """Handler for the refresh button"""
-        # Check rate limiting first
-        if not await self.check_rate_limit(interaction, "refresh"):
-            return
-        
+        """Handle refresh button clicks."""
         await interaction.response.defer(ephemeral=True)
         
         try:
-            # Fetch and refresh data
-            self.config = await self.service.get_dashboard_config(self.dashboard_id)
-            
-            # Update the dashboard message with new data
+            # Refresh data and update dashboard
+            await self.refresh_data()
             await self.display_dashboard()
             
-            await interaction.followup.send(
-                "Dashboard updated with latest data!", 
-                ephemeral=True
-            )
+            await interaction.followup.send("Dashboard refreshed!", ephemeral=True)
+            
         except Exception as e:
-            logger.error(f"Error refreshing dashboard: {str(e)}")
-            error_embed = self.create_error_embed(
-                error_message=str(e),
-                title="❌ Refresh Error",
-                error_code="DYNAMIC-REFRESH-ERR"
+            logger.error(f"Error handling refresh for dashboard {self.config_id}: {e}")
+            await interaction.followup.send(f"Error refreshing dashboard: {str(e)}", ephemeral=True)
+    
+    async def cleanup(self):
+        """Clean up resources."""
+        try:
+            # Cancel refresh task
+            if self.refresh_task and not self.refresh_task.done():
+                self.refresh_task.cancel()
+                
+            logger.debug(f"Cleaned up resources for dashboard {self.config_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error cleaning up dashboard {self.config_id}: {e}")
+            return False
+    
+    async def display_dashboard(self) -> Optional[nextcord.Message]:
+        """Display or update the dashboard message."""
+        try:
+            if not self.channel:
+                logger.error(f"Channel not available for dashboard {self.config_id}")
+                return None
+                
+            # Refresh components cache
+            self._cached_components = await self.dashboard_builder.build_dashboard(
+                self.dashboard, self.data
             )
-            await interaction.followup.send(embed=error_embed, ephemeral=True)
+            
+            embed = self._cached_components.get('embed')
+            view = self._cached_components.get('view')
+            
+            if not embed:
+                logger.error(f"Failed to get embed for dashboard {self.config_id}")
+                return None
+                
+            # Update existing message or create new one
+            if self.message:
+                try:
+                    self.message = await self.message.edit(embed=embed, view=view)
+                    logger.debug(f"Updated dashboard message {self.config_id}")
+                except (nextcord.NotFound, nextcord.HTTPException):
+                    # Message was deleted or not found, create new one
+                    self.message = await self.channel.send(embed=embed, view=view)
+                    logger.debug(f"Re-created dashboard message {self.config_id}")
+            else:
+                # Create new message
+                self.message = await self.channel.send(embed=embed, view=view)
+                logger.debug(f"Created new dashboard message {self.config_id}")
+                
+            # Update dashboard with message ID
+            if self.message and self.dashboard.message_id != self.message.id:
+                self.dashboard.message_id = self.message.id
+                await self.dashboard_service.update_dashboard(
+                    self.dashboard.id, 
+                    {"message_id": self.message.id}
+                )
+                
+            return self.message
+            
+        except Exception as e:
+            logger.error(f"Error displaying dashboard {self.config_id}: {e}")
+            return None
 
     async def load_components(self):
         """Load all UI components from database based on dashboard type"""
@@ -238,7 +257,7 @@ class DynamicDashboardController(BaseDashboardController):
                 
                 # Load buttons
                 buttons = await repository.get_components_by_type(
-                    dashboard_type=self.dashboard_id,
+                    dashboard_type=self.config_id,
                     component_type="button"
                 )
                 for button in buttons:
@@ -254,5 +273,5 @@ class DynamicDashboardController(BaseDashboardController):
                 
             return True
         except Exception as e:
-            logger.error(f"Failed to load components for {self.dashboard_id}: {e}")
+            logger.error(f"Failed to load components for {self.config_id}: {e}")
             return False

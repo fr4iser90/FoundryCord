@@ -9,13 +9,182 @@ from app.bot.core.workflows.dashboard_workflow import DashboardWorkflow
 from app.bot.core.workflows.task_workflow import TaskWorkflow
 from app.bot.core.workflows.slash_commands_workflow import SlashCommandsWorkflow
 from app.shared.interface.logging.api import get_bot_logger
+import traceback
+from typing import Dict, Any, List, Optional
+
 logger = get_bot_logger()
 
+
+class LifecycleManager:
+    """Manages the bot lifecycle including initialization and shutdown sequences."""
+    
+    def __init__(self, bot):
+        self.bot = bot
+        self.initialized = False
+        self.workflows = {}
+        self.services = {}
+        
+    async def initialize(self):
+        """Initialize bot components."""
+        try:
+            logger.info("Starting bot initialization...")
+            
+            # Initialize database connection
+            await self._initialize_database()
+            
+            # Initialize services
+            await self._initialize_services()
+            
+            # Initialize workflows
+            await self._initialize_workflows()
+            
+            # Start background tasks
+            await self._start_background_tasks()
+            
+            self.initialized = True
+            logger.info("Initialization sequence completed")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Initialization error: {e}")
+            import traceback
+            logger.debug(traceback.format_exc())
+            return False
+            
+    async def shutdown(self):
+        """Shutdown bot components gracefully."""
+        try:
+            logger.info("Starting bot shutdown sequence...")
+            
+            # Stop workflows in reverse order
+            await self._shutdown_workflows()
+            
+            # Stop services in reverse order
+            await self._shutdown_services()
+            
+            # Cancel all background tasks
+            await self._cancel_background_tasks()
+            
+            logger.info("Shutdown sequence completed")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Shutdown error: {e}")
+            return False
+    
+    async def _initialize_database(self):
+        """Initialize database connections."""
+        logger.info("Initializing database connections...")
+        
+        # Import here to avoid circular imports
+        from app.shared.infrastructure.database.management.connection import ensure_db_initialized
+        
+        # Ensure database is initialized
+        await ensure_db_initialized()
+        
+    async def _initialize_services(self):
+        """Initialize bot services."""
+        logger.info("Initializing services...")
+        
+        # Import service factory
+        from app.bot.infrastructure.factories.composite.service_factory import ServiceFactory
+        
+        # Create service factory
+        service_factory = ServiceFactory(self.bot)
+        
+        # Create core services
+        self.services['config'] = await service_factory.create_config_service()
+        self.services['event'] = await service_factory.create_event_service()
+        
+        # Register services with bot
+        for name, service in self.services.items():
+            self.bot.register_service(name, service)
+            
+    async def _initialize_workflows(self):
+        """Initialize bot workflows."""
+        logger.info("Initializing workflows...")
+        
+        # Import workflow factory
+        from app.bot.infrastructure.factories.composite.workflow_factory import WorkflowFactory
+        
+        # Create workflow factory
+        workflow_factory = WorkflowFactory(self.bot)
+        
+        # Initialize standard workflows
+        self.workflows['channel'] = await workflow_factory.create_channel_workflow()
+        self.workflows['dashboard'] = await workflow_factory.create_dashboard_workflow()
+        self.workflows['slash_commands'] = await workflow_factory.create_command_workflow()
+        self.workflows['task'] = await workflow_factory.create_task_workflow()
+        
+        # Register workflows with bot
+        for name, workflow in self.workflows.items():
+            self.bot.register_workflow(name, workflow)
+    
+    async def _start_background_tasks(self):
+        """Start background tasks."""
+        logger.info("Starting background tasks...")
+        
+        # Start any required background tasks
+        for name, workflow in self.workflows.items():
+            if hasattr(workflow, 'start_background_tasks'):
+                await workflow.start_background_tasks()
+    
+    async def _shutdown_workflows(self):
+        """Shutdown workflows in reverse order."""
+        logger.info("Shutting down workflows...")
+        
+        # Get workflow names in reverse order
+        workflow_names = list(self.workflows.keys())
+        workflow_names.reverse()
+        
+        # Shutdown each workflow
+        for name in workflow_names:
+            workflow = self.workflows.get(name)
+            if workflow:
+                logger.info(f"Shutting down {name} workflow...")
+                try:
+                    await workflow.cleanup()
+                except Exception as e:
+                    logger.error(f"Error shutting down {name} workflow: {e}")
+    
+    async def _shutdown_services(self):
+        """Shutdown services in reverse order."""
+        logger.info("Shutting down services...")
+        
+        # Get service names in reverse order
+        service_names = list(self.services.keys())
+        service_names.reverse()
+        
+        # Shutdown each service
+        for name in service_names:
+            service = self.services.get(name)
+            if service and hasattr(service, 'cleanup'):
+                logger.info(f"Shutting down {name} service...")
+                try:
+                    await service.cleanup()
+                except Exception as e:
+                    logger.error(f"Error shutting down {name} service: {e}")
+    
+    async def _cancel_background_tasks(self):
+        """Cancel all background tasks."""
+        logger.info("Cancelling background tasks...")
+        
+        # Get all running tasks
+        tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+        
+        # Cancel all tasks
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+                
+        # Wait for all tasks to complete
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
 
 class BotLifecycleManager:
     def __init__(self, bot):
         self.bot = bot
-        self.services = []
+        self.services = {}
         self.tasks = []
         self.commands = []
         self.ready_event = asyncio.Event()
@@ -24,17 +193,43 @@ class BotLifecycleManager:
         self.channel_setup = None
         #self.dashboard_manager = DashboardManager(bot)
         
-    async def _initialize_service(self, service):
-        """Initialize a service"""
+    async def _initialize_service(self, service_config):
+        """Initialize a service from configuration."""
+        if not service_config:
+            logger.error("Cannot initialize service: service configuration is None")
+            return None
+            
         try:
-            logger.info(f"Initializing service: {service['name']}")
-            service_instance = await service['setup'](self.bot)
-            # Speichere den Service im Bot für späteren Zugriff
-            setattr(self.bot, f"{service['name'].lower().replace(' ', '_')}_service", service_instance)
-            logger.info(f"Service initialized: {service['name']}")
+            service_name = service_config.get('name', 'Unknown')
+            service_type = service_config.get('type', service_name)
+            
+            logger.info(f"Initializing service: {service_name}")
+            
+            # Create or get service instance
+            service = self.bot.service_factory.create_or_get(service_type)
+            
+            if not service:
+                logger.error(f"Failed to create service: {service_name}")
+                return None
+                
+            # Initialize service if needed
+            if hasattr(service, 'initialize') and callable(service.initialize):
+                if asyncio.iscoroutinefunction(service.initialize):
+                    await service.initialize()
+                else:
+                    service.initialize()
+                    
+            # Register service locally
+            self.services[service_name] = service
+            
+            logger.info(f"Service initialized: {service_name}")
+            return service
+            
         except Exception as e:
-            logger.error(f"Failed to initialize service {service['name']}: {e}")
-            raise
+            service_name = service_config.get('name', 'Unknown') if service_config else 'Unknown'
+            logger.error(f"Failed to initialize service {service_name}: {e}")
+            logger.debug(traceback.format_exc())
+            return None
 
     async def _start_task(self, task):
         """Start a background task"""
@@ -189,6 +384,7 @@ class BotLifecycleManager:
                     await workflow.initialize()
                 except Exception as e:
                     logger.error(f"{name} workflow initialization failed: {e}")
+                    logger.debug(traceback.format_exc())
                     raise
                 
             logger.info("Initialization sequence completed")
@@ -196,4 +392,9 @@ class BotLifecycleManager:
             
         except Exception as e:
             logger.error(f"Initialization failed: {e}")
+            logger.debug(traceback.format_exc())
             raise
+
+    def get_service(self, service_name: str):
+        """Get a service by name."""
+        return self.services.get(service_name)

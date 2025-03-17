@@ -1,57 +1,60 @@
 from typing import Dict, Any, Optional
 import nextcord
-from app.bot.infrastructure.factories.base.base_factory import BaseFactory
-from app.bot.interfaces.dashboards.components.common.embeds import BaseEmbed
-from app.bot.interfaces.dashboards.components.channels.projects.embeds import ProjectEmbed
-from app.bot.interfaces.dashboards.components.channels.monitoring.embeds import MonitoringEmbed
-from app.bot.interfaces.dashboards.components.channels.projects.embeds import ProjectEmbed
-from app.bot.interfaces.dashboards.components.channels.projects.embeds import StatusEmbed
-from app.bot.interfaces.dashboards.components.channels.welcome.embeds import WelcomeEmbed
+from datetime import datetime
+
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
+
+from .base_factory import BaseFactory
 
 class EmbedFactory(BaseFactory):
-    """Factory für die Erstellung von Embeds"""
+    """Factory for creating embed UI components."""
     
     def __init__(self, bot):
-        super().__init__(bot)
-        self.embed_types = {
-            'base': BaseEmbed,
-            'welcome': WelcomeEmbed,
-            'monitoring': MonitoringEmbed,
-            'project': ProjectEmbed,
-            'status': StatusEmbed
-        }
+        self.bot = bot
     
-    def create(self, name: str, **kwargs) -> Dict[str, Any]:
-        """Implementation of abstract create method"""
-        if name not in self.embed_types:
-            return self.create_base_embed(**kwargs)
+    def create(self, title: str = None, description: str = None, color: str = None, 
+              fields: list = None, footer: Dict[str, Any] = None, **kwargs):
+        """Create an embed component."""
+        try:
+            # Convert color string to int if provided
+            color_int = None
+            if color:
+                if color.startswith('0x'):
+                    color_int = int(color, 16)
+                else:
+                    color_int = int(color)
             
-        embed_class = self.embed_types[name]
-        embed = embed_class.create(**kwargs)
-        
-        return {
-            'name': name,
-            'embed': embed,
-            'type': 'embed',
-            'config': kwargs
-        }
-
-    def create_embed(
-        self,
-        embed_type: str,
-        **kwargs
-    ) -> nextcord.Embed:
-        """Creates an embed of the specified type"""
-        if embed_type not in self.embed_types:
-            raise ValueError(f"Unknown embed type: {embed_type}")
+            # Create embed
+            embed = nextcord.Embed(
+                title=title,
+                description=description,
+                color=color_int or 0x3498db,
+                **kwargs
+            )
             
-        embed_class = self.embed_types[embed_type]
-        
-        if embed_type == 'welcome':
-            return embed_class.create_welcome(**kwargs)
-        elif embed_type == 'monitoring':
-            return embed_class.create_system_status(**kwargs)
-        elif embed_type == 'project':
-            return embed_class.create_project_dashboard(**kwargs)
-        else:
-            return embed_class.create(**kwargs)
+            # Add fields if provided
+            if fields:
+                for field in fields:
+                    embed.add_field(
+                        name=field.get('name', ''),
+                        value=field.get('value', ''),
+                        inline=field.get('inline', False)
+                    )
+            
+            # Add footer if provided
+            if footer:
+                embed.set_footer(
+                    text=footer.get('text'),
+                    icon_url=footer.get('icon_url')
+                )
+                
+            # Add timestamp if not specified
+            if 'timestamp' not in kwargs:
+                embed.timestamp = datetime.now()
+            
+            return embed
+            
+        except Exception as e:
+            logger.error(f"Error creating embed: {e}")
+            return nextcord.Embed(title="Error", description=f"Failed to create embed: {e}", color=0xff0000)

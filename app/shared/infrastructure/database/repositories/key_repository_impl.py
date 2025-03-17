@@ -1,118 +1,132 @@
+"""Key repository implementation for storing and retrieving encryption keys."""
+import os
+from typing import Dict, Any, Optional
+import json
 import asyncio
 from datetime import datetime
-from app.shared.infrastructure.database import get_db_connection
+
+from app.shared.interface.logging.api import get_bot_logger
+logger = get_bot_logger()
+
+from app.shared.infrastructure.database.management.connection import get_config, set_config
 
 class KeyRepository:
     """Repository for storing and retrieving encryption keys"""
     
-    def __init__(self):
-        self.db = get_db_connection()
+    def __init__(self, db_connection):
+        self.db_connection = db_connection
+        self.initialized = False
         
     async def initialize(self):
-        """Initialize the key storage table if it doesn't exist"""
-        query = """
-        CREATE TABLE IF NOT EXISTS security_keys (
-            key_name VARCHAR(50) PRIMARY KEY,
-            key_value TEXT NOT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-        await self.db.execute(query)
-        
-    async def get_encryption_keys(self):
-        """Get encryption keys from the database"""
-        current_key = await self.db.fetch_one(
-            "SELECT key_value FROM security_keys WHERE key_name = 'current_encryption_key'"
-        )
-        
-        previous_key = await self.db.fetch_one(
-            "SELECT key_value FROM security_keys WHERE key_name = 'previous_encryption_key'"
-        )
-        
-        return {
-            'current_key': current_key['key_value'] if current_key else None,
-            'previous_key': previous_key['key_value'] if previous_key else None
-        }
-        
-    async def save_encryption_keys(self, current_key, previous_key):
-        """Save encryption keys to database"""
-        # First save current key
-        await self.db.execute(
-            """
-            INSERT INTO security_keys (key_name, key_value, updated_at)
-            VALUES ('current_encryption_key', :current_key, :timestamp)
-            ON CONFLICT (key_name) 
-            DO UPDATE SET key_value = :current_key, updated_at = :timestamp
-            """,
-            {"current_key": current_key, "timestamp": datetime.now()}  # Use a dictionary instead of a tuple
-        )
-        
-        # Then save previous key if it exists
-        if previous_key:
-            await self.db.execute(
-                """
-                INSERT INTO security_keys (key_name, key_value, updated_at)
-                VALUES ('previous_encryption_key', :previous_key, :timestamp)
-                ON CONFLICT (key_name) 
-                DO UPDATE SET key_value = :previous_key, updated_at = :timestamp
-                """,
-                {"previous_key": previous_key, "timestamp": datetime.now()}  # Use a dictionary instead of a tuple
-            )
+        """Initialize the key repository"""
+        # Make sure the database connection is initialized
+        if not getattr(self.db_connection, 'initialized', False):
+            await self.db_connection.initialize()
             
-    async def get_aes_key(self):
-        """Get the AES key"""
-        result = await self.db.fetch_one(
-            "SELECT key_value FROM security_keys WHERE key_name = 'aes_key'"
-        )
-        return result['key_value'] if result else None
+        self.initialized = True
+        return True
         
-    async def save_aes_key(self, aes_key):
-        """Save AES key to database"""
-        await self.db.execute(
-            """
-            INSERT INTO security_keys (key_name, key_value, updated_at)
-            VALUES ('aes_key', :aes_key, :timestamp)
-            ON CONFLICT (key_name) 
-            DO UPDATE SET key_value = :aes_key, updated_at = :timestamp
-            """,
-            {"aes_key": aes_key, "timestamp": datetime.now()}
-        )
+    async def get_aes_key(self) -> Optional[str]:
+        """Get the AES key from database"""
+        try:
+            query = "SELECT value FROM config WHERE key = 'security_key_AES_KEY'"
+            result = await self.db_connection.execute(query)
+            row = result.first()
+            return row[0] if row else None
+        except Exception as e:
+            logger.error(f"Error getting AES key: {e}")
+            return None
         
-    async def get_jwt_secret_key(self):
-        """Get the JWT secret key"""
-        result = await self.db.fetch_one(
-            "SELECT key_value FROM security_keys WHERE key_name = 'jwt_secret_key'"
-        )
-        return result['key_value'] if result else None
+    async def save_aes_key(self, key_value: str) -> bool:
+        """Save the AES key to database"""
+        try:
+            async with self.db_connection.session() as session:
+                # Check if key exists
+                query = "SELECT value FROM config WHERE key = 'security_key_AES_KEY'"
+                result = await session.execute(query)
+                row = result.first()
+                
+                if row:
+                    # Update existing
+                    update_query = "UPDATE config SET value = :value WHERE key = 'security_key_AES_KEY'"
+                    await session.execute(update_query, {"value": key_value})
+                else:
+                    # Insert new
+                    insert_query = "INSERT INTO config (key, value) VALUES ('security_key_AES_KEY', :value)"
+                    await session.execute(insert_query, {"value": key_value})
+                    
+                await session.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Error saving AES key: {e}")
+            return False
         
-    async def save_jwt_secret_key(self, jwt_secret_key):
-        """Save JWT secret key to database"""
-        await self.db.execute(
-            """
-            INSERT INTO security_keys (key_name, key_value, updated_at)
-            VALUES ('jwt_secret_key', :jwt_secret_key, :timestamp)
-            ON CONFLICT (key_name) 
-            DO UPDATE SET key_value = :jwt_secret_key, updated_at = :timestamp
-            """,
-            {"jwt_secret_key": jwt_secret_key, "timestamp": datetime.now()}
-        )
-    
-    async def get_last_rotation_time(self):
-        """Get the timestamp of the last key rotation"""
-        result = await self.db.fetch_one(
-            "SELECT updated_at FROM security_keys WHERE key_name = 'current_encryption_key'"
-        )
-        return result['updated_at'] if result else None
+    async def get_jwt_secret_key(self) -> Optional[str]:
+        """Get the JWT secret key from database"""
+        try:
+            query = "SELECT value FROM config WHERE key = 'security_key_JWT_SECRET_KEY'"
+            result = await self.db_connection.execute(query)
+            row = result.first()
+            return row[0] if row else None
+        except Exception as e:
+            logger.error(f"Error getting JWT secret key: {e}")
+            return None
         
-    async def save_rotation_timestamp(self, timestamp):
-        """Save timestamp of last key rotation to database"""
-        await self.db.execute(
-            """
-            INSERT INTO security_keys (key_name, key_value, updated_at)
-            VALUES ('last_key_rotation', :timestamp_str, :timestamp)
-            ON CONFLICT (key_name) 
-            DO UPDATE SET key_value = :timestamp_str, updated_at = :timestamp
-            """,
-            {"timestamp_str": timestamp.isoformat(), "timestamp": timestamp}
-        )
+    async def save_jwt_secret_key(self, key_value: str) -> bool:
+        """Save the JWT secret key to database"""
+        try:
+            async with self.db_connection.session() as session:
+                # Check if key exists
+                query = "SELECT value FROM config WHERE key = 'security_key_JWT_SECRET_KEY'"
+                result = await session.execute(query)
+                row = result.first()
+                
+                if row:
+                    # Update existing
+                    update_query = "UPDATE config SET value = :value WHERE key = 'security_key_JWT_SECRET_KEY'"
+                    await session.execute(update_query, {"value": key_value})
+                else:
+                    # Insert new
+                    insert_query = "INSERT INTO config (key, value) VALUES ('security_key_JWT_SECRET_KEY', :value)"
+                    await session.execute(insert_query, {"value": key_value})
+                    
+                await session.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Error saving JWT secret key: {e}")
+            return False
+        
+    async def get_encryption_key(self) -> Optional[str]:
+        """Get the encryption key from database"""
+        try:
+            query = "SELECT value FROM config WHERE key = 'security_key_ENCRYPTION_KEY'"
+            result = await self.db_connection.execute(query)
+            row = result.first()
+            return row[0] if row else None
+        except Exception as e:
+            logger.error(f"Error getting encryption key: {e}")
+            return None
+        
+    async def save_encryption_key(self, key_value: str) -> bool:
+        """Save the encryption key to database"""
+        try:
+            async with self.db_connection.session() as session:
+                # Check if key exists
+                query = "SELECT value FROM config WHERE key = 'security_key_ENCRYPTION_KEY'"
+                result = await session.execute(query)
+                row = result.first()
+                
+                if row:
+                    # Update existing
+                    update_query = "UPDATE config SET value = :value WHERE key = 'security_key_ENCRYPTION_KEY'"
+                    await session.execute(update_query, {"value": key_value})
+                else:
+                    # Insert new
+                    insert_query = "INSERT INTO config (key, value) VALUES ('security_key_ENCRYPTION_KEY', :value)"
+                    await session.execute(insert_query, {"value": key_value})
+                    
+                await session.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Error saving encryption key: {e}")
+            return False

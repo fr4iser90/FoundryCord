@@ -1,6 +1,6 @@
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.shared.infrastructure.database.models.dashboards import Dashboard, DashboardComponent, ComponentLayout, ContentTemplate
+from app.shared.infrastructure.database.models import Dashboard, DashboardComponent, ComponentLayout, ContentTemplate
 from typing import Optional, List, Dict, Any
 
 class DashboardRepository:

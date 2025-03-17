@@ -103,3 +103,47 @@ CHANNELS = {
             ]
         }
     }
+
+# Game server channel configuration 
+GameServerChannelConfig = {
+    'minecraft': {
+        'name': 'minecraft',
+        'topic': 'Minecraft Server Status and Chat',
+        'is_private': False,
+        'threads': [
+            {'name': 'status', 'is_private': False},
+            {'name': 'chat', 'is_private': False},
+            {'name': 'commands', 'is_private': False}
+        ]
+    },
+    'factorio': {
+        'name': 'factorio',
+        'topic': 'Factorio Server Status and Chat',
+        'is_private': False,
+        'threads': [
+            {'name': 'status', 'is_private': False},
+            {'name': 'chat', 'is_private': False},
+            {'name': 'commands', 'is_private': False}
+        ]
+    },
+    'valheim': {
+        'name': 'valheim',
+        'topic': 'Valheim Server Status and Chat',
+        'is_private': False,
+        'threads': [
+            {'name': 'status', 'is_private': False},
+            {'name': 'chat', 'is_private': False},
+            {'name': 'commands', 'is_private': False}
+        ]
+    },
+    'ark': {
+        'name': 'ark',
+        'topic': 'ARK: Survival Evolved Server Status and Chat',
+        'is_private': False,
+        'threads': [
+            {'name': 'status', 'is_private': False},
+            {'name': 'chat', 'is_private': False},
+            {'name': 'commands', 'is_private': False}
+        ]
+    }
+}

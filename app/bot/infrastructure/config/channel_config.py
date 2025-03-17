@@ -1,23 +1,71 @@
+"""Channel configuration module for Discord channels."""
 from typing import Dict, Optional, List
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
+
+# Core imports
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from nextcord import TextChannel
-from app.bot.infrastructure.discord.channel_setup_service import ChannelSetupService
-from app.shared.infrastructure.database.models import ChannelMapping
-from app.shared.infrastructure.database.models.config import get_session
+
+# Import constants directly (move any complex imports to function level)
 from app.bot.infrastructure.config.constants.channel_constants import CHANNELS
 from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOARD_MAPPINGS
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime
-from app.bot.infrastructure.config.constants.category_constants import CATEGORY_CHANNEL_MAPPINGS
+
+# Fix import to use the correct model location
+from app.shared.infrastructure.database.management.connection import get_session
+
+# Import ChannelMapping explizit hier
+from app.shared.infrastructure.database.models import ChannelMapping, AutoThreadChannel
 
 class ChannelConfig:
-    # Constants from channel_constants.py
+    """Channel configuration for Discord channels."""
+    
+    # Constants
     CHANNELS = CHANNELS
     DASHBOARD_MAPPINGS = DASHBOARD_MAPPINGS
     DISCORD_SERVER = None
     
+    @staticmethod
+    def register(bot) -> Dict:
+        """Register channel configuration with the bot."""
+        
+        async def setup(bot):
+            try:
+                logger.info("Setting up Discord channels")
+                
+                # Import here to avoid circular imports
+                from app.bot.infrastructure.discord.channel_setup_service import ChannelSetupService
+                
+                # Create channel setup service
+                channel_setup = ChannelSetupService(bot)
+                await channel_setup.initialize()
+                
+                # Setup channels
+                channels = {}
+                for channel_name, config in CHANNELS.items():
+                    try:
+                        channel = await channel_setup.ensure_channel_exists(channel_name)
+                        if channel:
+                            channels[channel_name] = channel
+                    except Exception as e:
+                        logger.error(f"Error creating channel {channel_name}: {e}")
+                
+                logger.info(f"Created {len(channels)} channels")
+                return channels
+                
+            except Exception as e:
+                logger.error(f"Failed to setup channels: {e}")
+                return {}
+                
+        return {
+            "name": "Channels",
+            "setup": setup
+        }
+
+    # Additional methods can be moved to implementation-specific functions or 
+    # to separate class methods that defer imports to function level
+
     @classmethod
     async def create_channel_setup(cls, bot) -> 'ChannelSetupService':
         """Creates and configures the channel setup service"""
@@ -31,6 +79,8 @@ class ChannelConfig:
                 logger.info(f"Found {len(mappings)} channel mappings in database")
                 await cls._initialize_channel_mappings(session, mappings)
             
+            # Import here to avoid circular imports
+            from app.bot.infrastructure.discord.channel_setup_service import ChannelSetupService
             channel_setup = ChannelSetupService(bot)
             return channel_setup
             
@@ -167,22 +217,6 @@ class ChannelConfig:
             'name': thread_name,
             'is_private': thread_config.get('is_private', False),
             'auto_archive_duration': thread_config.get('auto_archive_duration', 1440)
-        }
-
-    @staticmethod
-    def register(bot) -> Dict:
-        async def setup(bot):
-            try:
-                channel_setup = await ChannelConfig.create_channel_setup(bot)
-                logger.info("Channel setup service created successfully")
-                return channel_setup
-            except Exception as e:
-                logger.error(f"Failed to setup channel service: {e}")
-                raise
-                
-        return {
-            "name": "Channel Setup",
-            "setup": setup
         }
 
     @classmethod

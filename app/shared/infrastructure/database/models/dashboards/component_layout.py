@@ -1,14 +1,21 @@
+"""
+Component layout model for dashboard positioning.
+"""
 from sqlalchemy import Column, Integer, String, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from ..base import Base
 
 class ComponentLayout(Base):
+    """Layout information for dashboard components"""
     __tablename__ = "component_layouts"
+    
+    # Add extend_existing=True to prevent errors if table is redefined
+    __table_args__ = {'extend_existing': True}
     
     id = Column(Integer, primary_key=True)
     component_id = Column(Integer, ForeignKey("dashboard_components.id", ondelete="CASCADE"), nullable=False)
-    row = Column(Integer, default=0)
-    column = Column(Integer, default=0)
+    row_position = Column(Integer, default=0)  # Renamed from 'row' to avoid SQL reserved word
+    col_position = Column(Integer, default=0)  # Renamed from 'column' to avoid SQL reserved word
     width = Column(Integer, default=1)
     height = Column(Integer, default=1)
     style = Column(String, nullable=True)  # CSS or display style information
@@ -18,4 +25,4 @@ class ComponentLayout(Base):
     component = relationship("DashboardComponent", back_populates="layout")
     
     def __repr__(self):
-        return f"<ComponentLayout(id={self.id}, row={self.row}, column={self.column})>"
+        return f"<ComponentLayout(id={self.id}, row={self.row_position}, col={self.col_position})>"

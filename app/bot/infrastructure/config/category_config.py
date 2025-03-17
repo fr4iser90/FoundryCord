@@ -2,7 +2,7 @@ from typing import Dict, Optional
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 from app.shared.infrastructure.database.models import CategoryMapping
-from app.shared.infrastructure.database.models.config import get_session
+from app.shared.infrastructure.database.management.connection import get_session
 from sqlalchemy import select, update
 from app.bot.infrastructure.config.constants.category_constants import CATEGORIES
 from app.shared.infrastructure.config.env_config import EnvConfig

@@ -3,15 +3,15 @@ import os
 import nextcord
 import sys
 import asyncio
+import signal
+from dotenv import load_dotenv
 from nextcord.ext import commands
-from app.bot.infrastructure.config import ServiceConfig, TaskConfig, ChannelConfig, CategoryConfig, DashboardConfig, ModuleServicesConfig
 from app.shared.interface.logging.api import get_bot_logger, setup_bot_logging
 from app.bot.infrastructure.factories import BotComponentFactory, ServiceFactory, TaskFactory, DashboardFactory
-from app.bot.core.lifecycle.lifecycle_manager import BotLifecycleManager
-from app.shared.infrastructure.database.migrations.init_db import init_db
-from app.bot.infrastructure.managers.dashboard_manager import DashboardManager
-from app.bot.infrastructure.config.command_config import CommandConfig
 from app.shared.infrastructure.config.env_config import EnvConfig  # Import the shared EnvConfig
+from app.bot.core.bot import HomelabBot
+from app.bot.core.lifecycle.lifecycle_manager import LifecycleManager
+from app.bot.infrastructure.factories.composite.bot_factory import BotComponentFactory
 
 
 # Get a reference to the logger
@@ -21,8 +21,11 @@ logger = get_bot_logger()
 env_config = EnvConfig()
 env_config.load()
 
+# Initialize environment variables
+load_dotenv()
+
 # Initialize bot with environment settings
-bot = commands.Bot(
+bot = HomelabBot(
     command_prefix='!!' if env_config.is_development else '!',
     intents=env_config.get_intents()
 )
@@ -31,29 +34,51 @@ bot = commands.Bot(
 bot.env_config = env_config
 
 async def initialize_bot():
-    # Initialize core components and factories first
-    bot.lifecycle = BotLifecycleManager(bot)
-    bot.factory = BotComponentFactory(bot)  # Main factory
+    """Initialize the bot and its components."""
+    global bot
     
-    # IMPORTANT: Initialize dashboard manager and attach it to bot directly
-    bot.dashboard_manager = await DashboardManager.setup(bot)
+    try:
+        # Initialize component factory - pass the bot instance
+        factory = BotComponentFactory(bot)
+        bot.factory = factory
+        
+        # Initialize lifecycle manager
+        lifecycle = LifecycleManager(bot)
+        bot.lifecycle = lifecycle
+        
+        # Initialize bot components
+        await lifecycle.initialize()
+        
+    except Exception as e:
+        logger.error(f"Startup error: {e}")
+        import traceback
+        logger.debug(traceback.format_exc())
+        
+async def shutdown_bot():
+    """Shutdown the bot gracefully."""
+    global bot
     
-    # IMPORTANT: Set all factory references BEFORE registering configurations
-    bot.component_factory = bot.factory     # For dashboards and UI components
-    bot.service_factory = bot.factory.factories['service']  # For service creation
-    bot.task_factory = bot.factory.factories['task']        # For task creation
-    bot.dashboard_factory = bot.factory.factories['dashboard']  # For dashboard creation
+    if bot:
+        try:
+            # Use lifecycle manager to shutdown
+            if bot.lifecycle:
+                await bot.lifecycle.shutdown()
+                
+            # Close the bot
+            await bot.close()
+            
+            logger.info("Bot shutdown successfully")
+            
+        except Exception as e:
+            logger.error(f"Error during shutdown: {e}")
     
-    # NOW register configurations
-    bot.category_config = CategoryConfig.register(bot)
-    bot.channel_config = ChannelConfig.register(bot)
-    bot.critical_services = ServiceConfig.register_critical_services(bot)
-    bot.module_services = ModuleServicesConfig.register(bot)
-    bot.tasks = TaskConfig.register_tasks(bot)
-    bot.command_modules = CommandConfig.register_commands(bot)
+    # Exit the program
+    sys.exit(0)
 
-    # Initialize through lifecycle manager
-    await bot.lifecycle.initialize()
+def signal_handler():
+    """Handle termination signals."""
+    logger.info("Received termination signal")
+    asyncio.create_task(shutdown_bot())
 
 @bot.event
 async def on_ready():
@@ -82,5 +107,37 @@ def run_bot():
         logger.error(f"Failed to start bot: {str(e)}")
         sys.exit(1)
 
-if __name__ == '__main__':
-    run_bot()
+async def main():
+    """Main entry point for the bot."""
+    global bot
+    
+    try:
+        # Create bot instance
+        bot = HomelabBot(command_prefix='!')
+        
+        # Set up signal handlers
+        loop = asyncio.get_event_loop()
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, signal_handler)
+            
+        # Get token
+        token = os.getenv('DISCORD_BOT_TOKEN')
+        if not token:
+            logger.error("No Discord bot token found in environment variables")
+            return
+            
+        # Run the bot
+        logger.info("Running the bot...")
+        await bot.start(token)
+        
+    except Exception as e:
+        logger.error(f"Error starting bot: {e}")
+        import traceback
+        logger.debug(traceback.format_exc())
+        
+        # Exit with error
+        sys.exit(1)
+
+# Run the bot if this module is executed directly
+if __name__ == "__main__":
+    asyncio.run(main())

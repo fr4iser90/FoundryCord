@@ -1,26 +1,29 @@
-from sqlalchemy import Column, Integer, String, BigInteger, DateTime, Boolean, ForeignKey, JSON
-from sqlalchemy.orm import relationship
+"""
+Dashboard model for UI dashboards.
+"""
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, JSON
 from sqlalchemy.sql import func
-from app.shared.infrastructure.database.models.base import Base
+from sqlalchemy.orm import relationship
+from ..base import Base
 
 class Dashboard(Base):
+    """Dashboard configuration model"""
     __tablename__ = "dashboards"
     
     id = Column(Integer, primary_key=True)
-    title = Column(String, nullable=False)
-    dashboard_type = Column(String, nullable=False, index=True)  # welcome, monitoring, project, etc.
-    guild_id = Column(String, nullable=False, index=True)
-    channel_id = Column(BigInteger, nullable=False)
-    message_id = Column(BigInteger, nullable=True)  # The main message ID, if applicable
-    position = Column(Integer, default=0)  # For ordering dashboards
+    dashboard_type = Column(String(50), nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+    guild_id = Column(String(50), nullable=True, index=True)
+    channel_id = Column(String(50), nullable=True)
     is_active = Column(Boolean, default=True)
-    update_frequency = Column(Integer, default=300)  # seconds
-    config = Column(JSON, nullable=True)  # Additional configuration
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    update_frequency = Column(Integer, default=300)  # In seconds
+    config = Column(JSON, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     
     # Relationships
     components = relationship("DashboardComponent", back_populates="dashboard", cascade="all, delete-orphan")
     
     def __repr__(self):
-        return f"<Dashboard(id={self.id}, type='{self.dashboard_type}', title='{self.title}')>"
+        return f"<Dashboard(id={self.id}, type='{self.dashboard_type}', name='{self.name}')>" 
