@@ -1,93 +1,72 @@
 import logging
 import asyncio
-from typing import Optional
-from sqlalchemy import text
+from typing import Dict, Any, Optional
+import nextcord  # Geändert von discord zu nextcord
+
 from app.bot.core.workflows.base_workflow import BaseWorkflow
-from app.shared.infrastructure.database.service import DatabaseService
 from app.shared.interface.logging.api import get_bot_logger
 
 logger = get_bot_logger()
 
 class DatabaseWorkflow(BaseWorkflow):
-    """Workflow for database connection management - NOT for migrations"""
+    """Workflow for database operations"""
     
-    def __init__(self, bot=None):
+    def __init__(self, bot):
         super().__init__(bot)
         self.name = "database"
         self.db_service = None
-        self.is_initialized = False
     
     async def initialize(self):
-        """Initialize database connection (NOT for table creation)"""
+        """Initialize the database workflow"""
         logger.info("Initializing database connection")
         
         try:
-            # Initialize the database service
+            # Import database service
+            from app.shared.infrastructure.database.service import DatabaseService
+            
+            # Create database service
             self.db_service = DatabaseService()
             
-            # Verify connection with retry logic
-            max_retries = 5
-            for attempt in range(1, max_retries + 1):
-                try:
-                    logger.info(f"Verifying database connection (attempt {attempt}/{max_retries})...")
-                    
-                    # Test the connection with a simple query
-                    session = await self.db_service.async_session()
-                    async with session as session:
-                        await session.execute(text("SELECT 1"))
-                        await session.commit()
-                    
+            # Verify database connection - DatabaseService doesn't have initialize()
+            # so we'll just check if it's ready directly
+            for attempt in range(1, 6):
+                logger.info(f"Verifying database connection (attempt {attempt}/5)...")
+                if await self.db_service.is_ready():
                     logger.info("Database connection verified successfully")
-                    self.is_initialized = True
                     return True
-                    
-                except Exception as e:
-                    if "Connect call failed" in str(e) and attempt < max_retries:
-                        wait_time = 2 ** attempt  # Exponential backoff
-                        logger.warning(f"Database connection error: {str(e)}")
-                        logger.info(f"Waiting {wait_time} seconds before retry...")
-                        await asyncio.sleep(wait_time)
-                    else:
-                        logger.error(f"Error verifying database connection: {str(e)}")
-                        if attempt >= max_retries:
-                            return False
+                
+                if attempt < 5:
+                    logger.warning(f"Database not ready, retrying in 2 seconds...")
+                    await asyncio.sleep(2)
             
+            logger.error("Failed to verify database connection after 5 attempts")
             return False
             
         except Exception as e:
-            logger.error(f"Error initializing database: {str(e)}")
+            logger.error(f"Error initializing database workflow: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return False
     
-    def get_db_service(self) -> Optional[DatabaseService]:
-        """Get the database service instance"""
-        if not self.is_initialized:
-            logger.warning("Database not initialized, returning None")
-            return None
-        return self.db_service
-
-    async def verify_database_health(self) -> bool:
-        """Verify database is healthy and accessible"""
-        if not self.is_initialized or not self.db_service:
-            logger.error("Database service not initialized")
-            return False
-            
-        try:
-            # Test the connection with a simple query
-            session = await self.db_service.async_session()
-            async with session as session:
-                await session.execute(text("SELECT 1"))
-                await session.commit()
-            
-            return True
-        except Exception as e:
-            logger.error(f"Database health check failed: {e}")
-            return False
-            
     async def cleanup(self):
         """Cleanup database resources"""
+        logger.info("Cleaning up database resources")
+        
         try:
             if self.db_service:
-                await self.db_service.close()
-                logger.info("Database connections closed")
+                # Check if cleanup method exists before calling it
+                if hasattr(self.db_service, 'cleanup') and callable(self.db_service.cleanup):
+                    await self.db_service.cleanup()
+                else:
+                    # If no cleanup method, try to close connections if possible
+                    if hasattr(self.db_service, 'close') and callable(self.db_service.close):
+                        await self.db_service.close()
+            
+            logger.info("Database resources cleaned up")
+            
         except Exception as e:
-            logger.error(f"Database cleanup failed: {e}")
+            logger.error(f"Error cleaning up database resources: {e}")
+    
+    def get_db_service(self):
+        """Get the database service"""
+        return self.db_service

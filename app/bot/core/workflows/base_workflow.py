@@ -1,25 +1,30 @@
-from abc import ABC, abstractmethod
-from app.shared.interface.logging.api import get_bot_logger
-logger = get_bot_logger()
 import logging
-from typing import Optional
+from typing import Optional, List
+import nextcord
 
-class BaseWorkflow(ABC):
+logger = logging.getLogger("homelab.bot")
+
+class BaseWorkflow:
     """Base class for all workflows"""
     
     def __init__(self, bot=None):
-        """Initialize the workflow with optional bot reference"""
-        self.name = "base"
-        self.is_initialized = False
+        self.name = "base"  # Must be overridden by subclasses
         self.bot = bot
-        
-    @abstractmethod
-    async def initialize(self):
-        """Initialize the workflow"""
-        self.is_initialized = True
-        return True
-        
-    @abstractmethod
-    async def cleanup(self):
-        """Clean up resources"""
-        pass
+        self.dependencies = []  # List of workflow names this workflow depends on
+    
+    async def initialize(self) -> bool:
+        """Initialize the workflow - must be implemented by subclasses"""
+        raise NotImplementedError("Subclasses must implement initialize()")
+    
+    async def cleanup(self) -> None:
+        """Cleanup resources used by the workflow - must be implemented by subclasses"""
+        raise NotImplementedError("Subclasses must implement cleanup()")
+    
+    def add_dependency(self, workflow_name: str) -> None:
+        """Add a dependency to this workflow"""
+        if workflow_name not in self.dependencies:
+            self.dependencies.append(workflow_name)
+    
+    def get_dependencies(self) -> List[str]:
+        """Get all dependencies for this workflow"""
+        return self.dependencies

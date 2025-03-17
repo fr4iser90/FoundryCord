@@ -1,5 +1,6 @@
 import logging
-import discord
+import nextcord
+import asyncio
 from typing import Dict, Optional, List
 from app.bot.core.workflows.base_workflow import BaseWorkflow
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
@@ -79,7 +80,7 @@ class ChannelWorkflow(BaseWorkflow):
             seed_channels()
             logger.info("Default channels seeded successfully")
     
-    async def setup_channels(self, guild: discord.Guild) -> Dict[str, discord.abc.GuildChannel]:
+    async def setup_channels(self, guild: nextcord.Guild) -> Dict[str, nextcord.TextChannel]:
         """Set up all channels for the guild"""
         if not self.channel_setup_service:
             logger.error("Channel setup service not initialized")
@@ -88,7 +89,7 @@ class ChannelWorkflow(BaseWorkflow):
         logger.info(f"Setting up channels for guild: {guild.name}")
         return await self.channel_setup_service.setup_channels(guild)
     
-    async def sync_with_discord(self, guild: discord.Guild) -> None:
+    async def sync_with_discord(self, guild: nextcord.Guild) -> None:
         """Sync channels with existing Discord channels"""
         if not self.channel_setup_service:
             logger.error("Channel setup service not initialized")
@@ -111,10 +112,10 @@ class ChannelWorkflow(BaseWorkflow):
     
     async def create_game_server_channel(
         self, 
-        guild: discord.Guild, 
+        guild: nextcord.Guild, 
         game_name: str,
         category_name: str = "GAME SERVERS"
-    ) -> Optional[discord.TextChannel]:
+    ) -> Optional[nextcord.TextChannel]:
         """Create a game server channel"""
         if not self.channel_factory:
             logger.error("Channel factory not initialized")
@@ -129,11 +130,11 @@ class ChannelWorkflow(BaseWorkflow):
     
     async def create_project_channel(
         self, 
-        guild: discord.Guild, 
+        guild: nextcord.Guild, 
         project_name: str,
         description: str = None,
         category_name: str = "PROJECTS"
-    ) -> Optional[discord.TextChannel]:
+    ) -> Optional[nextcord.TextChannel]:
         """Create a project channel"""
         if not self.channel_factory:
             logger.error("Channel factory not initialized")

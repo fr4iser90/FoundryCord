@@ -2,7 +2,7 @@
 from typing import Dict, Any, List, Optional
 import asyncio
 import logging
-import discord
+import nextcord
 
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
@@ -23,33 +23,62 @@ class DashboardWorkflow(BaseWorkflow):
         super().__init__()
         self.name = "dashboard"
         self.database_workflow = database_workflow
+        self.dashboard_service = None
         self.dashboard_repository = None
+        
+        # Add dependencies
+        self.add_dependency("database")
         
     async def initialize(self):
         """Initialize the dashboard workflow"""
         logger.info("Initializing dashboard workflow")
         
-        # Get the database service
-        db_service = self.database_workflow.get_db_service()
-        if not db_service:
-            logger.error("Database service not available, cannot initialize dashboard workflow")
+        try:
+            # Get database service
+            db_service = self.database_workflow.get_db_service()
+            if not db_service:
+                logger.error("Database service not available, cannot initialize dashboard workflow")
+                return False
+            
+            # Import repositories and services
+            from app.bot.infrastructure.repositories.dashboard_repository_impl import DashboardRepositoryImpl
+            from app.bot.application.services.dashboard.dashboard_service import DashboardService
+            
+            # Initialize repository
+            self.dashboard_repository = DashboardRepositoryImpl(db_service)
+            
+            # Initialize service
+            self.dashboard_service = DashboardService(self.dashboard_repository)
+            
+            logger.info("Dashboard workflow initialized successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error initializing dashboard workflow: {e}")
             return False
-        
-        # Create async session
-        session = await db_service.async_session()
-        
-        # Create the repository
-        self.dashboard_repository = DashboardRepository(session)
-        
-        logger.info("Dashboard workflow initialized successfully")
-        return True
     
     async def cleanup(self):
         """Cleanup resources used by the dashboard workflow"""
         logger.info("Cleaning up dashboard workflow resources")
-        # Reset the repository reference
-        self.dashboard_repository = None
         
+        try:
+            # Cleanup dashboard service
+            if self.dashboard_service:
+                await self.dashboard_service.cleanup()
+            
+            logger.info("Dashboard workflow resources cleaned up")
+            
+        except Exception as e:
+            logger.error(f"Error cleaning up dashboard workflow: {e}")
+    
+    async def get_dashboard_service(self):
+        """Get the dashboard service"""
+        return self.dashboard_service
+    
+    async def get_dashboard_repository(self):
+        """Get the dashboard repository"""
+        return self.dashboard_repository
+    
     async def get_dashboard_config(self, dashboard_type: str) -> Dict[str, Any]:
         """Get complete configuration for a dashboard type"""
         if not self.dashboard_repository:
@@ -58,7 +87,7 @@ class DashboardWorkflow(BaseWorkflow):
             
         return await self.dashboard_repository.get_dashboard_config(dashboard_type)
     
-    async def create_dashboard_message(self, channel: discord.TextChannel, dashboard_type: str) -> Optional[discord.Message]:
+    async def create_dashboard_message(self, channel: nextcord.TextChannel, dashboard_type: str) -> Optional[nextcord.Message]:
         """Create a new dashboard message in the specified channel"""
         if not self.dashboard_repository:
             logger.error("Dashboard repository not initialized")

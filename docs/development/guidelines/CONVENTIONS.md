@@ -73,7 +73,7 @@ import os
 import sys
 from datetime import datetime
 Third-party
-import discord
+
 import nextcord
 from dotenv import load_dotenv
 Local application imports

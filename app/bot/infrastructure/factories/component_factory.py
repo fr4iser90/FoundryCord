@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, Any, Optional, List
 
-import discord
+import nextcord
 
 from app.bot.infrastructure.factories.component_registry import ComponentRegistry
 from app.bot.interfaces.dashboards.components.base_component import BaseComponent

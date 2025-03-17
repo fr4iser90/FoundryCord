@@ -1,5 +1,5 @@
 import logging
-import discord
+import nextcord
 import asyncio
 from typing import Dict, Optional, List
 from sqlalchemy import text
@@ -41,8 +41,11 @@ class CategoryWorkflow(BaseWorkflow):
             # Check if the categories table exists
             table_exists = False
             async with engine.connect() as conn:
+                # Properly handle the asyncio result - fixed the Row object error
                 result = await conn.execute(text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'categories')"))
-                table_exists = await result.scalar()
+                row = await result.first()  # Use first() instead of fetchone() to get the Row object
+                if row is not None:
+                    table_exists = row[0]  # Get the boolean value from the first column
                 
             if not table_exists:
                 logger.info("Categories table doesn't exist, creating core tables...")
@@ -57,6 +60,12 @@ class CategoryWorkflow(BaseWorkflow):
                 
                 # Sleep briefly to ensure tables are fully created
                 await asyncio.sleep(0.5)
+                
+                # After table creation, seed with default categories
+                logger.info("Seeding default categories...")
+                # We need to use a synchronous approach for seeding since the seed function is synchronous
+                seed_categories()
+                logger.info("Default categories seeded successfully")
             else:
                 logger.info("Categories table already exists")
             
@@ -80,8 +89,10 @@ class CategoryWorkflow(BaseWorkflow):
             try:
                 async with engine.connect() as conn:
                     result = await conn.execute(text("SELECT COUNT(*) FROM categories"))
-                    count = await result.scalar()
+                    row = await result.first()  # Changed from fetchone() to first()
+                    count = row[0] if row else 0
                     categories_exist = count > 0
+                    logger.info(f"Found {count} categories in database")
             except Exception as e:
                 logger.warning(f"Error checking categories count: {e}")
                 categories_exist = False
@@ -105,7 +116,7 @@ class CategoryWorkflow(BaseWorkflow):
         self.category_repository = None
         self.category_setup_service = None
     
-    async def setup_categories(self, guild: discord.Guild) -> Dict[str, discord.CategoryChannel]:
+    async def setup_categories(self, guild: nextcord.Guild) -> Dict[str, nextcord.CategoryChannel]:
         """Set up all categories for the guild"""
         if not self.category_setup_service:
             logger.error("Category setup service not initialized")
@@ -114,7 +125,7 @@ class CategoryWorkflow(BaseWorkflow):
         logger.info(f"Setting up categories for guild: {guild.name}")
         return await self.category_setup_service.setup_categories(guild)
     
-    async def sync_with_discord(self, guild: discord.Guild) -> None:
+    async def sync_with_discord(self, guild: nextcord.Guild) -> None:
         """Sync categories with existing Discord categories"""
         if not self.category_setup_service:
             logger.error("Category setup service not initialized")

@@ -1,53 +1,89 @@
 import logging
 import asyncio
 from typing import Dict, Any, Optional, List
-import discord
+import nextcord
 from app.bot.core.workflows.base_workflow import BaseWorkflow
 from app.shared.interface.logging.api import get_bot_logger
 
-logger = logging.getLogger("homelab.bot")
+logger = get_bot_logger()
 
 class TaskWorkflow(BaseWorkflow):
     """Workflow for managing scheduled and background tasks"""
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, bot):
+        super().__init__(bot)
         self.name = "task"
         self.tasks = []
         self.running = False
-        self._bot = None
+        self.task_service = None
+        self.project_service = None
+        
+        # Add dependencies
+        self.add_dependency("database")
     
-    async def initialize(self, bot=None):
+    async def initialize(self):
         """Initialize the task workflow"""
         logger.info("Initializing task workflow")
         
-        self._bot = bot
-        self.running = True
-        
-        # Register background tasks
-        self.register_background_tasks()
-        
-        logger.info("Task workflow initialized successfully")
-        return True
+        try:
+            # Import services
+            from app.bot.application.services.project_management.task_service import TaskService
+            from app.bot.application.services.project_management.project_service import ProjectService
+            
+            # Initialize services
+            self.task_service = TaskService(self.bot)
+            self.project_service = ProjectService(self.bot)
+            
+            # Initialize task service
+            await self.task_service.initialize()
+            
+            # Initialize project service
+            await self.project_service.initialize()
+            
+            self.running = True
+            
+            # Register background tasks
+            self.register_background_tasks()
+            
+            logger.info("Task workflow initialized successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error initializing task workflow: {e}")
+            return False
     
     async def cleanup(self):
         """Cleanup resources used by the task workflow"""
         logger.info("Cleaning up task workflow resources")
         
-        # Set running flag to false so tasks can exit
-        self.running = False
-        
-        # Cancel all running tasks
-        for task in self.tasks:
-            if not task.done():
-                task.cancel()
-                try:
-                    await task
-                except asyncio.CancelledError:
-                    pass
-        
-        # Clear the task list
-        self.tasks.clear()
+        try:
+            # Cleanup task service
+            if self.task_service:
+                await self.task_service.cleanup()
+            
+            # Cleanup project service
+            if self.project_service:
+                await self.project_service.cleanup()
+            
+            # Set running flag to false so tasks can exit
+            self.running = False
+            
+            # Cancel all running tasks
+            for task in self.tasks:
+                if not task.done():
+                    task.cancel()
+                    try:
+                        await task
+                    except asyncio.CancelledError:
+                        pass
+            
+            # Clear the task list
+            self.tasks.clear()
+            
+            logger.info("Task workflow resources cleaned up")
+            
+        except Exception as e:
+            logger.error(f"Error cleaning up task workflow: {e}")
     
     def register_background_tasks(self):
         """Register background tasks to run"""
@@ -69,3 +105,11 @@ class TaskWorkflow(BaseWorkflow):
             except Exception as e:
                 logger.error(f"Error in background task: {e}")
                 await asyncio.sleep(60)  # Sleep before retrying
+    
+    async def get_task_service(self):
+        """Get the task service"""
+        return self.task_service
+    
+    async def get_project_service(self):
+        """Get the project service"""
+        return self.project_service

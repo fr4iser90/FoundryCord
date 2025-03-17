@@ -1,6 +1,6 @@
 """Error embed component for displaying error messages in dashboards."""
 
-import discord
+import nextcord
 from typing import Optional, Dict, Any, ClassVar
 
 from app.shared.interface.logging.api import get_bot_logger
@@ -28,7 +28,7 @@ class ErrorEmbed(BaseComponent):
         default_config = {
             "title": "Error",
             "description": "An error occurred",
-            "color": discord.Color.red().value,
+            "color": nextcord.Color.red().value,
             "error_code": None,
             "footer": None,
             "visible": True,
@@ -37,7 +37,7 @@ class ErrorEmbed(BaseComponent):
         
         super().__init__(config=config, default_config=default_config)
     
-    def build(self) -> discord.Embed:
+    def build(self) -> nextcord.Embed:
         """Build and return the Discord embed object.
         
         Returns:
@@ -45,7 +45,7 @@ class ErrorEmbed(BaseComponent):
         """
         try:
             # Create the base embed
-            embed = discord.Embed(
+            embed = nextcord.Embed(
                 title=self.config["title"],
                 description=self.config["description"],
                 color=self.config["color"]
@@ -65,17 +65,17 @@ class ErrorEmbed(BaseComponent):
             else:
                 # Default footer with timestamp
                 embed.set_footer(text="Contact an administrator if this error persists")
-                embed.timestamp = discord.utils.utcnow()
+                embed.timestamp = nextcord.utils.utcnow()
                 
             return embed
             
         except Exception as e:
             logger.error(f"Error building error embed: {str(e)}")
             # Return a minimal embed if we had an error building the proper one
-            return discord.Embed(
+            return nextcord.Embed(
                 title="Error Display Failed",
                 description="An error occurred while trying to display the error message.",
-                color=discord.Color.dark_red()
+                color=nextcord.Color.dark_red()
             )
     
     @classmethod

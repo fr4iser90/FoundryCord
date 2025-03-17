@@ -2,11 +2,12 @@
 import os
 import logging
 import asyncio
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 from typing import Dict, List, Any, Optional
 from app.bot.core.shutdown_handler import ShutdownHandler
 from app.bot.core.lifecycle.lifecycle_manager import LifecycleManager
+from app.bot.core.workflow_manager import WorkflowManager
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.bot.core.workflows.category_workflow import CategoryWorkflow
 from app.bot.core.workflows.channel_workflow import ChannelWorkflow
@@ -18,12 +19,17 @@ from app.shared.infrastructure.config.env_config import EnvConfig
 
 logger = get_bot_logger()
 
+# Suppress nextcord gateway logs by setting them to WARNING level only
+logging.getLogger("nextcord.gateway").setLevel(logging.WARNING)
+logging.getLogger("nextcord.client").setLevel(logging.WARNING)
+logging.getLogger("nextcord.http").setLevel(logging.WARNING)
+
 class HomelabBot(commands.Bot):
     """Main bot class for the Homelab Discord Bot"""
     
     def __init__(self, command_prefix="!", intents=None):
         if intents is None:
-            intents = discord.Intents.default()
+            intents = nextcord.Intents.default()
             intents.members = True
             intents.message_content = True
         
@@ -35,13 +41,29 @@ class HomelabBot(commands.Bot):
         # Initialize lifecycle manager
         self.lifecycle = LifecycleManager()
         
-        # Initialize workflows
-        self.database_workflow = DatabaseWorkflow()
+        # Initialize workflow manager
+        self.workflow_manager = WorkflowManager()
+        
+        # Create all workflow instances
+        self.database_workflow = DatabaseWorkflow(self)
         self.category_workflow = CategoryWorkflow(self.database_workflow)
         self.channel_workflow = ChannelWorkflow(self.database_workflow, self.category_workflow)
-        self.dashboard_workflow = None  # Will be initialized later
-        self.task_workflow = None  # Will be initialized later
-        self.slash_commands_workflow = None  # Will be initialized later
+        self.dashboard_workflow = DashboardWorkflow(self.database_workflow)
+        self.task_workflow = TaskWorkflow(self)
+        self.slash_commands_workflow = SlashCommandsWorkflow(self)
+        
+        # Register workflows with dependencies
+        self.workflow_manager.register_workflow(self.database_workflow)
+        self.workflow_manager.register_workflow(self.category_workflow, ['database'])
+        self.workflow_manager.register_workflow(self.channel_workflow, ['database', 'category'])
+        self.workflow_manager.register_workflow(self.dashboard_workflow, ['database'])
+        self.workflow_manager.register_workflow(self.task_workflow, ['database'])
+        self.workflow_manager.register_workflow(self.slash_commands_workflow, ['database'])
+        
+        # Set explicit initialization order
+        self.workflow_manager.set_initialization_order([
+            'database', 'category', 'channel', 'dashboard', 'task', 'slash_commands'
+        ])
         
         # Add shutdown handler
         self.shutdown_handler = ShutdownHandler(self)
@@ -66,41 +88,17 @@ class HomelabBot(commands.Bot):
         """Start the bot initialization process"""
         logger.info("Starting bot initialization")
         
-        try:
-            # Initialize database
-            if not await self.database_workflow.initialize():
-                logger.error("Failed to initialize database")
-                return False
-            
-            # Initialize config service (using the correct path)
-            # Import the correct config service module
-            from app.bot.application.services.config.config_service import ConfigService
-            self.config_service = ConfigService(self)
-            await self.config_service.initialize()
-            
-            # Initialize remaining components
-            await self.category_workflow.initialize()
-            await self.channel_workflow.initialize()
-            
-            # Initialize dashboard workflow after database is ready
-            self.dashboard_workflow = DashboardWorkflow(self.database_workflow)
-            await self.dashboard_workflow.initialize()
-            
-            # Initialize task workflow
-            self.task_workflow = TaskWorkflow()
-            await self.task_workflow.initialize(self)
-            
-            # Initialize slash commands workflow last
-            self.slash_commands_workflow = SlashCommandsWorkflow(self)
-            await self.slash_commands_workflow.initialize()
-            
-            logger.info("Bot initialization completed successfully")
-            return True
-        except Exception as e:
-            logger.error(f"Error during bot initialization: {e}")
+        # Initialize all workflows using the workflow manager
+        success = await self.workflow_manager.initialize_all()
+        
+        if not success:
+            logger.error("Bot initialization failed")
             return False
+            
+        logger.info("Bot initialization completed successfully")
+        return True
     
-    async def sync_guild_data(self, guild: discord.Guild):
+    async def sync_guild_data(self, guild: nextcord.Guild):
         """Synchronize database with Discord guild data"""
         logger.info(f"Syncing data for guild: {guild.name}")
         
@@ -119,13 +117,22 @@ class HomelabBot(commands.Bot):
         logger.info(f"Finished syncing guild data for: {guild.name}")
         return {"categories": categories, "channels": channels}
 
+    async def cleanup(self):
+        """Clean up all resources before shutdown"""
+        logger.info("Cleaning up bot resources")
+        
+        # Use the workflow manager to cleanup all workflows in reverse order
+        await self.workflow_manager.cleanup_all()
+        
+        logger.info("Bot resources cleaned up successfully")
+
 async def main():
     """
     Main entry point for the bot application.
     """
     try:
         # Configure bot with appropriate settings
-        intents = discord.Intents.default()
+        intents = nextcord.Intents.default()
         intents.members = True
         intents.message_content = True
         
