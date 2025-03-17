@@ -3,6 +3,7 @@
 ## 1. Overview
 
 This action plan outlines our strategy for implementing data-driven architecture in the Homelab Discord Bot. We're migrating from hardcoded configuration to a database-driven approach, where all configuration is stored in PostgreSQL and managed through the web frontend.
+Analyze in multiple runs whole codebase first. Then follow the plan.
 
 ## 2. Implementation Sequence
 
@@ -226,5 +227,6 @@ Week 3-4: Dashboard Service
 - [General Service Plan](./services/general-service-plan.md) - Language and documentation standards
 
 - [Data Flow](../../development/architecture/DATA_FLOW.md) - Data flow in dashboards
-- [Layer Definitions](../../development/architecture/LAYERS.md) - System layer organization
+- [Layer](../../development/architecture/LAYERS.md) - System layer organization
+- [Tree](../../development/architecture/TREE.md) - Current project structure
 - Existing Dashboard Components: `app/shared/infrastructure/database/migrations/dashboards/` 

@@ -38,6 +38,41 @@ async def run_dashboard_migrations():
         logger.error(f"Dashboard migration failed: {e}")
         return False
 
+async def run_database_migrations():
+    """Run all database migrations in the correct order"""
+    try:
+        # Check if we're running in the bot container to avoid duplicate migrations
+        container_type = os.environ.get("CONTAINER_TYPE", "unknown")
+        logger.info(f"Current container type: {container_type}")
+        
+        if container_type != "bot":
+            logger.info(f"Skipping database migrations in {container_type} container")
+            return True
+            
+        logger.info("Starting database migrations...")
+        
+        # 1. Run dashboard components migration first (existing code)
+        from app.shared.infrastructure.database.migrations.dashboards.dashboard_components_migration import main as run_dashboard_migration
+        await run_dashboard_migration()
+        logger.info("Dashboard components migration completed successfully")
+        
+        # 2. Run category migration
+        logger.info("Starting category migration...")
+        from app.shared.infrastructure.database.migrations.categories.seed_categories import check_and_seed_categories
+        check_and_seed_categories()
+        logger.info("Category migration completed successfully")
+        
+        # 3. Run channel migration (depends on categories)
+        logger.info("Starting channel migration...")
+        from app.shared.infrastructure.database.migrations.channels.seed_channels import check_and_seed_channels
+        check_and_seed_channels()
+        logger.info("Channel migration completed successfully")
+        
+        return True
+    except Exception as e:
+        logger.error(f"Database migration failed: {e}")
+        return False
+
 async def main():
     """Main entrypoint for the bot"""
     try:
@@ -49,8 +84,8 @@ async def main():
         security = await setup_security()
         logger.info("Security bootstrapping completed")
         
-        # Run dashboard migrations (only in bot container)
-        await run_dashboard_migrations()
+        # Run ALL migrations (not just dashboard migrations)
+        await run_database_migrations()
         
         # Import and start the bot
         logger.info("Starting bot...")
