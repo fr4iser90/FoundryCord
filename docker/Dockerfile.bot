@@ -27,4 +27,4 @@ RUN chmod +x /entrypoint.sh
 
 # Run entrypoint script
 #ENTRYPOINT ["/entrypoint.sh"]
-ENTRYPOINT ["python", "-m", "app.shared.infrastructure.docker.entrypoint", "bot"]
+ENTRYPOINT ["python", "-m", "app.shared.bot.infrastructure.entrypoint", "bot"]

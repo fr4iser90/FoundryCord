@@ -4,8 +4,7 @@ from sqlalchemy.orm import relationship
 
 # Import the Base from the shared models
 from app.shared.infrastructure.database.models.base import Base
-from app.shared.infrastructure.database.models.dashboard_models import DashboardMessage as DashboardModel
-
+from app.shared.infrastructure.database.models import DashboardMessage
 
 class DashboardModel(Base):
     """SQLAlchemy model using the existing dashboard_messages table"""
@@ -64,7 +63,7 @@ class WidgetModel(Base):
     __abstract__ = True
     
     id = Column(String, primary_key=True)
-    dashboard_id = Column(String, ForeignKey('dashboard_messages.id'))
+    dashboard_id = Column(Integer, ForeignKey('dashboard_messages.id'))
     widget_type = Column(String)
     title = Column(String)
     position_x = Column(Integer, default=0)

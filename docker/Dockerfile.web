@@ -30,4 +30,4 @@ EXPOSE 8000
 
 # Run the application with our startup script
 #CMD ["/entrypoint.sh"]
-ENTRYPOINT ["python", "-m", "app.shared.infrastructure.docker.entrypoint", "web"]
+ENTRYPOINT ["python", "-m", "app.shared.web.infrastructure.entrypoint", "web"]

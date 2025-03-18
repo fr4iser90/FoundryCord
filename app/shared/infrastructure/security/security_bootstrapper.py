@@ -1,6 +1,8 @@
 """Security bootstrapper for generating and managing security keys."""
 import os
 import base64
+import logging
+import traceback
 from cryptography.fernet import Fernet
 import asyncio
 
@@ -10,8 +12,9 @@ from app.shared.infrastructure.database.core.connection import get_db_connection
 from app.shared.infrastructure.database.service import DatabaseService
 from app.shared.infrastructure.database.core.init import create_tables
 from app.shared.infrastructure.database.models.base import initialize_engine
+from app.shared.infrastructure.database.api import get_session
 
-logger = get_bot_logger()
+logger = logging.getLogger("homelab.bot")
 
 class SecurityBootstrapper:
     """Handles security initialization and key bootstrapping"""
@@ -26,88 +29,68 @@ class SecurityBootstrapper:
         # This allows proper database interaction
     
     async def initialize(self):
-        """Initialize security components"""
+        """Initialize security bootstrapper with database support"""
         try:
-            # First ensure database is ready
-            await ensure_db_initialized()
+            # Ensure environment variables are set
+            self._ensure_env_keys()
             
-            # Create database tables if they don't exist
-            engine = await initialize_engine()
-            await create_tables(engine)
-            
-            # Now proceed with key initialization
             if self.auto_db_key_management:
-                # Initialize database connection for key storage
-                db_conn = await get_db_connection()
-                self.key_repository = KeyRepository(db_conn)
-                
-                # Initialize keys
-                await self._initialize_db_keys()
+                # Try to load keys from database
+                try:
+                    await self._load_keys_from_database()
+                    logger.info("Security keys loaded from database successfully")
+                except Exception as e:
+                    logger.error(f"Failed to load keys from database: {str(e)}")
+                    logger.error(traceback.format_exc())
+                    # Continue with environment variables as fallback
+                    logger.warning("Using environment variables as fallback for security keys")
             
             return True
         except Exception as e:
-            # Avoid passing exc_info=True to avoid the KeyError
-            logger.error(f"Security bootstrapping failed: {e}")
+            logger.error(f"Security bootstrapper initialization failed: {str(e)}")
+            logger.error(traceback.format_exc())
             return False
     
     def _ensure_env_keys(self):
-        """Ensure all security-related environment variables exist (fallback method)"""
-        # Check AES_KEY
-        if not os.getenv('AES_KEY'):
-            generated_key = base64.urlsafe_b64encode(os.urandom(32)).decode()
-            os.environ['AES_KEY'] = generated_key
-            logger.warning(f"Generated missing AES_KEY environment variable: {generated_key[:5]}... (NOT PERSISTED)")
-            
-        # Check ENCRYPTION_KEY  
-        if not os.getenv('ENCRYPTION_KEY'):
-            generated_key = Fernet.generate_key().decode()
-            os.environ['ENCRYPTION_KEY'] = generated_key
-            logger.warning(f"Generated missing ENCRYPTION_KEY environment variable: {generated_key[:5]}... (NOT PERSISTED)")
-            
-        # Check JWT_SECRET_KEY
-        if not os.getenv('JWT_SECRET_KEY'):
-            generated_key = base64.urlsafe_b64encode(os.urandom(24)).decode()
-            os.environ['JWT_SECRET_KEY'] = generated_key
-            logger.warning(f"Generated missing JWT_SECRET_KEY environment variable: {generated_key[:5]}... (NOT PERSISTED)")
-    
-    async def _initialize_db_keys(self):
-        """Initialize database key storage and synchronize with environment"""
-        if not self.key_repository:
-            logger.error("Key repository not initialized")
-            return False
-            
-        for key_name in self.KEY_TYPES:
-            # Try to get key from database first
-            stored_key = await self.key_repository.get_key(key_name)
-            
-            if stored_key:
-                # Key exists in database, set it in environment
-                logger.debug(f"Loaded {key_name} from database: {stored_key[:5]}...")
-                os.environ[key_name] = stored_key
-            else:
-                # Key doesn't exist in database
-                env_key = os.getenv(key_name)
+        """Ensure all required security keys exist as environment variables."""
+        for key_type in self.KEY_TYPES:
+            if not os.environ.get(key_type):
+                # Generate a new key
+                if key_type == "AES_KEY" or key_type == "ENCRYPTION_KEY":
+                    new_key = Fernet.generate_key().decode('utf-8')
+                else:  # JWT_SECRET_KEY
+                    new_key = base64.urlsafe_b64encode(os.urandom(32)).decode('utf-8')
                 
-                if env_key:
-                    # Key exists in environment but not in database, store it
-                    logger.info(f"Storing existing {key_name} in database")
-                    await self.key_repository.store_key(key_name, env_key)
-                else:
-                    # Key doesn't exist anywhere, generate and store it
-                    new_key = self._generate_key(key_name)
-                    os.environ[key_name] = new_key
-                    await self.key_repository.store_key(key_name, new_key)
-                    logger.info(f"Generated and stored new {key_name}: {new_key[:5]}...")
-        
-        return True
+                # Set the environment variable
+                os.environ[key_type] = new_key
+                
+                # Log the generation (hide part of the key)
+                visible_part = new_key[:5] + "..." if len(new_key) > 5 else new_key
+                logger.warning(f"Generated missing {key_type} environment variable: {visible_part} (NOT PERSISTED)")
     
-    def _generate_key(self, key_type):
-        """Generate a new key based on the key type"""
-        if key_type == "AES_KEY":
-            return base64.urlsafe_b64encode(os.urandom(32)).decode()
-        elif key_type == "ENCRYPTION_KEY":
-            return Fernet.generate_key().decode()
-        elif key_type == "JWT_SECRET_KEY":
-            return base64.urlsafe_b64encode(os.urandom(24)).decode()
-        else:
-            raise ValueError(f"Unknown key type: {key_type}")
+    async def _load_keys_from_database(self):
+        """Load security keys from database."""
+        # Initialize key repository with a proper session
+        session = await get_session()
+        self.key_repository = KeyRepository(session)
+        
+        # Load each key from database
+        for key_type in self.KEY_TYPES:
+            try:
+                # Try to get the key from database
+                key_value = await self.key_repository.get_key(key_type)
+                
+                if key_value:
+                    # Key exists in database, use it
+                    os.environ[key_type] = key_value
+                    logger.info(f"Loaded {key_type} from database")
+                else:
+                    # Key doesn't exist in database, store the current one
+                    current_key = os.environ.get(key_type)
+                    if current_key:
+                        # Store the current key in database
+                        await self.key_repository.store_key(key_type, current_key)
+                        logger.info(f"Stored {key_type} in database")
+            except Exception as e:
+                logger.error(f"Error loading/storing {key_type}: {str(e)}")
+                # Continue with next key
