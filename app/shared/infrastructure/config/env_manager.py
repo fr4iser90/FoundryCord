@@ -7,6 +7,8 @@ import time
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from app.shared.infrastructure.database.core.config import get_database_url
+import asyncio
+from sqlalchemy.sql import text
 
 logger = get_db_logger()
 
@@ -91,31 +93,36 @@ class EnvManager:
             return default
         return [item.strip() for item in value.split(separator)]
 
-def configure_database():
-    """Configure database connection with proper retry logic"""
+async def configure_database_async():
+    """Configure database connection with proper retry logic (async version)"""
+    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+    from sqlalchemy.orm import sessionmaker
+    
     db_url = get_database_url()
     max_retries = int(os.getenv('DB_CONNECTION_RETRIES', '5'))
     retry_interval = int(os.getenv('DB_CONNECTION_RETRY_INTERVAL', '5'))
     
     for attempt in range(1, max_retries + 1):
         try:
-            engine = create_engine(db_url, echo=False)
+            engine = create_async_engine(db_url, echo=False)
+            
             # Test connection
-            with engine.connect() as conn:
-                pass
+            async with engine.begin() as conn:
+                await conn.execute(text("SELECT 1"))
             
             # Create and configure session factory
-            session_factory = sessionmaker(bind=engine)
-            Session = scoped_session(session_factory)
+            async_session_factory = sessionmaker(
+                engine, expire_on_commit=False, class_=AsyncSession
+            )
             
             # Register Session for app-wide use
             from app.shared.domain.models import Base
             Base.metadata.bind = engine
             
-            return engine, Session
+            return engine, async_session_factory
         except Exception as e:
-            logging.warning(f"Database connection attempt {attempt} failed: {str(e)}")
+            logger.warning(f"Database connection attempt {attempt} failed: {str(e)}")
             if attempt < max_retries:
-                time.sleep(retry_interval)
+                await asyncio.sleep(retry_interval)
             else:
                 raise RuntimeError(f"Failed to connect to database after {max_retries} attempts") from e

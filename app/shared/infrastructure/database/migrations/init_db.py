@@ -27,27 +27,24 @@ async def is_database_empty():
 
 async def init_db(bot=None):
     try:
+        logger.info("Initializing database...")
+        
+        # First create the config table for security bootstrapper
+        from app.shared.infrastructure.database.migrations.create_config_table import create_config_table
+        await create_config_table()
+        
+        # Then create all other tables
         engine = await initialize_engine()
+        await create_tables(engine)
         
-        # Create a schema in PostgreSQL
-        async with engine.begin() as conn:
-            # Create tables using SQLAlchemy models
-            await conn.run_sync(Base.metadata.create_all)
-            
-        logger.info("Database schema created successfully")
+        # Run other migrations
+        await migrate_existing_users()
         
-        # If database was empty, run initial data migrations
-        if await is_database_empty():
-            logger.info("Running initial data migrations for empty database")
-            await migrate_existing_users()
-        
-        # Now wait for dashboard migrations to complete (whether they're running in another process or not)
-        await wait_for_initialization()
-        
+        logger.info("Database initialization completed successfully")
         return True
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
-        raise
+        return False
 
 async def migrate_existing_users():
     """

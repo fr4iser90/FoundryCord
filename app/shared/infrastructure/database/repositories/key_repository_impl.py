@@ -1,132 +1,61 @@
-"""Key repository implementation for storing and retrieving encryption keys."""
-import os
-from typing import Dict, Any, Optional
-import json
-import asyncio
-from datetime import datetime
-
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.shared.infrastructure.database.models import Config
+from typing import Optional
 from app.shared.interface.logging.api import get_bot_logger
+
 logger = get_bot_logger()
 
-from app.shared.infrastructure.database.core.connection import get_config, set_config
-
 class KeyRepository:
-    """Repository for storing and retrieving encryption keys"""
+    """Repository for managing security keys in the database"""
     
-    def __init__(self, db_connection):
-        self.db_connection = db_connection
-        self.initialized = False
+    def __init__(self, session: AsyncSession):
+        self.session = session
         
-    async def initialize(self):
-        """Initialize the key repository"""
-        # Make sure the database connection is initialized
-        if not getattr(self.db_connection, 'initialized', False):
-            await self.db_connection.initialize()
-            
-        self.initialized = True
+    async def ensure_table_exists(self) -> bool:
+        """Ensure the security_keys table exists"""
+        # This should be handled by SQLAlchemy migrations or Base.metadata.create_all
+        # Not in the repository itself
         return True
-        
-    async def get_aes_key(self) -> Optional[str]:
-        """Get the AES key from database"""
+    
+    async def get_key(self, key_name: str) -> Optional[str]:
+        """Get a key from the database by name"""
         try:
-            query = "SELECT value FROM config WHERE key = 'security_key_AES_KEY'"
-            result = await self.db_connection.execute(query)
-            row = result.first()
-            return row[0] if row else None
+            result = await self.session.execute(
+                select(Config).where(Config.key == key_name)
+            )
+            config = result.scalar_one_or_none()
+            return config.value if config else None
         except Exception as e:
-            logger.error(f"Error getting AES key: {e}")
-            return None
+            # Handle the case where the table doesn't exist yet
+            if "relation" in str(e) and "does not exist" in str(e):
+                logger.warning(f"Config table does not exist yet, returning None for key {key_name}")
+                return None
+            else:
+                # Re-raise other exceptions
+                raise
+    
+    async def store_key(self, key_name: str, key_value: str) -> bool:
+        """Store a key in the database"""
+        # Check if key exists
+        result = await self.session.execute(
+            select(Config).where(Config.key == key_name)
+        )
+        config = result.scalar_one_or_none()
         
-    async def save_aes_key(self, key_value: str) -> bool:
-        """Save the AES key to database"""
+        if config:
+            # Update existing key
+            config.value = key_value
+        else:
+            # Create new key
+            config = Config(key=key_name, value=key_value)
+            self.session.add(config)
+            
         try:
-            async with self.db_connection.session() as session:
-                # Check if key exists
-                query = "SELECT value FROM config WHERE key = 'security_key_AES_KEY'"
-                result = await session.execute(query)
-                row = result.first()
-                
-                if row:
-                    # Update existing
-                    update_query = "UPDATE config SET value = :value WHERE key = 'security_key_AES_KEY'"
-                    await session.execute(update_query, {"value": key_value})
-                else:
-                    # Insert new
-                    insert_query = "INSERT INTO config (key, value) VALUES ('security_key_AES_KEY', :value)"
-                    await session.execute(insert_query, {"value": key_value})
-                    
-                await session.commit()
-                return True
+            await self.session.commit()
+            logger.debug(f"Stored key {key_name} in database")
+            return True
         except Exception as e:
-            logger.error(f"Error saving AES key: {e}")
-            return False
-        
-    async def get_jwt_secret_key(self) -> Optional[str]:
-        """Get the JWT secret key from database"""
-        try:
-            query = "SELECT value FROM config WHERE key = 'security_key_JWT_SECRET_KEY'"
-            result = await self.db_connection.execute(query)
-            row = result.first()
-            return row[0] if row else None
-        except Exception as e:
-            logger.error(f"Error getting JWT secret key: {e}")
-            return None
-        
-    async def save_jwt_secret_key(self, key_value: str) -> bool:
-        """Save the JWT secret key to database"""
-        try:
-            async with self.db_connection.session() as session:
-                # Check if key exists
-                query = "SELECT value FROM config WHERE key = 'security_key_JWT_SECRET_KEY'"
-                result = await session.execute(query)
-                row = result.first()
-                
-                if row:
-                    # Update existing
-                    update_query = "UPDATE config SET value = :value WHERE key = 'security_key_JWT_SECRET_KEY'"
-                    await session.execute(update_query, {"value": key_value})
-                else:
-                    # Insert new
-                    insert_query = "INSERT INTO config (key, value) VALUES ('security_key_JWT_SECRET_KEY', :value)"
-                    await session.execute(insert_query, {"value": key_value})
-                    
-                await session.commit()
-                return True
-        except Exception as e:
-            logger.error(f"Error saving JWT secret key: {e}")
-            return False
-        
-    async def get_encryption_key(self) -> Optional[str]:
-        """Get the encryption key from database"""
-        try:
-            query = "SELECT value FROM config WHERE key = 'security_key_ENCRYPTION_KEY'"
-            result = await self.db_connection.execute(query)
-            row = result.first()
-            return row[0] if row else None
-        except Exception as e:
-            logger.error(f"Error getting encryption key: {e}")
-            return None
-        
-    async def save_encryption_key(self, key_value: str) -> bool:
-        """Save the encryption key to database"""
-        try:
-            async with self.db_connection.session() as session:
-                # Check if key exists
-                query = "SELECT value FROM config WHERE key = 'security_key_ENCRYPTION_KEY'"
-                result = await session.execute(query)
-                row = result.first()
-                
-                if row:
-                    # Update existing
-                    update_query = "UPDATE config SET value = :value WHERE key = 'security_key_ENCRYPTION_KEY'"
-                    await session.execute(update_query, {"value": key_value})
-                else:
-                    # Insert new
-                    insert_query = "INSERT INTO config (key, value) VALUES ('security_key_ENCRYPTION_KEY', :value)"
-                    await session.execute(insert_query, {"value": key_value})
-                    
-                await session.commit()
-                return True
-        except Exception as e:
-            logger.error(f"Error saving encryption key: {e}")
+            await self.session.rollback()
+            logger.error(f"Failed to store key {key_name}: {e}")
             return False

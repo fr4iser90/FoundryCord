@@ -40,17 +40,11 @@ A Docker-based Discord bot written in Python, designed to manage and monitor you
 
 1. **Create a minimal .env.discordbot file**:
    ```bash
-   cd compose
-   mv .env.discordbot.example .env.discordbot
+   cd docker
+   mv .env.example .env
    nano .env.discordbot
    ```
 
-2. **Create a minimal .env.postgres file**:
-   ```bash
-   cd compose
-   mv .env.postgres.example .env.postgres
-   nano .env.postgres
-   ```
 
 3. **Start the containers**:
    ```bash

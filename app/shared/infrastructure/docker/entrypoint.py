@@ -13,9 +13,38 @@ logger = get_bot_logger()
 
 async def setup_security():
     """Set up security components asynchronously"""
-    security = SecurityBootstrapper(auto_db_key_management=True)
-    await security.initialize()
-    return security
+    try:
+        # First ensure database is ready
+        from app.shared.infrastructure.database.core.init import wait_for_database
+        
+        # Wait for database with retry logic
+        max_retries = 5
+        retry_delay = 2
+        db_ready = False
+        
+        for attempt in range(1, max_retries + 1):
+            logger.info(f"Database readiness check (attempt {attempt}/{max_retries})...")
+            if await wait_for_database():
+                logger.info("Database is ready for security bootstrapping")
+                db_ready = True
+                break
+                
+            if attempt < max_retries:
+                logger.info(f"Waiting {retry_delay}s before retrying...")
+                await asyncio.sleep(retry_delay)
+                retry_delay *= 2
+        
+        # Initialize security with database if available
+        security = SecurityBootstrapper(auto_db_key_management=db_ready)
+        await security.initialize()
+        
+        return security
+    except Exception as e:
+        logger.error(f"Security setup failed: {e}", exc_info=True)
+        # Fall back to environment-only security
+        security = SecurityBootstrapper(auto_db_key_management=False)
+        security._ensure_env_keys()
+        return security
 
 async def run_dashboard_migrations():
     """Run dashboard migrations to populate the database"""
@@ -137,34 +166,40 @@ async def main():
 
 async def _bootstrap_web_async():
     """Async implementation of bootstrap_web"""
-    logger.info("===== Homelab Discord Bot Web Interface Initialization =====")
-    
-    # Set container type environment variable BEFORE any calls
-    os.environ["CONTAINER_TYPE"] = "web"
-    logger.info("Running in WEB container mode")
-    
-    # Initialize security bootstrapper for environment variables
-    security = SecurityBootstrapper(auto_db_key_management=False)
-    security._ensure_env_keys()  # Just ensure env vars are set
-    
-    # Then load environment variables
-    env_manager = EnvManager()
-    config = env_manager.configure()
-    
-    # Initialize database connection first
-    logger.info("Establishing database connection...")
     try:
-        from app.shared.infrastructure.config.env_manager import configure_database
-        engine, Session = configure_database()
-        logger.info("Database connection established successfully")
+        # Wait for database with retry logic
+        from app.shared.infrastructure.database.core.init import wait_for_database
         
-        # Store the session factory for global use
-        from app.shared.infrastructure.database.session import set_session_factory
-        set_session_factory(Session)
+        # Wait for database with retry logic
+        max_retries = 5
+        retry_delay = 2
+        db_ready = False
         
-        # WEB container does initialize the database
-        logger.info("Starting database initialization (web container)...")
-        await run_database_migrations()
+        for attempt in range(1, max_retries + 1):
+            logger.info(f"Database readiness check (attempt {attempt}/{max_retries})...")
+            if await wait_for_database():
+                logger.info("Database is ready for web initialization")
+                db_ready = True
+                break
+                
+            if attempt < max_retries:
+                logger.info(f"Waiting {retry_delay}s before retrying...")
+                await asyncio.sleep(retry_delay)
+                retry_delay *= 2
+        
+        if not db_ready:
+            logger.error("Database not available after maximum retries")
+            return None
+        
+        # Initialize database connection
+        logger.info("Initializing database connection")
+        from app.shared.infrastructure.database.core.connection import get_db_connection
+        db_conn = await get_db_connection()
+        logger.info("Database connection initialized successfully")
+        
+        # Then load environment variables
+        env_manager = EnvManager()
+        config = env_manager.configure()
         
         # Now initialize security bootstrapper with database support
         logger.info("Initializing security key storage...")
@@ -174,14 +209,28 @@ async def _bootstrap_web_async():
         logger.info("Web interface initialization complete")
         return config
     except Exception as e:
-        logger.error(f"Database connection failed: {e}")
+        logger.error(f"Web initialization failed: {e}")
         return None
 
 def bootstrap_web():
     """Entrypoint for the web container"""
     try:
+        logger.info("===== Homelab Discord Bot Web Interface Initialization =====")
+        
+        # Set container type environment variable BEFORE any calls
+        os.environ["CONTAINER_TYPE"] = "web"
+        logger.info("Running in WEB container mode")
+        
+        # Initialize security bootstrapper for environment variables
+        # Just ensure env vars are set temporarily for startup
+        security = SecurityBootstrapper(auto_db_key_management=False)
+        security._ensure_env_keys()
+        
+        # Create an event loop for async operations
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        
+        # Run the async initialization
         config = loop.run_until_complete(_bootstrap_web_async())
         
         if config is None:
