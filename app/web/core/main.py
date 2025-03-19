@@ -105,5 +105,32 @@ async def global_exception_handler(request, exc):
         content={"message": "Internal server error", "details": str(exc)}
     )
 
+# Add bot_interface variable initialization
+bot_interface = None
+
+# Add the missing start_web_server function
+def start_web_server(dependency_container):
+    """
+    Start the web server with the provided dependency container.
+    
+    Args:
+        dependency_container: The dependency container with all required services
+    """
+    global bot_interface
+    
+    # Extract necessary dependencies from the container
+    try:
+        # Get bot interface if available
+        if hasattr(dependency_container, 'bot_interface'):
+            bot_interface = dependency_container.bot_interface
+        
+        # Start the web server
+        uvicorn.run(app, host="0.0.0.0", port=8000)
+    except Exception as e:
+        import logging
+        logger = logging.getLogger("homelab.bot")
+        logger.error(f"Failed to start web server: {str(e)}")
+        raise
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
