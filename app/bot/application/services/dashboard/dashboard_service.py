@@ -11,7 +11,7 @@ from app.bot.domain.dashboards.models.dashboard_model import DashboardModel
 from app.bot.domain.dashboards.repositories.dashboard_repository import DashboardRepository
 from app.bot.infrastructure.factories.component_registry import ComponentRegistry
 from app.bot.infrastructure.factories.data_source_registry import DataSourceRegistry
-from app.shared.infrastructure.database.session import get_session
+from app.shared.infrastructure.database.core.config import get_session
 
 class DashboardService:
     """Core service for dashboard operations."""

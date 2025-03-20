@@ -20,7 +20,8 @@ class WebWorkflowManager:
     async def initialize_workflows(self):
         """Initialize all workflows."""
         try:
-            # Initialize workflows here
+            
+            # Initialize workflows after database is ready
             logger.info("Web workflows initialized")
         except Exception as e:
             logger.error(f"Failed to initialize workflows: {e}")

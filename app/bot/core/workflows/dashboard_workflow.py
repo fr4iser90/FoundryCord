@@ -12,7 +12,8 @@ from .base_workflow import BaseWorkflow
 from app.bot.application.services.dashboard.dashboard_service import DashboardService
 from app.shared.infrastructure.database.migrations.dashboards.dashboard_components_migration import wait_for_initialization
 from app.bot.domain.dashboards.repositories.dashboard_repository import DashboardRepository
-from app.shared.infrastructure.database.session import get_session, session_context
+from app.shared.infrastructure.database.core.config import get_session
+, session_context
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.shared.infrastructure.database.repositories.dashboard_repository_impl import DashboardRepository
 from app.bot.infrastructure.factories.component_registry import ComponentRegistry
