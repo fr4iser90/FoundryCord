@@ -31,11 +31,8 @@ class WebAuthenticationService:
             # Initialisiere den KeyManagementService
             await self.key_manager.initialize()
             
-            # Hole den JWT Key - angepasst um async_generator zu vermeiden
-            key_gen = self.key_manager.get_jwt_secret_key()
-            async for key in key_gen:
-                self.jwt_secret = key
-                break
+            # Hole den JWT Key direkt mit await
+            self.jwt_secret = await self.key_manager.get_jwt_secret_key()
                 
             if not self.jwt_secret:
                 raise Exception("Failed to get JWT secret key")
