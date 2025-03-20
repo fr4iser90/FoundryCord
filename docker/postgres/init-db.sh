@@ -31,4 +31,8 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 EOSQL
 
+# Execute core tables initialization script
+echo "Creating core tables..."
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/init-tables.sql
+
 echo "Database initialization completed successfully"

@@ -3,11 +3,14 @@ import nextcord
 import asyncio
 from typing import Dict, Optional, List
 from sqlalchemy import text
+import traceback
 
 from app.bot.core.workflows.base_workflow import BaseWorkflow
 from app.bot.core.workflows.category_workflow import CategoryWorkflow
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.shared.interface.logging.api import get_bot_logger
+from app.shared.infrastructure.database.migrations.channels.seed_channels import check_and_seed_channels
+from app.shared.infrastructure.database.api import get_session
 
 logger = get_bot_logger()
 
@@ -41,7 +44,6 @@ class ChannelWorkflow(BaseWorkflow):
             from app.bot.infrastructure.repositories.channel_repository_impl import ChannelRepositoryImpl
             from app.bot.application.services.channel.channel_builder import ChannelBuilder
             from app.bot.application.services.channel.channel_setup_service import ChannelSetupService
-            from app.shared.infrastructure.database.migrations.channels.seed_channels import check_and_seed_channels
             
             # Get the category repository from the category workflow
             category_repository = self.category_workflow.get_category_repository()
@@ -99,7 +101,6 @@ class ChannelWorkflow(BaseWorkflow):
                     await asyncio.sleep(0.5)
             except Exception as e:
                 logger.error(f"Error checking/creating channels table: {e}")
-                import traceback
                 logger.error(traceback.format_exc())
                 return False
                 
@@ -113,21 +114,26 @@ class ChannelWorkflow(BaseWorkflow):
             self.channel_setup_service = ChannelSetupService(
                 self.channel_repository, 
                 channel_builder,
-                self.category_workflow
+                self.category_workflow.get_category_service()
             )
             
-            # Check if channels exist, if not seed the database
+            # Get a database session
+            session = await get_session()
+            
             try:
-                check_and_seed_channels()
+                # Check and seed channels if needed
+                await check_and_seed_channels(session)
             except Exception as e:
-                logger.error(f"Error checking/seeding channels: {e}")
+                logger.error(f"Error checking/seeding channels: {str(e)}")
                 return False
+            finally:
+                # Always close the session
+                await session.close()
                 
             return True
             
         except Exception as e:
             logger.error(f"Error initializing channel workflow: {e}")
-            import traceback
             logger.error(traceback.format_exc())
             return False
     

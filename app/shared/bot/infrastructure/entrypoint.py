@@ -1,39 +1,61 @@
-"""Bot container entrypoint."""
-import os
-import sys
-import asyncio
+"""Bot application entrypoint."""
 import logging
-import traceback
+import asyncio
+from sqlalchemy import text
 
 from app.shared.infrastructure.startup.bootstrap import ApplicationBootstrap
+from app.shared.infrastructure.database.migrations.wait_for_postgres import wait_for_postgres
+from app.shared.infrastructure.database.session.context import session_context
+from app.shared.interface.logging.api import get_bot_logger
 
-logger = logging.getLogger("homelab.bot")
+logger = get_bot_logger()
 
-def start_bot():
-    """Start the Discord bot."""
+async def verify_database():
+    """Verify that required data exists."""
     try:
-        # Set container type
-        os.environ["CONTAINER_TYPE"] = "bot"
-        
-        # Create an event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
-        # Initialize the application
-        bootstrap = ApplicationBootstrap("bot")
-        if not loop.run_until_complete(bootstrap.initialize()):
-            logger.error("Bot initialization failed")
-            sys.exit(1)
-        
-        # Start the bot
-        from app.bot.core.main import main
-        loop.run_until_complete(main())
+        # Wait for database
+        if not await wait_for_postgres():
+            logger.error("Database not available")
+            return False
+
+        # Check if required tables have data
+        async with session_context() as session:
+            tables = ['categories', 'channels', 'dashboards']
+            for table in tables:
+                result = await session.execute(text(f"SELECT COUNT(*) FROM {table}"))
+                count = result.scalar()
+                if count == 0:
+                    logger.error(f"No data found in {table}. Please initialize database from web interface")
+                    return False
+                    
+            logger.info("Database verification successful")
+            return True
+            
+    except Exception as e:
+        logger.error(f"Database verification failed: {e}")
+        return False
+
+async def start_bot():
+    """Start the bot application."""
+    try:
+        # Initialize application
+        bootstrap = ApplicationBootstrap(container_type="bot")
+        if not await bootstrap.bootstrap():
+            logger.error("Failed to bootstrap bot application")
+            return False
+            
+        # Verify database has required data
+        if not await verify_database():
+            logger.error("Database verification failed")
+            return False
+            
+        # Start bot here
+        logger.info("Bot application started successfully")
+        return True
         
     except Exception as e:
-        logger.error(f"Bot startup failed: {str(e)}")
-        logger.error(traceback.format_exc())
-        sys.exit(1)
+        logger.error(f"Failed to start bot application: {e}")
+        return False
 
-# Add this block to make the module executable
 if __name__ == "__main__":
-    start_bot()
+    asyncio.run(start_bot())

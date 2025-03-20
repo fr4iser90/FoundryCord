@@ -1,39 +1,36 @@
-"""Web container entrypoint."""
-import os
-import sys
+"""Web application entrypoint."""
 import asyncio
-import logging
 import traceback
 
-from app.shared.infrastructure.startup.bootstrap import ApplicationBootstrap
+from app.shared.interface.logging.api import get_web_logger
+from app.shared.infrastructure.database.bootstrapper import initialize_database
 
-logger = logging.getLogger("homelab.bot")
+logger = get_web_logger()
 
-def start_web():
-    """Start the web interface."""
+async def start_web():
+    """Start the web application with proper separation of concerns."""
     try:
-        # Set container type
-        os.environ["CONTAINER_TYPE"] = "web"
+        logger.info("Starting web application")
         
-        # Create an event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
-        # Initialize the application
-        bootstrap = ApplicationBootstrap("web")
-        if not loop.run_until_complete(bootstrap.initialize()):
-            logger.error("Web initialization failed")
-            sys.exit(1)
-        
-        # Start the web server
-        from app.web.core.main import start_web_server
-        start_web_server(bootstrap.dependency_container)
+        # Initialisiere die Datenbank mit dem zentralen Bootstrapper
+        if not await initialize_database():
+            logger.error("Failed to initialize database")
+            return False
+            
+        # Start web server here
+        logger.info("Web application started successfully")
+        return True
         
     except Exception as e:
-        logger.error(f"Web startup failed: {str(e)}")
-        logger.error(traceback.format_exc())
-        sys.exit(1)
+        # Enhanced exception logging
+        error_details = str(e)
+        error_type = type(e).__name__
+        stack_trace = traceback.format_exc()
+        
+        logger.error(f"Failed to start web application: {error_details}")
+        logger.error(f"Exception type: {error_type}")
+        logger.error(f"Stack trace: \n{stack_trace}")
+        return False
 
-# Add this block to make the module executable
 if __name__ == "__main__":
-    start_web()
+    asyncio.run(start_web())

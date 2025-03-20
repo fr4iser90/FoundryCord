@@ -4,49 +4,65 @@ Database service for managing database sessions and connections.
 from typing import Optional, Callable, ContextManager
 from contextlib import contextmanager
 from sqlalchemy import create_engine
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, AsyncEngine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import NullPool
 import logging
 
 from app.shared.interface.logging.api import get_db_logger
+from app.shared.infrastructure.database.session.factory import get_session, initialize_session
+from app.shared.infrastructure.database.core.config import get_database_url
+
 logger = get_db_logger()
 
 class DatabaseService:
     """Service for managing database connections and sessions"""
     
-    def __init__(self, connection_string: Optional[str] = None):
-        """Initialize the database service"""
-        from app.shared.infrastructure.database.core.connection import get_database_connection_string
-        
-        if connection_string is None:
-            connection_string = get_database_connection_string()
+    def __init__(self):
+        """Initialize the database service."""
+        self._initialized = False
+        self._engine: Optional[AsyncEngine] = None
+        self._session_factory = None
+    
+    async def initialize(self) -> bool:
+        """Initialize database connections and session factory."""
+        try:
+            if self._initialized:
+                return True
+
+            # Create engine
+            database_url = get_database_url()
+            self._engine = create_async_engine(
+                database_url,
+                echo=False,
+                future=True,
+                pool_pre_ping=True
+            )
             
-        self.connection_string = connection_string
-        self.engine = create_async_engine(connection_string, echo=False, poolclass=NullPool)
-        self._async_session_factory = sessionmaker(
-            bind=self.engine, 
-            class_=AsyncSession, 
-            expire_on_commit=False,
-            autocommit=False,
-            autoflush=False
-        )
-        
-        # Create sync engine for compatibility
-        self._sync_engine = create_engine(
-            connection_string.replace('+asyncpg', ''),
-            echo=False, 
-            poolclass=NullPool
-        )
-        self._session_factory = sessionmaker(
-            bind=self._sync_engine,
-            expire_on_commit=False,
-            autocommit=False,
-            autoflush=False
-        )
-        
-        logger.info(f"DatabaseService initialized with connection string: {self._mask_connection_string(connection_string)}")
-        
+            # Test connection
+            async with self._engine.begin() as conn:
+                await conn.run_sync(lambda _: None)
+            
+            self._initialized = True
+            logger.info("Database service initialized successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize database service: {e}")
+            return False
+    
+    async def get_session(self) -> AsyncSession:
+        """Get a database session."""
+        if not self._initialized:
+            if not await self.initialize():
+                raise RuntimeError("Failed to initialize database service")
+        async for session in get_session():
+            return session
+    
+    def is_initialized(self) -> bool:
+        """Check if the service is initialized."""
+        return self._initialized and self._engine is not None
+    
     def _mask_connection_string(self, conn_string: str) -> str:
         """Mask sensitive information in the connection string"""
         if "://" not in conn_string:
@@ -62,7 +78,33 @@ class DatabaseService:
             return f"{prefix}://{username}:[HIDDEN]@{host_info}"
             
         return f"{prefix}://{auth}@{host_info}"
-        
+    
+    async def close(self):
+        """Close database connections."""
+        if self._engine:
+            await self._engine.dispose()
+            self._engine = None
+        self._initialized = False
+        logger.info("Database connections closed")
+    
+    @property
+    def engine(self) -> Optional[AsyncEngine]:
+        """Get the SQLAlchemy engine."""
+        if not self._initialized:
+            logger.error("Attempted to access engine before initialization")
+            return None
+        return self._engine
+    
+    def get_engine(self) -> Optional[AsyncEngine]:
+        """Get the SQLAlchemy engine (method form for backward compatibility)."""
+        return self.engine
+    
+    async def ensure_initialized(self) -> bool:
+        """Ensure the service is initialized."""
+        if not self._initialized:
+            return await self.initialize()
+        return True
+
     @contextmanager
     def session(self) -> ContextManager[Session]:
         """Get a database session context manager"""
@@ -78,18 +120,4 @@ class DatabaseService:
             
     async def async_session(self) -> AsyncSession:
         """Get an async database session"""
-        return self._async_session_factory()
-        
-    async def close(self):
-        """Close database connections"""
-        await self.engine.dispose()
-        self._sync_engine.dispose()
-        logger.info("Database connections closed")
-        
-    def get_engine(self):
-        """Get the SQLAlchemy engine"""
-        return self.engine
-        
-    def get_sync_engine(self):
-        """Get the synchronous SQLAlchemy engine"""
-        return self._sync_engine 
+        return self._async_session_factory() 

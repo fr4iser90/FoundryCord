@@ -6,21 +6,30 @@ from app.bot.domain.categories.repositories.category_repository import CategoryR
 from app.bot.application.services.channel.channel_builder import ChannelBuilder
 from app.bot.domain.channels.models.channel_model import ChannelModel, ChannelType
 from app.bot.application.services.category.category_setup_service import CategorySetupService
+from app.shared.interface.logging.api import get_bot_logger
 
-logger = logging.getLogger(__name__)
+logger = get_bot_logger()
 
 class ChannelSetupService:
     """Service for managing Discord channel setup and synchronization"""
     
-    def __init__(self, channel_repository: ChannelRepository, 
-                channel_builder: ChannelBuilder,
-                category_workflow):
+    def __init__(self, channel_repository: ChannelRepository, channel_builder: ChannelBuilder, category_service: CategorySetupService):
+        """Initialize the channel setup service."""
         self.channel_repository = channel_repository
-        self.category_workflow = category_workflow
-        self.category_repository = category_workflow.get_category_repository()
-        self.category_setup_service = category_workflow.get_category_setup_service()
         self.channel_builder = channel_builder
+        self.category_service = category_service
         self.channels_cache: Dict[str, ChannelModel] = {}
+    
+    async def initialize(self):
+        """Initialize the channel setup service."""
+        logger.info("Initializing channel setup service")
+        # Load channels from database
+        self.channels_cache = {}
+        channels = await self.channel_repository.get_all_channels()
+        for channel in channels:
+            self.channels_cache[channel.name] = channel
+        logger.info(f"Loaded {len(channels)} channels into cache")
+        return True
     
     async def setup_channels(self, guild: discord.Guild) -> Dict[str, discord.abc.GuildChannel]:
         """
@@ -29,7 +38,7 @@ class ChannelSetupService:
         logger.info(f"Setting up channels for guild: {guild.name}")
         
         # First, set up categories if not already done
-        category_channels = await self.category_setup_service.setup_categories(guild)
+        category_channels = await self.category_service.setup_categories(guild)
         
         # Load all enabled channels from the database
         db_channels = self.channel_repository.get_enabled_channels()
@@ -79,7 +88,7 @@ class ChannelSetupService:
         """
         Get all channels in a specific category
         """
-        category = self.category_setup_service.get_category_by_name(category_name)
+        category = self.category_service.get_category_by_name(category_name)
         if not category:
             return []
         
@@ -99,7 +108,7 @@ class ChannelSetupService:
         """
         Helper method to create a text channel with default settings
         """
-        category = self.category_setup_service.get_category_by_name(category_name)
+        category = self.category_service.get_category_by_name(category_name)
         if not category:
             logger.error(f"Category not found: {category_name}")
             return None
@@ -126,7 +135,7 @@ class ChannelSetupService:
         """
         Helper method to create a voice channel with default settings
         """
-        category = self.category_setup_service.get_category_by_name(category_name)
+        category = self.category_service.get_category_by_name(category_name)
         if not category:
             logger.error(f"Category not found: {category_name}")
             return None

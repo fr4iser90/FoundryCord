@@ -40,6 +40,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      web:
+        condition: service_healthy
         
   web:
     build:
@@ -69,6 +71,12 @@ services:
       - ../app/bot:/app/bot
     networks:
       - homelab-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -93,6 +101,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+      - ./postgres/init-tables.sql:/docker-entrypoint-initdb.d/init-tables.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres && psql -U postgres -d homelab -c 'SELECT 1 FROM pg_database'"]
       interval: 5s

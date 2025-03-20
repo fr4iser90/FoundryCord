@@ -8,6 +8,7 @@ import datetime
 import os
 
 from app.shared.interface.logging.api import get_db_logger
+from app.shared.infrastructure.database.core.credentials import DatabaseCredentialManager
 
 logger = get_db_logger()
 
@@ -26,17 +27,12 @@ class Config(Base):
 
 async def create_config_table():
     """Create the Config table if it doesn't exist."""
-    # Get database URL from environment
-    db_url = os.getenv('DATABASE_URL')
-    if not db_url:
-        # Construct from components if not available as a single URL
-        db_user = os.getenv('DB_USER', 'homelab_discord_bot')
-        db_password = os.getenv('DB_PASSWORD', 'homelab_discord_bot')
-        db_host = os.getenv('DB_HOST', 'homelab-postgres')
-        db_port = os.getenv('DB_PORT', '5432')
-        db_name = os.getenv('DB_NAME', 'homelab')
-        
-        db_url = f"postgresql+asyncpg://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+    # Get database credentials from credential manager
+    credential_manager = DatabaseCredentialManager()
+    creds = credential_manager.get_credentials()
+    
+    # Construct the database URL
+    db_url = f"postgresql+asyncpg://{creds['user']}:{creds['password']}@{creds['host']}:{creds['port']}/{creds['database']}"
     
     # Create async engine
     engine = create_async_engine(db_url)

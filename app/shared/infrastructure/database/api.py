@@ -1,7 +1,8 @@
 """Database API for simple access to database functions."""
 from app.shared.infrastructure.database.core.connection import get_db_connection
-from app.shared.infrastructure.database.session.factory import get_session
+from app.shared.infrastructure.database.session.factory import get_session, initialize_session
 from app.shared.infrastructure.database.session.context import session_context
+from app.shared.infrastructure.database.service import DatabaseService
 
 def get_db():
     """Get the database connection object.
@@ -23,10 +24,9 @@ async def execute_query(query, params=None):
     Returns:
         Query result
     """
-    db = get_db_connection()
-    if params:
-        return await db.execute(query, params)
-    return await db.execute(query)
+    async with session_context() as session:
+        result = await session.execute(query, params)
+        return result
 
 async def fetch_all(query, params=None):
     """Execute a query and fetch all results as dictionaries.
@@ -38,10 +38,9 @@ async def fetch_all(query, params=None):
     Returns:
         List of result rows as dictionaries
     """
-    db = get_db_connection()
-    if params:
-        return await db.fetch(query, params)
-    return await db.fetch(query)
+    async with session_context() as session:
+        result = await session.execute(query, params)
+        return result.fetchall()
 
 async def fetch_one(query, params=None):
     """Execute a query and fetch one result as a dictionary.
@@ -53,14 +52,17 @@ async def fetch_one(query, params=None):
     Returns:
         Result row as dictionary or None if no result
     """
-    results = await fetch_all(query, params)
-    return results[0] if results else None
+    async with session_context() as session:
+        result = await session.execute(query, params)
+        return result.first()
 
 __all__ = [
-    'get_db',
+    'get_db_connection',
     'get_session',
+    'initialize_session',
     'session_context',
-    'execute_query',
+    'DatabaseService',
+    'fetch_one',
     'fetch_all',
-    'fetch_one'
+    'execute_query'
 ] 

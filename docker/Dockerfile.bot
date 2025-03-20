@@ -21,9 +21,6 @@ ENV PYTHONPATH="/"
 COPY app/bot/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy entrypoint script
-COPY docker/bot/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 
 # Run entrypoint script
 #ENTRYPOINT ["/entrypoint.sh"]

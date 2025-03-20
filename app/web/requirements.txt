@@ -1,3 +1,4 @@
+# Core Bot
 # Web Framework
 fastapi==0.104.1
 uvicorn[standard]==0.23.2
@@ -6,6 +7,7 @@ python-multipart==0.0.6
 pydantic==2.4.2
 pydantic-settings==2.0.3
 python-dotenv==1.0.0
+
 
 # Security
 cryptography==44.0.2

@@ -21,13 +21,10 @@ ENV PYTHONPATH="/"
 COPY app/web/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy entrypoint script
-COPY docker/web/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
 # Expose port
 EXPOSE 8000
 
 # Run the application with our startup script
 #CMD ["/entrypoint.sh"]
-ENTRYPOINT ["python", "-m", "app.shared.web.infrastructure.entrypoint", "web"]
+#ENTRYPOINT ["python", "-m", "app.shared.web.infrastructure.entrypoint", "web"]
+CMD python -m app.shared.web.infrastructure.entrypoint && python -m app.web.core.main

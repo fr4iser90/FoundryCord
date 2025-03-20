@@ -19,6 +19,13 @@ Environment Configuration:
 - APP_DB_PASSWORD: Application database password
 """
 
+import logging
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Dict, Any, Optional
+
+# Configure module logger
+logger = logging.getLogger("homelab.database")
+
 # First import the essentials for database connection
 from app.shared.infrastructure.database.core import (
     DatabaseConnection, get_db_connection,
@@ -36,13 +43,18 @@ from app.shared.infrastructure.database.models import (
     ChannelMapping, CategoryMapping,
     DashboardMessage,
     Project, Task,
-    MetricModel, AlertModel
+    MetricModel, AlertModel,
+    Config,
+    Dashboard,
+    DashboardComponent
 )
 
 # Import repositories
 from app.shared.infrastructure.database.repositories import (
     AuditLogRepository,
     CategoryRepository,
+    DashboardRepository,
+    KeyRepository,
     MonitoringRepositoryImpl,
     ProjectRepository,
     RateLimitRepository,
@@ -53,11 +65,11 @@ from app.shared.infrastructure.database.repositories import (
 
 # Import API functions
 from .api import (
-    get_db,
+    get_db_connection,
     get_session,
+    initialize_session,
     session_context,
-    execute_query,
-    fetch_all,
+    DatabaseService,
     fetch_one
 )
 
@@ -66,8 +78,18 @@ from .core import (
     ensure_db_initialized
 )
 
+# Import additional components
+from app.shared.infrastructure.database.api import get_session
+from app.shared.infrastructure.database.service import DatabaseService
+
+# Import the bootstrapper directly instead of individual initialization functions
+from app.shared.infrastructure.database.bootstrapper import initialize_database
+
 # Export all components for easy imports elsewhere
 __all__ = [
+    # Primary entry point for database initialization 
+    'initialize_database',
+    
     # Models
     'Base',
     'User', 'Session', 'RateLimit', 'AuditLog',
@@ -75,10 +97,15 @@ __all__ = [
     'DashboardMessage',
     'Project', 'Task',
     'MetricModel', 'AlertModel',
+    'Config',
+    'Dashboard',
+    'DashboardComponent',
     
     # Repositories
     'AuditLogRepository',
     'CategoryRepository',
+    'DashboardRepository',
+    'KeyRepository',
     'MonitoringRepositoryImpl',
     'ProjectRepository',
     'RateLimitRepository',
@@ -98,15 +125,16 @@ __all__ = [
     'wait_for_postgres',
     
     # API functions
-    'get_db',
+    'get_db_connection',
     'get_session',
+    'initialize_session',
     'session_context',
-    'execute_query',
-    'fetch_all',
+    'DatabaseService',
     'fetch_one',
     
     # Core functions
-    'ensure_db_initialized'
+    'ensure_db_initialized',
+    'AsyncSession'
 ]
 
 # Database utility functions
@@ -133,11 +161,13 @@ async def get_database_status():
             "details": "Failed to connect to PostgreSQL database"
         }
 
-# Add the missing database connection setup function
+# Database connection setup function
 async def setup_database_connection():
     """
     Set up and return a database connection for use in application components.
     This function centralizes database connection logic.
+    
+    Returns:
+        AsyncSession: An active database session
     """
-    from app.shared.infrastructure.database.models.config import get_async_session
-    return await get_async_session()
+    return await get_session()

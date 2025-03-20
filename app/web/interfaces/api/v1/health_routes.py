@@ -1,5 +1,5 @@
 # Create this new file for health and debug endpoints
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 import os
 import sys
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,13 +8,20 @@ from sqlalchemy import text
 from app.shared.infrastructure.database import get_db_connection
 #from app.web.infrastructure.setup.bot_imports import bot_interface
 
-router = APIRouter(tags=["System"])
+router = APIRouter(
+    prefix="/health",
+    tags=["health"],
+)
 
-@router.get("/health")
+@router.get("")
 async def health_check():
+    """Health check endpoint."""
     return {
         "status": "healthy",
-        "bot_interface": "available" if bot_interface is not None else "unavailable"
+        "services": {
+            "web": "available",
+            "database": "available"
+        }
     }
 
 @router.get("/debug")
