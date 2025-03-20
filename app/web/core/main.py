@@ -12,13 +12,10 @@ from fastapi.staticfiles import StaticFiles
 import pathlib
 
 # Import app components
-from app.web.domain.auth.oauth import router as auth_router
-from app.web.interfaces.api.v1 import routers as api_routers
-from app.web.interfaces.web import routers as web_routers
 from app.web.infrastructure.security.auth import get_current_user
-from app.web.interfaces.api.v1.health_routes import router as health_router
 from app.web.core.middleware import role_check_middleware
 
+from app.web.core.router_registry import register_routers
 
 # Create FastAPI application
 app = FastAPI(
@@ -51,19 +48,8 @@ if not os.path.exists(static_dir):
     os.makedirs(static_dir, exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-# Include routers
-app.include_router(auth_router)
+register_routers(app)
 
-# Include API routers
-for router in api_routers:
-    app.include_router(router)
-
-# Include Web routers
-for router in web_routers:
-    app.include_router(router)
-
-# Include health router
-app.include_router(health_router)
 
 # API root endpoint
 @app.get("/api")

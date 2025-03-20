@@ -442,32 +442,6 @@ save_auto_start_config() {
     local auto_start_services="$2"
     local auto_start_feedback="$3"
     
-    # Create config directory if it doesn't exist
-    run_remote_command "mkdir -p ${PROJECT_ROOT_DIR}/utils/config"
-    
-    # Create the config file content
-    local config_content="#!/usr/bin/env bash
-# HomeLab Discord Bot - Auto-start Configuration
-# This file is automatically managed by HomeLabCenter.sh
-# Last updated: $(date)
-
-# Enable/disable auto-start (true/false)
-AUTO_START_ENABLED=${auto_start}
-
-# Services to auto-start (comma-separated list)
-# Options: all, bot, postgres, redis, web, none
-AUTO_START_SERVICES=${auto_start_services}
-
-# Wait time after startup in seconds (0 to disable)
-AUTO_START_WAIT=${AUTO_START_WAIT:-10}
-
-# Automatically rebuild containers before start (true/false)
-AUTO_BUILD_ENABLED=${AUTO_BUILD_ENABLED:-true}
-
-# Show feedback during auto-start (none, minimal, verbose)
-AUTO_START_FEEDBACK=${auto_start_feedback}
-"
-    
     # Create a temporary file
     local temp_file="/tmp/auto_start_temp.conf"
     echo "$config_content" > "$temp_file"
@@ -585,3 +559,42 @@ run_deployment_with_monitoring() {
     print_success "Deployment with monitoring completed successfully!"
     return 0
 } 
+
+run_quick_deploy_attach() {
+    print_section_header "Quick Deploy (Database Safe)"
+    
+    # 1. Deploy app files
+    if ! deploy_app; then
+        print_error "Deployment failed at app deployment stage"
+        return 1
+    fi
+    
+    # 2. Deploy Docker configuration
+    if ! deploy_docker; then
+        print_error "Deployment failed at Docker configuration stage"
+        return 1
+    fi
+    
+    # 3. Deploy containers
+    if ! deploy_containers; then
+        print_error "Deployment failed at container deployment stage"
+        return 1
+    fi
+    
+    # 4. Check services
+    if [ "$RUN_LOCALLY" = true ]; then
+        print_info "Containers started locally."
+        print_info "Check your local Docker Dashboard to verify services are running"
+    else
+        check_deployed_services
+    fi
+    
+    if [ "$RUN_LOCALLY" = true ]; then
+        docker attach ${PROJECT_NAME}
+    else
+        ssh ${SERVER_USER}@${SERVER_HOST} docker attach ${PROJECT_NAME}
+    fi   
+
+    print_success "Quick deployment completed successfully!"
+    return 0
+}

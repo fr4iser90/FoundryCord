@@ -1,5 +1,3 @@
-from .routes import router as web_router
+from .routers import routers
 
-routers = [
-    web_router
-]
+__all__ = ['routers']

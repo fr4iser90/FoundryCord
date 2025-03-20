@@ -35,7 +35,7 @@ export SERVER_KEY="${SERVER_KEY:-$HOME/.ssh/id_rsa}"
 # These use defaults that can be overridden from local_config.sh
 export LOCAL_GIT_DIR="${LOCAL_GIT_DIR:-$HOME/Documents/Git/NCC-DiscordBot}"
 export PROJECT_ROOT_DIR="${PROJECT_ROOT_DIR:-/home/docker/docker/companion-management/homelab-discord-bot}"
-
+export PROJECT_NAME="${PROJECT_NAME:-homelab-discord-bot}"
 # Bot paths
 export DOCKER_DIR="${PROJECT_ROOT_DIR}/docker"
 export APP_DIR="${PROJECT_ROOT_DIR}/app"

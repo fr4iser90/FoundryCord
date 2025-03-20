@@ -1,5 +1,5 @@
 """
-Homelab Discord Bot Web - A Discord Bot Web interface for managing and monitoring Homelab systems.
+Homelab Discord Bot Web HTML templates - A Discord Bot Web interface for managing and monitoring Homelab systems.
 """
 
 __version__ = "0.0.1"

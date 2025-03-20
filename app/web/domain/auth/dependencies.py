@@ -1,14 +1,13 @@
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
+from typing import Optional, Dict, Any
 from jose import JWTError
 import jwt as PyJWT
-import os
-from typing import Optional, Dict
 from datetime import datetime, timedelta
-from app.shared.interface.logging.api import get_bot_logger
-logger = get_bot_logger()
-from app.shared.infrastructure.encryption import get_key_management_service
-from app.shared.infrastructure.database.core.connection import get_db_connection
+import logging
+from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
+
+logger = logging.getLogger("homelab.web")
 
 # OAuth2 token URL and scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token", auto_error=False)
@@ -16,10 +15,9 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token", auto_error=False)
 # Initialize constants
 ALGORITHM = "HS256"
 
-# Erstellen der Web Authentication Service Klasse (wie beim Bot)
+# Initialize auth service
 class WebAuthenticationService:
     def __init__(self):
-        KeyManagementService = get_key_management_service()
         self.key_manager = KeyManagementService()
         self.jwt_secret = None
         self._initialized = False
@@ -30,23 +28,24 @@ class WebAuthenticationService:
             return
             
         try:
-            # Erst die Datenbankverbindung holen
-            db = await get_db_connection()
-            # Dann den Key-Manager initialisieren
-            await self.key_manager.initialize(db=db)
-            # JWT secret key abrufen
-            self.jwt_secret = await self.key_manager.get_jwt_secret_key()
+            # Initialisiere den KeyManagementService
+            await self.key_manager.initialize()
             
+            # Hole den JWT Key - angepasst um async_generator zu vermeiden
+            key_gen = self.key_manager.get_jwt_secret_key()
+            async for key in key_gen:
+                self.jwt_secret = key
+                break
+                
             if not self.jwt_secret:
-                logger.warning("JWT secret key not available! Using fallback secret")
-                self.jwt_secret = os.getenv("JWT_SECRET_KEY", "fallback_secret_key")
+                raise Exception("Failed to get JWT secret key")
             
             self._initialized = True
+            logger.info("WebAuthenticationService initialized successfully")
+            
         except Exception as e:
-            logger.error(f"Error initializing WebAuthenticationService: {e}")
-            # Fallback zur Environment-Variable
-            self.jwt_secret = os.getenv("JWT_SECRET_KEY", "fallback_secret_key")
-            self._initialized = True
+            logger.error(f"Error initializing WebAuthenticationService: {str(e)}")
+            raise
 
     async def validate_token(self, token):
         """Validate a JWT token"""
@@ -78,34 +77,28 @@ class WebAuthenticationService:
         encoded_jwt = PyJWT.encode(to_encode, self.jwt_secret, algorithm=ALGORITHM)
         return encoded_jwt
 
-# Instanz erstellen (genau wie beim Bot)
+# Initialize global auth service
 auth_service = WebAuthenticationService()
 
 async def get_current_user(request: Request) -> Optional[Dict]:
-    """
-    Get the current authenticated user from the JWT token.
-    Returns None if no valid token is provided.
-    """
-    # Sicherstellen, dass der Service initialisiert ist
-    await auth_service.initialize()
-    
-    # Token aus Cookie oder Header holen
-    token = request.cookies.get("access_token")
-    
-    if not token and "Authorization" in request.headers:
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            token = auth_header.replace("Bearer ", "")
-    
-    if not token or token == "Bearer None":
-        return None
+    """Get the current authenticated user from the request"""
+    try:
+        # Initialize auth service if needed
+        await auth_service.initialize()
         
-    # 'Bearer '-Präfix entfernen falls vorhanden
-    if token.startswith("Bearer "):
-        token = token.replace("Bearer ", "")
-    
-    # Token mit dem Service validieren
-    return await auth_service.validate_token(token)
+        # Get token from cookie or header
+        token = request.cookies.get("access_token")
+        if not token:
+            token = await oauth2_scheme(request)
+            
+        if not token:
+            return None
+            
+        return await auth_service.validate_token(token)
+        
+    except Exception as e:
+        logger.error(f"Error in get_current_user: {e}")
+        return None
 
 async def require_moderator(user = Depends(get_current_user)):
     """Dependency to require moderator role or higher"""

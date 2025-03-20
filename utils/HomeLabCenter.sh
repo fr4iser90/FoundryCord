@@ -172,6 +172,10 @@ parse_cli_args() {
                 export DIRECT_DEPLOY=true
                 run_quick_deploy
                 ;;
+            --quick-deploy-attach)
+                export DIRECT_DEPLOY=true
+                run_quick_deploy_attach
+                ;;
             --partial-deploy)
                 export DIRECT_DEPLOY=true
                 run_partial_deploy

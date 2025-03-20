@@ -2,15 +2,18 @@
 
 pkgs.mkShell {
   buildInputs = [
-    (pkgs.python3.withPackages (ps: [
+    pkgs.python312
+    pkgs.uv
+    pkgs.git
+    (pkgs.python312.withPackages (ps: [
       ps.cryptography
+      ps.pip
+      ps.setuptools
     ]))
   ];
 
   shellHook = ''
-    echo "Generating encryption keys..."
-    echo "AES_KEY: $(python3 -c 'import os, base64; print(base64.urlsafe_b64encode(os.urandom(32)).decode())')"
-    echo "ENCRYPTION_KEY: $(python3 -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
-    echo "Copy these keys to your .env file"
+    echo "Setting up Codegen MCP Server environment..."
+    echo "Environment ready for Codegen MCP Server installation"
   '';
 }
