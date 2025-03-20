@@ -1,63 +1,67 @@
 {% extends "base.html" %}
 
-{% block body_class %}admin-page{% endblock %}
-
-{% block layout %}
-    {% if not user or not user.is_owner %}
-        <div class="container mt-5">
-            <div class="alert alert-danger text-center">
-                <h2><i class="bi bi-shield-exclamation"></i> Access Denied</h2>
-                <p>This area is restricted to bot owners only.</p>
-                <a href="/" class="btn btn-primary mt-3">Return to Homepage</a>
-            </div>
+{% block body %}
+<div class="admin-container">
+    {% include "components/header.html" %}
+    
+    <div class="admin-content">
+        <div class="admin-sidebar">
+            {% include "components/sidebars/admin_sidebar.html" %}
         </div>
-    {% else %}
-        <div class="d-flex">
-            <!-- Admin Sidebar -->
-            <div class="admin-sidebar bg-dark text-light">
-                <div class="p-3">
-                    <h5 class="sidebar-heading">Administration</h5>
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link {% if active_page == 'overview' %}active{% endif %}" 
-                               href="/admin/overview">
-                                <i class="bi bi-house"></i> Overview
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if active_page == 'bot-settings' %}active{% endif %}"
-                               href="/admin/bot-settings">
-                                <i class="bi bi-gear"></i> Bot Settings
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if active_page == 'users' %}active{% endif %}"
-                               href="/admin/users">
-                                <i class="bi bi-people"></i> Users
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if active_page == 'servers' %}active{% endif %}"
-                               href="/admin/servers">
-                                <i class="bi bi-hdd-rack"></i> Servers
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if active_page == 'logs' %}active{% endif %}"
-                               href="/admin/logs">
-                                <i class="bi bi-journal-text"></i> Logs
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+        
+        <main class="admin-main">
+            <div class="admin-topbar">
+                {% include "components/admin/topbar.html" %}
             </div>
+            
+            <div class="content-area">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    
+    {% include "components/footer.html" %}
+</div>
+{% endblock %}
 
-            <!-- Main Content Area -->
-            <div class="admin-content flex-grow-1">
-                <div class="container-fluid py-4">
-                    {% block content %}{% endblock %}
-                </div>
-            </div>
-        </div>
-    {% endif %}
+{% block extra_css %}
+<style>
+.admin-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.admin-content {
+    display: flex;
+    flex: 1;
+}
+
+.admin-sidebar {
+    width: 250px;
+    background: var(--discord-channel);
+    border-right: 1px solid var(--discord-lighter);
+}
+
+.admin-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-topbar {
+    height: 60px;
+    background: var(--discord-lighter);
+    border-bottom: 1px solid var(--discord-channel);
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+}
+
+.content-area {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+</style>
 {% endblock %}

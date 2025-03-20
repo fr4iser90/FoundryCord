@@ -49,11 +49,34 @@ def init_static_files(app: FastAPI):
     
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
+def verify_static_paths(app: FastAPI):
+    """Verify and log static file paths"""
+    web_dir = Path(__file__).parent.parent
+    static_dir = web_dir / "static"
+    
+    # Überprüfe und logge die wichtigsten Pfade
+    css_base = static_dir / "css" / "base.css"
+    css_theme = static_dir / "css" / "themes" / "dark" / "theme.css"
+    js_main = static_dir / "js" / "main.js"
+    
+    logger.info(f"Checking static paths:")
+    logger.info(f"base.css exists: {css_base.exists()}")
+    logger.info(f"theme.css exists: {css_theme.exists()}")
+    logger.info(f"main.js exists: {js_main.exists()}")
+    
+    # Füge die Funktion in init_all_extensions ein
+    return {
+        "css_base": css_base.exists(),
+        "css_theme": css_theme.exists(), 
+        "js_main": js_main.exists()
+    }
+
 def init_all_extensions(app: FastAPI):
     """Initialize all extensions"""
     global _templates
     _templates = init_templates(app)
     init_static_files(app)
+    verify_static_paths(app)
     return _templates
 
 def get_templates() -> Jinja2Templates:

@@ -58,11 +58,15 @@ async def oauth_callback(code: str, request: Request):
             request.session["token"] = token
             
             logger.info(f"User {user['username']} logged in successfully")
+            
+            # Check if user is admin
+            if user["id"] in SUPER_ADMINS:
+                return RedirectResponse(url="/admin")
             return RedirectResponse(url="/dashboard")
             
     except Exception as e:
         logger.error(f"OAuth callback failed: {e}")
-        return RedirectResponse(url="/?error=Login failed, please try again")
+        return RedirectResponse(url="/?error=Login failed")
 
 @router.get("/logout")
 async def logout(request: Request):

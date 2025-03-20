@@ -13,9 +13,29 @@ async def admin_dashboard(request: Request, current_user=Depends(get_current_use
     # Verify SUPER_ADMIN role
     await require_role(current_user, Role.SUPER_ADMIN)
     
+    # Get some mock stats for now
+    mock_stats = {
+        "servers": 5,
+        "active_users": 120,
+        "bot_status": "Online",
+        "uptime": "24h 13m",
+        "system": {
+            "cpu": 45,
+            "memory": 62
+        }
+    }
+    
     return templates.TemplateResponse(
         "pages/admin/overview.html",
-        {"request": request, "user": current_user}
+        {
+            "request": request, 
+            "user": current_user,
+            "active_page": "overview",
+            "stats": mock_stats,
+            "bot_status": mock_stats["bot_status"],
+            "uptime": mock_stats["uptime"],
+            "system": mock_stats["system"]
+        }
     )
 
 @router.get("/users", response_class=HTMLResponse)

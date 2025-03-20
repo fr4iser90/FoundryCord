@@ -5,27 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}HomeLab Discord Bot{% endblock %}</title>
     
-    <!-- Nur die URLs korrigieren, Rest bleibt gleich -->
+    <!-- CSS mit korrekter Reihenfolge -->
     <link rel="stylesheet" href="{{ url_for('static', path='css/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', path='css/themes/dark/theme.css') }}" id="theme-style">
-    {% block head %}{% endblock %}
-    {% block extra_css %}{% endblock %}
-</head>
-<body>
-    {% include "components/header.html" %}
-    {% include "components/navbar.html" %}
     
-    <div class="container">
-        <main>
+    {% block head %}{% endblock %}
+</head>
+<body class="dark-theme">  <!-- Theme-Klasse hinzugefügt -->
+    <div class="app-container">  <!-- Container für Layout -->
+        {% include "components/header.html" %}
+        {% include "components/navbar.html" %}
+        
+        <main class="main-content">
             {% block content %}{% endblock %}
         </main>
+        
+        {% include "components/footer.html" %}
     </div>
     
-    {% include "components/footer.html" %}
-    
-    <!-- Nur die URL korrigieren -->
     <script src="{{ url_for('static', path='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}
-    {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -1,10 +1,41 @@
-/* Dark theme variables */
+/* Discord-spezifische Variablen */
 :root {
     --discord-bg: #36393f;
-    --discord-lighter: #42464d;
     --discord-channel: #2f3136;
+    --discord-lighter: #40444b;
     --discord-text: #dcddde;
-    --discord-accent: #5865f2;
+    --discord-accent: #7289da;
+    --discord-link: #00b0f4;
+    --discord-danger: #f04747;
+    --discord-success: #43b581;
+    
+    /* Bestehende Variablen beibehalten */
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --text-primary: #ffffff;
+    --text-secondary: #b3b3b3;
+    --accent-color: #7289da;
+    --error-color: #ff4444;
+    --success-color: #43b581;
+}
+
+/* Theme-spezifische Styles */
+.dark-theme {
+    background-color: var(--discord-bg);
+    color: var(--discord-text);
+}
+
+.dark-theme .header {
+    background-color: var(--bg-secondary);
+}
+
+.dark-theme .navbar {
+    background-color: var(--bg-secondary);
+}
+
+.dark-theme .footer {
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
 }
 
 /* Global dark theme styles */
@@ -120,16 +151,24 @@ h1, h2, h3, h4, h5, h6, p {
 .btn-discord {
     background-color: var(--discord-accent);
     color: white;
-    padding: 10px 20px;
-    border: none;
+    padding: 12px 24px;
     border-radius: 4px;
-    font-weight: bold;
+    border: none;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    text-decoration: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
 }
 
 .btn-discord:hover {
-    background-color: #4752c4;
-    color: white;
+    background-color: #5c6fb1;
+}
+
+.btn-discord:active {
+    background-color: #4e5d94;
 }
