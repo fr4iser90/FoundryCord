@@ -53,7 +53,7 @@ class DependencyContainer:
         # Create new instance if we have a factory
         if service['factory'] is not None:
             instance = service['factory']()
-            service['instance'] = instance  # Cache the instance
+            service['instance'] = instance
             return instance
             
         # If no instance or factory, create instance directly

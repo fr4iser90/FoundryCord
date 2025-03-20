@@ -17,7 +17,6 @@ class KeyManagementService:
         self.rotation_interval = timedelta(days=30)
         self.session = None
         self.key_repository = None
-        # Don't initialize repository here - it's async
     
     async def initialize(self):
         """Async initialization method that should be called after creation"""
@@ -100,7 +99,7 @@ class KeyManagementService:
         self.current_key = Fernet.generate_key().decode()
         self.last_rotation = datetime.now()
         
-        # Store keys in database ONLY, not environment
+        # Store keys in database ONLY
         await self.key_repository.save_encryption_keys(self.current_key, self.previous_key)
         await self.key_repository.save_rotation_timestamp(self.last_rotation)
         

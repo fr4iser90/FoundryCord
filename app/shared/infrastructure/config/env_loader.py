@@ -19,29 +19,29 @@ def parse_users(users_str: str) -> Dict[str, str]:
                 users_dict[username.strip()] = user_id.strip()
     return users_dict
 
-def load_typed_env_var(name: str, var_type: Any, default: Any = None) -> Any:
+def load_typed_env_var(name: str, var_type: Any) -> Optional[Any]:
     """Load an environment variable and convert it to the specified type"""
     value = os.getenv(name)
     if value is None:
-        return default
+        return None
         
     if var_type == bool:
         return value.lower() in ('true', 'yes', '1', 'y')
     return var_type(value)
 
-def load_int_env_var(name: str, default: int = 0) -> int:
+def load_int_env_var(name: str) -> Optional[int]:
     """Load an environment variable as integer"""
-    return load_typed_env_var(name, int, default)
+    return load_typed_env_var(name, int)
 
-def load_bool_env_var(name: str, default: bool = False) -> bool:
+def load_bool_env_var(name: str) -> Optional[bool]:
     """Load an environment variable as boolean"""
-    return load_typed_env_var(name, bool, default)
+    return load_typed_env_var(name, bool)
 
-def load_list_env_var(name: str, separator: str = ',', default: Optional[List[str]] = None) -> List[str]:
+def load_list_env_var(name: str, separator: str = ',') -> List[str]:
     """Load a separator-delimited environment variable as list"""
     value = os.getenv(name, '')
-    if not value and default is not None:
-        return default
+    if not value:
+        return []
     return [item.strip() for item in value.split(separator) if item.strip()]
 
 def load_required_env_var(name: str) -> str:
@@ -57,8 +57,10 @@ def load_user_groups(group_names: List[str]) -> Dict[str, Dict[str, str]]:
     
     # Parse user groups from environment
     for group_name in group_names:
-        env_name = group_name.upper().replace('_', '')  # super_admins -> SUPERADMINS
+        env_name = group_name.upper().replace('_', '')
         env_value = os.environ.get(env_name, '')
         
         if env_value:
-            result[group_name.lower()] = parse_users(env_value) 
+            result[group_name.lower()] = parse_users(env_value)
+            
+    return result 

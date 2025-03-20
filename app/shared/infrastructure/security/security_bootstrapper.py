@@ -15,11 +15,10 @@ class SecurityBootstrapper:
     
     KEY_TYPES = ["AES_KEY", "ENCRYPTION_KEY", "JWT_SECRET_KEY"]
     
-    def __init__(self, auto_db_key_management=True):
-        self.auto_db_key_management = auto_db_key_management
+    def __init__(self):
         self.key_repository = None
         self.initialized = False
-        self.keys = {}  # Store keys in memory instead of environment variables
+        self.keys = {}
         
     async def initialize(self):
         """Initialize security bootstrapper with database support"""
@@ -28,21 +27,14 @@ class SecurityBootstrapper:
             return True
             
         try:
-            # Generate in-memory keys first (not in environment variables)
+            # Generate initial keys
             self._generate_memory_keys()
             
-            if self.auto_db_key_management:
-                # Try to load keys from database
-                try:
-                    async with session_context() as session:  # Use context manager
-                        self.key_repository = KeyRepository(session)
-                        await self._load_keys_from_database()
-                        logger.info("Security keys loaded from database successfully")
-                except Exception as e:
-                    logger.error(f"Failed to load keys from database: {str(e)}")
-                    logger.error(traceback.format_exc())
-                    # Continue with in-memory keys as fallback
-                    logger.warning("Using in-memory keys as fallback for security")
+            # Initialize database repository
+            async with session_context() as session:
+                self.key_repository = KeyRepository(session)
+                await self._load_keys_from_database()
+                logger.info("Security keys loaded from database successfully")
             
             self.initialized = True
             return True
@@ -52,7 +44,7 @@ class SecurityBootstrapper:
             return False
     
     def _generate_memory_keys(self):
-        """Generate all required security keys in memory (not in environment variables)."""
+        """Generate all required security keys in memory."""
         for key_type in self.KEY_TYPES:
             # Generate a new key
             if key_type in ["AES_KEY", "ENCRYPTION_KEY"]:
@@ -82,12 +74,11 @@ class SecurityBootstrapper:
                     # Key doesn't exist in database, store the current one
                     current_key = self.keys.get(key_type)
                     if current_key:
-                        # Store the current key in database
                         await self.key_repository.store_key(key_type, current_key)
                         logger.info(f"Stored {key_type} in database")
             except Exception as e:
                 logger.error(f"Error processing {key_type}: {str(e)}")
-                # Continue with next key
+                raise
     
     def get_key(self, key_type):
         """Get a security key by type."""
@@ -95,3 +86,14 @@ class SecurityBootstrapper:
             raise ValueError(f"Unknown key type: {key_type}")
         
         return self.keys.get(key_type)
+
+# Global instance
+_security_bootstrapper = SecurityBootstrapper()
+
+async def initialize_security() -> bool:
+    """Initialize the security system."""
+    return await _security_bootstrapper.initialize()
+
+def get_security_bootstrapper() -> SecurityBootstrapper:
+    """Get the global security bootstrapper instance."""
+    return _security_bootstrapper

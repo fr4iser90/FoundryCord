@@ -1,16 +1,16 @@
 """Security service for web application."""
 import logging
 from typing import Optional, Dict, Any
+from app.shared.infrastructure.security.security_bootstrapper import SecurityBootstrapper
 
 logger = logging.getLogger("homelab.bot")
 
 class SecurityService:
     """Service for managing security features."""
     
-    def __init__(self, db_service=None, security_bootstrapper=None):
+    def __init__(self):
         """Initialize the security service."""
-        self.db_service = db_service
-        self.security_bootstrapper = security_bootstrapper
+        self.security_bootstrapper = SecurityBootstrapper()
         self.keys = {}
         self.initialized = False
         
@@ -21,31 +21,19 @@ class SecurityService:
             return True
             
         try:
-            # Load security keys from bootstrapper if available
-            if self.security_bootstrapper and hasattr(self.security_bootstrapper, 'get_key'):
-                self.keys = {
-                    'aes_key': self.security_bootstrapper.get_key('AES_KEY'),
-                    'encryption_key': self.security_bootstrapper.get_key('ENCRYPTION_KEY'),
-                    'jwt_secret_key': self.security_bootstrapper.get_key('JWT_SECRET_KEY')
-                }
-            else:
-                # Generate keys directly if bootstrapper not available
-                from cryptography.fernet import Fernet
-                import base64
-                import os
-                
-                # Generate keys in memory
-                self.keys = {
-                    'aes_key': Fernet.generate_key().decode('utf-8'),
-                    'encryption_key': Fernet.generate_key().decode('utf-8'),
-                    'jwt_secret_key': base64.urlsafe_b64encode(os.urandom(32)).decode('utf-8')
-                }
-                logger.warning("Security bootstrapper not available, generated keys in memory")
+            # Initialize security bootstrapper
+            if not await self.security_bootstrapper.initialize():
+                logger.error("Failed to initialize security bootstrapper")
+                return False
+            
+            # Load keys from bootstrapper
+            for key_type in self.security_bootstrapper.KEY_TYPES:
+                self.keys[key_type] = self.security_bootstrapper.get_key(key_type)
             
             # Validate that all required keys are available
             missing_keys = [k for k, v in self.keys.items() if not v]
             if missing_keys:
-                logger.warning(f"Missing security keys: {', '.join(missing_keys)}")
+                logger.error(f"Missing security keys: {', '.join(missing_keys)}")
                 return False
                 
             self.initialized = True
@@ -58,10 +46,23 @@ class SecurityService:
     
     def get_key(self, key_name: str) -> Optional[str]:
         """Get a security key by name."""
+        if not self.initialized:
+            raise RuntimeError("Security service not initialized")
         return self.keys.get(key_name)
     
     async def validate_token(self, token: str) -> Dict[str, Any]:
         """Validate a JWT token and return its payload."""
-        # This would be implemented with JWT validation logic
-        # For now, just return a simple validation result
-        return {"valid": True, "user_id": "test_user"}
+        if not self.initialized:
+            raise RuntimeError("Security service not initialized")
+            
+        try:
+            from jose import jwt
+            key = self.get_key('JWT_SECRET_KEY')
+            if not key:
+                raise ValueError("JWT secret key not available")
+                
+            payload = jwt.decode(token, key, algorithms=['HS256'])
+            return {"valid": True, "payload": payload}
+        except Exception as e:
+            logger.error(f"Token validation failed: {e}")
+            return {"valid": False, "error": str(e)}

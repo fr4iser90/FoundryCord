@@ -32,6 +32,10 @@ class DatabaseService:
 
             # Create engine
             database_url = get_database_url()
+            if not database_url:
+                logger.error("No database URL available")
+                return False
+                
             self._engine = create_async_engine(
                 database_url,
                 echo=False,

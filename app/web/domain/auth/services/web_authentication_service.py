@@ -12,7 +12,7 @@ class WebAuthenticationService:
     def __init__(self, key_service: KeyManagementService):
         self.key_service = key_service
         self.algorithm = "HS256"
-        self.secret_key = os.getenv("JWT_SECRET_KEY", "default_secret_key_for_development_only")
+        self.secret_key = os.getenv("JWT_SECRET_KEY", )
         logger.info("WebAuthenticationService initialized successfully")
         
     def create_access_token(self, data: Dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -70,3 +70,14 @@ class WebAuthenticationService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Could not create authentication token"
             )
+
+    async def is_admin(self, user_id: str) -> bool:
+        """Check if user is admin"""
+        try:
+            # Hier nur Web-spezifische Logik
+            # Die eigentliche Rolle kommt aus der Session
+            return True if user_id == "your_admin_id" else False
+            
+        except Exception as e:
+            logger.error(f"Failed to check admin status: {e}")
+            return False

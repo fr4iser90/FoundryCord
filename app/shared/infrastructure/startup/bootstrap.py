@@ -32,8 +32,6 @@ async def bootstrap_application() -> bool:
             logger.error("Security initialization failed")
             return False
 
-        # More initialization steps can be added here as needed
-        
         logger.info("Application bootstrap completed successfully")
         return True
         

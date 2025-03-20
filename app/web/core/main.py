@@ -10,14 +10,24 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from app.shared.interface.logging.api import get_bot_logger
+from app.web.core.middleware import setup_middleware
+from app.web.core.extensions import init_all_extensions
+from app.web.core.router_registry import register_routers
 from app.web.core.lifecycle_manager import WebLifecycleManager
 from app.web.core.workflow_manager import WebWorkflowManager
 from app.web.infrastructure.factories.service.web_service_factory import WebServiceFactory
-from app.web.core.router_registry import register_routers
-from app.web.core.extensions import init_all_extensions
-from app.web.core.middleware import setup_middleware
+from contextlib import asynccontextmanager
 
 logger = get_bot_logger()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for FastAPI application"""
+    # Startup
+    await web_app.initialize()
+    yield
+    # Shutdown
+    await web_app.shutdown_event()
 
 class WebApplication:
     def __init__(self):
@@ -28,23 +38,49 @@ class WebApplication:
         self.app = FastAPI(
             title="HomeLab Discord Bot Web Interface",
             description="Web interface for managing HomeLab Discord Bot",
-            version="1.0.0"
+            version="1.0.0",
+            lifespan=lifespan
+        )
+        # Setup middleware immediately
+        self._setup_middleware()
+
+    def _setup_middleware(self):
+        """Setup middleware during initialization"""
+        # Setup Session FIRST
+        session_secret = os.environ.get("JWT_SECRET_KEY", os.urandom(32).hex())
+        
+        from starlette.middleware.sessions import SessionMiddleware
+        self.app.add_middleware(
+            SessionMiddleware,
+            secret_key=session_secret,
+            session_cookie="homelab_session",
+            max_age=7 * 24 * 60 * 60,  # 1 week
+            same_site="lax",
+            https_only=True
         )
         
-        # 1. ZUERST Templates initialisieren
+        # Setup CORS
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+
+    async def setup(self):
+        """Setup the web application asynchronously."""
+        # Initialize templates
         self.templates = init_all_extensions(self.app)
         
-        # 2. DANN Middleware setup
-        setup_middleware(self.app)
-        
-        # 3. DANN Router registrieren
+        # Register routers
         register_routers(self.app)
         
-        # 4. ZULETZT Manager initialisieren
+        # Initialize managers
         self.lifecycle_manager.initialize(self.app, self.service_factory)
         self.workflow_manager.initialize(self.service_factory)
         
-        # 5. Base Routes am Ende
+        # Setup base routes
         self.setup_base_routes()
 
     def setup_base_routes(self):
@@ -55,7 +91,7 @@ class WebApplication:
 
         @self.app.get("/api")
         async def api_root():
-            return {"message": "HomeLab Discord Bot Web Interface API"}
+            return {"message": "API root endpoint"}
 
         @self.app.get("/health")
         async def health_check():
@@ -77,13 +113,10 @@ class WebApplication:
             )
 
     async def initialize(self):
-        """Initialize the web application infrastructure."""
+        """Initialize the web application."""
         try:
-            # Initialize services
-            await self.service_factory.initialize()
-            
-            # Setup core infrastructure (middleware, routers etc.)
-            await self.lifecycle_manager.setup_infrastructure()
+            # Setup the application
+            await self.setup()
             
             # Initialize workflows
             await self.workflow_manager.initialize_workflows()
@@ -108,13 +141,10 @@ class WebApplication:
         await self.workflow_manager.stop_workflows()
         await self.lifecycle_manager.shutdown()
 
-def create_app():
-    """Create and configure the application."""
-    web_app = WebApplication()
-    return web_app.app
+# Create and initialize the application
+web_app = WebApplication()
+app = web_app.app
 
-# Create the FastAPI application
-app = create_app()
-
+# This is the entry point for Uvicorn
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("app.web.core.main:app", host="0.0.0.0", port=8000)

@@ -19,7 +19,7 @@ class User(BaseModel):
 
 # Configuration
 class AuthConfig:
-    SECRET_KEY = os.getenv("JWT_SECRET_KEY", "default_secret_key_for_development_only")
+    SECRET_KEY = os.getenv("JWT_SECRET_KEY", )
     ALGORITHM = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES = 60
     TOKEN_URL = "auth/token"

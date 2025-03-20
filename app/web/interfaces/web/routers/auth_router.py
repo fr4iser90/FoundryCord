@@ -1,10 +1,10 @@
 import os
 from fastapi import APIRouter, Depends, Request, HTTPException, status, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
-from app.web.application.services.auth.dependencies import get_auth_service
-from app.web.domain.auth.services.web_authentication_service import WebAuthenticationService
 from app.web.core.extensions import get_templates
+from app.web.domain.auth.services.web_authentication_service import WebAuthenticationService
 from app.web.infrastructure.config.env_loader import get_discord_oauth_config
+from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
 import httpx
 from app.shared.interface.logging.api import get_bot_logger
 
@@ -12,6 +12,11 @@ logger = get_bot_logger()
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 templates = get_templates()
 discord_config = get_discord_oauth_config()
+
+# Dependency
+def get_auth_service():
+    key_service = KeyManagementService()  # Dies sollte eigentlich über DI kommen
+    return WebAuthenticationService(key_service=key_service)
 
 @router.get("/login")
 async def login(request: Request):
@@ -29,7 +34,11 @@ async def login(request: Request):
     return RedirectResponse(url=auth_url)
 
 @router.get("/callback")
-async def oauth_callback(code: str, request: Request):
+async def oauth_callback(
+    code: str, 
+    request: Request,
+    auth_service: WebAuthenticationService = Depends(get_auth_service)
+):
     """Handle OAuth callback from Discord"""
     try:
         async with httpx.AsyncClient() as client:
@@ -57,10 +66,12 @@ async def oauth_callback(code: str, request: Request):
             request.session["user"] = user
             request.session["token"] = token
             
+            # Check role and redirect
+            is_admin = await auth_service.is_admin(user["id"])
+            
             logger.info(f"User {user['username']} logged in successfully")
             
-            # Check if user is admin
-            if user["id"] in SUPER_ADMINS:
+            if is_admin:
                 return RedirectResponse(url="/admin")
             return RedirectResponse(url="/dashboard")
             

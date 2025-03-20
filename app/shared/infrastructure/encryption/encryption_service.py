@@ -13,22 +13,12 @@ import asyncio
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
-# Define AUTO_KEY_MANAGEMENT as a constant in the code
-# When True: Use automatic key management only, ignore environment variables
-# When False: Use environment variables only, fail if not present
-AUTO_KEY_MANAGEMENT = True
-
 class EncryptionService:
     def __init__(self, bot):
         self.bot = bot
         self.logger = logger
-        self.processed_messages = set()  # Track processed message IDs
+        self.processed_messages = set()
         self.ready = asyncio.Event()
-        
-        # Use the constant defined in the code, not from environment
-        self.auto_key_management = AUTO_KEY_MANAGEMENT
-        
-        # Initialize keys to None
         self.key = None
         self.cipher = None
         self.aes_key_bytes = None
@@ -51,55 +41,33 @@ class EncryptionService:
             raise
 
     async def _setup_fernet_key(self):
-        """Set up Fernet key based on AUTO_KEY_MANAGEMENT setting"""
-        if self.auto_key_management:
-            # AUTO_KEY_MANAGEMENT = True: ONLY use KeyManagementService, ignore environment
-            logger.info("AUTO_KEY_MANAGEMENT is True, using KeyManagementService for encryption key")
-            self.key_manager = KeyManagementService()
-            await self.key_manager.initialize()
-            self.key = self.key_manager.get_current_key()
-            if not self.key:
-                raise ValueError("KeyManagementService failed to provide an encryption key")
-        else:
-            # AUTO_KEY_MANAGEMENT = False: ONLY use environment
-            env_key = os.getenv('ENCRYPTION_KEY')
-            if not env_key:
-                raise ValueError("ENCRYPTION_KEY environment variable is required when AUTO_KEY_MANAGEMENT is False")
-            logger.info("AUTO_KEY_MANAGEMENT is False, using encryption key from environment")
-            self.key = env_key
+        """Set up Fernet key from key management service"""
+        logger.info("Setting up encryption key from key management service")
+        self.key_manager = KeyManagementService()
+        await self.key_manager.initialize()
+        self.key = self.key_manager.get_current_key()
+        if not self.key:
+            raise ValueError("Failed to get encryption key from key management service")
             
         # Set up Fernet cipher with our key
         self.cipher = Fernet(self.key)
 
     async def _setup_aes_key(self):
-        """Set up AES key based on AUTO_KEY_MANAGEMENT setting"""
-        if self.auto_key_management:
-            # AUTO_KEY_MANAGEMENT = True: ONLY use database, ignore environment
-            logger.info("AUTO_KEY_MANAGEMENT is True, using database for AES key")
-            key_repository = KeyRepository()
-            await key_repository.initialize()
-            aes_key = await key_repository.get_aes_key()
-            if aes_key:
-                aes_key_b64 = aes_key
-            else:
-                # Generate new AES key if none exists
-                logger.info("Generating new AES key")
-                aes_key_b64 = base64.urlsafe_b64encode(os.urandom(32)).decode()
-                await key_repository.save_aes_key(aes_key_b64)
-        else:
-            # AUTO_KEY_MANAGEMENT = False: ONLY use environment
-            aes_key_b64 = os.getenv('AES_KEY')
-            if not aes_key_b64:
-                raise ValueError("AES_KEY environment variable is required when AUTO_KEY_MANAGEMENT is False")
-            logger.info("AUTO_KEY_MANAGEMENT is False, using AES key from environment")
+        """Set up AES key from key management service"""
+        logger.info("Setting up AES key from key management service")
+        key_repository = KeyRepository()
+        await key_repository.initialize()
+        aes_key = await key_repository.get_aes_key()
+        if not aes_key:
+            raise ValueError("Failed to get AES key from key management service")
             
         # Process the AES key
         try:
-            self.aes_key_bytes = base64.urlsafe_b64decode(aes_key_b64)
+            self.aes_key_bytes = base64.urlsafe_b64decode(aes_key)
             if len(self.aes_key_bytes) != 32:
-                raise ValueError("AES_KEY must be 32 bytes long after base64 decoding")
+                raise ValueError("Invalid AES key length")
         except Exception as e:
-            raise ValueError(f"Invalid AES_KEY: {str(e)}")
+            raise ValueError(f"Invalid AES key format: {str(e)}")
 
     async def wait_until_ready(self):
         """Wait until the service is fully initialized"""
