@@ -9,50 +9,85 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-import pathlib
+from starlette.middleware.sessions import SessionMiddleware
+from pathlib import Path
+import secrets
 
 # Import app components
 from app.web.infrastructure.security.auth import get_current_user
 from app.web.core.middleware import role_check_middleware
-
 from app.web.core.router_registry import register_routers
+from app.web.core.workflows.service_workflow import WebServiceWorkflow
+from app.shared.interface.logging.api import get_bot_logger
+from app.web.core.lifecycle_manager import WebLifecycleManager
+from app.web.core.workflow_manager import WebWorkflowManager
 
-# Create FastAPI application
-app = FastAPI(
-    title="HomeLab Discord Bot Web Interface",
-    description="Web interface for managing the HomeLab Discord Bot",
-    version="1.0.0"
-)
+logger = get_bot_logger()
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict this to specific origins
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+class HomelabWebApp:
+    def __init__(self):
+        # FastAPI app
+        self.app = FastAPI(title="HomeLab Discord Bot Web Interface")
+        
+        # Initialize managers FIRST
+        self.lifecycle = WebLifecycleManager()
+        self.workflow_manager = WebWorkflowManager()
+        
+        # Setup session middleware SECOND
+        secret_key = secrets.token_urlsafe(32)
+        self.app.add_middleware(
+            SessionMiddleware,
+            secret_key=secret_key,
+            session_cookie="homelab_session",
+            max_age=86400  # 24 hours
+        )
+        
+        # Add CORS middleware
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+        
+        # Add custom role middleware
+        self.app.middleware("http")(role_check_middleware)
+        
+        # Register startup/shutdown events
+        self.app.add_event_handler("startup", self.startup_event)
+        self.app.add_event_handler("shutdown", self.shutdown_event)
+        
+        # Register routers (this will also mount static files)
+        register_routers(self.app)
 
-# Add custom role middleware
-app.middleware("http")(role_check_middleware)
+    async def startup_event(self):
+        """Initialize on startup"""
+        try:
+            # Initialize lifecycle and workflow managers
+            await self.lifecycle.on_startup()
+            await self.workflow_manager.initialize_all()
+            
+            logger.info("Web application started successfully")
+        except Exception as e:
+            logger.error(f"Failed to start web application: {e}")
+            raise
 
-# Get the absolute path to the templates directory
-base_dir = pathlib.Path(__file__).parent.parent
-templates_dir = os.path.join(base_dir, "templates")
-print(f"Templates directory: {templates_dir}")
-templates = Jinja2Templates(directory=templates_dir)
+    async def shutdown_event(self):
+        """Cleanup on shutdown"""
+        try:
+            await self.lifecycle.on_shutdown()
+            logger.info("Web application shutdown successfully")
+        except Exception as e:
+            logger.error(f"Error during shutdown: {e}")
 
-# Initialize static files
-static_dir = os.path.join(base_dir, "static")
-if not os.path.exists(static_dir):
-    os.makedirs(static_dir, exist_ok=True)
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
-
-register_routers(app)
-
+# Create single application instance
+app = HomelabWebApp()
+# Export FastAPI instance for ASGI servers
+fastapi_app = app.app
 
 # API root endpoint
-@app.get("/api")
+@fastapi_app.get("/api")
 async def api_root():
     return {
         "message": "HomeLab Discord Bot Web Interface API",
@@ -60,7 +95,7 @@ async def api_root():
     }
 
 # Health check endpoint
-@app.get("/health")
+@fastapi_app.get("/health")
 async def health_check():
     return {
         "status": "healthy",
@@ -68,7 +103,7 @@ async def health_check():
     }
 
 # Debug endpoint to show Python path and available modules
-@app.get("/debug")
+@fastapi_app.get("/debug")
 async def debug():
     return {
         "python_path": sys.path,
@@ -84,7 +119,7 @@ async def debug():
     }
 
 # Add error handler for graceful error messages
-@app.exception_handler(Exception)
+@fastapi_app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     return JSONResponse(
         status_code=500,
@@ -111,7 +146,7 @@ def start_web_server(dependency_container):
             bot_interface = dependency_container.bot_interface
         
         # Start the web server
-        uvicorn.run(app, host="0.0.0.0", port=8000)
+        uvicorn.run(fastapi_app, host="0.0.0.0", port=8000)
     except Exception as e:
         import logging
         logger = logging.getLogger("homelab.bot")
@@ -119,4 +154,4 @@ def start_web_server(dependency_container):
         raise
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(fastapi_app, host="0.0.0.0", port=8000)

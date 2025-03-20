@@ -6,7 +6,7 @@ from app.shared.interface.logging.api import get_bot_logger
 
 logger = get_bot_logger()
 
-class WorkflowManager:
+class BotWorkflowManager:
     """
     Central manager for all bot workflows with standardized initialization.
     """

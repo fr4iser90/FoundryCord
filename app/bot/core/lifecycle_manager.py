@@ -5,7 +5,7 @@ import time
 
 logger = logging.getLogger("homelab.bot")
 
-class LifecycleManager:
+class BotLifecycleManager:
     """
     Manages the lifecycle of bot components, including startup, shutdown, and state management.
     """

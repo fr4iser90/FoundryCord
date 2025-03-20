@@ -7,8 +7,9 @@ from nextcord.ext import commands
 import sys
 from typing import Dict, Any, Optional, List
 from app.shared.interface.logging.api import get_bot_logger
+from app.bot.core.lifecycle_manager import BotLifecycleManager
 from app.bot.core.shutdown_handler import ShutdownHandler
-from app.bot.core.workflow_manager import WorkflowManager
+from app.bot.core.workflow_manager import BotWorkflowManager
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.bot.core.workflows.category_workflow import CategoryWorkflow
 from app.bot.core.workflows.channel_workflow import ChannelWorkflow
@@ -38,10 +39,10 @@ class HomelabBot(commands.Bot):
         self.env_config = EnvConfig().load()
         
         # Initialize lifecycle manager
-        self.lifecycle = LifecycleManager()
+        self.lifecycle = BotLifecycleManager()
         
         # Initialize workflow manager
-        self.workflow_manager = WorkflowManager()
+        self.workflow_manager = BotWorkflowManager()
         
         # Create all workflow instances
         self.database_workflow = DatabaseWorkflow(self)
@@ -141,7 +142,7 @@ async def main():
         shutdown_handler = ShutdownHandler(bot)
         
         # Initialize workflow manager
-        workflow_manager = WorkflowManager()
+        workflow_manager = BotWorkflowManager()
         
         # Register workflows
         database_workflow = DatabaseWorkflow(bot)

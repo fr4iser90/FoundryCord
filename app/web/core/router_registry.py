@@ -1,22 +1,20 @@
 from fastapi import FastAPI
+from app.web.interfaces.web.routers import routers
 
 def register_routers(app: FastAPI):
-    """Register all application routers"""
+    """Register all routers with the application"""
     
-    # OAuth routes
-    from app.web.domain.auth.oauth import router as auth_router
-    app.include_router(auth_router)
+    # Mount static files first
+    from fastapi.staticfiles import StaticFiles
+    from pathlib import Path
     
-    # API routes
-    from app.web.interfaces.api.v1 import routers as api_routers
-    for router in api_routers:
+    web_dir = Path(__file__).parent.parent
+    static_dir = web_dir / "static"
+    
+    # Ensure static directory exists
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+    
+    # Register all routers
+    for router in routers:
         app.include_router(router)
-    
-    # Web UI routes
-    from app.web.interfaces.web import routers as web_routers
-    for router in web_routers:
-        app.include_router(router)
-    
-    # Health routes
-    from app.web.interfaces.api.v1.health_router import router as health_router
-    app.include_router(health_router)

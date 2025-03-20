@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import os
+from pathlib import Path
 
 # Templates - initialized later
 templates = None
@@ -39,4 +40,10 @@ def init_all_extensions(app: FastAPI):
     # Initialize static files
     init_static_files(app)
     
+    return templates
+
+def get_templates():
+    """Get configured templates instance"""
+    templates_dir = Path(__file__).parent.parent / "templates"
+    templates = Jinja2Templates(directory=str(templates_dir))
     return templates

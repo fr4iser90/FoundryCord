@@ -4,7 +4,7 @@ from .dashboard_router import router as dashboard_router
 from .admin_router import router as admin_router
 from .bot_router import router as bot_router
 
-# Export all routers for use in the web interface
+# Export routers as a list, not a module
 routers = [
     main_router,
     auth_router,
@@ -12,3 +12,5 @@ routers = [
     admin_router,
     bot_router
 ]
+
+__all__ = ['routers']
