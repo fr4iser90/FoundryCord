@@ -3,13 +3,18 @@ import asyncio
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
 from app.web.domain.auth.services.web_authentication_service import WebAuthenticationService
 from app.shared.interface.logging.api import get_bot_logger
+from fastapi import FastAPI
+from app.web.infrastructure.factories.service.web_service_factory import WebServiceFactory
 
 logger = get_bot_logger()
 
 class WebLifecycleManager:
-    """Manages the lifecycle of web components, following bot pattern"""
+    """Manages the lifecycle of the web application."""
     
     def __init__(self):
+        """Initialize the lifecycle manager."""
+        self.app = None
+        self.service_factory = None
         self.state = "initializing"
         self.shutdown_hooks = []
         self.startup_hooks = []
@@ -104,3 +109,61 @@ class WebLifecycleManager:
     def get_state(self) -> str:
         """Get the current lifecycle state"""
         return self.state
+
+    def initialize(self, app: FastAPI, service_factory: WebServiceFactory):
+        """Initialize with app and service factory."""
+        self.app = app
+        self.service_factory = service_factory
+        
+    async def setup_infrastructure(self):
+        """Setup core infrastructure components."""
+        try:
+            # Setup CORS
+            from fastapi.middleware.cors import CORSMiddleware
+            self.app.add_middleware(
+                CORSMiddleware,
+                allow_origins=["*"],
+                allow_credentials=True,
+                allow_methods=["*"],
+                allow_headers=["*"],
+            )
+            
+            # Setup session middleware
+            from app.web.core.middleware import setup_session_middleware
+            await setup_session_middleware(self.app)
+            
+            # Register routers
+            from app.web.core.router_registry import register_routers
+            register_routers(self.app)
+            
+            # Setup static files and templates
+            from app.web.core.extensions import init_all_extensions
+            init_all_extensions(self.app)
+            
+            logger.info("Web infrastructure setup completed")
+            
+        except Exception as e:
+            logger.error(f"Failed to setup web infrastructure: {e}")
+            raise
+            
+    async def startup(self):
+        """Handle application startup tasks."""
+        try:
+            # Initialize services
+            await self.service_factory.initialize_services()
+            logger.info("Web application startup completed")
+            
+        except Exception as e:
+            logger.error(f"Failed during web application startup: {e}")
+            raise
+            
+    async def shutdown(self):
+        """Handle application shutdown tasks."""
+        try:
+            # Cleanup services
+            await self.service_factory.cleanup_services()
+            logger.info("Web application shutdown completed")
+            
+        except Exception as e:
+            logger.error(f"Failed during web application shutdown: {e}")
+            raise

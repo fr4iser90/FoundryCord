@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
-from app.web.interfaces.web.dependencies import get_templates
-from app.web.domain.auth.dependencies import get_current_user
+from app.web.core.extensions import get_templates
+from app.web.application.services.auth.dependencies import get_current_user
 
 router = APIRouter(prefix="/bot", tags=["Bot"])
 templates = get_templates()

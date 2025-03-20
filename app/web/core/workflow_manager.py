@@ -1,29 +1,58 @@
 from typing import Dict, List, Optional
 from app.web.core.workflows.base_workflow import BaseWorkflow
 from app.shared.interface.logging.api import get_bot_logger
+from app.web.infrastructure.factories.service.web_service_factory import WebServiceFactory
 
 logger = get_bot_logger()
 
 class WebWorkflowManager:
-    """Manages web workflows, following bot pattern"""
+    """Manages web application workflows."""
     
     def __init__(self):
-        self.workflows = {}
-        self.initialized = False
-        self.initialization_order = []
-    
+        """Initialize the workflow manager."""
+        self.service_factory = None
+        self.workflows = []
+        
+    def initialize(self, service_factory: WebServiceFactory):
+        """Initialize with service factory."""
+        self.service_factory = service_factory
+        
+    async def initialize_workflows(self):
+        """Initialize all workflows."""
+        try:
+            # Initialize workflows here
+            logger.info("Web workflows initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize workflows: {e}")
+            raise
+            
+    async def start_workflows(self):
+        """Start all workflows."""
+        try:
+            # Start workflows here
+            logger.info("Web workflows started")
+        except Exception as e:
+            logger.error(f"Failed to start workflows: {e}")
+            raise
+            
+    async def stop_workflows(self):
+        """Stop all workflows."""
+        try:
+            # Stop workflows here
+            logger.info("Web workflows stopped")
+        except Exception as e:
+            logger.error(f"Failed to stop workflows: {e}")
+            raise
+
     def register_workflow(self, workflow: BaseWorkflow, dependencies: List[str] = None):
         """Register a workflow with optional dependencies"""
         name = workflow.name
-        self.workflows[name] = {
+        self.workflows.append({
             'instance': workflow,
             'dependencies': dependencies or [],
             'initialized': False
-        }
+        })
         logger.debug(f"Registered workflow: {name}")
-        
-        if name not in self.initialization_order:
-            self.initialization_order.append(name)
     
     def set_initialization_order(self, order: List[str]):
         """Set explicit initialization order for workflows"""

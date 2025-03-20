@@ -1,18 +1,12 @@
 import os
-import pathlib
 from fastapi import APIRouter, Depends, Request, HTTPException, status, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from app.web.application.services.auth.dependencies import get_auth_service
 from app.web.domain.auth.services.web_authentication_service import WebAuthenticationService
-from app.web.interfaces.web.dependencies import get_templates
+from app.web.core.extensions import get_templates
 from app.web.infrastructure.config.env_loader import get_discord_oauth_config
 import httpx
-import logging
-from pydantic import BaseModel
-from typing import Optional
 from app.shared.interface.logging.api import get_bot_logger
-from app.web.domain.auth.models.token import Token
-from app.web.domain.auth.models.user import User
 
 logger = get_bot_logger()
 router = APIRouter(prefix="/auth", tags=["Authentication"])

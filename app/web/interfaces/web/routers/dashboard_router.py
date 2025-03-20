@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse
-from app.web.interfaces.web.dependencies import get_templates
-from app.web.domain.auth.dependencies import get_current_user
+from app.web.core.extensions import get_templates
+from app.web.application.services.auth.dependencies import get_current_user
 from app.web.infrastructure.database.repositories import SQLAlchemyDashboardRepository
 from app.shared.infrastructure.database.core.connection import get_db_connection
 
