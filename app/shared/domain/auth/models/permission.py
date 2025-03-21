@@ -14,7 +14,7 @@ class Permission(Enum):
     @staticmethod
     def get_role_permissions(role):
         """Get all permissions for a specific role"""
-        if role == Role.SUPER_ADMIN:
+        if role == Role.OWNER:
             return list(Permission)
             
         if role == Role.ADMIN:

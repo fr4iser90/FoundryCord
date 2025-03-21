@@ -2,7 +2,7 @@
 
 # Server role configuration
 SERVER_ROLES = {
-    "SUPER_ADMIN": ["Super Admin"],  # Full, unrestricted access
+    "OWNER": ["Bot Owner"],  # Full, unrestricted access
     "ADMIN": ["Admin"],  # High-level control, but some restrictions
     "MODERATOR": ["Moderator"],  # Moderates content, but limited system access
     "USER": ["User"],  # Basic user, limited access
@@ -11,7 +11,7 @@ SERVER_ROLES = {
 
 # Role priorities (higher number = higher privilege)
 ROLE_PRIORITIES = {
-    "SUPER_ADMIN": 100,
+    "OWNER": 100,
     "ADMIN": 80,
     "MODERATOR": 60,
     "USER": 40,
@@ -20,7 +20,7 @@ ROLE_PRIORITIES = {
 
 # Default user groups - will be filled from environment variables at runtime
 DEFAULT_USER_GROUPS = {
-    'OWNER': {},
+    'owner': {},
     'admins': {},
     'moderators': {},
     'users': {},

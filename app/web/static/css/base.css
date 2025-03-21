@@ -1,11 +1,33 @@
-/* Reset und Basis-Styles */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+:root {
+    --discord-accent: #7289da;
+    --discord-lighter: #36393f;
+    --discord-dark: #2f3136;
+    --discord-darker: #202225;
+    --text-primary: #ffffff;
+    --text-secondary: #b9bbbe;
+    --background-primary: #36393f;
+    --background-secondary: #2f3136;
+    --background-tertiary: #202225;
+    --border-radius: 4px;
+    --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    --header-bg: #2f3136; /* Example value */
+    --header-text: #ffffff; /* Example value */
+    --border-color: #202225; /* Example value */
+    --footer-bg: var(--discord-darker);
+    --footer-text: var(--text-secondary);
+    --footer-link: var(--discord-accent);
+    --footer-link-hover: var(--text-primary);
 }
 
-/* Layout-Struktur */
+body {
+    background-color: var(--background-primary);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+}
+
 .app-container {
     min-height: 100vh;
     display: flex;
@@ -15,69 +37,102 @@
 .main-content {
     flex: 1;
     padding: 20px;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
 }
 
-/* Grundlegende Typografie */
-body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
+/* Header Styles */
+.header {
+    background-color: var(--header-bg);
+    color: var(--header-text);
+    border-bottom: 1px solid var(--border-color);
 }
 
-/* Utility-Klassen */
-.container {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
+.header .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
 }
 
-/* Global styles that apply across all themes */
-
-/* Utility classes */
-.mt-20 {
-    margin-top: 20px;
+.header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
 }
 
-/* Basic layout classes that aren't theme-specific */
-.main-content {
-    padding: 20px;
-    margin-left: 200px;
+/* Footer Styles */
+.footer {
+    background-color: var(--footer-bg);
+    color: var(--footer-text);
+    border-top: 1px solid var(--border-color);
+    margin-top: auto;
+    padding: 1rem 0;
 }
 
-/* Common component layout (structure only, not colors) */
-.sidebar {
-    padding: 15px;
-    height: 100vh;
-    position: fixed;
-    overflow-y: auto;
-    width: 200px;
+.footer a {
+    color: var(--footer-link);
+    text-decoration: none;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .sidebar {
-        width: 100%;
-        height: auto;
-        position: relative;
-        z-index: 100;
-    }
-    
-    .main-content {
-        margin-left: 0;
-        padding: 15px;
-    }
-    
-    .toolbox {
-        width: 100%;
-        height: auto;
-        position: relative;
-    }
-    
-    .editor-area {
-        margin-right: 0;
-    }
+.footer a:hover {
+    color: var(--footer-link-hover);
+}
+
+.navbar {
+    background-color: var(--discord-darker);
+    padding: 0.5rem 0;
+}
+
+.navbar-brand {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1.2rem;
+    text-decoration: none;
+}
+
+.navbar-brand:hover {
+    color: var(--discord-accent);
+}
+
+.navbar-nav .nav-link {
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    transition: color 0.2s;
+}
+
+.navbar-nav .nav-link:hover {
+    color: var(--text-primary);
+}
+
+/* Dropdown Styles */
+.dropdown-menu-dark {
+    background-color: var(--discord-darker);
+    border: 1px solid var(--border-color);
+}
+
+.dropdown-item {
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+}
+
+.dropdown-item:hover {
+    background-color: var(--discord-dark);
+    color: var(--text-primary);
+}
+
+.dropdown-divider {
+    border-top: 1px solid var(--border-color);
+}
+
+/* User Avatar Styles */
+.navbar .rounded-circle {
+    border: 2px solid var(--discord-accent);
+}
+
+/* Mobile Toggle Button */
+.navbar-toggler {
+    border-color: var(--text-secondary);
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.55)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }

@@ -1,5 +1,5 @@
 from ..policies.authorization_policies import (
-    is_authorized, is_super_admin, is_admin, 
+    is_authorized, is_bot_owner, is_admin, 
     is_moderator, is_user, is_guest
 )
 from app.shared.domain.auth.models import Permission
@@ -11,9 +11,9 @@ class PermissionService:
         """Check if a user is authorized to use the system"""
         return is_authorized(user)
     
-    def is_super_admin(self, user):
+    def is_bot_owner(self, user):
         """Check if user is a Super Admin"""
-        return is_super_admin(user)
+        return is_bot_owner(user)
         
     def is_admin(self, user):
         """Check if user is an Admin or Super Admin"""

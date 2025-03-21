@@ -20,8 +20,8 @@
                         <a class="nav-link" href="/users">Users</a>
                     </li>
                     
-                    <!-- Admin Dropdown - Only visible for SUPER_ADMIN -->
-                    {% if user.role == "SUPER_ADMIN" %}
+                    <!-- Admin Dropdown - Only visible for Bot Owner -->
+                    {% if user.role == "OWNER" %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" 
                            data-bs-toggle="dropdown" aria-expanded="false">

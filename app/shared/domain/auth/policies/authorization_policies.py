@@ -2,13 +2,13 @@ from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 from app.shared.domain.auth.models import Role, OWNER, ADMINS, MODERATORS, USERS, GUESTS
 
-def is_super_admin(user):
-    """Check if the user is a Super Admin."""
+def is_bot_owner(user):
+    """Check if the user is a Bot owner."""
     return str(user.id) in OWNER.values()
 
 def is_admin(user):
     """Check if the user is an Admin or Super Admin."""
-    return is_super_admin(user) or str(user.id) in ADMINS.values()
+    return is_bot_owner(user) or str(user.id) in ADMINS.values()
 
 def is_moderator(user):
     """Check if the user is a Moderator or higher."""
@@ -30,7 +30,7 @@ def is_authorized(user):
     
     # Remove sensitive data from logs
     roles_present = {
-        'super_admin': bool(OWNER),
+        'owner': bool(OWNER),
         'admin': bool(ADMINS),
         'moderator': bool(MODERATORS),
         'user': bool(USERS),
@@ -39,7 +39,7 @@ def is_authorized(user):
     logger.debug(f"Available roles: {roles_present}")
     
     return (
-        is_super_admin(user)
+        is_bot_owner(user)
         or is_admin(user)
         or is_moderator(user)
         or is_user(user)

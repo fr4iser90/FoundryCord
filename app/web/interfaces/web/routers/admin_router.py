@@ -10,8 +10,8 @@ templates = get_templates()
 @router.get("/", response_class=HTMLResponse)
 async def admin_dashboard(request: Request, current_user=Depends(get_current_user)):
     """Admin dashboard overview"""
-    # Verify SUPER_ADMIN role
-    await require_role(current_user, Role.SUPER_ADMIN)
+    # Verify Bot Owner role
+    await require_role(current_user, Role.OWNER)
     
     # Get some mock stats for now
     mock_stats = {

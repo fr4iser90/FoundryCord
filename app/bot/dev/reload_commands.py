@@ -1,7 +1,7 @@
 import importlib
 import sys
 from nextcord.ext import commands
-from app.bot.utils.decorators.auth import super_admin_or_higher, admin_or_higher
+from app.bot.utils.decorators.auth import bot_owner_only, admin_or_higher
 import nextcord
 import os
 
@@ -20,7 +20,7 @@ class ReloadCommands(commands.Cog):
         name="reload",
         description="Lädt Module neu (nur im Development-Modus verfügbar)"
     )
-    @super_admin_or_higher()
+    @bot_owner_only()
     async def reload(
         self, 
         interaction: nextcord.Interaction,

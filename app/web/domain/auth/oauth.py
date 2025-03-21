@@ -93,7 +93,7 @@ async def auth_callback(code: str, state: str = None, request: Request = None):
             user_id = user_data["id"]
             
             if str(user_id) in OWNER.values():
-                user_role = "SUPER_ADMIN"
+                user_role = "OWNER"
             elif str(user_id) in ADMINS.values():
                 user_role = "ADMIN"
             elif str(user_id) in MODERATORS.values():

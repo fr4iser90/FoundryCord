@@ -9,7 +9,7 @@ async def get_user_role(user_id: str) -> Role:
     Determine a user's role based on their Discord ID
     """
     if str(user_id) in OWNER.values():
-        return Role.SUPER_ADMIN
+        return Role.OWNER
     elif str(user_id) in ADMINS.values():
         return Role.ADMIN
     elif str(user_id) in MODERATORS.values():

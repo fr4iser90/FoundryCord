@@ -2,7 +2,7 @@ import functools
 import nextcord
 from nextcord.ext import commands
 from app.shared.domain.auth import (
-    is_super_admin, is_admin, is_moderator,
+    is_bot_owner, is_admin, is_moderator,
     is_user, is_guest, is_authorized
 )
 
@@ -37,11 +37,11 @@ def authorized_users_only():
         return True
     return commands.check(predicate)
 
-def super_admin_or_higher():
-    """Custom Decorator for super admin or higher permissions."""
+def bot_owner_only():
+    """Custom Decorator for Bot owner or higher permissions."""
     async def predicate(ctx):
-        if not is_super_admin(ctx.author):
-            await ctx.send("You must be a super admin to use this command.")
+        if not is_bot_owner(ctx.author):
+            await ctx.send("You must be a bot owner to use this command.")
             return False
         return True
     return commands.check(predicate)

@@ -241,7 +241,7 @@ class TestAuthDependencies:
         user = {
             "id": "12345",
             "username": "admin_user",
-            "role": "SUPER_ADMIN"
+            "role": "ADMIN"
         }
         
         # Check permissions

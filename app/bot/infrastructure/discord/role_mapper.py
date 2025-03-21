@@ -3,7 +3,7 @@ from app.shared.domain.auth.models.roles import Role, SERVER_ROLES
 
 # Discord-specific role mapping
 DISCORD_ROLE_MAPPING = {
-    "SUPER_ADMIN": ["Super Admin"],
+    "OWNER": ["Bot Owner"],
     "ADMIN": ["Admin"],
     "MODERATOR": ["Moderator"],
     "USER": ["User"],

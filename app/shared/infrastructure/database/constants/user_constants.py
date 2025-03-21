@@ -12,7 +12,7 @@ class UserRole(Enum):
 
 # Load user groups at import time (behalten wir bei)
 USER_GROUPS = load_user_groups()
-OWNER = USER_GROUPS['OWNER']
+OWNER = USER_GROUPS['owner']
 ADMINS = USER_GROUPS['admins']
 MODERATORS = USER_GROUPS['moderators']
 USERS = USER_GROUPS['users']

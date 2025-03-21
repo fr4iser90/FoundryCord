@@ -1,6 +1,6 @@
 from app.shared.domain.auth.models import User, Role, Permission
 from app.shared.domain.auth.models import OWNER, ADMINS, MODERATORS, USERS, GUESTS, SERVER_ROLES
-from app.shared.domain.auth.policies import is_super_admin, is_admin, is_moderator, is_user, is_guest, is_authorized
+from app.shared.domain.auth.policies import is_bot_owner, is_admin, is_moderator, is_user, is_guest, is_authorized
 from app.shared.domain.auth.services import PermissionService, AuthorizationService, AuthenticationService
 
 __all__ = [
@@ -10,7 +10,7 @@ __all__ = [
     'OWNER', 'ADMINS', 'MODERATORS', 'USERS', 'GUESTS',
     
     # Policy functions
-    'is_super_admin', 'is_admin', 'is_moderator', 
+    'is_bot_owner', 'is_admin', 'is_moderator', 
     'is_user', 'is_guest', 'is_authorized',
     
     # Services

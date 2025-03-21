@@ -8,7 +8,8 @@ from app.shared.infrastructure.database.constants import (
 
 class Role(Enum):
     """Value object representing user roles in the system"""
-    SUPER_ADMIN = "SUPER_ADMIN"
+    OWNER = "OWNER"
+    
     ADMIN = "ADMIN"
     MODERATOR = "MODERATOR"
     USER = "USER"

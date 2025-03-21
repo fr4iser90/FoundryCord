@@ -9,6 +9,14 @@
     --discord-danger: #f04747;
     --discord-success: #43b581;
     
+    /* Footer variables */
+    --footer-bg: var(--discord-channel);
+    --footer-text: var(--discord-text);
+    --footer-link: var(--discord-link);
+    --footer-link-hover: var(--discord-accent);
+
+
+
     /* Bestehende Variablen beibehalten */
     --bg-primary: #1a1a1a;
     --bg-secondary: #2d2d2d;

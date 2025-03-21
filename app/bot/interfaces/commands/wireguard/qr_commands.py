@@ -3,7 +3,7 @@ import nextcord
 from nextcord.ext import commands
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
-from app.bot.utils.decorators.auth import super_admin_or_higher, user_or_higher
+from app.bot.utils.decorators.auth import bot_owner_only, user_or_higher
 from app.bot.interfaces.commands.wireguard.utils import get_user_config
 import asyncio
 
@@ -62,7 +62,7 @@ class WireguardQRCommands(commands.Cog):
             await interaction.followup.send("❌ Keine Wireguard-Konfiguration für deinen Benutzer gefunden.", ephemeral=True)
 
     @nextcord.slash_command(name="wireguard_get_user_qr", description="Holt den Wireguard QR-Code eines bestimmten Benutzers")
-    @super_admin_or_higher()
+    @bot_owner_only()
     async def wireguard_get_user_qr(self, interaction: nextcord.Interaction, username: str):
         """Sendet die WireGuard-Config eines bestimmten Users als QR-Code."""
         await interaction.response.defer(ephemeral=True)
