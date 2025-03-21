@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Optional, Dict, Any, Type
 from app.shared.domain.logging.services.logging_service import LoggingService
 from app.shared.domain.logging.entities.log_entry import LogEntry
@@ -13,10 +14,13 @@ class BaseLoggingService(LoggingService):
     
     def _configure_logger(self) -> None:
         """Configure the logger with handlers based on current config"""
-        # Basic configuration to make sure it works
+        # Set debug level based on environment
+        is_development = os.getenv('ENVIRONMENT', '').lower() == 'development'
+        default_level = logging.DEBUG if is_development else logging.INFO
+        
         if not logging.getLogger().handlers:
             logging.basicConfig(
-                level=logging.INFO,
+                level=default_level,
                 format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
             )
     
@@ -39,7 +43,9 @@ class BaseLoggingService(LoggingService):
     
     def debug(self, message: str, **context) -> None:
         """Log a debug message"""
-        self.log(message, "DEBUG", **context)
+        # Only log debug messages in development environment
+        if os.getenv('ENVIRONMENT', '').lower() == 'development':
+            self.log(message, "DEBUG", **context)
     
     def warning(self, message: str, **context) -> None:
         """Log a warning message"""

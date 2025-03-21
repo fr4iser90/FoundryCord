@@ -9,7 +9,7 @@ from fastapi.responses import RedirectResponse
 from app.web.infrastructure.security.auth import Token, User, create_access_token
 from app.shared.domain.auth.models import Role
 from app.shared.infrastructure.database.constants import (
-    SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
+    OWNER, ADMINS, MODERATORS, USERS, GUESTS
 )
 from app.web.infrastructure.config.env_loader import (
     ensure_web_env_loaded, get_discord_oauth_config, get_jwt_config
@@ -92,7 +92,7 @@ async def auth_callback(code: str, state: str = None, request: Request = None):
             user_role = None
             user_id = user_data["id"]
             
-            if str(user_id) in SUPER_ADMINS.values():
+            if str(user_id) in OWNER.values():
                 user_role = "SUPER_ADMIN"
             elif str(user_id) in ADMINS.values():
                 user_role = "ADMIN"

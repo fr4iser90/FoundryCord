@@ -88,7 +88,7 @@ All other necessary configuration will be auto-generated at startup!
 |----------|-------------|----------|
 | `DISCORD_BOT_TOKEN` | Your Discord bot token | Yes |
 | `DISCORD_SERVER` | Your Discord server ID | Yes |
-| `SUPER_ADMINS` | Discord users with full access (NAME\|ID format) | Yes |
+| `OWNER` | Discord users with full access (NAME\|ID format) | Yes |
 
 All other variables have sensible defaults and will be auto-generated if needed.
 

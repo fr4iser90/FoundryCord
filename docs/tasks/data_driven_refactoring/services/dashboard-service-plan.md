@@ -183,7 +183,7 @@ CREATE TABLE data_sources (
 -- Dashboard channel mappings (replacing hardcoded mappings)
 CREATE TABLE dashboard_channel_mappings (
     id VARCHAR(50) PRIMARY KEY,
-    channel_template_id VARCHAR(50) REFERENCES channel_templates(id) ON DELETE CASCADE,
+    channel_template_id VARCHAR(50) REFERENCES channels(id) ON DELETE CASCADE,
     dashboard_template_id VARCHAR(50) REFERENCES dashboard_templates(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

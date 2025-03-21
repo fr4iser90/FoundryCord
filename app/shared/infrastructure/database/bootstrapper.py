@@ -43,14 +43,15 @@ async def initialize_database() -> bool:
             logger.error("Failed to connect to PostgreSQL after multiple attempts")
             return False
         
+        # Initialize basic database structure is handled by postgres ???
         # Step 2: Initialize basic database structure
-        if not await init_db():
-            logger.error("Failed to initialize database schema")
-            return False
+        #if not await init_db():
+        #    logger.error("Failed to initialize database schema")
+        #    return False
             
         # Step 3: Run migrations to update schema to latest version
         migration_service = MigrationService()
-        if not await migration_service.run_migrations():
+        if not await migration_service.check_migrations():
             logger.error("Failed to run database migrations")
             return False
         

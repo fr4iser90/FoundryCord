@@ -1,14 +1,14 @@
 from fastapi import HTTPException, status
 from app.shared.domain.auth.models import Role
 from app.shared.infrastructure.database.constants import (
-    SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
+    OWNER, ADMINS, MODERATORS, USERS, GUESTS
 )
 
 async def get_user_role(user_id: str) -> Role:
     """
     Determine a user's role based on their Discord ID
     """
-    if str(user_id) in SUPER_ADMINS.values():
+    if str(user_id) in OWNER.values():
         return Role.SUPER_ADMIN
     elif str(user_id) in ADMINS.values():
         return Role.ADMIN

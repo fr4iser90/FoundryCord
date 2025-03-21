@@ -20,7 +20,7 @@ ROLE_PRIORITIES = {
 
 # Default user groups - will be filled from environment variables at runtime
 DEFAULT_USER_GROUPS = {
-    'super_admins': {},
+    'OWNER': {},
     'admins': {},
     'moderators': {},
     'users': {},

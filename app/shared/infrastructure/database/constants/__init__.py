@@ -5,7 +5,7 @@ Exposes constants from various database-related modules.
 
 from .user_constants import (
     USER_GROUPS,
-    SUPER_ADMINS,
+    OWNER,
     ADMINS,
     MODERATORS,
     USERS,
@@ -33,7 +33,7 @@ from .role_constants import (
 __all__ = [
     # User constants
     'USER_GROUPS',
-    'SUPER_ADMINS',
+    'OWNER',
     'ADMINS',
     'MODERATORS', 
     'USERS',

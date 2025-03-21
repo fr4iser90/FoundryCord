@@ -23,7 +23,7 @@ ESSENTIAL_VARS = {
     "DISCORD_BOT_TOKEN": "Your Discord bot token from Discord Developer Portal",
     "DISCORD_SERVER": "Your Discord server/guild ID",
     #"HOMELAB_CATEGORY_ID": "Category ID for Homelab channels",
-    "SUPER_ADMINS": "Discord user IDs for super admins (format: NAME|ID)",
+    "OWNER": "Discord user IDs for super admins (format: NAME|ID)",
 }
 
 # Variables that can be auto-generated
@@ -78,7 +78,7 @@ def generate_env_files(config):
         "DISCORD_BOT_TOKEN", "ENVIRONMENT", "DOMAIN", "AES_KEY", "TYPE",
         "AUTH_TOKEN", "TRACKER_URL", "HOMELAB_CATEGORY_ID", 
         "HOMELAB_GAMESERVER_CATEGORY_ID", "DISCORD_SERVER", 
-        "SUPER_ADMINS", "ADMINS", "USERS", "ENCRYPTION_KEY",
+        "OWNER", "ADMINS", "USERS", "ENCRYPTION_KEY",
         "JWT_SECRET_KEY", "SESSION_DURATION_HOURS", "RATE_LIMIT_WINDOW",
         "RATE_LIMIT_MAX_ATTEMPTS", "PUID", "PGID"
     ]

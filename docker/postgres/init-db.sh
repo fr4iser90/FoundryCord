@@ -60,26 +60,66 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
     -- Grant privileges
     GRANT ALL PRIVILEGES ON DATABASE "$POSTGRES_DB" TO "$APP_DB_USER";
     \c $POSTGRES_DB
-    GRANT ALL ON SCHEMA public TO "$APP_DB_USER";
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO "$APP_DB_USER";
     
-    -- Create security_keys table for storing credentials
-    CREATE TABLE IF NOT EXISTS security_keys (
-        id SERIAL PRIMARY KEY,
-        key_name VARCHAR(255) NOT NULL UNIQUE,
-        key_value TEXT NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    -- Create alembic_version table for migration tracking
+    CREATE TABLE IF NOT EXISTS alembic_version (
+        version_num VARCHAR(32) NOT NULL,
+        CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)
     );
     
-    -- Store the database credentials in the security_keys table
-    INSERT INTO security_keys (key_name, key_value) 
-    VALUES ('db_postgres_password', '$POSTGRES_PASSWORD') 
-    ON CONFLICT (key_name) DO UPDATE SET key_value = '$POSTGRES_PASSWORD', updated_at = CURRENT_TIMESTAMP;
+    -- Grant all necessary permissions
+    GRANT ALL ON SCHEMA public TO "$APP_DB_USER";
     
-    INSERT INTO security_keys (key_name, key_value) 
+    -- Grant ALL on existing tables and sequences
+    GRANT ALL ON ALL TABLES IN SCHEMA public TO "$APP_DB_USER";
+    GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO "$APP_DB_USER";
+    
+    -- Grant for FUTURE tables and sequences (wichtig!)
+    ALTER DEFAULT PRIVILEGES FOR ROLE "$POSTGRES_USER" IN SCHEMA public 
+    GRANT ALL ON TABLES TO "$APP_DB_USER";
+    
+    ALTER DEFAULT PRIVILEGES FOR ROLE "$POSTGRES_USER" IN SCHEMA public 
+    GRANT ALL ON SEQUENCES TO "$APP_DB_USER";
+    
+    -- Ensure sequence permissions are set correctly
+    DO $$
+    DECLARE
+        seq_name text;
+    BEGIN
+        FOR seq_name IN 
+            SELECT sequence_name 
+            FROM information_schema.sequences 
+            WHERE sequence_schema = 'public'
+        LOOP
+            EXECUTE format(
+                'GRANT ALL ON SEQUENCE %I TO %I', 
+                seq_name, 
+                '$APP_DB_USER'
+            );
+        END LOOP;
+    END $$;
+
+    -- Create security_keys table (this needs to exist before migrations)
+    CREATE TABLE IF NOT EXISTS security_keys (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL UNIQUE,
+        value TEXT NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    -- Grant specific permissions
+    GRANT ALL PRIVILEGES ON TABLE security_keys TO "$APP_DB_USER";
+    GRANT USAGE, SELECT ON SEQUENCE security_keys_id_seq TO "$APP_DB_USER";
+    GRANT ALL PRIVILEGES ON TABLE alembic_version TO "$APP_DB_USER";
+
+    -- Store the database credentials in the security_keys table
+    INSERT INTO security_keys (name, value) 
+    VALUES ('db_postgres_password', '$POSTGRES_PASSWORD') 
+    ON CONFLICT (name) DO UPDATE SET value = '$POSTGRES_PASSWORD';
+    
+    INSERT INTO security_keys (name, value) 
     VALUES ('db_app_password', '$APP_DB_PASSWORD') 
-    ON CONFLICT (key_name) DO UPDATE SET key_value = '$APP_DB_PASSWORD', updated_at = CURRENT_TIMESTAMP;
+    ON CONFLICT (name) DO UPDATE SET value = '$APP_DB_PASSWORD';
 EOSQL
 
 # Create extensions

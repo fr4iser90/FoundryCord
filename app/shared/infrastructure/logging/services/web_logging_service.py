@@ -15,6 +15,9 @@ class WebLoggingService(BaseLoggingService):
     
     async def log_request_info(self, request: Request, call_next):
         """Log the request information"""
+        self.debug(f"Processing request: {request.method} {request.url.path}",
+                 method=request.method, path=request.url.path)
+        
         self.info(f"Web request: {request.method} {request.url.path}",
                  method=request.method, path=request.url.path, 
                  client=request.client.host if request.client else "unknown")

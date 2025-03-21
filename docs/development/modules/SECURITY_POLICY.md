@@ -138,7 +138,7 @@ ENCRYPTION_KEY=<Fernet-key>
 JWT_SECRET_KEY=<base64-encoded-24-byte-key>
 
 # User roles (can be stored in database instead)
-SUPER_ADMINS=username1|id1,username2|id2
+OWNER=username1|id1,username2|id2
 ADMINS=username3|id3,username4|id4
 MODERATORS=username5|id5,username6|id6
 USERS=username7|id7,username8|id8

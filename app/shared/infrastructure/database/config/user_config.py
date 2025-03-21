@@ -16,7 +16,7 @@ def parse_users(user_str):
 def load_user_groups():
     """Load all user groups from environment variables"""
     # Load environment variables
-    super_admins_env = os.environ.get('SUPER_ADMINS', '')
+    OWNER_env = os.environ.get('OWNER', '')
     admins_env = os.environ.get('ADMINS', '')
     moderators_env = os.environ.get('MODERATORS', '')
     users_env = os.environ.get('USERS', '')
@@ -24,7 +24,7 @@ def load_user_groups():
     
     # Parse into dictionaries
     return {
-        'super_admins': parse_users(super_admins_env),
+        'OWNER': parse_users(OWNER_env),
         'admins': parse_users(admins_env),
         'moderators': parse_users(moderators_env),
         'users': parse_users(users_env),

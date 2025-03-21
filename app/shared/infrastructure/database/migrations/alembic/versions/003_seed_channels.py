@@ -89,7 +89,7 @@ def upgrade() -> None:
     """Seed channels."""
     # Definiere Tabelle für SQL-Einfügung
     channels_table = table(
-        'channel_templates',
+        'channels',
         column('name', sa.String),
         column('topic', sa.String),
         column('is_private', sa.Boolean),
@@ -102,4 +102,4 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Remove seeded channels."""
     for channel in CHANNELS:
-        op.execute(f"DELETE FROM channel_templates WHERE name = '{channel['name']}'") 
+        op.execute(f"DELETE FROM channels WHERE name = '{channel['name']}'") 

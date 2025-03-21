@@ -124,7 +124,7 @@ The bot will read from these tables, which are managed by the web frontend:
 
 ```sql
 -- Channel templates (replacing hardcoded channel definitions)
-CREATE TABLE channel_templates (
+CREATE TABLE channels (
     id VARCHAR(50) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
@@ -145,7 +145,7 @@ CREATE TABLE channels (
     id VARCHAR(50) PRIMARY KEY,
     guild_id VARCHAR(50) NOT NULL,
     category_id VARCHAR(50) REFERENCES categories(id),
-    template_id VARCHAR(50) REFERENCES channel_templates(id),
+    template_id VARCHAR(50) REFERENCES channels(id),
     name VARCHAR(100) NOT NULL,
     description TEXT,
     channel_type VARCHAR(50) NOT NULL,
@@ -162,7 +162,7 @@ CREATE TABLE channels (
 -- Thread templates (replacing thread configurations in constants)
 CREATE TABLE thread_templates (
     id VARCHAR(50) PRIMARY KEY,
-    channel_template_id VARCHAR(50) REFERENCES channel_templates(id) ON DELETE CASCADE,
+    channel_template_id VARCHAR(50) REFERENCES channels(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     is_private BOOLEAN DEFAULT FALSE,
     auto_archive_duration INTEGER DEFAULT 1440, -- minutes (1 day)
@@ -235,7 +235,7 @@ CREATE TABLE game_server_channels (
 
 1. **Seed Initial Data**:
    - Create database entries for all channels in `channel_constants.py`
-   - Populate channel_templates with default channels
+   - Populate channels with default channels
    - Create thread_templates based on thread definitions
 
 2. **Update ChannelSetupService**:

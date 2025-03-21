@@ -16,9 +16,8 @@ depends_on = None
 
 def upgrade() -> None:
     """Create initial database tables."""
-    # Haupt-Tabellen erstellen
     op.create_table(
-        'category_templates',
+        'categories',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('name', sa.String(length=255), nullable=False),
         sa.Column('position', sa.Integer(), nullable=False),
@@ -29,9 +28,9 @@ def upgrade() -> None:
         sa.UniqueConstraint('name')
     )
     
-    # Erstelle channel_templates Tabelle für 003_seed_channels.py
+    # Erstelle channels Tabelle für 003_seed_channels.py
     op.create_table(
-        'channel_templates',
+        'channels',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('name', sa.String(length=255), nullable=False),
         sa.Column('topic', sa.String(length=1024), nullable=True),
@@ -66,10 +65,35 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id')
     )
 
+    # Create roles table
+    op.create_table(
+        'roles',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('name', sa.String(length=255), nullable=False),
+        sa.Column('description', sa.String(length=1024), nullable=True),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('name')
+    )
+
+    # Create users table
+    op.create_table(
+        'users',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('username', sa.String(length=255), nullable=False),
+        sa.Column('discord_id', sa.String(length=255), nullable=False),
+        sa.Column('role_id', sa.Integer(), nullable=False),
+        sa.Column('is_active', sa.Boolean(), nullable=False, default=True),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('discord_id'),
+        sa.ForeignKeyConstraint(['role_id'], ['roles.id'])
+    )
+
 def downgrade() -> None:
     """Drop created tables."""
     # Tabellen in umgekehrter Reihenfolge löschen
     op.drop_table('dashboards')
     op.drop_table('dashboard_components')
-    op.drop_table('channel_templates')
-    op.drop_table('category_templates') 
+    op.drop_table('channels')
+    op.drop_table('categories')

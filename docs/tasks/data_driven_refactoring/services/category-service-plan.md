@@ -121,7 +121,7 @@ The bot will read from these tables, which are managed by the web frontend:
 
 ```sql
 -- Category templates (replacing hardcoded default categories)
-CREATE TABLE category_templates (
+CREATE TABLE categories (
     id VARCHAR(50) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
@@ -138,7 +138,7 @@ CREATE TABLE category_templates (
 CREATE TABLE categories (
     id VARCHAR(50) PRIMARY KEY,
     guild_id VARCHAR(50) NOT NULL,
-    template_id VARCHAR(50) REFERENCES category_templates(id),
+    template_id VARCHAR(50) REFERENCES categories(id),
     name VARCHAR(100) NOT NULL,
     description TEXT,
     position INTEGER,
@@ -153,8 +153,8 @@ CREATE TABLE categories (
 -- Channel to category mappings (replacing CATEGORY_CHANNEL_MAPPINGS)
 CREATE TABLE category_channel_mappings (
     id VARCHAR(50) PRIMARY KEY,
-    category_template_id VARCHAR(50) REFERENCES category_templates(id) ON DELETE CASCADE,
-    channel_template_id VARCHAR(50) REFERENCES channel_templates(id) ON DELETE CASCADE,
+    category_template_id VARCHAR(50) REFERENCES categories(id) ON DELETE CASCADE,
+    channel_template_id VARCHAR(50) REFERENCES channels(id) ON DELETE CASCADE,
     position INTEGER,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -198,7 +198,7 @@ CREATE TABLE category_channel_mappings (
 
 1. **Seed Initial Data**:
    - Create database entries for all categories in `category_constants.py`
-   - Populate category_templates with default categories
+   - Populate categories with default categories
    - Set up category_channel_mappings based on CATEGORY_CHANNEL_MAPPINGS
 
 2. **Update CategorySetupService**:

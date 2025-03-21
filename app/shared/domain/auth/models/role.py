@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 from app.shared.infrastructure.database.constants import SERVER_ROLES, ROLE_PRIORITIES
 # Importiere Benutzergruppen aus der Constants-Datei 
 from app.shared.infrastructure.database.constants import (
-    SUPER_ADMINS, ADMINS, MODERATORS, USERS, GUESTS
+    OWNER, ADMINS, MODERATORS, USERS, GUESTS
 )
 
 class Role(Enum):

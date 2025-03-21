@@ -5,7 +5,6 @@ import os
 import subprocess
 import traceback
 from pathlib import Path
-
 from app.shared.interface.logging.api import get_db_logger
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
@@ -13,155 +12,109 @@ from sqlalchemy import text
 logger = get_db_logger()
 
 class MigrationService:
-    """Service für die Verwaltung von Datenbankmigrationen."""
+    """Service for managing database migrations."""
     
     def __init__(self):
-        """Initialisiere den Migration Service."""
-        # Verwende immer den korrekten Pfad zur alembic.ini
+        """Initialize the Migration Service."""
         self.alembic_dir = Path("/app/shared/infrastructure/database/migrations/alembic")
         self.alembic_ini = self.alembic_dir / "alembic.ini"
-        
-    async def run_migrations(self) -> bool:
-        """Führe alle ausstehenden Migrationen aus."""
-        try:
-            # Stelle sicher, dass alembic.ini existiert
-            if not self.alembic_ini.exists():
-                logger.error(f"alembic.ini nicht gefunden: {self.alembic_ini}")
-                return False
-            
-            # Führe Migrationen aus
-            logger.info("Führe Datenbankmigrationen aus...")
-            
-            # Wechsle zum alembic-Verzeichnis
-            os.chdir(str(self.alembic_dir))
-            
-            # Ausgabe des aktuellen Verzeichnisses für Debugging
-            logger.info(f"Ausführung von Alembic im Verzeichnis: {os.getcwd()}")
-            
-            # Verbesserter Debug-Output: Zeige tatsächliche Dateien im Verzeichnis
-            try:
-                # Liste alle Migrations-Dateien auf
-                all_files = os.listdir(str(self.alembic_dir))
-                versions_dir = self.alembic_dir / 'versions'
-                version_files = os.listdir(str(versions_dir)) if versions_dir.exists() else []
-                
-                logger.info(f"Dateien im alembic-Verzeichnis: {all_files}")
-                logger.info(f"Migrations-Dateien: {version_files}")
-            except Exception as e:
-                logger.error(f"Konnte Dateien nicht auflisten: {e}")
-            
-            # Verbesserter Debug-Output: Zeige, ob die init.py, env.py und versions/ existieren
-            logger.info(f"Alembic-Dateien check:")
-            logger.info(f"  alembic.ini existiert: {self.alembic_ini.exists()}")
-            logger.info(f"  alembic/env.py existiert: {(self.alembic_dir / 'env.py').exists()}")
-            logger.info(f"  alembic/versions/ existiert: {(self.alembic_dir / 'versions').exists()}")
-            
-            # Prüfe Validität der Migrations-Kette
-            try:
-                # Prüfe alle Migrationen vor dem Ausführen
-                check_result = subprocess.run(
-                    ["alembic", "check"],
-                    capture_output=True,
-                    text=True,
-                    cwd=str(self.alembic_dir)
-                )
-                
-                if check_result.returncode != 0:
-                    logger.warning(f"Alembic check fehlgeschlagen: {check_result.stderr}")
-                    logger.warning("Versuche trotzdem, Migrationen durchzuführen...")
-            except Exception as e:
-                logger.warning(f"Konnte Migrationen nicht prüfen: {e}")
-            
-            # Fallback bei fehlenden Migrations-Dateien
-            required_migrations = ['001_create_tables.py', '002_seed_categories.py', '003_seed_channels.py']
-            versions_path = self.alembic_dir / 'versions'
-            
-            for migration in required_migrations:
-                migration_path = versions_path / migration
-                if not migration_path.exists():
-                    logger.warning(f"Migration {migration} fehlt, versuche neu zu erstellen")
-                    # Hier könnte man dynamisch Migrations-Dateien erstellen
-            
-            # Ohne config-Datei ausführen (direkt mit dem alembic-Verzeichnis)
-            result = subprocess.run(
-                ["alembic", "upgrade", "head"], 
-                capture_output=True,
-                text=True,
-                cwd=str(self.alembic_dir)  # Explizit das Arbeitsverzeichnis setzen
-            )
-            
-            # Logge die vollständigen Ausgaben
-            logger.info(f"Alembic stdout: {result.stdout}")
-            if result.stderr:
-                logger.error(f"Alembic stderr: {result.stderr}")
-            
-            # Prüfe Ergebnis
-            if result.returncode != 0:
-                logger.error(f"Migrationen fehlgeschlagen: {result.returncode}")
-                # Versuche trotzdem Tabellen zu erstellen, wenn Alembic nicht funktioniert
-                logger.warning("Versuche Tabellen direkt zu erstellen...")
-                await self.create_essential_tables()
-                return True  # Gib True zurück, um die Anwendung weiterlaufen zu lassen
-            
-            logger.info("Migrationen erfolgreich ausgeführt")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Fehler beim Ausführen der Migrationen: {e}")
-            logger.error(traceback.format_exc())
-            # Abfangen und trotzdem True zurückgeben, um Anwendungsinitialisierung nicht zu blockieren
-            logger.info("Fahre trotz Migration-Fehler mit der Anwendungsinitialisierung fort")
-            return True
-            
-    async def check_migrations(self) -> bool:
-        """Prüfe, ob Migrationen nötig sind."""
-        try:
-            # Wechsle zum alembic-Verzeichnis
-            os.chdir(str(self.alembic_dir))
-            
-            # Prüfe Migration-Status ohne config-Datei
-            result = subprocess.run(
-                ["alembic", "current"],
-                capture_output=True,
-                text=True,
-                cwd=str(self.alembic_dir)  # Explizit das Arbeitsverzeichnis setzen
-            )
-            
-            # Gib aktuellen Status zurück
-            logger.info(f"Migration-Status: {result.stdout.strip()}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Fehler beim Prüfen der Migrationen: {e}")
-            return False
-            
-    async def create_essential_tables(self) -> bool:
-        """Erstelle essentielle Tabellen direkt, wenn Alembic fehlschlägt."""
+
+    async def verify_database_connection(self) -> bool:
+        """Verify database connection before running migrations."""
         try:
             from app.shared.infrastructure.database.core.credentials import DatabaseCredentialManager
-            from sqlalchemy.ext.asyncio import create_async_engine
-            
-            # Get database credentials
             creds = DatabaseCredentialManager().get_credentials()
             db_url = f"postgresql+asyncpg://{creds['user']}:{creds['password']}@{creds['host']}:{creds['port']}/{creds['database']}"
             engine = create_async_engine(db_url)
             
-            # Erstelle category_templates Tabelle
-            async with engine.begin() as conn:
-                await conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS category_templates (
-                        id SERIAL PRIMARY KEY,
-                        name VARCHAR(255) NOT NULL UNIQUE,
-                        position INTEGER NOT NULL,
-                        description VARCHAR(1024),
-                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-                    )
-                """))
-                
-                # Weitere Tabellen hier erstellen...
-                
-            logger.info("Essentielle Tabellen direkt erstellt")
-            return True
+            async with engine.connect() as conn:
+                await conn.execute(text("SELECT 1"))
+                logger.info("Database connection verified successfully")
+                return True
         except Exception as e:
-            logger.error(f"Fehler beim direkten Erstellen der Tabellen: {e}")
+            logger.error(f"Database connection failed: {e}")
+            return False
+
+    async def run_migrations(self) -> bool:
+        """Execute all pending migrations."""
+        try:
+            if not await self.verify_database_connection():
+                logger.error("Cannot proceed with migrations - database connection failed")
+                return False
+
+            if not self.alembic_ini.exists():
+                logger.error(f"alembic.ini not found at: {self.alembic_ini}")
+                return False
+            
+            logger.info("Executing database migrations...")
+            os.chdir(str(self.alembic_dir))
+            
+            # Debug output for migration files
+            try:
+                all_files = os.listdir(str(self.alembic_dir))
+                versions_dir = self.alembic_dir / 'versions'
+                version_files = os.listdir(str(versions_dir)) if versions_dir.exists() else []
+                
+                logger.info(f"Files in alembic directory: {all_files}")
+                logger.info(f"Migration files: {version_files}")
+                
+                logger.debug(f"Alembic files check:")
+                logger.debug(f"  alembic.ini exists: {self.alembic_ini.exists()}")
+                logger.debug(f"  alembic/env.py exists: {(self.alembic_dir / 'env.py').exists()}")
+                logger.debug(f"  alembic/versions/ exists: {(self.alembic_dir / 'versions').exists()}")
+            except Exception as e:
+                logger.error(f"Could not list migration files: {e}")
+            
+            # Execute migrations
+            result = subprocess.run(
+                ["alembic", "upgrade", "head"], 
+                capture_output=True,
+                text=True,
+                cwd=str(self.alembic_dir)
+            )
+            
+            # Only log as error if it contains actual error messages
+            if result.stderr and not result.stderr.startswith('INFO'):
+                logger.error(f"Migration errors: {result.stderr}")
+            else:
+                logger.debug(f"Migration output: {result.stderr}")
+
+            
+            if result.returncode != 0:
+                logger.error(f"Migrations failed with code: {result.returncode}")
+                return False
+            
+            logger.info("Migrations completed successfully")
+            return True
+
+        except Exception as e:
+            logger.error(f"Migration execution failed: {e}")
+            logger.error(traceback.format_exc())
+            return False
+
+    async def check_migrations(self) -> bool:
+        """Check if migrations are needed and run them if necessary."""
+        try:
+            # Erst prüfen, ob Migrationen ausgeführt werden müssen
+            os.chdir(str(self.alembic_dir))
+            check_result = subprocess.run(
+                ["alembic", "current"],
+                capture_output=True,
+                text=True,
+                cwd=str(self.alembic_dir)
+            )
+            
+            logger.info(f"Migration status: {check_result.stdout.strip()}")
+            
+            # Wenn keine Migration aktiv ist oder nicht die neueste, führe Migrationen aus
+            if "head" not in check_result.stdout:
+                logger.info("Migrations need to be run")
+                if not await self.run_migrations():
+                    logger.error("Failed to run migrations")
+                    return False
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error checking migrations: {e}")
             return False

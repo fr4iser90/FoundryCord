@@ -35,7 +35,7 @@ def upgrade() -> None:
     """Seed initial categories."""
     # Definiere Tabelle für SQL-Einfügung
     categories_table = table(
-        'category_templates',
+        'categories',
         column('name', sa.String),
         column('position', sa.Integer),
         column('description', sa.String),
@@ -48,4 +48,4 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Remove seeded categories."""
     for category in CATEGORIES:
-        op.execute(f"DELETE FROM category_templates WHERE name = '{category['name']}'") 
+        op.execute(f"DELETE FROM categories WHERE name = '{category['name']}'") 

@@ -16,7 +16,7 @@ class KeyRepository:
         self.session = session
         
     async def initialize(self) -> bool:
-        """Initialize the repository, creating tables if needed."""
+        """Initialize the repository."""
         try:
             # Create security_keys table if it doesn't exist
             await self.session.execute(text("""
@@ -24,17 +24,14 @@ class KeyRepository:
                     id SERIAL PRIMARY KEY,
                     name VARCHAR(255) NOT NULL UNIQUE,
                     value TEXT NOT NULL,
-                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                 )
             """))
-            
             await self.session.commit()
-            logger.debug("Security keys table initialized")
+            logger.debug("Security keys repository initialized")
             return True
         except Exception as e:
             logger.error(f"Failed to initialize key repository: {e}")
-            await self.session.rollback()
             return False
     
     async def get_key(self, key_name: str) -> Optional[str]:
