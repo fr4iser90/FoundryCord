@@ -50,7 +50,12 @@ async def start_bot():
             return False
             
         # Start bot here
-        logger.info("Bot application started successfully")
+        logger.info("Bot application ready to start")
+        
+        
+        from app.bot.core.main import main
+        await main()
+        
         return True
         
     except Exception as e:

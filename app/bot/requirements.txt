@@ -2,7 +2,7 @@
 nextcord==2.6.0
 requests==2.31.0
 python-dotenv==1.0.0
-
+setuptools>=65.0.0
 # System Monitoring
 psutil==5.9.8
 py-cpuinfo==9.0.0

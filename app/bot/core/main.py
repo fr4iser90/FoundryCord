@@ -50,7 +50,7 @@ class HomelabBot(commands.Bot):
         self.channel_workflow = ChannelWorkflow(self.database_workflow, self.category_workflow)
         self.dashboard_workflow = DashboardWorkflow(self.database_workflow, bot=self)
         self.task_workflow = TaskWorkflow(self)
-        self.slash_commands_workflow = SlashCommandsWorkflow(self)
+        #self.slash_commands_workflow = SlashCommandsWorkflow(self)
         
         # Register workflows with dependencies
         self.workflow_manager.register_workflow(self.database_workflow)

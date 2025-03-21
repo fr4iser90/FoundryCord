@@ -16,6 +16,15 @@ depends_on = None
 
 def upgrade() -> None:
     """Create initial database tables."""
+
+    op.create_table(
+        'security_keys',
+        sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
+        sa.Column('name', sa.String(length=255), nullable=False, unique=True),
+        sa.Column('value', sa.Text(), nullable=False),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False)
+    )
+    
     op.create_table(
         'categories',
         sa.Column('id', sa.Integer(), nullable=False),

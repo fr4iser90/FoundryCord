@@ -117,19 +117,6 @@ class ChannelWorkflow(BaseWorkflow):
                 self.category_workflow.get_category_service()
             )
             
-            # Get a database session
-            session = await get_session()
-            
-            try:
-                # Check and seed channels if needed
-                await check_and_seed_channels(session)
-            except Exception as e:
-                logger.error(f"Error checking/seeding channels: {str(e)}")
-                return False
-            finally:
-                # Always close the session
-                await session.close()
-                
             return True
             
         except Exception as e:
