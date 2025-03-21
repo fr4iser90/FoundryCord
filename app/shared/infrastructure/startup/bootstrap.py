@@ -7,36 +7,41 @@ from app.shared.infrastructure.database.bootstrapper import initialize_database
 from app.shared.infrastructure.security.security_bootstrapper import initialize_security
 from app.shared.interface.logging.api import get_bot_logger
 
-logger = get_bot_logger()
-
-async def bootstrap_application() -> bool:
-    """
-    Bootstrap the complete application with all required services.
-    This is the central initialization point for all components.
+class ApplicationBootstrap:
+    """Class for bootstrapping application components."""
     
-    Returns:
-        bool: True if bootstrap was successful, False otherwise
-    """
-    try:
-        logger.info("Starting application bootstrap...")
-        
-        # 1. Initialize database first (most critical component)
-        logger.info("Initializing database...")
-        if not await initialize_database():
-            logger.error("Database initialization failed")
-            return False
-        
-        # 2. Initialize security services
-        logger.info("Initializing security services...")
-        if not await initialize_security():
-            logger.error("Security initialization failed")
-            return False
+    def __init__(self, container_type: str):
+        self.container_type = container_type
+        self.logger = get_bot_logger()
 
-        logger.info("Application bootstrap completed successfully")
-        return True
+    async def bootstrap(self) -> bool:
+        """
+        Bootstrap the complete application with all required services.
+        This is the central initialization point for all components.
         
-    except Exception as e:
-        logger.error(f"Application bootstrap failed: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-        return False
+        Returns:
+            bool: True if bootstrap was successful, False otherwise
+        """
+        try:
+            self.logger.info(f"Starting {self.container_type} bootstrap...")
+            
+            # 1. Initialize database first (most critical component)
+            self.logger.info("Initializing database...")
+            if not await initialize_database():
+                self.logger.error("Database initialization failed")
+                return False
+            
+            # 2. Initialize security services
+            self.logger.info("Initializing security services...")
+            if not await initialize_security():
+                self.logger.error("Security initialization failed")
+                return False
+
+            self.logger.info("Application bootstrap completed successfully")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Application bootstrap failed: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
+            return False
