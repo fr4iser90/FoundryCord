@@ -9,7 +9,6 @@ from app.bot.core.workflows.base_workflow import BaseWorkflow
 from app.bot.core.workflows.category_workflow import CategoryWorkflow
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.shared.interface.logging.api import get_bot_logger
-from app.shared.infrastructure.database.migrations.channels.seed_channels import check_and_seed_channels
 from app.shared.infrastructure.database.api import get_session
 
 logger = get_bot_logger()
