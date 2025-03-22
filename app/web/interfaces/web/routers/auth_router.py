@@ -9,9 +9,9 @@ import httpx
 from app.shared.infrastructure.database.constants import OWNER, ADMINS, MODERATORS, USERS
 from app.shared.domain.auth.models import Role
 from app.web.domain.auth.permissions import get_user_role
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interface.logging.api import get_web_logger
 
-logger = get_bot_logger()
+logger = get_web_logger()
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 templates = get_templates()
 discord_config = get_discord_oauth_config()
@@ -116,3 +116,12 @@ async def insufficient_permissions(request: Request):
         "auth/insufficient_permissions.html", 
         {"request": request, "user": request.session.get("user")}
     )
+
+@router.get("/debug-session")
+async def debug_session(request: Request):
+    """Debug endpoint to see session contents"""
+    return {
+        "session": request.session,
+        "user": request.session.get("user", "No user in session"),
+        "token": "Present" if "token" in request.session else "Not present"
+    }
