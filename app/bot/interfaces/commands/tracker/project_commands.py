@@ -3,8 +3,8 @@ from app.bot.utils.decorators.auth import admin_or_higher
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 from app.shared.infrastructure.database.models.config import get_session
-from app.shared.infrastructure.database.repositories.project_repository_impl import ProjectRepository
-from app.shared.infrastructure.database.repositories.task_repository import TaskRepository
+from app.shared.infrastructure.repositories.project_repository_impl import ProjectRepository
+from app.shared.infrastructure.repositories.task_repository import TaskRepository
 from app.bot.domain.tracker.services.project_service import get_projects_data
 from app.bot.interfaces.dashboards.controller.project_dashboard import create_task_embed
 

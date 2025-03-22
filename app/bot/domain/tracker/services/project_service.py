@@ -1,7 +1,7 @@
 from app.shared.infrastructure.database.core.connection import get_session
 
-from app.shared.infrastructure.database.repositories.project_repository_impl import ProjectRepository
-from app.shared.infrastructure.database.repositories.task_repository import TaskRepository
+from app.shared.infrastructure.repositories.project_repository_impl import ProjectRepository
+from app.shared.infrastructure.repositories.task_repository import TaskRepository
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 

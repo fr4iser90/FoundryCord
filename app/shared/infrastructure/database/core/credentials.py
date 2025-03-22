@@ -29,7 +29,7 @@ class DatabaseCredentialManager:
         if not self._initialized:
             try:
                 # Import here to avoid circular imports
-                from app.shared.infrastructure.database.repositories.key_repository_impl import KeyRepository
+                from app.shared.domain.repositories.auth.key_repository import KeyRepository
                 from app.shared.infrastructure.database.session.factory import get_session
                 
                 # Initialize repository for credential storage

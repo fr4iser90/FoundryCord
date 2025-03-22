@@ -3,7 +3,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from .key_management_service import KeyManagementService
-from app.shared.infrastructure.database.repositories.key_repository_impl import KeyRepository
+from app.shared.domain.repositories.auth.key_repository import KeyRepository
 
 import os
 import base64

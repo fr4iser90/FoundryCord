@@ -32,9 +32,10 @@ class DatabaseWorkflow(BaseWorkflow):
                         logger.error(f"No data found in {table}. Please initialize database from web interface")
                         return False
             
-            # Important: Initialize the db_service here
+            # Important: Initialize the db_service without passing session
             from app.shared.infrastructure.database.service import DatabaseService
-            self.db_service = DatabaseService(session)
+            self.db_service = DatabaseService()
+            await self.db_service.initialize()
             
             logger.info("Database verification successful")
             return True

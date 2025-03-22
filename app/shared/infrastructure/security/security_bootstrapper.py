@@ -6,7 +6,7 @@ import traceback
 from cryptography.fernet import Fernet
 from sqlalchemy.exc import SQLAlchemyError
 from app.shared.infrastructure.database.session.context import session_context
-from app.shared.infrastructure.database.repositories.key_repository_impl import KeyRepository
+from app.shared.domain.repositories.auth.key_repository import KeyRepository
 
 logger = logging.getLogger("homelab.bot")
 

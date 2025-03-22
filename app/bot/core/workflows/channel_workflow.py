@@ -11,7 +11,7 @@ from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.shared.interface.logging.api import get_bot_logger
 from app.shared.infrastructure.database.api import get_session
 from app.shared.infrastructure.database.session.context import session_context
-from app.shared.infrastructure.database.repositories.guild_config_repository import GuildConfigRepository
+from app.shared.infrastructure.repositories.guild_config_repository_impl import GuildConfigRepository
 
 logger = get_bot_logger()
 

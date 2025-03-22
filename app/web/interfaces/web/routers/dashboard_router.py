@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from app.web.core.extensions import get_templates
 from app.web.application.services.auth.dependencies import get_current_user
-from app.web.infrastructure.database.repositories import SQLAlchemyDashboardRepository
+from app.shared.domain.repositories.discord import DashboardRepository
 from app.shared.infrastructure.database.core.connection import get_db_connection
 
 router = APIRouter(prefix="/dashboards", tags=["Dashboards"])
@@ -12,7 +12,7 @@ templates = get_templates()
 async def list_dashboards(request: Request, current_user=Depends(get_current_user)):
     """List all dashboards"""
     db = await get_db_connection()
-    repo = SQLAlchemyDashboardRepository(db)
+    repo = DashboardRepository(db)
     dashboards = await repo.get_all()
     return templates.TemplateResponse(
         "pages/dashboards/view.html",

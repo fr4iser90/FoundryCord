@@ -4,7 +4,7 @@ from app.web.application.services.auth.dependencies import get_current_user
 from app.web.domain.auth.permissions import Role
 from app.web.domain.dashboard_builder.models import Dashboard, DashboardCreate, DashboardUpdate, Widget, WidgetCreate
 from app.web.application.services.dashboard import DashboardService
-from app.web.infrastructure.database.repositories import SQLAlchemyDashboardRepository
+from app.shared.infrastructure.repositories import SQLAlchemyDashboardRepository
 from app.shared.infrastructure.database.core.connection import get_db_connection
 from sqlalchemy.ext.asyncio import AsyncSession
 

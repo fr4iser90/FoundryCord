@@ -49,19 +49,7 @@ from app.shared.infrastructure.database.models import (
     DashboardComponent
 )
 
-# Import repositories
-from app.shared.infrastructure.database.repositories import (
-    AuditLogRepository,
-    CategoryRepository,
-    DashboardRepository,
-    KeyRepository,
-    MonitoringRepositoryImpl,
-    ProjectRepository,
-    RateLimitRepository,
-    SessionRepository,
-    TaskRepository,
-    UserRepository
-)
+
 
 # Import API functions
 from .api import (
@@ -101,17 +89,6 @@ __all__ = [
     'Dashboard',
     'DashboardComponent',
     
-    # Repositories
-    'AuditLogRepository',
-    'CategoryRepository',
-    'DashboardRepository',
-    'KeyRepository',
-    'MonitoringRepositoryImpl',
-    'ProjectRepository',
-    'RateLimitRepository',
-    'SessionRepository',
-    'TaskRepository',
-    'UserRepository',
     
     # Database management
     'DatabaseConnection',

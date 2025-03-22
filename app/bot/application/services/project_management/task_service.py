@@ -3,7 +3,7 @@ from typing import List, Optional, Dict
 from datetime import datetime
 import discord
 from app.shared.infrastructure.database.service import DatabaseService
-from app.shared.infrastructure.database.repositories.task_repository_impl import TaskRepository
+from app.shared.infrastructure.repositories.task_repository_impl import TaskRepository
 from app.shared.infrastructure.database.models.project.task import Task
 
 logger = logging.getLogger("homelab.bot")

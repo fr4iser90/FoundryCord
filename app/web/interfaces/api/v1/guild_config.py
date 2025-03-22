@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.shared.infrastructure.database.session.context import get_session
-from app.shared.infrastructure.database.repositories.guild_config_repository import GuildConfigRepository
+from app.shared.infrastructure.repositories.guild_config_repository_impl import GuildConfigRepository
 from app.shared.infrastructure.security.auth import get_current_user, User
 from typing import Dict, Any, List
 import json

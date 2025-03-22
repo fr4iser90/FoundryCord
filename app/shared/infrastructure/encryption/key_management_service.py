@@ -4,7 +4,7 @@ import base64
 import os
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
-from app.shared.infrastructure.database.repositories.key_repository_impl import KeyRepository
+from app.shared.domain.repositories.auth.key_repository import KeyRepository
 from app.shared.infrastructure.database.session.factory import get_session
 
 class KeyManagementService:
