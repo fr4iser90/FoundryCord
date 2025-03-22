@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.web.infrastructure.security.auth import get_current_user, User
 
-router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
+router = APIRouter(prefix="/v1/auth", tags=["Authentication"])
 
 @router.get("/me", response_model=User)
 async def get_current_user_info(user = Depends(get_current_user)):

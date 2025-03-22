@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional
-from app.web.domain.auth.dependencies import get_current_user, require_moderator
+from app.web.application.services.auth.dependencies import get_current_user
+from app.web.domain.auth.permissions import Role
 from app.web.domain.dashboard_builder.models import Dashboard, DashboardCreate, DashboardUpdate, Widget, WidgetCreate
 from app.web.application.services.dashboard import DashboardService
 from app.web.infrastructure.database.repositories import SQLAlchemyDashboardRepository
@@ -18,7 +19,7 @@ async def get_dashboard_service(session: AsyncSession = Depends(get_db_connectio
 @router.get("/", response_model=List[Dashboard])
 async def get_dashboards(
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(require_moderator)
+    current_user = Depends(Role)
 ):
     """Get all dashboards for the current user"""
     dashboards = await service.get_user_dashboards(current_user["id"])
@@ -28,7 +29,7 @@ async def get_dashboards(
 async def create_dashboard(
     dashboard: DashboardCreate,
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(require_moderator)
+    current_user = Depends(Role)
 ):
     """Create a new dashboard"""
     new_dashboard = await service.create_dashboard(current_user["id"], dashboard)
@@ -37,7 +38,7 @@ async def create_dashboard(
 @router.get("/widget-types")
 async def get_widget_types(
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(require_moderator)
+    current_user = Depends(Role)
 ):
     """Get available widget types"""
     widgets = await service.get_available_widgets()
@@ -47,7 +48,7 @@ async def get_widget_types(
 async def get_dashboard(
     dashboard_id: str,
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(require_moderator)
+    current_user = Depends(Role)
 ):
     """Get a specific dashboard by ID"""
     dashboard = await service.get_dashboard(dashboard_id)
@@ -66,7 +67,7 @@ async def update_dashboard(
     dashboard_id: str,
     dashboard: DashboardUpdate,
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(require_moderator)
+    current_user = Depends(Role)
 ):
     """Update an existing dashboard"""
     # Check if dashboard exists and belongs to user
@@ -84,7 +85,7 @@ async def update_dashboard(
 async def delete_dashboard(
     dashboard_id: str,
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(require_moderator)
+    current_user = Depends(Role)
 ):
     """Delete a dashboard"""
     # Check if dashboard exists and belongs to user
@@ -107,7 +108,7 @@ async def add_widget(
     dashboard_id: str,
     widget: WidgetCreate,
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(require_moderator)
+    current_user = Depends(Role)
 ):
     """Add a widget to a dashboard"""
     # Check if dashboard exists and belongs to user
@@ -130,7 +131,7 @@ async def update_widget(
     widget_id: str,
     widget_data: dict,
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(require_moderator)
+    current_user = Depends(Role)
 ):
     """Update a widget"""
     updated_widget = await service.update_widget(widget_id, widget_data)
@@ -144,7 +145,7 @@ async def update_widget(
 async def delete_widget(
     widget_id: str,
     service: DashboardService = Depends(get_dashboard_service),
-    current_user = Depends(require_moderator)
+    current_user = Depends(Role)
 ):
     """Delete a widget"""
     success = await service.delete_widget(widget_id)

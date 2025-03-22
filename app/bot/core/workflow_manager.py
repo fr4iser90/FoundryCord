@@ -140,3 +140,25 @@ class BotWorkflowManager:
     def is_initialized(self) -> bool:
         """Check if all workflows are initialized"""
         return self.initialized 
+    
+    async def initialize_workflow_for_guild(self, workflow_name: str, guild_id: str) -> bool:
+        """Initialize a specific workflow for a specific guild"""
+        if workflow_name not in self.workflows:
+            logger.error(f"Workflow {workflow_name} not registered")
+            return False
+        
+        workflow_data = self.workflows[workflow_name]
+        workflow = workflow_data['instance']
+        
+        # Check if the workflow has a guild-specific initialization method
+        if hasattr(workflow, 'initialize_for_guild'):
+            logger.info(f"Initializing workflow {workflow_name} for guild {guild_id}")
+            try:
+                success = await workflow.initialize_for_guild(guild_id)
+                return success
+            except Exception as e:
+                logger.error(f"Error initializing workflow {workflow_name} for guild {guild_id}: {e}")
+                return False
+        else:
+            # If no guild-specific method, use the standard initialization
+            return workflow_data['initialized'] 

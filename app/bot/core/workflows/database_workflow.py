@@ -31,8 +31,13 @@ class DatabaseWorkflow(BaseWorkflow):
                     if count == 0:
                         logger.error(f"No data found in {table}. Please initialize database from web interface")
                         return False
-                logger.info("Database verification successful")
-                return True
+            
+            # Important: Initialize the db_service here
+            from app.shared.infrastructure.database.service import DatabaseService
+            self.db_service = DatabaseService(session)
+            
+            logger.info("Database verification successful")
+            return True
         except Exception as e:
             logger.error(f"Database verification failed: {e}")
             return False

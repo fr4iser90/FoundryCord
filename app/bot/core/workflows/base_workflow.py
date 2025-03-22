@@ -28,3 +28,9 @@ class BaseWorkflow:
     def get_dependencies(self) -> List[str]:
         """Get all dependencies for this workflow"""
         return self.dependencies
+
+    async def initialize_for_guild(self, guild_id: str) -> bool:
+        """Initialize workflow for a specific guild - can be overridden by subclasses"""
+        # Default implementation uses the standard initialize method
+        logger.debug(f"Using standard initialization for workflow {self.name} in guild {guild_id}")
+        return await self.initialize()

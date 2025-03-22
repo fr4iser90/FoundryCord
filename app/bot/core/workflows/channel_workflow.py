@@ -10,6 +10,8 @@ from app.bot.core.workflows.category_workflow import CategoryWorkflow
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.shared.interface.logging.api import get_bot_logger
 from app.shared.infrastructure.database.api import get_session
+from app.shared.infrastructure.database.session.context import session_context
+from app.shared.infrastructure.database.repositories.guild_config_repository import GuildConfigRepository
 
 logger = get_bot_logger()
 
@@ -30,97 +32,31 @@ class ChannelWorkflow(BaseWorkflow):
     
     async def initialize(self):
         """Initialize the channel workflow"""
-        logger.info("Initializing channel workflow")
-        
         try:
-            # Get the database service
+            logger.info("Initializing channel workflow")
+            
+            # Get database service from the database workflow
             db_service = self.database_workflow.get_db_service()
             if not db_service:
                 logger.error("Database service not available, cannot initialize channel workflow")
                 return False
-                
-            # Import repositories and services
-            from app.bot.infrastructure.repositories.channel_repository_impl import ChannelRepositoryImpl
-            from app.bot.application.services.channel.channel_builder import ChannelBuilder
-            from app.bot.application.services.channel.channel_setup_service import ChannelSetupService
             
-            # Get the category repository from the category workflow
-            category_repository = self.category_workflow.get_category_repository()
-            
-            # Create channel repository
-            self.channel_repository = ChannelRepositoryImpl(db_service)
-            
-            # Check if the channels table exists and has the correct schema
-            engine = db_service.get_engine()
-            try:
-                # Check if the channels table exists
-                table_exists = False
-                async with engine.connect() as conn:
-                    result = await conn.execute(text("""
-                        SELECT EXISTS (
-                            SELECT FROM information_schema.tables 
-                            WHERE table_name = 'channels'
-                        )
-                    """))
-                    row = result.first()
-                    table_exists = row[0] if row else False
-                
-                # Check if discord_id and category_discord_id columns are BigInteger
-                if table_exists:
-                    async with engine.connect() as conn:
-                        result = await conn.execute(text("""
-                            SELECT column_name, data_type 
-                            FROM information_schema.columns 
-                            WHERE table_name = 'channels' AND column_name IN ('discord_id', 'category_discord_id')
-                        """))
-                        columns = {row[0]: row[1] for row in result}
-                        
-                        # If columns exist but are not bigint, drop the table to recreate it
-                        if ('discord_id' in columns and columns['discord_id'].lower() != 'bigint') or \
-                           ('category_discord_id' in columns and columns['category_discord_id'].lower() != 'bigint'):
-                            logger.info("Channel table exists but has incorrect column types, recreating...")
-                            table_exists = False
-                            async with engine.begin() as conn:
-                                await conn.execute(text("DROP TABLE IF EXISTS channel_permissions CASCADE"))
-                                await conn.execute(text("DROP TABLE IF EXISTS channels CASCADE"))
-                
-                # Create the table if it doesn't exist or needs to be recreated
-                if not table_exists:
-                    logger.info("Creating channels table with correct schema")
-                    # Import all models to make sure they're registered with the metadata
-                    from app.bot.infrastructure.database.models import ChannelEntity, ChannelPermissionEntity
-                    from app.shared.infrastructure.database.models.base import Base
-                    
-                    # Create all tables
-                    async with engine.begin() as conn:
-                        await conn.run_sync(Base.metadata.create_all)
-                    logger.info("Channels table created with correct column types")
-                    
-                    # Sleep briefly to ensure tables are fully created
-                    await asyncio.sleep(0.5)
-            except Exception as e:
-                logger.error(f"Error checking/creating channels table: {e}")
-                logger.error(traceback.format_exc())
-                return False
-                
-            # Create channel builder with both repositories
-            channel_builder = ChannelBuilder(
-                self.channel_repository,
-                category_repository
-            )
-            
-            # Create channel setup service
+            # Create repository and service
+            self.channel_repository = ChannelRepository(db_service)
             self.channel_setup_service = ChannelSetupService(
                 self.channel_repository, 
-                channel_builder,
-                self.category_workflow.get_category_service()
+                self.category_workflow.get_category_repository()
             )
+            
+            # Verify channel data exists
+            channel_count = await self.channel_repository.count()
+            logger.info(f"Found {channel_count} channels")
             
             return True
             
         except Exception as e:
-            logger.error(f"Error initializing channel workflow: {e}")
-            logger.error(traceback.format_exc())
+            logger.error(f"Channel workflow initialization failed: {e}")
+            traceback.print_exc()
             return False
     
     async def cleanup(self):
@@ -134,6 +70,15 @@ class ChannelWorkflow(BaseWorkflow):
             logger.error("Channel setup service not initialized")
             return {}
             
+        # Check if this workflow is enabled for this guild
+        async with session_context() as session:
+            guild_config_repo = GuildConfigRepository(session)
+            config = await guild_config_repo.get_by_guild_id(str(guild.id))
+            
+            if not config or not config.enable_channels:
+                logger.info(f"Channel workflow is disabled for guild: {guild.name}")
+                return {}
+        
         logger.info(f"Setting up channels for guild: {guild.name}")
         return await self.channel_setup_service.setup_channels(guild)
     

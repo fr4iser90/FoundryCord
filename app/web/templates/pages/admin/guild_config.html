@@ -1,0 +1,196 @@
+{% extends "layouts/admin_layout.html" %}
+
+{% block title %}Guild Configuration - HomeLab Discord Bot{% endblock %}
+
+{% block content %}
+<div class="guild-config-container">
+    <div class="guild-config-header">
+        <h1>Guild Configuration</h1>
+        <p>Configure features for each Discord server</p>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Servers</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="guildsTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Server</th>
+                            <th>Categories</th>
+                            <th>Channels</th>
+                            <th>Dashboard</th>
+                            <th>Tasks</th>
+                            <th>Services</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for guild in guilds %}
+                        <tr>
+                            <td>{{ guild.name }}</td>
+                            <td>
+                                <div class="custom-control custom-switch">
+                                    <input type="checkbox" class="custom-control-input feature-toggle" 
+                                           id="categories-{{ guild.id }}" 
+                                           data-guild-id="{{ guild.id }}" 
+                                           data-feature="categories"
+                                           {% if guild.config.enable_categories %}checked{% endif %}>
+                                    <label class="custom-control-label" for="categories-{{ guild.id }}"></label>
+                                </div>
+                            </td>
+                            <!-- Similar toggles for other features -->
+                            <td>
+                                <button class="btn btn-sm btn-primary edit-guild-config" 
+                                        data-guild-id="{{ guild.id }}">
+                                    <i class="bi bi-gear"></i> Configure
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Guild Configuration Modal -->
+<div class="modal fade" id="guildConfigModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Configure Server: <span id="modalGuildName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Form for advanced server configuration -->
+                <form id="guildConfigForm">
+                    <input type="hidden" id="guildId" name="guildId">
+                    
+                    <div class="mb-3">
+                        <h6>Features</h6>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="enableCategories" name="enableCategories">
+                            <label class="form-check-label" for="enableCategories">Enable Categories</label>
+                        </div>
+                        <!-- Other feature toggles -->
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Category Settings</h6>
+                        <!-- Category specific settings -->
+                    </div>
+                    
+                    <!-- Other configuration sections -->
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveGuildConfig">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle feature on/off
+    document.querySelectorAll('.feature-toggle').forEach(toggle => {
+        toggle.addEventListener('change', async function() {
+            const guildId = this.dataset.guildId;
+            const feature = this.dataset.feature;
+            const enabled = this.checked;
+            
+            try {
+                const response = await fetch('/api/v1/guilds/config/toggle-feature', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        guild_id: guildId,
+                        feature: feature,
+                        enabled: enabled
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to update feature');
+                }
+                
+                // Success notification
+                alert(`${feature} ${enabled ? 'enabled' : 'disabled'} successfully`);
+                
+            } catch (error) {
+                console.error('Error updating feature:', error);
+                alert('Error updating feature: ' + error.message);
+                // Revert toggle state
+                this.checked = !enabled;
+            }
+        });
+    });
+    
+    // Edit guild configuration button
+    document.querySelectorAll('.edit-guild-config').forEach(button => {
+        button.addEventListener('click', async function() {
+            const guildId = this.dataset.guildId;
+            
+            try {
+                const response = await fetch(`/api/v1/guilds/config/${guildId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch guild configuration');
+                }
+                
+                const data = await response.json();
+                
+                // Fill the modal with guild data
+                document.getElementById('modalGuildName').textContent = data.guild_name;
+                document.getElementById('guildId').value = guildId;
+                document.getElementById('enableCategories').checked = data.enable_categories;
+                // Set other form fields
+                
+                // Show the modal
+                new bootstrap.Modal(document.getElementById('guildConfigModal')).show();
+                
+            } catch (error) {
+                console.error('Error fetching guild configuration:', error);
+                alert('Error fetching guild configuration: ' + error.message);
+            }
+        });
+    });
+    
+    // Save guild configuration
+    document.getElementById('saveGuildConfig').addEventListener('click', async function() {
+        const form = document.getElementById('guildConfigForm');
+        const formData = new FormData(form);
+        
+        try {
+            const response = await fetch('/api/v1/guilds/config/update', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to update guild configuration');
+            }
+            
+            // Success notification
+            alert('Guild configuration updated successfully');
+            
+            // Close the modal and reload the page
+            bootstrap.Modal.getInstance(document.getElementById('guildConfigModal')).hide();
+            window.location.reload();
+            
+        } catch (error) {
+            console.error('Error updating guild configuration:', error);
+            alert('Error updating guild configuration: ' + error.message);
+        }
+    });
+});
+</script>
+{% endblock %}

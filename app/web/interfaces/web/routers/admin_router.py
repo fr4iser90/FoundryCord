@@ -73,3 +73,30 @@ async def admin_settings(request: Request, current_user=Depends(get_current_user
         "pages/admin/settings.html",
         {"request": request, "user": current_user}
     )
+
+@router.get("/bot-control", response_class=HTMLResponse)
+async def bot_control(request: Request, current_user=Depends(get_current_user)):
+    """Bot control panel for administrators"""
+    if current_user is None:
+        logger.error("User attempting to access bot control without authentication")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+    
+    try:
+        # Verify Bot Owner role
+        await require_role(current_user, Role.OWNER)
+        
+        return templates.TemplateResponse(
+            "pages/admin/bot_control.html",
+            {
+                "request": request, 
+                "user": current_user,
+                "active_page": "bot-control"
+            }
+        )
+    except HTTPException as e:
+        logger.error(f"Permission error: {e.detail}")
+        # Re-raise the exception to let the middleware handle it
+        raise

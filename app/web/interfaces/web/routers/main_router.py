@@ -23,21 +23,6 @@ async def root(request: Request):
         logger.error(f"Error rendering index template: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request):
-    """Dashboard page with user context"""
-    try:
-        templates = get_templates()
-        return templates.TemplateResponse(
-            "dashboard/index.html",
-            {
-                "request": request,
-                "user": request.session.get("user") if hasattr(request, "session") else None
-            }
-        )
-    except Exception as e:
-        logger.error(f"Error rendering dashboard template: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 # Include all routers
 from .auth_router import router as auth_router

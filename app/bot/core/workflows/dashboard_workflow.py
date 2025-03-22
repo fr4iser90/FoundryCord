@@ -10,10 +10,8 @@ from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOAR
 from app.bot.infrastructure.factories.service.service_resolver import ServiceResolver
 from .base_workflow import BaseWorkflow
 from app.bot.application.services.dashboard.dashboard_service import DashboardService
-from app.shared.infrastructure.database.migrations.dashboards.dashboard_components_migration import wait_for_initialization
 from app.bot.domain.dashboards.repositories.dashboard_repository import DashboardRepository
 from app.shared.infrastructure.database.core.config import get_session
-, session_context
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.shared.infrastructure.database.repositories.dashboard_repository_impl import DashboardRepository
 from app.bot.infrastructure.factories.component_registry import ComponentRegistry
@@ -36,47 +34,30 @@ class DashboardWorkflow(BaseWorkflow):
         self.add_dependency("database")
         
     async def initialize(self):
-        """Initialize the dashboard workflow"""
-        logger.info("Initializing dashboard workflow")
-        
+        """Initialize dashboard workflow"""
         try:
-            # Get database service
+            logger.info("Initializing dashboard workflow")
+            
+            # Get database service from the database workflow
             db_service = self.database_workflow.get_db_service()
             if not db_service:
                 logger.error("Database service not available, cannot initialize dashboard workflow")
                 return False
             
-            # Import repositories and services
-            from app.bot.infrastructure.repositories.dashboard_repository_impl import DashboardRepositoryImpl
-            from app.bot.application.services.dashboard.dashboard_service import DashboardService
-            
-            # Initialize repository
-            self.dashboard_repository = DashboardRepositoryImpl(db_service)
+            # Initialize service
+            self.dashboard_service = DashboardService(
+                db_service, 
+                self.bot
+            )
             
             # Initialize registries
             self.component_registry = ComponentRegistry()
             self.data_source_registry = DataSourceRegistry()
             
-            # Überprüfen, ob der Bot verfügbar ist
-            if not self.bot:
-                logger.error("Bot instance not available, cannot initialize dashboard service")
-                return False
-            
-            # Initialize service with all required parameters
-            self.dashboard_service = DashboardService(
-                repository=self.dashboard_repository,
-                component_registry=self.component_registry,
-                data_source_registry=self.data_source_registry,
-                bot=self.bot
-            )
-            
-            logger.info("Dashboard workflow initialized successfully")
             return True
             
         except Exception as e:
-            logger.error(f"Error initializing dashboard workflow: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
+            logger.error(f"Dashboard workflow initialization failed: {e}")
             return False
     
     async def cleanup(self):
