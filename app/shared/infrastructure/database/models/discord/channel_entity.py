@@ -1,8 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, JSON, Enum, ForeignKey, BigInteger
 from sqlalchemy.orm import relationship
 from app.shared.infrastructure.database.models.base import Base
-from app.bot.domain.channels.models.channel_model import ChannelType, ChannelPermissionLevel
-
+from app.shared.domain.models.discord.channel_model import ChannelType, ChannelPermissionLevel
 
 class ChannelEntity(Base):
     """Database entity for Discord channels"""
