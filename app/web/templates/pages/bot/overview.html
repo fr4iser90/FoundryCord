@@ -62,7 +62,8 @@
                 </div>
                 <div class="progress">
                     <div class="progress-bar" role="progressbar" 
-                         style="width: {{ system.cpu_usage }}%" 
+                         {% set width_style = "width: " + system.cpu_usage|string + "%" %}
+                         style="{{ width_style }}" 
                          aria-valuenow="{{ system.cpu_usage }}" 
                          aria-valuemin="0" 
                          aria-valuemax="100"></div>
@@ -76,7 +77,8 @@
                 </div>
                 <div class="progress">
                     <div class="progress-bar" role="progressbar" 
-                         style="width: {{ system.memory_usage }}%" 
+                         {% set width_style = "width: " + system.memory_usage|string + "%" %}
+                         style="{{ width_style }}" 
                          aria-valuenow="{{ system.memory_usage }}" 
                          aria-valuemin="0" 
                          aria-valuemax="100"></div>
@@ -98,7 +100,7 @@
                 <div class="activity-content">
                     <div class="activity-header">
                         <span class="activity-type">{{ activity.type }}</span>
-                        <span class="activity-time">{{ activity.timestamp|timeago }}</span>
+                        <span class="activity-time">{{ activity.timestamp | formatTimeAgo }}</span>
                     </div>
                     <p class="activity-description">{{ activity.description }}</p>
                     {% if activity.server %}
@@ -299,7 +301,7 @@ function updateActivityList(activities) {
             <div class="activity-content">
                 <div class="activity-header">
                     <span class="activity-type">${activity.type}</span>
-                    <span class="activity-time">${formatTimeAgo(activity.timestamp)}</span>
+                    <span class="activity-time">${activity.timestamp | formatTimeAgo}</span>
                 </div>
                 <p class="activity-description">${activity.description}</p>
                 ${activity.server ? `<small class="text-muted">Server: ${activity.server}</small>` : ''}

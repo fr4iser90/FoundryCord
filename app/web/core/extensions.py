@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 import os
 from pathlib import Path
 from app.shared.interface.logging.api import get_bot_logger
+from datetime import datetime
 
 logger = get_bot_logger()
 
@@ -30,6 +31,10 @@ def init_templates(app: FastAPI):
         raise FileNotFoundError(f"Templates directory not found: {templates_dir}")
     
     _templates = Jinja2Templates(directory=str(templates_dir))
+    
+    # Register the formatTimeAgo filter
+    _templates.env.filters['formatTimeAgo'] = format_time_ago
+    
     return _templates
 
 def init_static_files(app: FastAPI):
@@ -88,4 +93,50 @@ def get_templates() -> Jinja2Templates:
         if not templates_dir.exists():
             raise FileNotFoundError(f"Templates directory not found: {templates_dir}")
         _templates = Jinja2Templates(directory=str(templates_dir))
+        
+        # Register the custom filter
+        _templates.env.filters['formatTimeAgo'] = format_time_ago
+        
     return _templates
+
+def format_time_ago(timestamp):
+    """Convert timestamp to "time ago" format"""
+    # Ensure timestamp is a datetime object
+    if isinstance(timestamp, str):
+        # Parse the ISO format string to a datetime object
+        try:
+            timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+        except ValueError:
+            # If standard parsing fails, try a more flexible approach
+            timestamp = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
+    
+    # Get current time
+    now = datetime.now()
+    
+    # Make both timestamps timezone-naive if timestamp has timezone info
+    if timestamp.tzinfo is not None:
+        # Convert to UTC and remove timezone info
+        timestamp = timestamp.replace(tzinfo=None)
+    
+    # Calculate time difference
+    diff = now - timestamp
+    seconds = diff.total_seconds()
+    
+    # Format the time difference
+    if seconds < 60:
+        return f"{int(seconds)} seconds ago"
+    elif seconds < 3600:
+        minutes = int(seconds / 60)
+        return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+    elif seconds < 86400:
+        hours = int(seconds / 3600)
+        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+    elif seconds < 2592000:
+        days = int(seconds / 86400)
+        return f"{days} day{'s' if days != 1 else ''} ago"
+    elif seconds < 31536000:
+        months = int(seconds / 2592000)
+        return f"{months} month{'s' if months != 1 else ''} ago"
+    else:
+        years = int(seconds / 31536000)
+        return f"{years} year{'s' if years != 1 else ''} ago"

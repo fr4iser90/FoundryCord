@@ -5,8 +5,10 @@ from app.web.core.extensions import get_templates
 from app.web.domain.auth.services.web_authentication_service import WebAuthenticationService
 from app.web.infrastructure.config.env_loader import get_discord_oauth_config
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
-from app.shared.domain.auth.policies.authorization_policies import is_bot_owner, is_admin, is_moderator
 import httpx
+from app.shared.infrastructure.database.constants import OWNER, ADMINS, MODERATORS, USERS
+from app.shared.domain.auth.models import Role
+from app.web.domain.auth.permissions import get_user_role
 from app.shared.interface.logging.api import get_bot_logger
 
 logger = get_bot_logger()
@@ -16,14 +18,14 @@ discord_config = get_discord_oauth_config()
 
 # Dependency
 def get_auth_service():
-    key_service = KeyManagementService()
+    key_service = KeyManagementService()  # Dies sollte eigentlich über DI kommen
     return WebAuthenticationService(key_service=key_service)
 
 @router.get("/login")
 async def login(request: Request):
     """Redirect to Discord OAuth directly"""
     if "user" in request.session:
-        return RedirectResponse(url="/bot/overview")  # Redirect to bot overview instead of dashboard
+        return RedirectResponse(url="/bot/overview")
         
     auth_url = (
         f"https://discord.com/api/oauth2/authorize"
@@ -61,26 +63,41 @@ async def oauth_callback(
                 "https://discord.com/api/users/@me",
                 headers={"Authorization": f"Bearer {token['access_token']}"}
             )
-            user = user_response.json()
+            user_data = user_response.json()
             
-            # Store in session
+            # Bestimme die Rolle basierend auf der user_id
+            user_id = user_data["id"]
+            
+            if str(user_id) in OWNER.values():
+                user_role = "OWNER"
+            elif str(user_id) in ADMINS.values():
+                user_role = "ADMIN"
+            elif str(user_id) in MODERATORS.values():
+                user_role = "MODERATOR"
+            elif str(user_id) in USERS.values():
+                user_role = "USER"
+            else:
+                user_role = "GUEST"
+            
+            # Erstelle das User-Dict für die Session
+            user = {
+                "id": user_id,
+                "username": user_data["username"],
+                "avatar": user_data.get("avatar"),
+                "discriminator": user_data.get("discriminator", "0000"),
+                "role": user_role
+            }
+            
+            # Speichere in Session
             request.session["user"] = user
             request.session["token"] = token
             
-            # Check bot roles using our authorization policies
-            if is_bot_owner(user):
-                user["role"] = "OWNER"
-            elif is_admin(user):
-                user["role"] = "ADMIN"
-            elif is_moderator(user):
-                user["role"] = "MODERATOR"
-            else:
-                user["role"] = "USER"
+            logger.info(f"User {user['username']} logged in successfully with role {user_role}")
             
-            logger.info(f"User {user['username']} logged in successfully with role {user['role']}")
-            
-            # Always redirect to bot overview, navbar will handle role-based visibility
-            return RedirectResponse(url="/bot/overview")
+            # Redirect basierend auf Rolle
+            if user_role in ["OWNER"]:
+                return RedirectResponse(url="/bot/overview")
+            return RedirectResponse(url="/dashboard")
             
     except Exception as e:
         logger.error(f"OAuth callback failed: {e}")
