@@ -1,4 +1,4 @@
-from app.shared.infrastructure.database.models import MetricModel, AlertModel
+from app.shared.infrastructure.models import MetricModel, AlertModel
 from app.bot.infrastructure.monitoring.collectors.monitoring import collect_all, system_collect_all
 from app.bot.infrastructure.repositories.monitoring_repository import MonitoringRepository
 from app.shared.interface.logging.api import get_bot_logger

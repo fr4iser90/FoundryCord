@@ -176,7 +176,7 @@ def test_database_connection():
     """Verify database connection works"""
     try:
         # Try to import database modules
-        from app.shared.infrastructure.database.models.config import initialize_engine
+        from app.shared.infrastructure.models.config import initialize_engine
         print("Successfully imported database configuration")
         
         # This is just a placeholder for now - in a real test you'd connect to the DB

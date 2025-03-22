@@ -15,10 +15,10 @@ from .base import Base
 from .core import Config, AuditLog, LogEntry
 
 # Auth models
-from .auth import User, Session, RateLimit
+from .auth import User, Session, RateLimit, Role
 
 # Discord models
-from .discord import ChannelMapping, CategoryMapping, AutoThreadChannel, Guild, Message
+from .discord import ChannelMapping, CategoryMapping, AutoThreadChannel, Guild, Message, GuildUser
 
 # Dashboard models
 from .dashboards import Dashboard, DashboardComponent, ComponentLayout, ContentTemplate, DashboardMessage
@@ -36,9 +36,9 @@ __all__ = [
     # Core models
     'Config', 'AuditLog', 'LogEntry',
     # Auth models
-    'User', 'Session', 'RateLimit',
+    'User', 'Session', 'RateLimit', 'Role',
     # Discord models
-    'ChannelMapping', 'CategoryMapping', 'AutoThreadChannel', 'Guild', 'Message',
+    'ChannelMapping', 'CategoryMapping', 'AutoThreadChannel', 'Guild', 'Message', 'GuildUser',
     # Dashboard models
     'Dashboard', 'DashboardComponent', 'ComponentLayout', 'ContentTemplate', 'DashboardMessage',
     # Project models

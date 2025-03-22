@@ -3,7 +3,7 @@ import logging
 
 from typing import List, Dict, Any
 
-from app.shared.infrastructure.database.models import MetricModel
+from app.shared.infrastructure.models import MetricModel
 from .components import docker
 from .components import security  
 from .components import services

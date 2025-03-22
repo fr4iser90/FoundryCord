@@ -6,7 +6,7 @@ from app.shared.domain.models.channel_model import (
     ChannelModel, ChannelTemplate, ChannelPermission, ThreadConfig
 )
 from app.shared.domain.repositories.discord.channel_repository import ChannelRepository
-from app.shared.infrastructure.database.models.discord.channel_entity import ChannelEntity, ChannelPermissionEntity
+from app.shared.infrastructure.models.discord.channel_entity import ChannelEntity, ChannelPermissionEntity
 from app.shared.infrastructure.database.api import get_session
 import logging
 

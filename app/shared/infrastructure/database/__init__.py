@@ -37,7 +37,7 @@ from app.shared.infrastructure.database.migrations.init_db import init_db, is_da
 from app.shared.infrastructure.database.migrations.wait_for_postgres import wait_for_postgres
 
 # Import models
-from app.shared.infrastructure.database.models import (
+from app.shared.infrastructure.models import (
     Base,
     User, Session, RateLimit, AuditLog,
     ChannelMapping, CategoryMapping,

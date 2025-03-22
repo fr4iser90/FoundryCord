@@ -1,8 +1,8 @@
 from enum import Enum
 from typing import Dict, List, Optional
-from app.shared.infrastructure.database.constants import SERVER_ROLES, ROLE_PRIORITIES
+from app.shared.infrastructure.constants import SERVER_ROLES, ROLE_PRIORITIES
 # Importiere Benutzergruppen aus der Constants-Datei 
-from app.shared.infrastructure.database.constants import (
+from app.shared.infrastructure.constants import (
     OWNER, ADMINS, MODERATORS, USERS, GUESTS
 )
 

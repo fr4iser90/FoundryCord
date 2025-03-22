@@ -110,7 +110,7 @@ def app_config():
 @pytest.fixture(scope="session")
 def db_session():
     """Create a fresh database session for testing."""
-    from app.shared.infrastructure.database.models.config import get_session
+    from app.shared.infrastructure.models.config import get_session
     # Use a generator fixture to manage session lifecycle
     async def _get_test_session():
         async for session in get_session():

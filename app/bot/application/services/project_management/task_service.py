@@ -4,7 +4,7 @@ from datetime import datetime
 import discord
 from app.shared.infrastructure.database.service import DatabaseService
 from app.shared.infrastructure.repositories.task_repository_impl import TaskRepository
-from app.shared.infrastructure.database.models.project.task import Task
+from app.shared.infrastructure.models.project.task import Task
 
 logger = logging.getLogger("homelab.bot")
 

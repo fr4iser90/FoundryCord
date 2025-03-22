@@ -6,8 +6,8 @@ Instead of redefining tables, it imports and uses the existing database models.
 from typing import Dict, List, Any, Optional
 
 # Import the actual database models - these are the source of truth
-from app.shared.infrastructure.database.models import Dashboard as DBDashboard
-from app.shared.infrastructure.database.models import DashboardComponent as DBDashboardComponent
+from app.shared.infrastructure.models import Dashboard as DBDashboard
+from app.shared.infrastructure.models import DashboardComponent as DBDashboardComponent
 
 # Import domain models for conversion
 from app.bot.domain.dashboards.models.dashboard_model import DashboardModel
@@ -115,7 +115,7 @@ class ComponentLayoutORM:
     @staticmethod
     def from_domain(component_model: ComponentModel):
         """Create a component layout from a domain model."""
-        from app.shared.infrastructure.database.models.component_layout import ComponentLayout
+        from app.shared.infrastructure.models.component_layout import ComponentLayout
         
         return ComponentLayout(
             row=component_model.position_y,

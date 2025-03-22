@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, Boolean, Integer, ForeignKey
 from sqlalchemy.orm import relationship
-from app.shared.infrastructure.database.models.base import Base
+from app.shared.infrastructure.models.base import Base
 
 class GuildConfig(Base):
     """Configuration for a Discord guild/server"""

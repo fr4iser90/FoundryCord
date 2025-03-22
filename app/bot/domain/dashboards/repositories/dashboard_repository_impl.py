@@ -3,7 +3,7 @@ import logging
 
 from app.bot.domain.dashboards.models.dashboard_model import DashboardModel, ComponentConfig
 from app.bot.domain.dashboards.repositories.dashboard_repository import DashboardRepository
-from app.shared.infrastructure.database.models.base import Base
+from app.shared.infrastructure.models.base import Base
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.shared.infrastructure.database.core.config import get_session

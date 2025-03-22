@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, desc, func
-from app.shared.infrastructure.database.models import MetricModel, AlertModel
+from app.shared.infrastructure.models import MetricModel, AlertModel
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 

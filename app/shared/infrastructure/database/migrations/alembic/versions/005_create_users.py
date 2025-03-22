@@ -8,7 +8,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import text
 import os
-from app.shared.infrastructure.database.constants.user_constants import (
+from app.shared.infrastructure.constants.user_constants import (
     UserRole,
     ROLE_DESCRIPTIONS
 )

@@ -9,7 +9,7 @@ import os
 import asyncio
 
 from app.shared.interface.logging.api import get_bot_logger
-from app.shared.infrastructure.database.models import Config
+from app.shared.infrastructure.models import Config
 from .config import get_database_url
 
 logger = get_bot_logger()

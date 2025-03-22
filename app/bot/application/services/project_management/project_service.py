@@ -3,7 +3,7 @@ from typing import List, Optional, Dict
 import discord
 from app.shared.infrastructure.database.service import DatabaseService
 from app.shared.infrastructure.repositories.project_repository_impl import ProjectRepository
-from app.shared.infrastructure.database.models.project.project import Project
+from app.shared.infrastructure.models.project.project import Project
 
 logger = logging.getLogger("homelab.bot")
 

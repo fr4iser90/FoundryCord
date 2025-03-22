@@ -6,7 +6,7 @@ from app.web.domain.auth.services.web_authentication_service import WebAuthentic
 from app.web.infrastructure.config.env_loader import get_discord_oauth_config
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
 import httpx
-from app.shared.infrastructure.database.constants import OWNER, ADMINS, MODERATORS, USERS
+from app.shared.infrastructure.constants import OWNER, ADMINS, MODERATORS, USERS
 from app.shared.domain.auth.models import Role
 from app.web.domain.auth.permissions import get_user_role
 from app.shared.interface.logging.api import get_web_logger

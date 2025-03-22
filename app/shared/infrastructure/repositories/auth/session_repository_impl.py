@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.shared.infrastructure.database.models import Session
+from app.shared.infrastructure.models import Session
 from typing import Optional, List
 from datetime import datetime
 from app.shared.domain.repositories.auth.session_repository import SessionRepository

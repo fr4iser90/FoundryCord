@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.shared.infrastructure.database.models import AuditLog
+from app.shared.infrastructure.models import AuditLog
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
 from app.shared.domain.repositories.audit.audit_log_repository import AuditLogRepository

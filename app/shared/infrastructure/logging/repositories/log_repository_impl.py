@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.shared.infrastructure.database.models import LogEntry
+from app.shared.infrastructure.models import LogEntry
 from typing import Optional, List
 from datetime import datetime, timedelta
 

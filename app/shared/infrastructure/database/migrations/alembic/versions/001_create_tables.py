@@ -99,6 +99,20 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['role_id'], ['roles.id'])
     )
 
+    op.create_table(
+        'guild_users',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('guild_id', sa.String(length=255), nullable=False),
+        sa.Column('user_id', sa.Integer(), nullable=False),
+        sa.Column('role_id', sa.Integer(), nullable=False),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+        sa.PrimaryKeyConstraint('id'),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id']),
+        sa.ForeignKeyConstraint(['role_id'], ['roles.id']),
+        sa.UniqueConstraint('guild_id', 'user_id')  # Ein Benutzer hat nur eine Rolle pro Gilde
+    )
+    
 def downgrade() -> None:
     """Drop created tables."""
     # Tabellen in umgekehrter Reihenfolge löschen

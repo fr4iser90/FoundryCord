@@ -9,11 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
-#from app.shared.infrastructure.database.models.config import get_config, set_config
+
 from app.shared.infrastructure.database.core.connection import get_config, set_config
 
 # Import models
-from app.shared.infrastructure.database.models import Dashboard, DashboardComponent
+from app.shared.infrastructure.models import Dashboard, DashboardComponent
 from app.shared.infrastructure.database.core.config import get_session
 
 class DashboardRepository:

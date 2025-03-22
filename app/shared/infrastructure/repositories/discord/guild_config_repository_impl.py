@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.shared.infrastructure.database.models.discord.guild_config import GuildConfig
+from app.shared.infrastructure.models.discord.guild_config import GuildConfig
 from typing import Optional, List, Dict, Any
 import json
 

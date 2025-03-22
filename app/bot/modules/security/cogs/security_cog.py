@@ -1,6 +1,6 @@
 import nextcord
 from nextcord.ext import commands
-from app.shared.infrastructure.database.models import User, AuditLog
+from app.shared.infrastructure.models import User, AuditLog
 from datetime import datetime
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()

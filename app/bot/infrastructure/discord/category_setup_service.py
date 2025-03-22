@@ -3,7 +3,7 @@ from nextcord import Guild, CategoryChannel, PermissionOverwrite, utils
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 from app.shared.infrastructure.database.core.connection import get_session
-from app.shared.infrastructure.database.models import CategoryMapping
+from app.shared.infrastructure.models import CategoryMapping
 from sqlalchemy import select, update, insert
 import asyncio
 import os

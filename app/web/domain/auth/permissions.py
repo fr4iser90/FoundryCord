@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 from enum import Enum
-from app.shared.infrastructure.database.constants import (
+from app.shared.infrastructure.constants import (
     OWNER, ADMINS, MODERATORS, USERS, GUESTS
 )
 
