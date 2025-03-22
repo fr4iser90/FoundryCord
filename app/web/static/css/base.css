@@ -17,6 +17,10 @@
     --footer-text: var(--text-secondary);
     --footer-link: var(--discord-accent);
     --footer-link-hover: var(--text-primary);
+    --discord-success: #43b581;
+    --discord-danger: #f04747;
+    --discord-warning: #faa61a;
+    --discord-channel: #4f545c;
 }
 
 body {

@@ -1,7 +1,7 @@
 {# app/web/templates/components/navbar.html #}
 <nav class="navbar navbar-expand-lg navbar-dark">
     <div class="container">
-        <a class="navbar-brand" href="/">HomeLab Discord Bot</a>
+        <a class="navbar-brand" href="/bot/overview">Discord Bot</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -11,13 +11,14 @@
                 <!-- Main Navigation -->
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                        <a class="nav-link" href="/channel-builder">
+                            <i class="bi bi-grid"></i> Channel Builder
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/servers">Servers</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/users">Users</a>
+                        <a class="nav-link" href="/dashboard-builder">
+                            <i class="bi bi-layout-text-sidebar"></i> Dashboard Builder
+                        </a>
                     </li>
                     
                     <!-- Admin Dropdown - Only visible for Bot Owner -->
@@ -25,7 +26,7 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" 
                            data-bs-toggle="dropdown" aria-expanded="false">
-                            Admin
+                            <i class="bi bi-tools"></i> Admin
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="adminDropdown">
                             <li><a class="dropdown-item" href="/admin/bot-settings">
