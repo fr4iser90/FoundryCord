@@ -31,13 +31,7 @@ async def auth_middleware(request: Request, call_next):
     # Check if user is authenticated
     if not request.session.get("user"):
         return RedirectResponse(url="/auth/insufficient-permissions")
-    
-    # Check role for admin routes
-    if path.startswith("/admin"):
-        auth_service = get_auth_service()
-        is_owner = await auth_service.is_owner(request.session["user"]["id"])
-        if not is_owner:
-            return RedirectResponse(url="/auth/insufficient-permissions")
+
     
     return await call_next(request)
 
