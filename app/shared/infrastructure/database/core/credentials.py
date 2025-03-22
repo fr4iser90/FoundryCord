@@ -5,6 +5,8 @@ import asyncio
 from typing import Dict, Any, Optional
 
 from app.shared.interface.logging.api import get_bot_logger
+# Use impl instead of interface here too
+from app.shared.infrastructure.repositories.auth.key_repository_impl import KeyRepositoryImpl
 logger = get_bot_logger()
 
 # Controls whether credentials are automatically managed
@@ -29,12 +31,11 @@ class DatabaseCredentialManager:
         if not self._initialized:
             try:
                 # Import here to avoid circular imports
-                from app.shared.domain.repositories.auth.key_repository import KeyRepository
                 from app.shared.infrastructure.database.session.factory import get_session
                 
                 # Initialize repository for credential storage
                 session = await get_session()
-                self._repository = KeyRepository(session)
+                self._repository = KeyRepositoryImpl(session)  # Use the implementation
                 
                 # Load/initialize credentials
                 await self._initialize_credentials()

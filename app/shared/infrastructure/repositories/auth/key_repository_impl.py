@@ -6,10 +6,11 @@ from app.shared.interface.logging.api import get_bot_logger
 import logging
 import json
 from datetime import datetime
+from app.shared.domain.repositories.auth.key_repository import KeyRepository
 
 logger = logging.getLogger("homelab.bot")
 
-class KeyRepositoryImpl:
+class KeyRepositoryImpl(KeyRepository):
     """Repository for managing security keys in the database"""
     
     def __init__(self, session: AsyncSession):
@@ -86,7 +87,31 @@ class KeyRepositoryImpl:
             logger.error(f"Failed to store security key '{key_name}': {e}")
             return False
     
-    # Database credential specific methods
+    async def delete_key(self, key_name: str) -> bool:
+        """Delete a security key from the database."""
+        try:
+            # Execute DELETE query
+            result = await self.session.execute(
+                text("DELETE FROM security_keys WHERE name = :name"),
+                {"name": key_name}
+            )
+            
+            # Commit the transaction
+            await self.session.commit()
+            
+            # Check if any row was affected
+            if result.rowcount > 0:
+                logger.info(f"Security key '{key_name}' deleted successfully")
+                return True
+            else:
+                logger.warning(f"Security key '{key_name}' not found for deletion")
+                return False
+            
+        except Exception as e:
+            # Rollback on error
+            await self.session.rollback()
+            logger.error(f"Failed to delete security key '{key_name}': {e}")
+            return False
     
     async def get_db_credentials(self) -> Optional[Dict[str, Any]]:
         """Get database credentials from secure storage."""
@@ -176,3 +201,4 @@ class KeyRepositoryImpl:
     async def save_aes_key(self, key: str) -> bool:
         """Save AES key to database."""
         return await self.store_key('aes_key', key)
+    

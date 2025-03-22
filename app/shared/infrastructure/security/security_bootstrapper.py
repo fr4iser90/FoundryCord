@@ -6,7 +6,7 @@ import traceback
 from cryptography.fernet import Fernet
 from sqlalchemy.exc import SQLAlchemyError
 from app.shared.infrastructure.database.session.context import session_context
-from app.shared.domain.repositories.auth.key_repository import KeyRepository
+from app.shared.infrastructure.repositories.auth.key_repository_impl import KeyRepositoryImpl
 
 logger = logging.getLogger("homelab.bot")
 
@@ -32,7 +32,7 @@ class SecurityBootstrapper:
             
             # Initialize database repository
             async with session_context() as session:
-                self.key_repository = KeyRepository(session)
+                self.key_repository = KeyRepositoryImpl(session)
                 await self._load_keys_from_database()
                 logger.info("Security keys loaded from database successfully")
             
