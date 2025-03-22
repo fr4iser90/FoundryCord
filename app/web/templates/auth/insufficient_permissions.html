@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Insufficient Permissions - HomeLab Discord Bot{% endblock %}
+{% block title %}Access Denied - HomeLab Discord Bot{% endblock %}
 
 {% block content %}
 <div class="container text-center mt-5">
@@ -8,6 +8,15 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-body">
+                    {% if not user %}
+                    <!-- Fall: Nicht eingeloggt -->
+                    <h2 class="card-title text-warning">Authentication Required</h2>
+                    <p class="card-text">
+                        You need to be logged in to access this area.
+                    </p>
+                    <a href="/auth/login" class="btn btn-primary mt-3">Login with Discord</a>
+                    {% else %}
+
                     <h2 class="card-title text-danger">Access Denied</h2>
                     <p class="card-text">
                         You don't have sufficient permissions to access this area.
@@ -17,9 +26,10 @@
                         Please contact an administrator if you believe you should have access.
                     </p>
                     <a href="/" class="btn btn-primary mt-3">Return to Home</a>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

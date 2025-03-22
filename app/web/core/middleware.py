@@ -20,18 +20,23 @@ async def auth_middleware(request: Request, call_next):
     path = request.url.path
     
     # Public paths that don't require auth
-    if path.startswith("/static") or path in ["/", "/auth/login", "/auth/callback", "/health"]:
+    if path.startswith("/static") or path in ["/", "/auth/login", "/auth/insufficient-permissions", "/auth/callback", "/health"]:
         return await call_next(request)
+    
+    # Sicherstellen, dass eine Session existiert
+    if not hasattr(request, "session"):
+        logger.error("SessionMiddleware not installed properly")
+        return RedirectResponse(url="/auth/login")
         
     # Check if user is authenticated
     if not request.session.get("user"):
-        return RedirectResponse(url="/auth/login")
-        
+        return RedirectResponse(url="/auth/insufficient-permissions")
+    
     # Check role for admin routes
     if path.startswith("/admin"):
         auth_service = get_auth_service()
-        is_admin = await auth_service.is_admin(request.session["user"]["id"])
-        if not is_admin:
+        is_owner = await auth_service.is_owner(request.session["user"]["id"])
+        if not is_owner:
             return RedirectResponse(url="/auth/insufficient-permissions")
     
     return await call_next(request)

@@ -17,6 +17,7 @@ from app.web.core.lifecycle_manager import WebLifecycleManager
 from app.web.core.workflow_manager import WebWorkflowManager
 from app.web.infrastructure.factories.service.web_service_factory import WebServiceFactory
 from contextlib import asynccontextmanager
+from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
 
 logger = get_bot_logger()
 
@@ -48,6 +49,10 @@ class WebApplication:
         """Setup middleware during initialization"""
         # Setup Session FIRST
         session_secret = os.environ.get("JWT_SECRET_KEY", os.urandom(32).hex())
+
+        from app.web.core.middleware import auth_middleware
+        self.app.middleware("http")(auth_middleware)
+        logger.info("Auth middleware registered successfully")        
         
         from starlette.middleware.sessions import SessionMiddleware
         self.app.add_middleware(
@@ -67,6 +72,7 @@ class WebApplication:
             allow_methods=["*"],
             allow_headers=["*"],
         )
+        
 
     async def setup(self):
         """Setup the web application asynchronously."""

@@ -16,7 +16,7 @@ def ensure_web_env_loaded() -> bool:
         # Set default values for web-specific variables if not set
         web_defaults = {
             "DISCORD_REDIRECT_URI": "http://localhost:8000/auth/callback",
-            "JWT_SECRET_KEY": os.environ.get("JWT_SECRET_KEY", "fallback_development_secret_key_not_for_production"),
+            "JWT_SECRET_KEY": os.environ.get("JWT_SECRET_KEY"),
         }
         
         for key, default_value in web_defaults.items():

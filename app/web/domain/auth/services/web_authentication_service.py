@@ -71,13 +71,13 @@ class WebAuthenticationService:
                 detail="Could not create authentication token"
             )
 
-    async def is_admin(self, user_id: str) -> bool:
-        """Check if user is admin"""
+    async def is_owner(self, user_id: str) -> bool:
+        """Check if user is owner"""
         try:
             # Hier nur Web-spezifische Logik
             # Die eigentliche Rolle kommt aus der Session
             return True if user_id == "your_admin_id" else False
             
         except Exception as e:
-            logger.error(f"Failed to check admin status: {e}")
+            logger.error(f"Failed to check owner status: {e}")
             return False
