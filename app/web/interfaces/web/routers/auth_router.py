@@ -5,6 +5,7 @@ from app.web.core.extensions import get_templates
 from app.web.domain.auth.services.web_authentication_service import WebAuthenticationService
 from app.web.infrastructure.config.env_loader import get_discord_oauth_config
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
+from app.shared.domain.auth.policies.authorization_policies import is_bot_owner, is_admin, is_moderator
 import httpx
 from app.shared.interface.logging.api import get_bot_logger
 
@@ -15,14 +16,14 @@ discord_config = get_discord_oauth_config()
 
 # Dependency
 def get_auth_service():
-    key_service = KeyManagementService()  # Dies sollte eigentlich über DI kommen
+    key_service = KeyManagementService()
     return WebAuthenticationService(key_service=key_service)
 
 @router.get("/login")
 async def login(request: Request):
     """Redirect to Discord OAuth directly"""
     if "user" in request.session:
-        return RedirectResponse(url="/dashboard")
+        return RedirectResponse(url="/bot/overview")  # Redirect to bot overview instead of dashboard
         
     auth_url = (
         f"https://discord.com/api/oauth2/authorize"
@@ -66,14 +67,20 @@ async def oauth_callback(
             request.session["user"] = user
             request.session["token"] = token
             
-            # Check role and redirect
-            is_admin = await auth_service.is_admin(user["id"])
+            # Check bot roles using our authorization policies
+            if is_bot_owner(user):
+                user["role"] = "OWNER"
+            elif is_admin(user):
+                user["role"] = "ADMIN"
+            elif is_moderator(user):
+                user["role"] = "MODERATOR"
+            else:
+                user["role"] = "USER"
             
-            logger.info(f"User {user['username']} logged in successfully")
+            logger.info(f"User {user['username']} logged in successfully with role {user['role']}")
             
-            if is_admin:
-                return RedirectResponse(url="/admin")
-            return RedirectResponse(url="/dashboard")
+            # Always redirect to bot overview, navbar will handle role-based visibility
+            return RedirectResponse(url="/bot/overview")
             
     except Exception as e:
         logger.error(f"OAuth callback failed: {e}")

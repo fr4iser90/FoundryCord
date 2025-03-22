@@ -1,0 +1,236 @@
+{% extends "layouts/admin_layout.html" %}
+
+{% block title %}Bot Configuration - HomeLab Discord Bot{% endblock %}
+
+{% block content %}
+<div class="config-container">
+    <div class="config-header">
+        <h1>Bot Configuration</h1>
+        <p>Configure bot functionality and behavior</p>
+    </div>
+
+    <div class="config-grid">
+        <!-- Command Settings -->
+        <div class="config-section">
+            <h3>Command Settings</h3>
+            <form id="command-settings-form">
+                <div class="mb-3">
+                    <label class="form-label">Enabled Commands</label>
+                    <div class="command-list">
+                        {% for command in commands %}
+                        <div class="command-item">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" 
+                                       id="cmd-{{ command.name }}" 
+                                       name="enabled_commands" 
+                                       value="{{ command.name }}"
+                                       {% if command.enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="cmd-{{ command.name }}">
+                                    {{ command.name }}
+                                </label>
+                            </div>
+                            <span class="command-description text-muted">{{ command.description }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Command Settings</button>
+            </form>
+        </div>
+
+        <!-- Channel Configuration -->
+        <div class="config-section">
+            <h3>Channel Configuration</h3>
+            <form id="channel-config-form">
+                <div class="mb-3">
+                    <label for="log-channel" class="form-label">Log Channel</label>
+                    <select class="form-select" id="log-channel" name="log_channel">
+                        {% for channel in text_channels %}
+                        <option value="{{ channel.id }}" {% if channel.id == config.log_channel %}selected{% endif %}>
+                            #{{ channel.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="welcome-channel" class="form-label">Welcome Channel</label>
+                    <select class="form-select" id="welcome-channel" name="welcome_channel">
+                        {% for channel in text_channels %}
+                        <option value="{{ channel.id }}" {% if channel.id == config.welcome_channel %}selected{% endif %}>
+                            #{{ channel.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="welcome-message" class="form-label">Welcome Message</label>
+                    <textarea class="form-control" id="welcome-message" name="welcome_message" rows="3">{{ config.welcome_message }}</textarea>
+                    <small class="text-muted">Available variables: {user}, {server}</small>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Channel Configuration</button>
+            </form>
+        </div>
+
+        <!-- Auto Moderation -->
+        <div class="config-section">
+            <h3>Auto Moderation</h3>
+            <form id="automod-settings-form">
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="enable-automod" 
+                           name="enable_automod" {% if config.automod_enabled %}checked{% endif %}>
+                    <label class="form-check-label" for="enable-automod">Enable Auto Moderation</label>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Filtered Words</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="filter-word-input" placeholder="Add word to filter">
+                        <button class="btn btn-outline-secondary" type="button" id="add-filter-word">Add</button>
+                    </div>
+                    <div class="filtered-words-list mt-2" id="filtered-words-container">
+                        {% for word in config.filtered_words %}
+                        <span class="badge bg-secondary me-1 mb-1">
+                            {{ word }}
+                            <button type="button" class="btn-close btn-close-white" 
+                                    onclick="removeFilteredWord('{{ word }}')"></button>
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="spam-threshold" class="form-label">Spam Threshold (messages/minute)</label>
+                    <input type="number" class="form-control" id="spam-threshold" 
+                           name="spam_threshold" value="{{ config.spam_threshold }}">
+                </div>
+                <button type="submit" class="btn btn-primary">Save Automod Settings</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.config-container {
+    padding: 20px;
+}
+
+.config-header {
+    margin-bottom: 30px;
+}
+
+.config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.config-section {
+    background: var(--discord-lighter);
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.config-section h3 {
+    margin-bottom: 20px;
+    color: var(--discord-text);
+}
+
+.command-list {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    background: var(--discord-channel);
+    border-radius: 4px;
+}
+
+.command-item {
+    padding: 8px;
+    border-bottom: 1px solid var(--discord-darker);
+}
+
+.command-item:last-child {
+    border-bottom: none;
+}
+
+.command-description {
+    display: block;
+    font-size: 0.875rem;
+    margin-left: 2.5rem;
+}
+
+.filtered-words-list {
+    min-height: 50px;
+    padding: 10px;
+    background: var(--discord-channel);
+    border-radius: 4px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle form submissions
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            try {
+                const response = await fetch('/api/bot/config/' + form.id, {
+                    method: 'POST',
+                    body: formData
+                });
+                if (response.ok) {
+                    alert('Configuration saved successfully!');
+                } else {
+                    throw new Error('Failed to save configuration');
+                }
+            } catch (error) {
+                alert('Error saving configuration: ' + error.message);
+            }
+        });
+    });
+
+    // Handle filtered words
+    const addFilterWordBtn = document.getElementById('add-filter-word');
+    const filterWordInput = document.getElementById('filter-word-input');
+    
+    addFilterWordBtn.addEventListener('click', () => {
+        const word = filterWordInput.value.trim();
+        if (word) {
+            addFilteredWord(word);
+            filterWordInput.value = '';
+        }
+    });
+});
+
+function addFilteredWord(word) {
+    const container = document.getElementById('filtered-words-container');
+    const badge = document.createElement('span');
+    badge.className = 'badge bg-secondary me-1 mb-1';
+    badge.innerHTML = `
+        ${word}
+        <button type="button" class="btn-close btn-close-white" 
+                onclick="removeFilteredWord('${word}')"></button>
+    `;
+    container.appendChild(badge);
+}
+
+async function removeFilteredWord(word) {
+    try {
+        const response = await fetch(`/api/bot/config/filtered-words/${encodeURIComponent(word)}`, {
+            method: 'DELETE'
+        });
+        if (response.ok) {
+            const badge = event.target.closest('.badge');
+            badge.remove();
+        } else {
+            throw new Error('Failed to remove word');
+        }
+    } catch (error) {
+        alert('Error removing word: ' + error.message);
+    }
+}
+</script>
+{% endblock %}
