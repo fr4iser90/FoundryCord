@@ -30,7 +30,7 @@ class CategoryWorkflow(BaseWorkflow):
         try:
             # Verify categories exist
             async with session_context() as session:
-                result = await session.execute(text("SELECT COUNT(*) FROM categories"))
+                result = await session.execute(text("SELECT COUNT(*) FROM discord_categories"))
                 count = result.scalar()
                 
                 if count == 0:

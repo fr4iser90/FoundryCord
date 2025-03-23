@@ -20,7 +20,7 @@ async def verify_database():
 
         # Check if required tables have data
         async with session_context() as session:
-            tables = ['categories', 'channels', 'dashboards']
+            tables = ['discord_categories', 'discord_channels']
             for table in tables:
                 result = await session.execute(text(f"SELECT COUNT(*) FROM {table}"))
                 count = result.scalar()

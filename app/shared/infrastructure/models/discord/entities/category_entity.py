@@ -5,7 +5,7 @@ from app.shared.domain.models.discord.category_model import CategoryPermissionLe
 
 class CategoryEntity(Base):
     """Database entity for Discord categories"""
-    __tablename__ = "categories"
+    __tablename__ = "discord_categories"
     __table_args__ = {'extend_existing': True}
     
     id = Column(Integer, primary_key=True)
@@ -25,10 +25,10 @@ class CategoryEntity(Base):
 
 class CategoryPermissionEntity(Base):
     """Database entity for category permissions"""
-    __tablename__ = "category_permissions"
+    __tablename__ = "discord_category_permissions"
     
     id = Column(Integer, primary_key=True)
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
+    category_id = Column(Integer, ForeignKey("discord_categories.id"), nullable=False)
     role_id = Column(Integer, nullable=False)
     view = Column(Boolean, nullable=False, default=False)
     send_messages = Column(Boolean, nullable=False, default=False)

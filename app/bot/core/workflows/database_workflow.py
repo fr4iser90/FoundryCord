@@ -21,17 +21,6 @@ class DatabaseWorkflow(BaseWorkflow):
     async def initialize(self):
         """Initialize the database workflow"""
         try:
-            # ONLY verify data exists
-            async with session_context() as session:
-                # Check if required tables exist and have data
-                tables = ['categories', 'channels', 'dashboards']
-                for table in tables:
-                    result = await session.execute(text(f"SELECT COUNT(*) FROM {table}"))
-                    count = result.scalar()
-                    if count == 0:
-                        logger.error(f"No data found in {table}. Please initialize database from web interface")
-                        return False
-            
             # Important: Initialize the db_service without passing session
             from app.shared.infrastructure.database.service import DatabaseService
             self.db_service = DatabaseService()

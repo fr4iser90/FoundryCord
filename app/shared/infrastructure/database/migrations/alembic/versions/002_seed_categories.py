@@ -48,4 +48,4 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Remove seeded categories."""
     for category in CATEGORIES:
-        op.execute(f"DELETE FROM categories WHERE name = '{category['name']}'") 
+        op.execute(f"DELETE FROM discord_categories WHERE name = '{category['name']}'") 

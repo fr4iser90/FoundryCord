@@ -5,14 +5,14 @@ from app.shared.domain.models.discord.channel_model import ChannelType, ChannelP
 
 class ChannelEntity(Base):
     """Database entity for Discord channels"""
-    __tablename__ = "channels"
+    __tablename__ = "discord_channels"
     __table_args__ = {'extend_existing': True}
     
     id = Column(Integer, primary_key=True)
     discord_id = Column(BigInteger, nullable=True, unique=True)
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
+    category_id = Column(Integer, ForeignKey("discord_categories.id"), nullable=True)
     category_discord_id = Column(BigInteger, nullable=True)
     type = Column(Enum(ChannelType), nullable=False, default=ChannelType.TEXT)
     position = Column(Integer, nullable=False, default=0)
@@ -34,10 +34,10 @@ class ChannelEntity(Base):
 
 class ChannelPermissionEntity(Base):
     """Database entity for channel permissions"""
-    __tablename__ = "channel_permissions"
+    __tablename__ = "discord_channel_permissions"
     
     id = Column(Integer, primary_key=True)
-    channel_id = Column(Integer, ForeignKey("channels.id"), nullable=False)
+    channel_id = Column(Integer, ForeignKey("discord_channels.id"), nullable=False)
     role_id = Column(BigInteger, nullable=False)
     view = Column(Boolean, nullable=False, default=False)
     send_messages = Column(Boolean, nullable=False, default=False)

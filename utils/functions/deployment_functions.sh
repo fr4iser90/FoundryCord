@@ -305,10 +305,6 @@ run_full_reset_deploy() {
     clear
     print_section_header "⚠️ FULL RESET DEPLOYMENT - DATA WILL BE LOST ⚠️"
     
-    # First make sure .env files are in place
-    print_info "Checking and copying environment files..."
-    deploy_docker
-    
     print_error "Performing COMPLETE RESET with DATABASE DELETION..."
     print_error "ALL DATA WILL BE LOST!"
     
@@ -320,8 +316,14 @@ run_full_reset_deploy() {
     fi
     
     # Full deployment with optional -v flag to remove volumes (DESTROYS DATABASE)
-    run_remote_command "cd ${DOCKER_DIR} && docker compose down ${volume_flag} && docker compose build --no-cache && docker compose up -d"
+    run_remote_command "cd ${DOCKER_DIR} && docker compose down ${volume_flag}"
+    run_remote_command "cd ${DOCKER_DIR} && cd ../.. && rm -rf ./app"
+    # First make sure .env files are in place
+    print_info "Checking and copying environment files..."
+    deploy_docker
     
+    run_remote_command "cd ${DOCKER_DIR} && docker compose build --no-cache"
+    run_remote_command "cd ${DOCKER_DIR} && docker compose up -d"
     print_success "Full reset deployment completed."
     if [ "${REMOVE_VOLUMES}" = "true" ]; then
         print_warning "Your database has been completely removed."

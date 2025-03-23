@@ -174,7 +174,7 @@ class CategorySetupService:
                 if exists:
                     return self.categories[category_type]
 
-            # If not exists, create new category using config from CATEGORIES
+        
             config = CATEGORIES.get(category_type)
             if not config:
                 logger.error(f"No configuration found for category type: {category_type}")

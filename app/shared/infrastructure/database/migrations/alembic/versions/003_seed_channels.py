@@ -102,4 +102,4 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Remove seeded channels."""
     for channel in CHANNELS:
-        op.execute(f"DELETE FROM channels WHERE name = '{channel['name']}'") 
+        op.execute(f"DELETE FROM discord_channels WHERE name = '{channel['name']}'") 
