@@ -305,11 +305,6 @@ run_full_reset_deploy() {
     clear
     print_section_header "⚠️ FULL RESET DEPLOYMENT - DATA WILL BE LOST ⚠️"
     
-    if [ "$RUN_LOCALLY" = true ]; then
-        print_error "Cannot deploy in local mode"
-        return 1
-    fi
-    
     # First make sure .env files are in place
     print_info "Checking and copying environment files..."
     deploy_docker

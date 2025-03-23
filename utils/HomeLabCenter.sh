@@ -184,7 +184,7 @@ parse_cli_args() {
                 export DIRECT_DEPLOY=true
                 if [ "$SKIP_CONFIRMATION" != "true" ]; then
                     print_error "⚠️ WARNING: This will COMPLETELY ERASE your database and all data! ⚠️"
-                    if ! get_confirmed_input "Are you absolutely sure you want to DELETE ALL DATA?" "DELETE-ALL-DATA"; then
+                    if ! get_confirmed_input "Are you absolutely sure you want to DELETE ALL DATA?" "DELETE"; then
                         print_info "Full reset deployment cancelled"
                         exit 1
                     fi

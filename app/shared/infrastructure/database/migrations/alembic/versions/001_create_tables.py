@@ -21,7 +21,7 @@ def upgrade() -> None:
     # CORE/SYSTEM Tables
     # ==========================================================================
     op.create_table(
-        'core_security_keys',
+        'security_keys',
         sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
         sa.Column('name', sa.String(length=255), nullable=False, unique=True),
         sa.Column('value', sa.Text(), nullable=False),
@@ -123,7 +123,7 @@ def upgrade() -> None:
     op.create_table(
         'discord_channel_permissions',
         sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('channel_id', sa.Integer(), nullable=False),
+        sa.Column('channel_id', sa.Integer(), nullable=True),
         sa.Column('role_id', sa.Integer(), nullable=False),
         sa.Column('view', sa.Boolean(), nullable=False, default=False),
         sa.Column('send_messages', sa.Boolean(), nullable=False, default=False),
@@ -168,7 +168,7 @@ def upgrade() -> None:
     # ==========================================================================
     op.create_table(
         'dashboard_instances',
-        sa.Column('id', sa.String(length=255), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('name', sa.String(length=255), nullable=False),
         sa.Column('channel_id', sa.String(length=255), nullable=True),
         sa.Column('type', sa.String(length=255), nullable=False),
@@ -280,4 +280,4 @@ def downgrade() -> None:
     op.drop_table('app_roles')
     
     # CORE Tables
-    op.drop_table('core_security_keys')
+    op.drop_table('security_keys')

@@ -8,6 +8,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import text
 import json
+from sqlalchemy.sql import table, column
 
 # Import die existierenden Dashboard-Definitionen
 from app.shared.infrastructure.database.seeds.dashboard_instances.common import *
@@ -24,6 +25,9 @@ depends_on = None
 
 def upgrade() -> None:
     """Seed dashboard components using existing definitions."""
+    # Map to store dashboard types and their database IDs
+    dashboard_id_map = {}
+    
     # Vereinfachte Version, die nur ein Demo-Dashboard erstellt
     dashboard_instances = [
         {
@@ -40,24 +44,36 @@ def upgrade() -> None:
         }
     ]
     
-    # Dashboards einfügen
+    # Simpler approach - insert dashboards one at a time and then query them
     for dashboard in dashboard_instances:
-        # SQLAlchemy-Textvorlage mit bindparams verwenden
-        query = text("""
-        INSERT INTO dashboard_instances (name, channel_id, type, config)
-        VALUES (:name, :channel_id, :type, :config)
-        """).bindparams(
-            name=dashboard['name'],
-            channel_id=dashboard['channel_id'],
-            type=dashboard['type'],
-            config=dashboard['config']
+        # Insert the dashboard without trying to get RETURNING values
+        op.execute(
+            text("""
+            INSERT INTO dashboard_instances (name, channel_id, type, config)
+            VALUES (:name, :channel_id, :type, :config)
+            """).bindparams(
+                name=dashboard['name'],
+                channel_id=dashboard['channel_id'],
+                type=dashboard['type'],
+                config=dashboard['config']
+            )
         )
-        op.execute(query)
     
-    # Komponenten einfügen
+    # Now query the dashboard IDs separately
+    for dashboard in dashboard_instances:
+        conn = op.get_bind()
+        result = conn.execute(
+            text("""
+            SELECT id FROM dashboard_instances WHERE type = :type
+            """).bindparams(type=dashboard['type'])
+        )
+        dashboard_id = result.scalar()
+        dashboard_id_map[dashboard['type']] = dashboard_id
+    
+    # Komponenten einfügen with correct IDs
     components = [
         {
-            'dashboard_id': 'welcome',
+            'dashboard_type': 'welcome',  # Changed from dashboard_id to dashboard_type
             'component_type': 'embed',
             'component_name': 'main_info',
             'config': json.dumps({
@@ -67,7 +83,7 @@ def upgrade() -> None:
             })
         },
         {
-            'dashboard_id': 'monitoring',
+            'dashboard_type': 'monitoring',  # Changed from dashboard_id to dashboard_type
             'component_type': 'embed',
             'component_name': 'system_status',
             'config': json.dumps({
@@ -78,18 +94,22 @@ def upgrade() -> None:
         }
     ]
     
-    # Komponenten einfügen
+    # Insert components using the actual integer IDs
     for component in components:
-        query = text("""
-        INSERT INTO dashboard_components (dashboard_id, component_type, component_name, config)
-        VALUES (:dashboard_id, :component_type, :component_name, :config)
-        """).bindparams(
-            dashboard_id=component['dashboard_id'],
-            component_type=component['component_type'],
-            component_name=component['component_name'],
-            config=component['config']
+        # Get the actual integer ID for this dashboard type
+        dashboard_id = dashboard_id_map[component['dashboard_type']]
+        
+        op.execute(
+            text("""
+            INSERT INTO dashboard_components (dashboard_id, component_type, component_name, config)
+            VALUES (:dashboard_id, :component_type, :component_name, :config)
+            """).bindparams(
+                dashboard_id=dashboard_id,  # Now using the integer ID
+                component_type=component['component_type'],
+                component_name=component['component_name'],
+                config=component['config']
+            )
         )
-        op.execute(query)
 
 def downgrade() -> None:
     """Remove seeded dashboard_instances."""
