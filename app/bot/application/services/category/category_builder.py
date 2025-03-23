@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict
 import discord
-from app.bot.domain.categories.models.category_model import CategoryModel
+from app.shared.domain.models import CategoryModel
 from app.bot.domain.categories.repositories.category_repository import CategoryRepository
 import logging
 
@@ -27,7 +27,7 @@ class CategoryBuilder:
             overwrites = {}
             if permissions:
                 for perm in permissions:
-                    role = discord.utils.get(guild.roles, id=perm.get('role_id'))
+                    role = discord.utils.get(guild.app_roles, id=perm.get('role_id'))
                     if role:
                         overwrites[role] = discord.PermissionOverwrite(
                             view_channel=perm.get('view', False),

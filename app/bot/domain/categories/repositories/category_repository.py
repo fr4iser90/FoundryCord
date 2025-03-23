@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from app.bot.domain.categories.models.category_model import CategoryModel, CategoryTemplate
-
+from app.shared.domain.models.discord.category_model import CategoryModel, CategoryTemplate
 
 class CategoryRepository(ABC):
     """Interface for Category repository operations"""

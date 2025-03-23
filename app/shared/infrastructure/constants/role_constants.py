@@ -1,4 +1,4 @@
-"""Constants related to roles and permissions in the system"""
+"""Constants related to app_roles and permissions in the system"""
 
 # Server role configuration
 SERVER_ROLES = {

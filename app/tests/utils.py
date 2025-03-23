@@ -191,7 +191,7 @@ def async_test(coro):
     return wrapper
 
 async def setup_test_guild():
-    """Create a test guild with predefined channels and roles."""
+    """Create a test guild with predefined channels and app_roles."""
     # Implementation here
     pass
 

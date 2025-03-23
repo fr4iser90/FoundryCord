@@ -2,7 +2,7 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from app.shared.domain.models.channel_model import (
+from app.shared.domain.models.discord.channel_model import (
     ChannelModel, ChannelTemplate, ChannelPermission, ThreadConfig
 )
 from app.shared.domain.repositories.discord.channel_repository import ChannelRepository

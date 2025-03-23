@@ -13,7 +13,7 @@ from app.bot.application.services.dashboard.dashboard_service import DashboardSe
 from app.bot.domain.dashboards.repositories.dashboard_repository import DashboardRepository
 from app.shared.infrastructure.database.core.config import get_session
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
-from app.shared.infrastructure.repositories.dashboard_repository_impl import DashboardRepository
+from app.shared.infrastructure.repositories.discord.dashboard_repository_impl import DashboardRepositoryImpl
 from app.bot.infrastructure.factories.component_registry import ComponentRegistry
 from app.bot.infrastructure.factories.data_source_registry import DataSourceRegistry
 
@@ -43,6 +43,9 @@ class DashboardWorkflow(BaseWorkflow):
             if not db_service:
                 logger.error("Database service not available, cannot initialize dashboard workflow")
                 return False
+            
+            # Implementierung verwenden, aber Interface-Typ deklarieren
+            self.dashboard_repository: DashboardRepository = DashboardRepositoryImpl(db_service)
             
             # Initialize service
             self.dashboard_service = DashboardService(

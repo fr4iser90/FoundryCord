@@ -1,4 +1,4 @@
-"""Seed initial users and roles
+"""Seed initial users and app_roles
 
 Revision ID: 005
 Revises: 004
@@ -22,11 +22,11 @@ depends_on = None
 def upgrade():
     connection = op.get_bind()
     
-    # Insert roles
+    # Insert app_roles
     for role in UserRole:
         connection.execute(
             text("""
-                INSERT INTO roles (name, description)
+                INSERT INTO app_roles (name, description)
                 VALUES (CAST(:name AS VARCHAR), CAST(:description AS VARCHAR))
                 ON CONFLICT (name) DO NOTHING
             """),
@@ -48,7 +48,7 @@ def upgrade():
                     CAST(:discord_id AS VARCHAR),
                     r.id,
                     TRUE
-                FROM roles r
+                FROM app_roles r
                 WHERE r.name = CAST(:role_name AS VARCHAR)
                 AND NOT EXISTS (
                     SELECT 1 FROM users u
@@ -63,7 +63,7 @@ def upgrade():
         )
 
 def downgrade():
-    """Remove seeded roles and users."""
+    """Remove seeded app_roles and users."""
     connection = op.get_bind()
     
     # Remove the owner user
@@ -71,16 +71,16 @@ def downgrade():
         text("""
             DELETE FROM users 
             WHERE role_id IN (
-                SELECT id FROM roles 
+                SELECT id FROM app_roles 
                 WHERE name = :role_name::varchar
             )
         """),
         {'role_name': UserRole.OWNER.value}
     )
     
-    # Remove all seeded roles using constants
+    # Remove all seeded app_roles using constants
     for role in UserRole:
         connection.execute(
-            text("DELETE FROM roles WHERE name = :role_name::varchar"),
+            text("DELETE FROM app_roles WHERE name = :role_name::varchar"),
             {'role_name': role.value}
         )

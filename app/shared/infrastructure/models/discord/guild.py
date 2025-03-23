@@ -9,7 +9,7 @@ class Guild(Base):
     """Discord guild model"""
     __tablename__ = "guilds"
     
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)  # Primärschlüssel hinzugefügt
     guild_id = Column(String(20), unique=True, nullable=False)
     name = Column(String(100), nullable=False)
     icon_url = Column(String(255), nullable=True)
@@ -20,4 +20,4 @@ class Guild(Base):
     is_active = Column(Boolean, default=True)
     
     def __repr__(self):
-        return f"<Guild(id={self.id}, name='{self.name}')>" 
+        return f"<Guild(id={self.id}, name='{self.name}')>"

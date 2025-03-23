@@ -7,7 +7,7 @@ from app.shared.infrastructure.constants import (
 )
 
 class Role(Enum):
-    """Value object representing user roles in the system"""
+    """Value object representing user app_roles in the system"""
     OWNER = "OWNER"
     
     ADMIN = "ADMIN"

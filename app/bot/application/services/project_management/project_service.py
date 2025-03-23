@@ -2,7 +2,7 @@ import logging
 from typing import List, Optional, Dict
 import discord
 from app.shared.infrastructure.database.service import DatabaseService
-from app.shared.infrastructure.repositories.project_repository_impl import ProjectRepository
+from app.shared.infrastructure.repositories.projects.project_repository_impl import ProjectRepositoryImpl
 from app.shared.infrastructure.models.project.project import Project
 
 logger = logging.getLogger("homelab.bot")
@@ -12,7 +12,7 @@ class ProjectService:
     
     def __init__(self, db_service: DatabaseService):
         self.db_service = db_service
-        self.project_repository = ProjectRepository(db_service)
+        self.project_repository = ProjectRepositoryImpl(db_service)
     
     async def create_project(self, name: str, description: str, guild_id: str, owner_id: str, due_date=None) -> Optional[Project]:
         """Create a new project"""

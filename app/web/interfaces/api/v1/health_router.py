@@ -46,3 +46,4 @@ async def test_db_connection(session: AsyncSession = Depends(get_db_connection))
             "status": "error",
             "message": str(e)
         } 
+    

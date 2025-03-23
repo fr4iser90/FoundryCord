@@ -283,8 +283,8 @@ function debounce(func, wait) {
 }
 
 function generateRoleOptions(selectedRole) {
-    const roles = ['USER', 'MODERATOR', 'ADMIN'];
-    return roles.map(role => 
+    const app_roles = ['USER', 'MODERATOR', 'ADMIN'];
+    return app_roles.map(role => 
         `<option value="${role}" ${role === selectedRole ? 'selected' : ''}>${role}</option>`
     ).join('');
 }

@@ -49,6 +49,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (resetButton) {
         resetButton.addEventListener('click', resetLayout);
     }
+
+    // Initial update
+    updateBotStatus();
+    
+    // Regelmäßiges Update alle 30 Sekunden
+    setInterval(updateBotStatus, 30000);
 });
 
 // Speichert das Layout im localStorage
@@ -422,5 +428,38 @@ function resetLayout() {
     if (confirm('Are you sure you want to reset your dashboard layout?')) {
         localStorage.removeItem('userDashboardLayout');
         window.location.reload();
+    }
+}
+
+// Füge diese Funktionen am Anfang der Datei hinzu
+async function updateBotStatus() {
+    try {
+        const response = await fetch('/api/v1/bot-admin/overview');
+        if (!response.ok) throw new Error('Failed to fetch bot stats');
+        
+        const data = await response.json();
+        
+        // Update Status-Anzeige
+        const statusIcon = document.querySelector('.status-icon');
+        const statusText = statusIcon.nextElementSibling.querySelector('p');
+        
+        if (data.status === 'ONLINE') {
+            statusIcon.classList.remove('text-danger');
+            statusIcon.classList.add('text-success');
+        } else {
+            statusIcon.classList.remove('text-success');
+            statusIcon.classList.add('text-danger');
+        }
+        
+        // Update Statistiken
+        document.querySelector('.status-card:nth-child(2) p').textContent = data.server_count;
+        document.querySelector('.status-card:nth-child(2) small').textContent = 
+            `Active in ${data.active_servers} servers`;
+            
+        document.querySelector('.status-card:nth-child(3) p').textContent = data.total_users;
+        document.querySelector('.status-card:nth-child(3) small').textContent = 
+            `${data.online_users} users online`;
+    } catch (error) {
+        console.error('Error updating bot status:', error);
     }
 }

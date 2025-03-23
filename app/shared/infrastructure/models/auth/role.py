@@ -1,5 +1,5 @@
 """
-Role model for database representation of user roles.
+Role model for database representation of user app_roles.
 """
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.sql import func
@@ -7,8 +7,8 @@ from sqlalchemy.orm import relationship
 from ..base import Base
 
 class Role(Base):
-    """Database model for roles"""
-    __tablename__ = "roles"
+    """Database model for app_roles"""
+    __tablename__ = "app_roles"
     
     id = Column(Integer, primary_key=True)
     name = Column(String(50), unique=True, nullable=False)

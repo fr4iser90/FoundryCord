@@ -55,7 +55,7 @@ class UserRepositoryImpl(UserRepository):
         """Holt die Rolle eines Benutzers in einer bestimmten Gilde"""
         query = """
         SELECT r.name 
-        FROM roles r
+        FROM app_roles r
         JOIN guild_users gu ON r.id = gu.role_id
         JOIN users u ON u.id = gu.user_id
         WHERE u.discord_id = :discord_id AND gu.guild_id = :guild_id

@@ -252,8 +252,8 @@ class DynamicDashboardController(BaseDashboardController):
         """Load all UI components from database based on dashboard type"""
         try:
             async with self.bot.db_session() as session:
-                from app.shared.infrastructure.repositories.dashboard_repository_impl import DashboardRepository
-                repository = DashboardRepository(session)
+                from app.shared.infrastructure.repositories.discord.dashboard_repository_impl import DashboardRepositoryImpl
+                repository = DashboardRepositoryImpl(session)
                 
                 # Load buttons
                 buttons = await repository.get_components_by_type(

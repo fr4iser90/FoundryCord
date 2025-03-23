@@ -3,9 +3,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.web.application.services.auth.dependencies import get_current_user
 from app.web.domain.auth.permissions import Role, require_role
 from app.shared.interface.logging.api import get_web_logger
+from app.shared.infrastructure.database.session import session_context
+from app.shared.infrastructure.models import Guild
 from app.shared.infrastructure.integration.bot_connector import get_bot_connector
 from typing import Dict, List, Optional
 import asyncio
+from sqlalchemy import select, func
 
 logger = get_web_logger()
 router = APIRouter(prefix="/v1/bot-admin", tags=["Bot Administration"])
@@ -104,6 +107,55 @@ async def disable_workflow(workflow_name: str, current_user=Depends(get_current_
         return {"status": "success", "message": f"Workflow {workflow_name} disabled"}
     except Exception as e:
         logger.error(f"Error disabling workflow {workflow_name}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.get("/overview-stats")
+async def get_overview_stats(current_user=Depends(get_current_user)):
+    """Get overview statistics for the bot dashboard"""
+    try:
+        await require_role(current_user, Role.ADMIN)
+        
+        # Erstelle Mock-Daten, falls die Datenbank noch nicht bereit ist
+        mock_stats = {
+            "total_guilds": 0,
+            "total_members": 0,
+            "active_guilds": 0,
+            "command_count": 0,
+            "recent_commands": 0
+        }
+        
+        async with session_context() as session:
+            try:
+                # Versuche, die Statistiken aus der Datenbank zu holen
+                guilds_query = await session.execute(
+                    select(
+                        func.count(Guild.id).label('total_guilds'),
+                        func.sum(Guild.member_count).label('total_members'),
+                        func.count(Guild.id).filter(Guild.is_active == True).label('active_guilds')
+                    )
+                )
+                
+                guild_stats = guilds_query.one()
+                
+                # Fülle die Statistiken mit Daten aus der Datenbank
+                stats = {
+                    "total_guilds": guild_stats.total_guilds or 0,
+                    "total_members": guild_stats.total_members or 0,
+                    "active_guilds": guild_stats.active_guilds or 0,
+                    "command_count": 0,  # Wird später implementiert
+                    "recent_commands": 0  # Wird später implementiert
+                }
+                
+                return stats
+            except Exception as e:
+                logger.error(f"Datenbankfehler beim Abrufen der Statistiken: {e}")
+                # Wenn ein Datenbankfehler auftritt, gib Mock-Daten zurück
+                return mock_stats
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen der Übersicht: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)

@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 import asyncio
 from app.bot.domain.categories.repositories.category_repository import CategoryRepository
 from app.bot.application.services.category.category_builder import CategoryBuilder
-from app.bot.domain.categories.models.category_model import CategoryModel, CategoryTemplate
+from app.shared.domain.models.discord.category_model import CategoryModel, CategoryTemplate
 from app.shared.interface.logging.api import get_bot_logger
 
 logger = get_bot_logger()

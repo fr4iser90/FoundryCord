@@ -16,7 +16,7 @@ from app.bot.core.workflows.channel_workflow import ChannelWorkflow
 from app.bot.core.workflows.dashboard_workflow import DashboardWorkflow
 from app.bot.core.workflows.task_workflow import TaskWorkflow
 from app.shared.infrastructure.config.env_config import EnvConfig
-from app.shared.infrastructure.repositories.guild_config_repository_impl import GuildConfigRepository
+from app.shared.domain.repositories.discord import GuildConfigRepository
 from app.shared.infrastructure.database.session import session_context
 
 logger = get_bot_logger()

@@ -36,7 +36,7 @@ def is_authorized(user):
         'user': bool(USERS),
         'guest': bool(GUESTS)
     }
-    logger.debug(f"Available roles: {roles_present}")
+    logger.debug(f"Available app_roles: {roles_present}")
     
     return (
         is_bot_owner(user)

@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, JSON, Enum, ForeignKey,
 from sqlalchemy.orm import relationship
 from app.shared.infrastructure.models.base import Base
 from app.shared.domain.models.discord.channel_model import ChannelType, ChannelPermissionLevel
+from app.shared.infrastructure.models.discord.category_entity import CategoryEntity
 
 class ChannelEntity(Base):
     """Database entity for Discord channels"""
@@ -25,7 +26,7 @@ class ChannelEntity(Base):
     thread_config = Column(JSON, nullable=True)
     metadata_json = Column(JSON, nullable=True)
     
-    # Relationships
+    # Verwende String-Referenz zur Vermeidung zirkulärer Importe
     category = relationship("CategoryEntity", back_populates="channels")
     permissions = relationship("ChannelPermissionEntity", back_populates="channel", 
                               cascade="all, delete-orphan")

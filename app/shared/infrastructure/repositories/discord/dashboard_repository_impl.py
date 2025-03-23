@@ -2,8 +2,9 @@ from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.shared.infrastructure.models import Dashboard, DashboardComponent, ComponentLayout, ContentTemplate
 from typing import Optional, List, Dict, Any
+from app.shared.domain.repositories.discord.dashboard_repository import DashboardRepository
 
-class DashboardRepositoryImpl:
+class DashboardRepositoryImpl(DashboardRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
     
