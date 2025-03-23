@@ -35,7 +35,7 @@ def upgrade() -> None:
     """Seed initial categories."""
     # Definiere Tabelle für SQL-Einfügung
     categories_table = table(
-        'categories',
+        'discord_categories',
         column('name', sa.String),
         column('position', sa.Integer),
         column('description', sa.String),

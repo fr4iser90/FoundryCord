@@ -89,7 +89,7 @@ def upgrade() -> None:
     """Seed channels."""
     # Definiere Tabelle für SQL-Einfügung
     channels_table = table(
-        'channels',
+        'discord_channels',
         column('name', sa.String),
         column('topic', sa.String),
         column('is_private', sa.Boolean),

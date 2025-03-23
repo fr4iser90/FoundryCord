@@ -10,11 +10,11 @@ from sqlalchemy import text
 import json
 
 # Import die existierenden Dashboard-Definitionen
-from app.shared.infrastructure.database.seeds.dashboards.common import *
-from app.shared.infrastructure.database.seeds.dashboards.gamehub import *
-from app.shared.infrastructure.database.seeds.dashboards.monitoring import *
-from app.shared.infrastructure.database.seeds.dashboards.project import *
-from app.shared.infrastructure.database.seeds.dashboards.welcome import *
+from app.shared.infrastructure.database.seeds.dashboard_instances.common import *
+from app.shared.infrastructure.database.seeds.dashboard_instances.gamehub import *
+from app.shared.infrastructure.database.seeds.dashboard_instances.monitoring import *
+from app.shared.infrastructure.database.seeds.dashboard_instances.project import *
+from app.shared.infrastructure.database.seeds.dashboard_instances.welcome import *
 
 # Korrigierte Revision-IDs
 revision = '004'
@@ -25,7 +25,7 @@ depends_on = None
 def upgrade() -> None:
     """Seed dashboard components using existing definitions."""
     # Vereinfachte Version, die nur ein Demo-Dashboard erstellt
-    dashboards = [
+    dashboard_instances = [
         {
             'name': 'Home Dashboard',
             'channel_id': '000000000000000000',  # Placeholder
@@ -41,10 +41,10 @@ def upgrade() -> None:
     ]
     
     # Dashboards einfügen
-    for dashboard in dashboards:
+    for dashboard in dashboard_instances:
         # SQLAlchemy-Textvorlage mit bindparams verwenden
         query = text("""
-        INSERT INTO dashboards (name, channel_id, type, config)
+        INSERT INTO dashboard_instances (name, channel_id, type, config)
         VALUES (:name, :channel_id, :type, :config)
         """).bindparams(
             name=dashboard['name'],
@@ -92,6 +92,6 @@ def upgrade() -> None:
         op.execute(query)
 
 def downgrade() -> None:
-    """Remove seeded dashboards."""
+    """Remove seeded dashboard_instances."""
     op.execute("DELETE FROM dashboard_components")
-    op.execute("DELETE FROM dashboards") 
+    op.execute("DELETE FROM dashboard_instances") 

@@ -1,4 +1,4 @@
-"""Seed initial users and app_roles
+"""Seed initial app_users and app_roles
 
 Revision ID: 005
 Revises: 004
@@ -42,7 +42,7 @@ def upgrade():
         username, discord_id = owner_str.split('|')
         connection.execute(
             text("""
-                INSERT INTO users (username, discord_id, role_id, is_active)
+                INSERT INTO app_users (username, discord_id, role_id, is_active)
                 SELECT 
                     CAST(:username AS VARCHAR),
                     CAST(:discord_id AS VARCHAR),
@@ -51,7 +51,7 @@ def upgrade():
                 FROM app_roles r
                 WHERE r.name = CAST(:role_name AS VARCHAR)
                 AND NOT EXISTS (
-                    SELECT 1 FROM users u
+                    SELECT 1 FROM app_users u
                     WHERE u.discord_id = CAST(:discord_id AS VARCHAR)
                 )
             """),
@@ -63,13 +63,13 @@ def upgrade():
         )
 
 def downgrade():
-    """Remove seeded app_roles and users."""
+    """Remove seeded app_roles and app_users."""
     connection = op.get_bind()
     
     # Remove the owner user
     connection.execute(
         text("""
-            DELETE FROM users 
+            DELETE FROM app_users 
             WHERE role_id IN (
                 SELECT id FROM app_roles 
                 WHERE name = :role_name::varchar

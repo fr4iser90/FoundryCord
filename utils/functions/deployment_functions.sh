@@ -529,7 +529,7 @@ run_deployment_with_monitoring() {
         print_error "Deployment failed at Docker configuration stage"
         return 1
     fi
-    run_remote_command "cd ${DOCKER_DIR} && docker compose down"
+    
     # 3. Deploy containers with specific options for monitoring
     print_section_header "Building and Starting Containers"
     
