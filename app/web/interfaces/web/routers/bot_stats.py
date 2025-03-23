@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy import func
 from app.shared.infrastructure.database.session import session_context
-from app.shared.infrastructure.models import Guild
+from app.shared.infrastructure.models import GuildEntity
 from app.web.infrastructure.security.auth import get_current_user
 
 router = APIRouter(prefix="/api/v1/bot-stats")
@@ -12,9 +12,9 @@ async def get_overview_stats(current_user = Depends(get_current_user)):
         # Hole Statistiken aus der Datenbank
         guilds_query = await session.execute(
             select(
-                func.count(Guild.id).label('total_guilds'),
-                func.sum(Guild.member_count).label('total_members'),
-                func.count(Guild.id).filter(Guild.is_active == True).label('active_guilds')
+                func.count(GuildEntity.id).label('total_guilds'),
+                func.sum(GuildEntity.member_count).label('total_members'),
+                func.count(GuildEntity.id).filter(GuildEntity.is_active == True).label('active_guilds')
             )
         )
         stats = guilds_query.first()

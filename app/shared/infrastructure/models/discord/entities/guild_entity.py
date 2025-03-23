@@ -3,9 +3,9 @@ Guild model for Discord servers.
 """
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, JSON
 from sqlalchemy.sql import func
-from ..base import Base
+from app.shared.infrastructure.models.base import Base
 
-class Guild(Base):
+class GuildEntity(Base):
     """Discord guild model"""
     __tablename__ = "guilds"
     
@@ -20,4 +20,4 @@ class Guild(Base):
     is_active = Column(Boolean, default=True)
     
     def __repr__(self):
-        return f"<Guild(id={self.id}, name='{self.name}')>"
+        return f"<GuildEntity(id={self.id}, name='{self.name}')>"

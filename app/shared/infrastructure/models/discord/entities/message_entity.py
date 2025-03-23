@@ -4,9 +4,9 @@ Message model for Discord messages.
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, ForeignKey, BigInteger
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from ..base import Base
+from app.shared.infrastructure.models.base import Base
 
-class Message(Base):
+class MessageEntity(Base):
     """Discord message tracking model"""
     __tablename__ = "messages"
     
@@ -21,4 +21,4 @@ class Message(Base):
     is_deleted = Column(Boolean, default=False)
     
     def __repr__(self):
-        return f"<Message(id={self.id}, message_id={self.message_id})>" 
+        return f"<MessageEntity(id={self.id}, message_id={self.message_id})>" 

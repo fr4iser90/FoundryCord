@@ -18,13 +18,13 @@ from .core import Config, AuditLog, LogEntry
 from .auth import User, Session, RateLimit, Role
 
 # Discord models
-from .discord import ChannelMapping, CategoryMapping, AutoThreadChannel, Guild, Message, GuildUser
+from .discord import ChannelMapping, CategoryMapping, AutoThreadChannelEntity, GuildConfigEntity, GuildEntity, MessageEntity, GuildUserEntity, ChannelEntity, ChannelPermissionEntity, CategoryEntity, CategoryPermissionEntity
 
 # Dashboard models
 from .dashboards import Dashboard, DashboardComponent, ComponentLayout, ContentTemplate, DashboardMessage
 
 # Project models 
-from .project import Project, Task, project_members
+from .project import Project, Task, ProjectMember
 
 # Monitoring models
 from .monitoring import MetricModel, AlertModel
@@ -38,11 +38,11 @@ __all__ = [
     # Auth models
     'User', 'Session', 'RateLimit', 'Role',
     # Discord models
-    'ChannelMapping', 'CategoryMapping', 'AutoThreadChannel', 'Guild', 'Message', 'GuildUser',
+    'ChannelMapping', 'CategoryMapping', 'AutoThreadChannelEntity', 'GuildConfigEntity', 'GuildEntity', 'MessageEntity', 'GuildUserEntity', 'ChannelEntity', 'ChannelPermissionEntity', 'CategoryEntity', 'CategoryPermissionEntity',
     # Dashboard models
     'Dashboard', 'DashboardComponent', 'ComponentLayout', 'ContentTemplate', 'DashboardMessage',
     # Project models
-    'Project', 'Task', 'project_members',
+    'Project', 'Task', 'ProjectMember',
     # Monitoring models
     'MetricModel', 'AlertModel'
 ]

@@ -3,10 +3,10 @@ Project management models for tasks and projects.
 """
 from .project import Project
 from .task import Task
-from .tables import project_members
+from .project_member import ProjectMember
 
 __all__ = [
     'Project',
     'Task',
-    'project_members'
+    'ProjectMember' 
 ] 

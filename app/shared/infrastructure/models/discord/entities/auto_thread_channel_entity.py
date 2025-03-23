@@ -3,9 +3,9 @@ Auto-thread channel model for Discord channels.
 """
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.sql import func
-from ..base import Base
+from app.shared.infrastructure.models.base import Base
 
-class AutoThreadChannel(Base):
+class AutoThreadChannelEntity(Base):
     """Configuration for auto-thread channels"""
     __tablename__ = "auto_thread_channels"
     
@@ -18,4 +18,4 @@ class AutoThreadChannel(Base):
     created_at = Column(DateTime, server_default=func.now())
     
     def __repr__(self):
-        return f"<AutoThreadChannel(id={self.id}, channel_id='{self.channel_id}')>" 
+        return f"<AutoThreadChannelEntity(id={self.id}, channel_id='{self.channel_id}')>" 

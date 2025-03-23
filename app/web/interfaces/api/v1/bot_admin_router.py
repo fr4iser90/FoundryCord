@@ -4,7 +4,7 @@ from app.web.application.services.auth.dependencies import get_current_user
 from app.web.domain.auth.permissions import Role, require_role
 from app.shared.interface.logging.api import get_web_logger
 from app.shared.infrastructure.database.session import session_context
-from app.shared.infrastructure.models import Guild
+from app.shared.infrastructure.models import GuildEntity
 from app.shared.infrastructure.integration.bot_connector import get_bot_connector
 from typing import Dict, List, Optional
 import asyncio
@@ -132,9 +132,9 @@ async def get_overview_stats(current_user=Depends(get_current_user)):
                 # Versuche, die Statistiken aus der Datenbank zu holen
                 guilds_query = await session.execute(
                     select(
-                        func.count(Guild.id).label('total_guilds'),
-                        func.sum(Guild.member_count).label('total_members'),
-                        func.count(Guild.id).filter(Guild.is_active == True).label('active_guilds')
+                        func.count(GuildEntity.id).label('total_guilds'),
+                        func.sum(GuildEntity.member_count).label('total_members'),
+                        func.count(GuildEntity.id).filter(GuildEntity.is_active == True).label('active_guilds')
                     )
                 )
                 
@@ -156,6 +156,58 @@ async def get_overview_stats(current_user=Depends(get_current_user)):
                 return mock_stats
     except Exception as e:
         logger.error(f"Fehler beim Abrufen der Übersicht: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.get("/servers")
+async def get_servers(current_user=Depends(get_current_user)):
+    """Get all servers the bot is connected to"""
+    try:
+        await require_role(current_user, Role.ADMIN)
+        
+        # Temporäre Mock-Daten
+        mock_servers = [
+            {
+                "id": 1,
+                "name": "HomeLab Discord",
+                "guild_id": "12345678901234567",
+                "member_count": 120,
+                "is_active": True
+            },
+            {
+                "id": 2,
+                "name": "Test Server",
+                "guild_id": "98765432109876543",
+                "member_count": 45,
+                "is_active": True
+            }
+        ]
+        
+        async with session_context() as session:
+            try:
+                # Versuche, die Server aus der Datenbank zu holen
+                result = await session.execute(select(GuildEntity))
+                guilds = result.scalars().all()
+                
+                servers = []
+                for guild in guilds:
+                    servers.append({
+                        "id": guild.id,
+                        "name": guild.name,
+                        "guild_id": guild.guild_id,
+                        "member_count": guild.member_count,
+                        "is_active": guild.is_active
+                    })
+                
+                return servers if servers else mock_servers
+            except Exception as e:
+                logger.error(f"Datenbankfehler beim Abrufen der Server: {e}")
+                # Wenn ein Datenbankfehler auftritt, gib Mock-Daten zurück
+                return mock_servers
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen der Server: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)

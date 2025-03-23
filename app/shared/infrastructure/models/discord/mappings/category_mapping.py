@@ -2,7 +2,7 @@
 Category mapping model for Discord categories.
 """
 from sqlalchemy import Column, Integer, String
-from ..base import Base
+from app.shared.infrastructure.models.base import Base
 
 class CategoryMapping(Base):
     """Mapping between category types and Discord category IDs"""

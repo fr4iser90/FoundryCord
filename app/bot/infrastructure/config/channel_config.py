@@ -16,7 +16,7 @@ from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOAR
 from app.shared.infrastructure.database.core.connection import get_session
 
 # Import ChannelMapping explizit hier
-from app.shared.infrastructure.models import ChannelMapping, AutoThreadChannel
+from app.shared.infrastructure.models import ChannelMapping, AutoThreadChannelEntity
 
 class ChannelConfig:
     """Channel configuration for Discord channels."""

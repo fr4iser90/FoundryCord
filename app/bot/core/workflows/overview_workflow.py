@@ -2,7 +2,7 @@ import logging
 import nextcord
 from app.bot.core.workflows.base_workflow import BaseWorkflow
 from app.shared.interface.logging.api import get_bot_logger
-from app.shared.infrastructure.models import Guild
+from app.shared.infrastructure.models import GuildEntity
 from sqlalchemy import select, update
 from sqlalchemy.orm import session
 
@@ -28,7 +28,7 @@ class OverviewWorkflow(BaseWorkflow):
             logger.error(f"Overview workflow initialization failed: {e}")
             return False
 
-    async def collect_guild_data(self, guild: nextcord.Guild):
+    async def collect_guild_data(self, guild: nextcord.GuildEntity):
         """Collect data from the guild and store in database"""
         logger.info(f"Collecting data for guild: {guild.name}")
         
@@ -36,14 +36,14 @@ class OverviewWorkflow(BaseWorkflow):
         async with session() as session:
             # 1. Update or create guild record
             # Check if guild exists
-            query = select(Guild).where(Guild.guild_id == str(guild.id))
+            query = select(GuildEntity).where(GuildEntity.guild_id == str(guild.id))
             result = await session.execute(query)
             guild_record = result.scalar_one_or_none()
             
             if guild_record:
                 # Update existing record
-                stmt = update(Guild).where(
-                    Guild.guild_id == str(guild.id)
+                stmt = update(GuildEntity).where(
+                    GuildEntity.guild_id == str(guild.id)
                 ).values(
                     name=guild.name,
                     icon_url=str(guild.icon.url) if guild.icon else None,
@@ -53,7 +53,7 @@ class OverviewWorkflow(BaseWorkflow):
                 await session.execute(stmt)
             else:
                 # Create new guild record
-                guild_record = Guild(
+                guild_record = GuildEntity(
                     guild_id=str(guild.id),
                     name=guild.name,
                     icon_url=str(guild.icon.url) if guild.icon else None,

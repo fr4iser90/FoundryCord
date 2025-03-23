@@ -7,6 +7,7 @@
 <div class="container-fluid">
     <h1 class="h3 mb-4 text-gray-800">Bot Control Center</h1>
     
+    <!-- Status Cards -->
     <div class="row">
         <!-- Bot Status Card -->
         <div class="col-xl-3 col-md-6 mb-4">
@@ -76,35 +77,183 @@
         </div>
     </div>
 
-    <!-- Workflow Management -->
+    <!-- CRUD Management Tabs -->
     <div class="row">
         <div class="col-lg-12">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Workflow Management</h6>
+                    <ul class="nav nav-tabs card-header-tabs" id="management-tabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="workflow-tab" data-toggle="tab" href="#workflow-panel" role="tab">
+                                <i class="fas fa-cogs mr-1"></i> Workflows
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="server-tab" data-toggle="tab" href="#server-panel" role="tab">
+                                <i class="fas fa-server mr-1"></i> Servers
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="category-tab" data-toggle="tab" href="#category-panel" role="tab">
+                                <i class="fas fa-layer-group mr-1"></i> Categories
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="channel-tab" data-toggle="tab" href="#channel-panel" role="tab">
+                                <i class="fas fa-hashtag mr-1"></i> Channels
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="settings-tab" data-toggle="tab" href="#settings-panel" role="tab">
+                                <i class="fas fa-sliders-h mr-1"></i> Bot Settings
+                            </a>
+                        </li>
+                    </ul>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered" id="workflow-table" width="100%" cellspacing="0">
-                            <thead>
-                                <tr>
-                                    <th>Workflow Name</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="workflow-list">
-                                <!-- Will be populated dynamically -->
-                            </tbody>
-                        </table>
+                    <div class="tab-content" id="management-tabs-content">
+                        <!-- Workflow Management Panel -->
+                        <div class="tab-pane fade show active" id="workflow-panel" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="workflow-table" width="100%" cellspacing="0">
+                                    <thead>
+                                        <tr>
+                                            <th>Workflow Name</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="workflow-list">
+                                        <!-- Will be populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Server Management Panel -->
+                        <div class="tab-pane fade" id="server-panel" role="tabpanel">
+                            <h4 class="mb-3">Manage Discord Servers</h4>
+                            
+                            <!-- Server Form -->
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h6 class="m-0 font-weight-bold text-primary">Add/Edit Server</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="server-form">
+                                        <input type="hidden" name="id" id="server-id">
+                                        
+                                        <div class="form-row">
+                                            <div class="form-group col-md-6">
+                                                <label for="server-name">Server Name</label>
+                                                <input type="text" class="form-control" id="server-name" name="name" required>
+                                            </div>
+                                            <div class="form-group col-md-6">
+                                                <label for="server-guild-id">Discord Guild ID</label>
+                                                <input type="text" class="form-control" id="server-guild-id" name="guild_id" required>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-row">
+                                            <div class="form-group col-md-6">
+                                                <label for="server-owner-id">Owner ID</label>
+                                                <input type="text" class="form-control" id="server-owner-id" name="owner_id">
+                                            </div>
+                                            <div class="form-group col-md-6">
+                                                <label for="server-icon-url">Icon URL</label>
+                                                <input type="text" class="form-control" id="server-icon-url" name="icon_url">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <div class="custom-control custom-checkbox">
+                                                <input type="checkbox" class="custom-control-input" id="server-is-active" name="is_active" checked>
+                                                <label class="custom-control-label" for="server-is-active">Active</label>
+                                            </div>
+                                        </div>
+                                        
+                                        <button type="submit" class="btn btn-primary">Save Server</button>
+                                        <button type="button" class="btn btn-secondary" id="reset-server-form">Reset</button>
+                                    </form>
+                                </div>
+                            </div>
+                            
+                            <!-- Server Table -->
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="server-table" width="100%" cellspacing="0">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Guild ID</th>
+                                            <th>Members</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Will be populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Category Management Panel -->
+                        <div class="tab-pane fade" id="category-panel" role="tabpanel">
+                            <h4>Manage Discord Categories</h4>
+                            <!-- Category management content will go here -->
+                        </div>
+                        
+                        <!-- Channel Management Panel -->
+                        <div class="tab-pane fade" id="channel-panel" role="tabpanel">
+                            <h4>Manage Discord Channels</h4>
+                            <!-- Channel management content will go here -->
+                        </div>
+                        
+                        <!-- Bot Settings Panel -->
+                        <div class="tab-pane fade" id="settings-panel" role="tabpanel">
+                            <h4>Bot Settings</h4>
+                            
+                            <form id="bot-settings-form">
+                                <div class="form-group">
+                                    <label for="bot-prefix">Command Prefix</label>
+                                    <input type="text" class="form-control" id="bot-prefix" name="prefix" placeholder="/"> 
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="bot-status">Bot Status Message</label>
+                                    <input type="text" class="form-control" id="bot-status-message" name="status_message" placeholder="Serving communities"> 
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="bot-log-level">Log Level</label>
+                                    <select class="form-control" id="bot-log-level" name="log_level">
+                                        <option value="debug">Debug</option>
+                                        <option value="info" selected>Info</option>
+                                        <option value="warning">Warning</option>
+                                        <option value="error">Error</option>
+                                    </select>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">Save Settings</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Toast Container -->
+<div id="toast-container" class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <!-- Toasts will be inserted here -->
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script src="/static/js/pages/bot_control.js"></script>
+<script src="/static/js/pages/bot_control/crud_bot_control.js"></script>
+<script src="/static/js/pages/bot_control/crud_server_control.js"></script>
+<script src="/static/js/pages/bot_control/crud_category_control.js"></script>
+<script src="/static/js/pages/bot_control/crud_channel_control.js"></script>
 {% endblock %}

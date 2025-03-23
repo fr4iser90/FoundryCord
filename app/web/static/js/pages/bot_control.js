@@ -1,135 +1,292 @@
-
+// Hauptmodul für die Bot-Kontrolle
 document.addEventListener('DOMContentLoaded', function() {
-    // Load initial status
-    refreshBotStatus();
+    // Stelle sicher, dass sowohl die Widget-UI als auch die CRUD-Module initialisiert werden
+    console.log('Bot Control page loaded');
     
-    // Setup refresh interval
-    setInterval(refreshBotStatus, 10000); // Refresh every 10 seconds
+    // Lade Widget-UI wenn verfügbar
+    if (typeof WidgetUI !== 'undefined') {
+        // Status-Widget
+        const statusContainer = document.getElementById('bot-status-widget');
+        if (statusContainer) {
+            WidgetUI.loadWidget('statusWidget', statusContainer, {
+                refreshInterval: 10000
+            });
+        }
+        
+        // Server-Widget
+        const serversContainer = document.getElementById('servers-widget');
+        if (serversContainer) {
+            WidgetUI.loadWidget('serversWidget', serversContainer, {
+                refreshInterval: 30000,
+                maxServers: 5,
+                showControls: true
+            });
+        }
+    } else {
+        console.error('WidgetUI nicht gefunden!');
+    }
     
-    // Button handlers
-    document.getElementById('btn-start-bot').addEventListener('click', startBot);
-    document.getElementById('btn-stop-bot').addEventListener('click', stopBot);
-    document.getElementById('btn-restart-bot').addEventListener('click', restartBot);
+    // Lade alle CRUD-Module
+    loadCrudModules();
+    
+    // Event-Listener für die Bot-Steuerungsknöpfe
+    bindBotControlButtons();
+    
+    // Initialisiere die Workflow-Tabelle
+    initWorkflowTable();
+    
+    // Starte regelmäßige Status-Updates
+    startStatusUpdates();
 });
 
-function refreshBotStatus() {
-    fetch('/api/v1/bot-admin/status')
-        .then(response => response.json())
-        .then(data => {
-            // Update status elements
-            document.getElementById('bot-status').innerText = 
-                data.connected ? 'Connected' : 'Disconnected';
-            
-            document.getElementById('bot-uptime').innerText = 
-                data.uptime || 'Not running';
-                
-            // Update workflow table
-            const workflowList = document.getElementById('workflow-list');
-            workflowList.innerHTML = '';
-            
-            data.available_workflows.forEach(workflow => {
-                const isActive = data.active_workflows.includes(workflow);
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${workflow}</td>
-                    <td>
-                        <span class="badge badge-${isActive ? 'success' : 'secondary'}">
-                            ${isActive ? 'Active' : 'Inactive'}
-                        </span>
-                    </td>
-                    <td>
-                        <button class="btn btn-sm ${isActive ? 'btn-danger' : 'btn-success'}" 
-                                onclick="${isActive ? 'disableWorkflow' : 'enableWorkflow'}('${workflow}')">
-                            ${isActive ? 'Disable' : 'Enable'}
-                        </button>
-                    </td>
-                `;
-                workflowList.appendChild(row);
-            });
-        })
-        .catch(error => {
-            console.error('Error fetching bot status:', error);
-        });
+// Lädt alle CRUD-Module (Tabs, Inhalte)
+function loadCrudModules() {
+    // Auf CRUD-Module zugreifen
+    if (typeof BotCrudControl !== 'undefined') BotCrudControl.init();
+    if (typeof CategoryCrudControl !== 'undefined') CategoryCrudControl.init();
+    if (typeof ChannelCrudControl !== 'undefined') ChannelCrudControl.init();
+    if (typeof ServerCrudControl !== 'undefined') ServerCrudControl.init();
 }
 
-function startBot() {
-    if (confirm('Are you sure you want to start the bot?')) {
-        fetch('/api/v1/bot-admin/start', {
-            method: 'POST',
-        })
-        .then(response => response.json())
-        .then(data => {
-            alert(data.message);
-            setTimeout(refreshBotStatus, 2000);
-        })
-        .catch(error => {
-            console.error('Error starting bot:', error);
-            alert('Failed to start bot');
-        });
-    }
-}
-
-function stopBot() {
-    if (confirm('Are you sure you want to stop the bot?')) {
-        fetch('/api/v1/bot-admin/stop', {
-            method: 'POST',
-        })
-        .then(response => response.json())
-        .then(data => {
-            alert(data.message);
-            setTimeout(refreshBotStatus, 2000);
-        })
-        .catch(error => {
-            console.error('Error stopping bot:', error);
-            alert('Failed to stop bot');
-        });
-    }
-}
-
-function restartBot() {
-    if (confirm('Are you sure you want to restart the bot?')) {
-        fetch('/api/v1/bot-admin/restart', {
-            method: 'POST',
-        })
-        .then(response => response.json())
-        .then(data => {
-            alert(data.message);
-            setTimeout(refreshBotStatus, 5000);
-        })
-        .catch(error => {
-            console.error('Error restarting bot:', error);
-            alert('Failed to restart bot');
-        });
-    }
-}
-
-function enableWorkflow(workflowName) {
-    fetch(`/api/v1/bot-admin/workflow/${workflowName}/enable`, {
-        method: 'POST',
-    })
-    .then(response => response.json())
-    .then(data => {
-        alert(data.message);
-        refreshBotStatus();
-    })
-    .catch(error => {
-        console.error(`Error enabling workflow ${workflowName}:`, error);
-        alert(`Failed to enable workflow ${workflowName}`);
+// Event-Listener für die Steuerungsknöpfe
+function bindBotControlButtons() {
+    // Start-Button
+    document.getElementById('btn-start-bot').addEventListener('click', function() {
+        startBot();
+    });
+    
+    // Stop-Button
+    document.getElementById('btn-stop-bot').addEventListener('click', function() {
+        stopBot();
+    });
+    
+    // Restart-Button
+    document.getElementById('btn-restart-bot').addEventListener('click', function() {
+        restartBot();
     });
 }
 
-function disableWorkflow(workflowName) {
-    fetch(`/api/v1/bot-admin/workflow/${workflowName}/disable`, {
-        method: 'POST',
-    })
-    .then(response => response.json())
-    .then(data => {
-        alert(data.message);
-        refreshBotStatus();
-    })
-    .catch(error => {
-        console.error(`Error disabling workflow ${workflowName}:`, error);
-        alert(`Failed to disable workflow ${workflowName}`);
+// Initialisiert die Workflow-Tabelle
+function initWorkflowTable() {
+    fetchWorkflows().then(data => {
+        renderWorkflowTable(data);
     });
+}
+
+// Bot-Steuerungsfunktionen
+async function startBot() {
+    try {
+        const response = await fetch('/api/v1/bot-admin/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        showNotification(data.message, 'success');
+        
+        // Status aktualisieren
+        updateBotStatus();
+    } catch (error) {
+        console.error('Error starting bot:', error);
+        showNotification('Failed to start bot', 'error');
+    }
+}
+
+async function stopBot() {
+    try {
+        const response = await fetch('/api/v1/bot-admin/stop', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        showNotification(data.message, 'success');
+        
+        // Status aktualisieren
+        updateBotStatus();
+    } catch (error) {
+        console.error('Error stopping bot:', error);
+        showNotification('Failed to stop bot', 'error');
+    }
+}
+
+async function restartBot() {
+    try {
+        const response = await fetch('/api/v1/bot-admin/restart', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        showNotification(data.message, 'success');
+        
+        // Status aktualisieren
+        updateBotStatus();
+    } catch (error) {
+        console.error('Error restarting bot:', error);
+        showNotification('Failed to restart bot', 'error');
+    }
+}
+
+// Workflow-Steuerungsfunktionen
+async function fetchWorkflows() {
+    try {
+        const response = await fetch('/api/v1/bot-admin/status');
+        const data = await response.json();
+        return data.available_workflows || [];
+    } catch (error) {
+        console.error('Error fetching workflows:', error);
+        return [];
+    }
+}
+
+function renderWorkflowTable(workflows) {
+    const tableBody = document.getElementById('workflow-list');
+    tableBody.innerHTML = '';
+    
+    workflows.forEach(workflow => {
+        const row = document.createElement('tr');
+        
+        // Name
+        const nameCell = document.createElement('td');
+        nameCell.textContent = workflow;
+        
+        // Status (placeholder)
+        const statusCell = document.createElement('td');
+        statusCell.innerHTML = '<span class="badge badge-secondary">Inactive</span>';
+        
+        // Actions
+        const actionsCell = document.createElement('td');
+        actionsCell.innerHTML = `
+            <button class="btn btn-sm btn-success workflow-enable" data-workflow="${workflow}">
+                <i class="fas fa-check"></i> Enable
+            </button>
+            <button class="btn btn-sm btn-danger workflow-disable" data-workflow="${workflow}">
+                <i class="fas fa-times"></i> Disable
+            </button>
+        `;
+        
+        row.appendChild(nameCell);
+        row.appendChild(statusCell);
+        row.appendChild(actionsCell);
+        
+        tableBody.appendChild(row);
+    });
+    
+    // Event-Listener für Workflow-Buttons
+    document.querySelectorAll('.workflow-enable').forEach(button => {
+        button.addEventListener('click', function() {
+            enableWorkflow(this.dataset.workflow);
+        });
+    });
+    
+    document.querySelectorAll('.workflow-disable').forEach(button => {
+        button.addEventListener('click', function() {
+            disableWorkflow(this.dataset.workflow);
+        });
+    });
+}
+
+async function enableWorkflow(workflow) {
+    try {
+        const response = await fetch(`/api/v1/bot-admin/workflow/${workflow}/enable`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        showNotification(data.message, 'success');
+    } catch (error) {
+        console.error(`Error enabling workflow ${workflow}:`, error);
+        showNotification(`Failed to enable workflow ${workflow}`, 'error');
+    }
+}
+
+async function disableWorkflow(workflow) {
+    try {
+        const response = await fetch(`/api/v1/bot-admin/workflow/${workflow}/disable`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        showNotification(data.message, 'success');
+    } catch (error) {
+        console.error(`Error disabling workflow ${workflow}:`, error);
+        showNotification(`Failed to disable workflow ${workflow}`, 'error');
+    }
+}
+
+// Status-Updates
+function startStatusUpdates() {
+    updateBotStatus();
+    
+    // Aktualisiere den Status alle 10 Sekunden
+    setInterval(updateBotStatus, 10000);
+}
+
+async function updateBotStatus() {
+    try {
+        const response = await fetch('/api/v1/bot-admin/status');
+        const data = await response.json();
+        
+        // Status-Anzeige aktualisieren
+        const statusElement = document.getElementById('bot-status');
+        if (data.connected) {
+            statusElement.textContent = 'Online';
+            statusElement.classList.add('text-success');
+            statusElement.classList.remove('text-danger');
+        } else {
+            statusElement.textContent = 'Offline';
+            statusElement.classList.add('text-danger');
+            statusElement.classList.remove('text-success');
+        }
+        
+        // Uptime aktualisieren
+        document.getElementById('bot-uptime').textContent = data.uptime || 'Not available';
+        
+    } catch (error) {
+        console.error('Error updating bot status:', error);
+    }
+}
+
+// Hilfsfunktion für Benachrichtigungen
+function showNotification(message, type) {
+    // Implementiere deine Benachrichtigungslogik hier
+    console.log(`[${type}] ${message}`);
+    
+    // Beispiel mit Bootstrap Toasts
+    if (typeof bootstrap !== 'undefined') {
+        const toastContainer = document.getElementById('toast-container');
+        if (toastContainer) {
+            const toastEl = document.createElement('div');
+            toastEl.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+            toastEl.setAttribute('role', 'alert');
+            toastEl.setAttribute('aria-live', 'assertive');
+            toastEl.setAttribute('aria-atomic', 'true');
+            
+            toastEl.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toastEl);
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+    }
 }

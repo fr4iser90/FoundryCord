@@ -2,7 +2,7 @@
 Channel mapping model for Discord channels.
 """
 from sqlalchemy import Column, Integer, String, BigInteger
-from ..base import Base
+from app.shared.infrastructure.models.base import Base
 
 class ChannelMapping(Base):
     """Mapping between channel names and Discord channel IDs"""

@@ -1,6 +1,6 @@
 from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.shared.infrastructure.models import User, Role, GuildUser
+from app.shared.infrastructure.models import User, Role, GuildUserEntity
 from typing import Optional, List
 from datetime import datetime
 from app.shared.domain.repositories.auth.user_repository import UserRepository
@@ -95,9 +95,9 @@ class UserRepositoryImpl(UserRepository):
         
         # Prüfe, ob bereits ein Eintrag existiert
         existing = await self.session.execute(
-            select(GuildUser.id).where(
-                GuildUser.user_id == user_id, 
-                GuildUser.guild_id == guild_id
+            select(GuildUserEntity.id).where(
+                GuildUserEntity.user_id == user_id, 
+                GuildUserEntity.guild_id == guild_id
             )
         )
         existing_id = existing.scalar_one_or_none()
@@ -105,14 +105,14 @@ class UserRepositoryImpl(UserRepository):
         if existing_id:
             # Update bestehenden Eintrag
             await self.session.execute(
-                update(GuildUser).where(GuildUser.id == existing_id).values(
+                update(GuildUserEntity).where(GuildUserEntity.id == existing_id).values(
                     role_id=role_id,
                     updated_at=datetime.utcnow()
                 )
             )
         else:
             # Neuen Eintrag erstellen
-            guild_user = GuildUser(
+            guild_user = GuildUserEntity(
                 guild_id=guild_id,
                 user_id=user_id,
                 role_id=role_id

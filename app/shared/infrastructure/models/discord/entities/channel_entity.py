@@ -2,11 +2,11 @@ from sqlalchemy import Column, Integer, String, Boolean, JSON, Enum, ForeignKey,
 from sqlalchemy.orm import relationship
 from app.shared.infrastructure.models.base import Base
 from app.shared.domain.models.discord.channel_model import ChannelType, ChannelPermissionLevel
-from app.shared.infrastructure.models.discord.category_entity import CategoryEntity
 
 class ChannelEntity(Base):
     """Database entity for Discord channels"""
     __tablename__ = "channels"
+    __table_args__ = {'extend_existing': True}
     
     id = Column(Integer, primary_key=True)
     discord_id = Column(BigInteger, nullable=True, unique=True)

@@ -1,5 +1,5 @@
 from typing import Optional, Dict, List
-from nextcord import Guild, CategoryChannel, PermissionOverwrite, utils
+from nextcord import GuildEntity, CategoryChannel, PermissionOverwrite, utils
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 from app.shared.infrastructure.database.core.connection import get_session
@@ -15,7 +15,7 @@ class CategorySetupService:
     
     def __init__(self, bot):
         self.bot = bot
-        self.guild: Optional[Guild] = None
+        self.guild: Optional[GuildEntity] = None
         self.categories = {}  # Store category mappings
         self._default_category = next(iter(CATEGORIES)) if CATEGORIES else None
         

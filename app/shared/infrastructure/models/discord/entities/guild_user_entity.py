@@ -2,8 +2,8 @@ from sqlalchemy import Column, String, Boolean, Integer, ForeignKey, DateTime, t
 from sqlalchemy.orm import relationship
 from app.shared.infrastructure.models.base import Base
 
-
-class GuildUser(Base):
+class GuildUserEntity(Base):
+    """Discord guild user model"""
     __tablename__ = 'guild_users'
     
     id = Column(Integer, primary_key=True)
@@ -15,7 +15,7 @@ class GuildUser(Base):
     
     # Beziehungen
     user = relationship("User")
-    role = relationship("AppRole")
+    role = relationship("Role", back_populates="guild_users")
     
     __table_args__ = (
         UniqueConstraint('guild_id', 'user_id', name='uq_guild_user'),
