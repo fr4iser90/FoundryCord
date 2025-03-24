@@ -28,7 +28,6 @@ async def verify_database():
                     logger.error(f"No data found in {table}. Please initialize database from web interface")
                     return False
                     
-            logger.info("Database verification successful")
             return True
             
     except Exception as e:

@@ -51,11 +51,19 @@ class ChannelWorkflow(BaseWorkflow):
                 logger.error("Category service not available, cannot initialize channel workflow")
                 return False
             
+            # Get category repository from the category workflow
+            category_repository = self.category_workflow.get_category_repository()
+            if not category_repository:
+                logger.error("Category repository not available, cannot initialize channel workflow")
+                return False
+            
             # Create repository and builder
             from app.bot.application.services.channel.channel_builder import ChannelBuilder
             
             self.channel_repository = ChannelRepositoryImpl(db_service)
-            channel_builder = ChannelBuilder(self.channel_repository)
+            
+            # Pass both repositories to the channel builder
+            channel_builder = ChannelBuilder(self.channel_repository, category_repository)
             
             # Create the channel setup service with all required dependencies
             self.channel_setup_service = ChannelSetupService(

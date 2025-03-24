@@ -31,7 +31,6 @@ class SecurityBootstrapper:
             async with session_context() as session:
                 self.key_repository = KeyRepositoryImpl(session)
                 await self._load_keys_from_database()
-                logger.info("Security keys loaded from database successfully")
             
             self.initialized = True
             return True
