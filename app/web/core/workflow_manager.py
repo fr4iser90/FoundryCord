@@ -86,7 +86,7 @@ class WebWorkflowManager:
     
     async def initialize_all(self) -> bool:
         """Initialize all workflows in the correct order"""
-        logger.info("Initializing all workflows")
+        logger.info("Initializing all webworkflows")
         
         for name in self.initialization_order:
             if not await self.initialize_workflow(name):

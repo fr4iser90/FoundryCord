@@ -243,7 +243,6 @@ async def main():
             # Initialize workflows
             logger.info("Starting bot initialization")
             try:
-                logger.info("Initializing all workflows")
                 if await workflow_manager.initialize_all():
                     logger.info("All workflows initialized successfully")
                     

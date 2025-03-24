@@ -33,8 +33,9 @@ class CategoryWorkflow(BaseWorkflow):
     async def initialize(self):
         """Initialize the category workflow"""
         try:
-            # Verify categories exist
+            # Verify categories exist using direct SQL instead of ORM to avoid mapping issues
             async with session_context() as session:
+                # Use direct SQL query to check if the table exists and has data
                 result = await session.execute(text("SELECT COUNT(*) FROM discord_categories"))
                 count = result.scalar()
                 
@@ -44,27 +45,54 @@ class CategoryWorkflow(BaseWorkflow):
                 
                 logger.info(f"Found {count} categories")
                 
-                # Initialize repository and services
-                db_service = self.database_workflow.get_db_service()
-                if not db_service:
-                    logger.error("Database service not available")
+                # Create a clean session for repository
+                self.category_repository = CategoryRepositoryImpl(session)
+                
+                # For category_builder, create a simplified version that doesn't rely on ORM
+                try:
+                    category_builder = CategoryBuilder(self.category_repository)
+                    self.category_setup_service = CategorySetupService(
+                        self.category_repository,
+                        category_builder
+                    )
+                    
+                    # Initialize with a simplified approach that avoids ORM relationship issues
+                    self.category_setup_service.categories_cache = {}
+                    
+                    # Just load the basic category data using direct SQL with correct column names
+                    categories_query = text("SELECT id, name, position, description, is_private, created_at FROM discord_categories")
+                    categories_result = await session.execute(categories_query)
+                    
+                    # Manually create category objects for cache
+                    for row in categories_result:
+                        id, name, position, description, is_private, created_at = row
+                        category = {
+                            "id": id, 
+                            "name": name,
+                            "position": position,
+                            "description": description,
+                            "is_private": is_private,
+                            "created_at": created_at,
+                            # Provide default values for expected properties that don't exist in DB
+                            "discord_id": None,
+                            "category_type": "default",
+                            "guild_id": None,
+                            "enabled": True,
+                            "created": True
+                        }
+                        self.category_setup_service.categories_cache[name] = category
+                    
+                    logger.info(f"Loaded {len(self.category_setup_service.categories_cache)} categories into cache")
+                    
+                    # Maintain backwards compatibility with existing code
+                    self.category_service = self.category_setup_service
+                    
+                    return True
+                    
+                except Exception as inner_e:
+                    logger.error(f"Error initializing category service: {inner_e}")
+                    traceback.print_exc()
                     return False
-                
-                # Create repository and services
-                self.category_repository = CategoryRepositoryImpl(db_service)
-                category_builder = CategoryBuilder(self.category_repository)
-                self.category_setup_service = CategorySetupService(
-                    self.category_repository,
-                    category_builder
-                )
-                
-                # Initialize the setup service
-                await self.category_setup_service.initialize()
-                
-                # Maintain backwards compatibility with existing code
-                self.category_service = self.category_setup_service
-                
-                return True
                 
         except Exception as e:
             logger.error(f"Error initializing category workflow: {e}")
@@ -81,7 +109,7 @@ class CategoryWorkflow(BaseWorkflow):
     
     def get_category_setup_service(self):
         """Get the category setup service"""
-        return self.category_setup_service
+        return self.category_service
 
     async def setup_categories(self, guild):
         """Set up all categories for the guild"""

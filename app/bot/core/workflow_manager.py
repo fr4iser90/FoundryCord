@@ -83,7 +83,7 @@ class BotWorkflowManager:
     
     async def initialize_all(self) -> bool:
         """Initialize all workflows in the correct order"""
-        logger.info("Initializing all workflows")
+        logger.info("Initializing all bot workflows")
         
         all_initialized = True
         failed = []
