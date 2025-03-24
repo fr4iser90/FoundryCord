@@ -35,7 +35,7 @@ class ChannelConfig:
                 logger.info("Setting up Discord channels")
                 
                 # Import here to avoid circular imports
-                from app.bot.infrastructure.discord.channel_setup_service import ChannelSetupService
+                from app.bot.application.services.channel.channel_setup_service import ChannelSetupService
                 
                 # Create channel setup service
                 channel_setup = ChannelSetupService(bot)
@@ -80,7 +80,7 @@ class ChannelConfig:
                 await cls._initialize_channel_mappings(session, mappings)
             
             # Import here to avoid circular imports
-            from app.bot.infrastructure.discord.channel_setup_service import ChannelSetupService
+            from app.bot.application.services.channel.channel_setup_service import ChannelSetupService
             channel_setup = ChannelSetupService(bot)
             return channel_setup
             

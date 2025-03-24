@@ -49,10 +49,7 @@ async def start_bot():
             logger.error("Database verification failed")
             return False
             
-        # Start bot here
-        logger.info("Bot application ready to start")
-        
-        
+        # Start bot here    
         from app.bot.core.main import main
         await main()
         

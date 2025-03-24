@@ -1,5 +1,5 @@
 from app.shared.infrastructure.database.migrations.init_db import init_db
-from .channel_setup_service import ChannelSetupService
+from app.bot.application.services.channel.channel_setup_service import ChannelSetupService
 from .game_server_channels import setup_minecraft_channels
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()

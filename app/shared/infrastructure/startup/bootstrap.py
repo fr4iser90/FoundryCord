@@ -23,8 +23,6 @@ class ApplicationBootstrap:
             bool: True if bootstrap was successful, False otherwise
         """
         try:
-            self.logger.info(f"Starting {self.container_type} bootstrap...")
-            
             # 1. Initialize database first (most critical component)
             self.logger.info("Initializing database...")
             if not await initialize_database():
@@ -37,7 +35,7 @@ class ApplicationBootstrap:
                 self.logger.error("Security initialization failed")
                 return False
 
-            self.logger.info("Application bootstrap completed successfully")
+            self.logger.debug("Application bootstrap completed successfully")
             return True
             
         except Exception as e:

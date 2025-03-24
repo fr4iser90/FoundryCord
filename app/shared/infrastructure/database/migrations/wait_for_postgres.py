@@ -7,8 +7,9 @@ import time
 import logging
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
+from app.shared.interface.logging.api import get_db_logger
 
-logger = logging.getLogger("homelab.bot")
+logger = get_db_logger()
 
 async def wait_for_postgres():
     """Wait for PostgreSQL to be ready. Requires environment variables to be set."""
@@ -28,7 +29,7 @@ async def wait_for_postgres():
     db_pass = os.environ['APP_DB_PASSWORD']
     db_name = os.environ['POSTGRES_DB']
     
-    logger.info(f"Attempting to connect to PostgreSQL at {db_host}:{db_port}")
+    logger.debug(f"Attempting to connect to PostgreSQL at {db_host}:{db_port}")
     
     db_url = f"postgresql+asyncpg://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
     engine = create_async_engine(db_url)
@@ -42,7 +43,6 @@ async def wait_for_postgres():
                 # Execute a simple query to check if the database is ready
                 # Use text() to create a SQL expression
                 await conn.execute(text("SELECT 1"))
-                logger.info("PostgreSQL is ready!")
                 return True
         except Exception as e:
             retry_count += 1

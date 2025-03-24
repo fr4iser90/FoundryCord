@@ -104,7 +104,7 @@ class MigrationService:
                 cwd=str(self.alembic_dir)
             )
             
-            logger.info(f"Migration status: {check_result.stdout.strip()}")
+            logger.debug(f"Migration status: {check_result.stdout.strip()}")
             
             # Wenn keine Migration aktiv ist oder nicht die neueste, führe Migrationen aus
             if "head" not in check_result.stdout:

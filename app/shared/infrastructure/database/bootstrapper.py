@@ -36,8 +36,6 @@ async def initialize_database() -> bool:
         bool: True if initialization was successful, False otherwise
     """
     try:
-        logger.info("Starting database initialization process...")
-        
         # Step 1: Wait for PostgreSQL to be available 
         if not await wait_for_postgres():
             logger.error("Failed to connect to PostgreSQL after multiple attempts")
@@ -55,7 +53,7 @@ async def initialize_database() -> bool:
             logger.error("Failed to run database migrations")
             return False
         
-        logger.info("Database initialization completed successfully")
+        logger.debug("Database initialization completed successfully")
         return True
     except Exception as e:
         logger.error(f"Error during database initialization: {e}")

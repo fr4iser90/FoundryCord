@@ -13,6 +13,9 @@ from app.shared.infrastructure.database.api import get_session
 from app.shared.infrastructure.database.session.context import session_context
 from app.shared.domain.repositories.discord import ChannelRepository
 from app.shared.domain.repositories.discord import GuildConfigRepository
+from app.shared.infrastructure.repositories.discord import ChannelRepositoryImpl
+from app.bot.application.services.channel.channel_setup_service import ChannelSetupService
+
 
 logger = get_bot_logger()
 
@@ -42,12 +45,27 @@ class ChannelWorkflow(BaseWorkflow):
                 logger.error("Database service not available, cannot initialize channel workflow")
                 return False
             
-            # Create repository and service
-            self.channel_repository = ChannelRepository(db_service)
+            # Get category setup service from the category workflow
+            category_service = self.category_workflow.get_category_setup_service()
+            if not category_service:
+                logger.error("Category service not available, cannot initialize channel workflow")
+                return False
+            
+            # Create repository and builder
+            from app.bot.application.services.channel.channel_builder import ChannelBuilder
+            
+            self.channel_repository = ChannelRepositoryImpl(db_service)
+            channel_builder = ChannelBuilder(self.channel_repository)
+            
+            # Create the channel setup service with all required dependencies
             self.channel_setup_service = ChannelSetupService(
-                self.channel_repository, 
-                self.category_workflow.get_category_repository()
+                self.channel_repository,
+                channel_builder,
+                category_service
             )
+            
+            # Initialize the service
+            await self.channel_setup_service.initialize()
             
             # Verify channel data exists
             channel_count = await self.channel_repository.count()

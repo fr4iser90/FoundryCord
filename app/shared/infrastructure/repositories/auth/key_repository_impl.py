@@ -79,7 +79,6 @@ class KeyRepositoryImpl(KeyRepository):
                 )
             
             await self.session.commit()
-            logger.info(f"Security key '{key_name}' stored successfully")
             return True
             
         except Exception as e:

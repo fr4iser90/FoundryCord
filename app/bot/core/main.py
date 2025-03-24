@@ -278,9 +278,6 @@ async def main():
         # Run the bot
         logger.info("Starting the bot...")
         
-        # Run dashboard migration if needed
-        logger.info("Skipping dashboard migration")
-        
         # Start the bot mit dem Token aus env_config
         await bot.start(env_config.DISCORD_BOT_TOKEN)
         

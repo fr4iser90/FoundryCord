@@ -1,7 +1,7 @@
 from typing import Dict
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
-from .channel_setup_service import ChannelSetupService
+from app.bot.application.services.channel.channel_setup_service import ChannelSetupService
 
 async def setup_minecraft_channels(channel_setup_service, server_id, server_name):
     """

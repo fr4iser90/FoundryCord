@@ -26,10 +26,7 @@ class SecurityBootstrapper:
             logger.debug("Security bootstrapper already initialized")
             return True
             
-        try:
-            # Generate initial keys
-            self._generate_memory_keys()
-            
+        try:                    
             # Initialize database repository
             async with session_context() as session:
                 self.key_repository = KeyRepositoryImpl(session)
@@ -42,10 +39,45 @@ class SecurityBootstrapper:
             logger.error(f"Security bootstrapper initialization failed: {str(e)}")
             logger.error(traceback.format_exc())
             return False
-    
-    def _generate_memory_keys(self):
-        """Generate all required security keys in memory."""
+        
+    async def _load_keys_from_database(self):
+        """Load security keys from database."""
+        missing_keys = []
+        
+        # First check which keys exist in the database
         for key_type in self.KEY_TYPES:
+            try:
+                # Try to get the key from database
+                key_value = await self.key_repository.get_key(key_type)
+                
+                if key_value:
+                    # Key exists in database, use it
+                    self.keys[key_type] = key_value
+                    logger.debug(f"Loaded {key_type} from database")
+                else:
+                    # Track missing keys for later generation
+                    missing_keys.append(key_type)
+                    logger.debug(f"Security key '{key_type}' not found in database")
+            except Exception as e:
+                logger.error(f"Error checking {key_type}: {str(e)}")
+                raise
+        
+        # Generate only the missing keys, and only once
+        if missing_keys:
+            self._generate_specific_keys(missing_keys)
+            
+            # Store all newly generated keys
+            for key_type in missing_keys:
+                try:
+                    await self.key_repository.store_key(key_type, self.keys[key_type])
+                    logger.debug(f"Stored {key_type} in database")
+                except Exception as e:
+                    logger.error(f"Error storing {key_type}: {str(e)}")
+                    raise
+    
+    def _generate_specific_keys(self, key_types):
+        """Generate specific security keys in memory."""
+        for key_type in key_types:
             # Generate a new key
             if key_type in ["AES_KEY", "ENCRYPTION_KEY"]:
                 new_key = Fernet.generate_key().decode('utf-8')
@@ -57,28 +89,7 @@ class SecurityBootstrapper:
             
             # Log the generation (hide part of the key)
             visible_part = new_key[:5] + "..." if len(new_key) > 5 else new_key
-            logger.info(f"Generated {key_type} in memory: {visible_part}")
-    
-    async def _load_keys_from_database(self):
-        """Load security keys from database."""
-        for key_type in self.KEY_TYPES:
-            try:
-                # Try to get the key from database
-                key_value = await self.key_repository.get_key(key_type)
-                
-                if key_value:
-                    # Key exists in database, use it
-                    self.keys[key_type] = key_value
-                    logger.info(f"Loaded {key_type} from database")
-                else:
-                    # Key doesn't exist in database, store the current one
-                    current_key = self.keys.get(key_type)
-                    if current_key:
-                        await self.key_repository.store_key(key_type, current_key)
-                        logger.info(f"Stored {key_type} in database")
-            except Exception as e:
-                logger.error(f"Error processing {key_type}: {str(e)}")
-                raise
+            logger.debug(f"Generated {key_type} in memory: {visible_part}")
     
     def get_key(self, key_type):
         """Get a security key by type."""
