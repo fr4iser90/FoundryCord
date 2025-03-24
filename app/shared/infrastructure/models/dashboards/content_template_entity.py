@@ -5,7 +5,7 @@ from sqlalchemy import Column, Integer, String, Text, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from ..base import Base
 
-class ContentTemplate(Base):
+class ContentTemplateEntity(Base):
     """Content template for dashboard components"""
     __tablename__ = "content_templates"
     
@@ -16,7 +16,7 @@ class ContentTemplate(Base):
     variables = Column(JSON, nullable=True)
     
     # Relationships
-    component = relationship("DashboardComponent", back_populates="content")
+    component = relationship("DashboardComponentEntity", back_populates="content")
     
     def __repr__(self):
-        return f"<ContentTemplate(id={self.id}, type='{self.template_type}')>"
+        return f"<ContentTemplateEntity(id={self.id}, type='{self.template_type}')>"

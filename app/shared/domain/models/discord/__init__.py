@@ -1,9 +1,13 @@
-from .category_model import CategoryModel, CategoryPermission
-from .channel_model import ChannelModel, ChannelPermission
-#from .guild_config_model import GuildConfigModel
+from .category_model import CategoryModel, CategoryTemplate, CategoryPermission, CategoryPermissionLevel
+from .channel_model import ChannelModel, ChannelTemplate, ChannelType, ChannelPermission, ChannelPermissionLevel, ThreadConfig
 
 __all__ = [
     'CategoryModel',
     'ChannelModel',
-    #'GuildConfigModel'
+    'ChannelTemplate',
+    'CategoryPermission',
+    'ChannelPermissionLevel',
+    'CategoryPermissionLevel',
+    'ChannelType',
+    'ThreadConfig'
 ]

@@ -1,8 +1,8 @@
 from typing import Optional, List, Dict, Any
 import discord
 import logging
-from app.bot.domain.channels.models.channel_model import ChannelModel, ChannelType
-from app.bot.domain.channels.repositories.channel_repository import ChannelRepository
+from app.shared.domain.models.discord.channel_model import ChannelModel, ChannelType, ChannelTemplate
+from app.shared.domain.repositories.discord.channel_repository import ChannelRepository
 from app.bot.domain.categories.repositories.category_repository import CategoryRepository
 
 logger = logging.getLogger(__name__)

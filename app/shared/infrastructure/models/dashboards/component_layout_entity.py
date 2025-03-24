@@ -5,7 +5,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from ..base import Base
 
-class ComponentLayout(Base):
+class ComponentLayoutEntity(Base):
     """Layout information for dashboard components"""
     __tablename__ = "component_layouts"
     
@@ -22,7 +22,7 @@ class ComponentLayout(Base):
     additional_props = Column(JSON, nullable=True)  # For flexible styling options
     
     # Relationships
-    component = relationship("DashboardComponent", back_populates="layout")
+    component = relationship("DashboardComponentEntity", back_populates="layout")
     
     def __repr__(self):
-        return f"<ComponentLayout(id={self.id}, row={self.row_position}, col={self.col_position})>"
+        return f"<ComponentLayoutEntity(id={self.id}, row={self.row_position}, col={self.col_position})>"

@@ -7,8 +7,8 @@ import asyncio
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
-from app.bot.domain.dashboards.models.dashboard_model import DashboardModel
-from app.bot.domain.dashboards.repositories.dashboard_repository import DashboardRepository
+from app.shared.domain.models import DashboardModel
+from app.shared.domain.repositories import DashboardRepository
 from app.bot.infrastructure.factories.component_registry import ComponentRegistry
 from app.bot.infrastructure.factories.data_source_registry import DataSourceRegistry
 from app.shared.infrastructure.database.core.config import get_session
@@ -105,7 +105,7 @@ class DashboardService:
     
     def _create_dashboard_model(self, data: Dict[str, Any]) -> DashboardModel:
         """Convert dictionary data to a DashboardModel."""
-        from app.bot.domain.dashboards.models.dashboard_model import (
+        from app.shared.domain.models import (
             DashboardModel, ComponentConfig, DataSourceConfig, LayoutItem, ComponentType
         )
         

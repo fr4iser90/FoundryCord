@@ -1,10 +1,10 @@
 import discord
 import logging
 from typing import Dict, List, Optional, Any
-from app.bot.domain.channels.repositories.channel_repository import ChannelRepository
+from app.shared.domain.repositories.discord.channel_repository import ChannelRepository
 from app.bot.domain.categories.repositories.category_repository import CategoryRepository
 from app.bot.application.services.channel.channel_builder import ChannelBuilder
-from app.bot.domain.channels.models.channel_model import ChannelModel, ChannelType
+from app.shared.domain.models.discord.channel_model import ChannelModel, ChannelType, ChannelTemplate
 from app.bot.application.services.category.category_setup_service import CategorySetupService
 from app.shared.interface.logging.api import get_bot_logger
 

@@ -1,7 +1,16 @@
-from .discord import CategoryModel, ChannelModel
+from .discord.category_model import CategoryModel, CategoryTemplate, CategoryPermission, CategoryPermissionLevel
+from .discord.channel_model import ChannelModel, ChannelTemplate, ChannelType, ChannelPermission, ChannelPermissionLevel, ThreadConfig
+from .dashboard.dashboard_model import DashboardModel, DashboardComponentModel
 
 __all__ = [
     'CategoryModel',
     'ChannelModel',
-    #'GuildConfigModel'
+    'ChannelTemplate',
+    'CategoryPermission',
+    'ChannelPermissionLevel',
+    'CategoryPermissionLevel',
+    'ChannelType',
+    'ThreadConfig',
+    'DashboardModel',
+    'DashboardComponentModel'
 ]

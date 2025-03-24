@@ -5,7 +5,7 @@ from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
 # Import domain models
-from app.bot.domain.dashboards.models.dashboard_model import DashboardModel, ComponentConfig
+from app.shared.domain.models import DashboardModel, ComponentConfig
 from app.bot.domain.dashboards.repositories.dashboard_repository import DashboardRepository
 
 # Import debug components

@@ -5,7 +5,7 @@ from sqlalchemy import Column, Integer, String, BigInteger, DateTime
 from sqlalchemy.sql import func
 from ..base import Base
 
-class DashboardMessage(Base):
+class DashboardMessageEntity(Base):
     """Dashboard message tracking model"""
     __tablename__ = "dashboard_messages"
     
@@ -16,4 +16,4 @@ class DashboardMessage(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
     def __repr__(self):
-        return f"<DashboardMessage(dashboard_type='{self.dashboard_type}', message_id={self.message_id})>" 
+        return f"<DashboardMessageEntity(dashboard_type='{self.dashboard_type}', message_id={self.message_id})>" 

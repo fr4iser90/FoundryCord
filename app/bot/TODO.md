@@ -113,7 +113,7 @@ app/
 │   │   │       ├── get_dashboard.py        # Dashboard abrufen
 │   │   │       └── list_dashboards.py      # Dashboards auflisten
 │   │   │
-│   │   └── tasks/                          # Hintergrundaufgaben
+│   │   └── processes/                      # Hintergrundaufgaben
 │   │       ├── cleanup_tasks.py            # Aufräumaufgaben
 │   │       ├── monitoring_tasks.py         # Überwachungsaufgaben
 │   │       └── schedule_tasks.py           # Zeitgesteuerte Aufgaben
@@ -190,19 +190,8 @@ app/
 │   │           └── modal_view.py           # Modal-View
 │   │
 │   ├── core/                               # Kernanwendungslogik
-│   │   ├── bot.py                          # Hauptbot-Klasse
+        ├── bot.py                          # Hauptbot-Klasse
 │   │   ├── service_registry.py             # Service-Registry
 │   │   ├── lifecycle_manager.py            # Lebenszyklus-Manager
 │   │   ├── main.py                         # Anwendungseinstiegspunkt
-│   │   └── extension_loader.py             # Erweiterungslader
-│   │
-│   └── utils/                              # Hilfsfunktionen
-│       ├── decorators/                     # Dekoratoren
-│       │   ├── auth_decorators.py          # Auth-Dekoratoren
-│       │   └── logging_decorators.py       # Logging-Dekoratoren
-│       ├── formatters/                     # Formatierer
-│       │   ├── message_formatter.py        # Nachrichtenformatierer
-│       │   └── time_formatter.py           # Zeitformatierer
-│       └── helpers/                        # Helferfunktionen
-│           ├── time_helpers.py             # Zeithilfsfunktionen
-│           └── string_helpers.py           # String-Hilfsfunktionen
+        └── extension_loader.py             # Erweiterungslader

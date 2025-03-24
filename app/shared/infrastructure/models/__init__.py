@@ -21,7 +21,7 @@ from .auth import User, Session, RateLimit, Role
 from .discord import ChannelMapping, CategoryMapping, AutoThreadChannelEntity, GuildConfigEntity, GuildEntity, MessageEntity, GuildUserEntity, ChannelEntity, ChannelPermissionEntity, CategoryEntity, CategoryPermissionEntity
 
 # Dashboard models
-from .dashboards import Dashboard, DashboardComponent, ComponentLayout, ContentTemplate, DashboardMessage
+from .dashboards import DashboardEntity, DashboardComponentEntity, ComponentLayoutEntity, ContentTemplateEntity, DashboardMessageEntity
 
 # Project models 
 from .project import Project, Task, ProjectMember
@@ -40,7 +40,7 @@ __all__ = [
     # Discord models
     'ChannelMapping', 'CategoryMapping', 'AutoThreadChannelEntity', 'GuildConfigEntity', 'GuildEntity', 'MessageEntity', 'GuildUserEntity', 'ChannelEntity', 'ChannelPermissionEntity', 'CategoryEntity', 'CategoryPermissionEntity',
     # Dashboard models
-    'Dashboard', 'DashboardComponent', 'ComponentLayout', 'ContentTemplate', 'DashboardMessage',
+    'DashboardEntity', 'DashboardComponentEntity', 'ComponentLayoutEntity', 'ContentTemplateEntity', 'DashboardMessageEntity',
     # Project models
     'Project', 'Task', 'ProjectMember',
     # Monitoring models

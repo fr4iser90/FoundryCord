@@ -41,12 +41,12 @@ from app.shared.infrastructure.models import (
     Base,
     User, Session, RateLimit, AuditLog,
     ChannelMapping, CategoryMapping,
-    DashboardMessage,
+    DashboardMessageEntity,
     Project, Task,
     MetricModel, AlertModel,
     Config,
-    Dashboard,
-    DashboardComponent
+    DashboardEntity,
+    DashboardComponentEntity
 )
 
 
@@ -86,10 +86,9 @@ __all__ = [
     'Project', 'Task',
     'MetricModel', 'AlertModel',
     'Config',
-    'Dashboard',
-    'DashboardComponent',
-    
-    
+    'DashboardEntity',
+    'DashboardComponentEntity',
+
     # Database management
     'DatabaseConnection',
     'get_db_connection',

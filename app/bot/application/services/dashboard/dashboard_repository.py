@@ -13,7 +13,7 @@ logger = get_bot_logger()
 from app.shared.infrastructure.database.core.connection import get_config, set_config
 
 # Import models
-from app.shared.infrastructure.models import Dashboard, DashboardComponent
+from app.shared.infrastructure.models import DashboardEntity, DashboardComponentEntity
 from app.shared.infrastructure.database.core.config import get_session
 
 class DashboardRepository:
@@ -27,30 +27,30 @@ class DashboardRepository:
     async def initialize(self):
         """Initialize the dashboard repository."""
         self.initialized = True
-        logger.info("Dashboard repository initialized")
+        logger.info("DashboardEntity repository initialized")
         return True
         
-    async def get_dashboard_by_id(self, dashboard_id: str) -> Optional[Dashboard]:
+    async def get_dashboard_by_id(self, dashboard_id: str) -> Optional[DashboardEntity]:
         """Get a dashboard by ID."""
         async with self.session_factory() as session:
-            stmt = select(Dashboard).where(Dashboard.id == dashboard_id)
+            stmt = select(DashboardEntity).where(DashboardEntity.id == dashboard_id)
             result = await session.execute(stmt)
             return result.scalars().first()
             
-    async def get_dashboard_by_channel_and_type(self, channel_id: int, dashboard_type: str) -> Optional[Dashboard]:
+    async def get_dashboard_by_channel_and_type(self, channel_id: int, dashboard_type: str) -> Optional[DashboardEntity]:
         """Get a dashboard by channel ID and type."""
         async with self.session_factory() as session:
-            stmt = select(Dashboard).where(
-                Dashboard.channel_id == channel_id,
-                Dashboard.dashboard_type == dashboard_type
+            stmt = select(DashboardEntity).where(
+                DashboardEntity.channel_id == channel_id,
+                DashboardEntity.dashboard_type == dashboard_type
             )
             result = await session.execute(stmt)
             return result.scalars().first()
             
-    async def get_components_for_dashboard(self, dashboard_id: str) -> List[DashboardComponent]:
+    async def get_components_for_dashboard(self, dashboard_id: str) -> List[DashboardComponentEntity]:
         """Get all components for a dashboard."""
         async with self.session_factory() as session:
-            stmt = select(DashboardComponent).where(DashboardComponent.dashboard_id == dashboard_id)
+            stmt = select(DashboardComponentEntity).where(DashboardComponentEntity.dashboard_id == dashboard_id)
             result = await session.execute(stmt)
             return result.scalars().all()
             
@@ -58,7 +58,7 @@ class DashboardRepository:
         """Update a dashboard."""
         async with self.session_factory() as session:
             try:
-                stmt = update(Dashboard).where(Dashboard.id == dashboard_id).values(**data)
+                stmt = update(DashboardEntity).where(DashboardEntity.id == dashboard_id).values(**data)
                 await session.execute(stmt)
                 await session.commit()
                 return True
@@ -74,7 +74,7 @@ class DashboardRepository:
             config_json = await get_config(config_key)
             
             if not config_json:
-                logger.warning(f"Dashboard config not found: {config_id}")
+                logger.warning(f"DashboardEntity config not found: {config_id}")
                 return None
                 
             return json.loads(config_json)

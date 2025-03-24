@@ -6,6 +6,12 @@ sleep 10  # Give PostgreSQL time to start up properly
 
 echo "PostgreSQL is up - executing database setup"
 
+# Check for required environment variables
+if [ -z "$OWNER" ]; then
+    echo "Error: Missing OWNER environment variable. Please set it in the .env file."
+    exit 1
+fi
+
 # Auto-generate secure passwords if not provided
 if [ -z "$POSTGRES_PASSWORD" ]; then
     echo "No POSTGRES_PASSWORD found, generating secure password..."

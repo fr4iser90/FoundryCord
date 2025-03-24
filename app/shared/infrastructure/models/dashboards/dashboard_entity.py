@@ -6,7 +6,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from ..base import Base
 
-class Dashboard(Base):
+class DashboardEntity(Base):
     """Dashboard configuration model"""
     __tablename__ = "dashboards"
     
@@ -23,7 +23,7 @@ class Dashboard(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     
     # Relationships
-    components = relationship("DashboardComponent", back_populates="dashboard", cascade="all, delete-orphan")
+    components = relationship("DashboardComponentEntity", back_populates="dashboard", cascade="all, delete-orphan")
     
     def __repr__(self):
-        return f"<Dashboard(id={self.id}, type='{self.dashboard_type}', name='{self.name}')>" 
+        return f"<DashboardEntity(id={self.id}, type='{self.dashboard_type}', name='{self.name}')>" 
