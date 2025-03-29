@@ -233,8 +233,8 @@ services:
     build:
       context: ..
       dockerfile: compose/Dockerfile
-    image: homelab-discord-bot:latest
-    container_name: homelab-discord-bot
+    image: discord-server-bot:latest
+    container_name: discord-server-bot
     restart: unless-stopped
     env_file:
       - .env

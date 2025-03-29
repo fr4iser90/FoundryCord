@@ -9,7 +9,7 @@ REMOTE_HOST="fr4iser.com"
 REMOTE_USER="ubuntu"
 REMOTE_KEY="$HOME/.ssh/id_rsa"
 REMOTE_PORT=22
-REMOTE_PROJECT_PATH="/docker/companion-management/homelab-discord-bot"
+REMOTE_PROJECT_PATH="/docker/companion-management/discord-server-bot"
 
 # Local settings
 LOCAL_RESULTS_DIR="./test-results" 

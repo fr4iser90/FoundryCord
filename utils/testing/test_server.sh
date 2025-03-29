@@ -9,7 +9,7 @@ NC='\033[0m' # No Color
 # Server information
 SERVER_USER="docker"
 SERVER_HOST="192.168.178.33"
-SERVER_DIR="/home/docker/docker/companion-management/homelab-discord-bot"
+SERVER_DIR="/home/docker/docker/companion-management/discord-server-bot"
 DOCKER_DIR="${SERVER_DIR}/docker/bot"
 
 echo -e "${YELLOW}=== HomeLab Discord Bot Server Test Script ===${NC}"
@@ -61,7 +61,7 @@ print_result $? ".env.postgres exists"
 # Test 7: Check if containers are running
 echo -e "\n${YELLOW}Test 7: Container Status${NC}"
 POSTGRES_RUNNING=$(ssh ${SERVER_USER}@${SERVER_HOST} "docker ps -q -f name=homelab-postgres")
-BOT_RUNNING=$(ssh ${SERVER_USER}@${SERVER_HOST} "docker ps -q -f name=homelab-discord-bot")
+BOT_RUNNING=$(ssh ${SERVER_USER}@${SERVER_HOST} "docker ps -q -f name=discord-server-bot")
 
 if [ -n "$POSTGRES_RUNNING" ]; then
     print_result 0 "PostgreSQL container is running"
@@ -95,13 +95,13 @@ fi
 
 # Test 10: Check bot logs for errors
 echo -e "\n${YELLOW}Test 10: Bot Logs${NC}"
-ERROR_COUNT=$(ssh ${SERVER_USER}@${SERVER_HOST} "docker logs homelab-discord-bot 2>&1 | grep -c 'ERROR\|CRITICAL\|FATAL'")
+ERROR_COUNT=$(ssh ${SERVER_USER}@${SERVER_HOST} "docker logs discord-server-bot 2>&1 | grep -c 'ERROR\|CRITICAL\|FATAL'")
 if [ "$ERROR_COUNT" -eq 0 ]; then
     print_result 0 "No critical errors in bot logs"
 else
     print_result 1 "Found $ERROR_COUNT critical errors in bot logs"
     echo -e "${YELLOW}Recent errors:${NC}"
-    ssh ${SERVER_USER}@${SERVER_HOST} "docker logs homelab-discord-bot 2>&1 | grep 'ERROR\|CRITICAL\|FATAL' | tail -5"
+    ssh ${SERVER_USER}@${SERVER_HOST} "docker logs discord-server-bot 2>&1 | grep 'ERROR\|CRITICAL\|FATAL' | tail -5"
 fi
 
 # Test 11: Check system resources

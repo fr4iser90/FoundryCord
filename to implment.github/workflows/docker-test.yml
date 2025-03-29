@@ -22,13 +22,13 @@ jobs:
       
       - name: Run tests in container
         run: |
-          docker exec homelab-discord-bot bash /app/tests/run_tests.sh all
+          docker exec discord-server-bot bash /app/tests/run_tests.sh all
           
       - name: Collect test results
         if: always()
         run: |
           mkdir -p test-results
-          docker cp homelab-discord-bot:/app/tests/test-results/. test-results/
+          docker cp discord-server-bot:/app/tests/test-results/. test-results/
           
       - name: Upload test results
         uses: actions/upload-artifact@v3

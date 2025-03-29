@@ -4,7 +4,7 @@
 export SERVER_USER="docker"
 export SERVER_HOST="192.111.111.111"
 export SERVER_PORT="22"
-export PROJECT_ROOT_DIR="/home/docker/docker/companion-management/homelab-discord-bot"
+export PROJECT_ROOT_DIR="/home/docker/docker/companion-management/discord-server-bot"
 export ENVIRONMENT=""
 
 # Local mode configuration

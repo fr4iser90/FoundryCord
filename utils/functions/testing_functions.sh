@@ -68,7 +68,7 @@ run_dashboard_tests() {
     log_info "Running simplified dashboard tests..."
     
     # Use the specific test file that avoids circular import issues
-    local docker_cmd="docker exec homelab-discord-bot pytest -xvs /app/tests/unit/test_dashboard_simple.py"
+    local docker_cmd="docker exec discord-server-bot pytest -xvs /app/tests/unit/test_dashboard_simple.py"
     
     # Run the tests and save results
     mkdir -p test-results
@@ -97,7 +97,7 @@ run_local_tests() {
     log_info "Running ${test_type} tests locally using Docker container..."
     
     # Get the name of the bot container
-    BOT_CONTAINER="homelab-discord-bot"
+    BOT_CONTAINER="discord-server-bot"
     
     # Make sure container exists and is running
     if ! docker ps | grep -q "${BOT_CONTAINER}"; then
@@ -185,7 +185,7 @@ run_docker_tests() {
     esac
     
     # Create the Docker command
-    local docker_cmd="docker exec homelab-discord-bot pytest -xvs ${test_path}"
+    local docker_cmd="docker exec discord-server-bot pytest -xvs ${test_path}"
     
     # Add pattern if specified
     if [ -n "$test_pattern" ]; then
@@ -343,7 +343,7 @@ EOL
     fi
     
     # Run the simple test
-    local docker_cmd="docker exec homelab-discord-bot pytest -xvs /app/tests/test_simple.py"
+    local docker_cmd="docker exec discord-server-bot pytest -xvs /app/tests/test_simple.py"
     
     # Run the tests and save results
     mkdir -p test-results
@@ -369,7 +369,7 @@ run_ordered_tests() {
     print_section_header "Run Tests in Ordered Sequence"
     
     # Get the name of the bot container
-    BOT_CONTAINER="${BOT_CONTAINER:-homelab-discord-bot}"
+    BOT_CONTAINER="${BOT_CONTAINER:-discord-server-bot}"
     
     # Make sure container exists and is running
     if ! docker ps | grep -q "${BOT_CONTAINER}"; then
@@ -432,7 +432,7 @@ run_unit_tests_safely() {
     print_section_header "Run Unit Tests (Safe Mode)"
     
     # Get the name of the bot container
-    BOT_CONTAINER="homelab-discord-bot"
+    BOT_CONTAINER="discord-server-bot"
     
     # Make sure container exists and is running
     if ! docker ps | grep -q "${BOT_CONTAINER}"; then

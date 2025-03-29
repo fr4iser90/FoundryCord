@@ -17,7 +17,7 @@ fi
 # Wenn nicht im Container, dann über Docker ausführen
 if [ "$IN_CONTAINER" = false ]; then
     echo "Führe Skript im Discord-Bot-Container aus..."
-    CONTAINER_ID=$(docker ps -qf "name=homelab-discord-bot")
+    CONTAINER_ID=$(docker ps -qf "name=discord-server-bot")
     
     if [ -z "$CONTAINER_ID" ]; then
         echo "Fehler: Discord Bot Container nicht gefunden!"

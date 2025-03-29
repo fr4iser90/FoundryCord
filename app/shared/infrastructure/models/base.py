@@ -91,10 +91,10 @@ async def initialize_tables():
 
 def _build_connection_string():
     """Build a database connection string from environment variables."""
-    user = os.getenv("APP_DB_USER", "homelab_discord_bot")
-    password = os.getenv("APP_DB_PASSWORD", "postgres")
-    host = os.getenv("POSTGRES_HOST", "homelab-postgres")
-    port = os.getenv("POSTGRES_PORT", "5432")
-    db = os.getenv("POSTGRES_DB", "homelab")
+    user = os.getenv("APP_DB_USER")
+    password = os.getenv("APP_DB_PASSWORD")
+    host = os.getenv("POSTGRES_HOST")
+    port = os.getenv("POSTGRES_PORT")
+    db = os.getenv("POSTGRES_DB")
     
     return f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{db}"

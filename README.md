@@ -1,57 +1,63 @@
-# Homelab Assistant Discord Bot (Python-based)
+# Discord Server Management Bot
 ## ⚠️ Experimental Project – JUST A HOBBY ⚠️
 
-A Docker-based Discord bot written in Python, designed to manage and monitor your homelab. It includes features for getting domain and IP, IP whitelisting, container management, system monitoring, user authentication, and security enhancements.
+A Discord bot with web interface for managing Discord servers, channels, and dashboards. Built with Python and Docker, featuring an intuitive web UI for server administration and monitoring.
 
-## Features
+## Core Features
 
-- **IP Whitelisting**
-  - Generates unique URLs for users to register their IPs
-  - Stores IP addresses with Discord user IDs and timestamps
-  - Automatically updates Traefik whitelist
-  - Supports both direct URL tracking and Discord OAuth methods
+- **Server Management**
+  - Create and manage categories and channels
+  - Set up automated dashboards in channels
+  - Monitor server activity and member stats
+  - Role-based access control
 
-- **Container Management**
-  - View container status and logs
-  - Restart/stop containers (admin only)
-  - Monitor resource usage
+- **Web Interface**
+  - Dashboard for server overview
+  - Visual channel & category builder
+  - User and permission management
+  - Real-time server statistics
 
-- **System Monitoring**
-  - Real-time system status updates
-  - Customizable alerts for critical events
-  - Resource usage tracking
+- **Discord Dashboards**
+  - Create interactive dashboards in channels
+  - System monitoring displays
+  - Welcome dashboards with auto-updates
+  - Project management boards
 
-- **Security**
-  - Role-based access control with hierarchical permissions
-  - Two-factor authentication via Discord
-  - IP validation and rate limiting
-  - Secure session management with token rotation
-  - Encrypted storage of sensitive data
-  - Regular security audits and vulnerability scanning
+- **Bot Commands**
+  - Slash commands for server management
+  - Channel creation and configuration
+  - Dashboard setup and control
+  - User management commands
+
+## Additional Features
+
+- **HomeLab Integration** (Optional)
+  - Container management
+  - System monitoring
+  - IP whitelisting
+  - Resource tracking
 
 ## Requirements
 
-- Docker
-- Docker Compose
+- Docker & Docker Compose
 - Discord Bot Token
-- Python 3.8+ (Ensure you have the latest version for optimal performance)
+- Python 3.8+
 
 ## Quick Setup
 
-1. **Create a minimal .env.discordbot file**:
+1. **Configure the bot**:
    ```bash
    cd docker
    mv .env.example .env
    nano .env.discordbot
    ```
 
-
-3. **Start the containers**:
+2. **Start the services**:
    ```bash
    docker compose up -d --build
    ```
 
-All other necessary configuration will be auto-generated at startup!
+The web interface will be available at `http://localhost:8080`
 
 ## Project Structure
 

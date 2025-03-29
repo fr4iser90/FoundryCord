@@ -42,7 +42,7 @@ DEFAULT_VALUES = {
     "ENVIRONMENT": "development",
     "DOMAIN": "localhost",
     "TYPE": "Web,Game,File",
-    "POSTGRES_HOST": "homelab-postgres",
+    "POSTGRES_HOST": "discord-server-db",
     "POSTGRES_PORT": "5432",
     "POSTGRES_USER": "postgres",
     "POSTGRES_DB": "homelab",

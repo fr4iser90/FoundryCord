@@ -66,7 +66,7 @@ WELCOME_EMBEDS = {
             },
             {
                 "name": "GitHub",
-                "value": "[View Source Code](https://github.com/yourusername/homelab-discord-bot)",
+                "value": "[View Source Code](https://github.com/yourusername/discord-server-bot)",
                 "inline": False
             }
         ]

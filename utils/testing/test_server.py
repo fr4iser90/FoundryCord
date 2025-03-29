@@ -9,7 +9,7 @@ def run_tests_on_server(server_user, server_host, server_dir):
     print(f"Running tests on {server_user}@{server_host}:{server_dir}")
     
     # Command to run tests on the server
-    cmd = f"ssh {server_user}@{server_host} 'cd {server_dir} && docker exec homelab-discord-bot pytest -xvs app/shared/tests/'"
+    cmd = f"ssh {server_user}@{server_host} 'cd {server_dir} && docker exec discord-server-bot pytest -xvs app/shared/tests/'"
     
     # Execute the command
     process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run pytest on the server")
     parser.add_argument("--user", default="docker", help="SSH username")
     parser.add_argument("--host", default="192.168.178.33", help="Server hostname or IP")
-    parser.add_argument("--dir", default="/home/docker/docker/companion-management/homelab-discord-bot", help="Project directory on server")
+    parser.add_argument("--dir", default="/home/docker/docker/companion-management/discord-server-bot", help="Project directory on server")
     
     args = parser.parse_args()
     

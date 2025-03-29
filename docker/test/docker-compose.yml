@@ -3,7 +3,7 @@ services:
     build:
       context: ../..
       dockerfile: docker/Dockerfile.test
-    image: homelab-discord-bot-tests:latest
+    image: discord-server-bot-tests:latest
     container_name: homelab-tests
     networks:
       - homelab-net

@@ -36,7 +36,7 @@ NETWORK_HISTORY_SIZE = 5  # Anzahl der zu speichernden Messungen für Durchschni
 DOCKER_ENABLED = os.getenv('DOCKER_ENABLED', 'true').lower() == 'true'
 DOCKER_IMPORTANT_CONTAINERS = [
     "nginx", 
-    "homelab-discord-bot", 
+    "discord-server-bot", 
     "database", 
     "portainer", 
     "grafana"

@@ -24,7 +24,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Expose port
 EXPOSE 8000
 
+LABEL maintainer="Discord Server Bot Web Interface"
+
 # Run the application with our startup script
 #CMD ["/entrypoint.sh"]
 #ENTRYPOINT ["python", "-m", "app.shared.web.infrastructure.entrypoint", "web"]
 CMD python -m app.shared.web.infrastructure.entrypoint && python -m app.web.core.main
+

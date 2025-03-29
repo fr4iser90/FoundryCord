@@ -21,7 +21,7 @@ fi
 
 # Ab hier läuft das Skript auf dem Server
 echo "Führe Alembic-Migration im Container aus..."
-CONTAINER_ID=$(docker ps -qf "name=homelab-discord-bot")
+CONTAINER_ID=$(docker ps -qf "name=discord-server-bot")
 
 if [ -z "$CONTAINER_ID" ]; then
     echo "Fehler: Discord Bot Container nicht gefunden!"

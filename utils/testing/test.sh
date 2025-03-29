@@ -48,7 +48,7 @@ run_remote_tests() {
     log_info "Running ${TEST_TYPE} tests on ${SERVER_HOST}..."
     
     # Basic test command
-    local test_cmd="cd ${PROJECT_ROOT_DIR} && docker exec homelab-discord-bot pytest -xvs"
+    local test_cmd="cd ${PROJECT_ROOT_DIR} && docker exec discord-server-bot pytest -xvs"
     
     # Add test type path
     case "$TEST_TYPE" in
