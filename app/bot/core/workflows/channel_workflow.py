@@ -72,13 +72,57 @@ class ChannelWorkflow(BaseWorkflow):
                 category_service
             )
             
-            # Initialize the service
-            await self.channel_setup_service.initialize()
+            # Initialize using direct SQL query to avoid ORM mismatches
+            logger.info("Initializing channel setup service")
             
-            # Verify channel data exists
-            channel_count = await self.channel_repository.count()
-            logger.info(f"Found {channel_count} channels")
-            
+            async with session_context() as session:
+                # Check if channels exist
+                count_result = await session.execute(text("SELECT COUNT(*) FROM discord_channels"))
+                channel_count = count_result.scalar()
+                logger.info(f"Found {channel_count} channels")
+                
+                # Initialize with simplified approach similar to category workflow
+                self.channel_setup_service.channels_cache = {}
+                
+                # Use direct SQL with only columns that actually exist in the database
+                channels_query = text("""
+                    SELECT id, name, description, category_id, type, position, 
+                           permission_level, is_enabled, is_created, nsfw, 
+                           slowmode_delay, topic, metadata_json
+                    FROM discord_channels
+                """)
+                channels_result = await session.execute(channels_query)
+                
+                for row in channels_result:
+                    # Unpack the row data
+                    (id, name, description, category_id, channel_type, position, 
+                     permission_level, is_enabled, is_created, nsfw, 
+                     slowmode_delay, topic, metadata_json) = row
+                    
+                    # Create a channel dictionary for cache
+                    channel = {
+                        "id": id,
+                        "name": name,
+                        "description": description,
+                        "category_id": category_id,
+                        "type": channel_type,
+                        "position": position,
+                        "permission_level": permission_level,
+                        "is_enabled": is_enabled,
+                        "is_created": is_created,
+                        "nsfw": nsfw,
+                        "slowmode_delay": slowmode_delay,
+                        "topic": topic,
+                        "metadata": metadata_json,
+                        # Provide default values for expected properties that don't exist in DB
+                        "discord_id": None,
+                        "category_discord_id": None,
+                        "thread_config": None
+                    }
+                    self.channel_setup_service.channels_cache[name] = channel
+                    
+                logger.info(f"Loaded {len(self.channel_setup_service.channels_cache)} channels into cache")
+                
             return True
             
         except Exception as e:

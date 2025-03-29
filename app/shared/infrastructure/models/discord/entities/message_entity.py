@@ -20,5 +20,12 @@ class MessageEntity(Base):
     edited_at = Column(DateTime, nullable=True)
     is_deleted = Column(Boolean, default=False)
     
+    # Adding relationships (using string references to avoid circular imports)
+    # Use foreign key strings for lazy loading
+    guild = relationship("GuildEntity", 
+                        primaryjoin="MessageEntity.guild_id==foreign(GuildEntity.guild_id)",
+                        uselist=False,
+                        viewonly=True)
+    
     def __repr__(self):
         return f"<MessageEntity(id={self.id}, message_id={self.message_id})>" 

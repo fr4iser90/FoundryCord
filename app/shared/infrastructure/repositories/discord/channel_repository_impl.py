@@ -8,6 +8,7 @@ from app.shared.domain.models.discord.channel_model import (
 from app.shared.domain.repositories.discord.channel_repository import ChannelRepository
 from app.shared.infrastructure.models import ChannelEntity, ChannelPermissionEntity
 from app.shared.infrastructure.database.api import get_session
+from app.shared.infrastructure.database.session.context import session_context
 import logging
 
 logger = logging.getLogger("homelab.db")
@@ -25,8 +26,11 @@ class ChannelRepositoryImpl(ChannelRepository):
         if isinstance(self.session_or_service, AsyncSession):
             return self.session_or_service
         else:
-            # Assume it's a database service or we need to get a new session
-            return await get_session()
+            # Get a session without using context manager to avoid state management issues
+            from app.shared.infrastructure.database.api import get_session
+            session_gen = get_session()
+            session = await anext(session_gen)
+            return session
     
     def _entity_to_model(self, entity: ChannelEntity) -> ChannelModel:
         """Convert a database entity to a domain model"""
@@ -133,11 +137,19 @@ class ChannelRepositoryImpl(ChannelRepository):
         """Get all channels from the database"""
         session = await self._get_session()
         try:
-            # Use selectinload to eagerly load permissions
+            # Use a simple query without eager loading to avoid the relationship issue
             result = await session.execute(
-                select(ChannelEntity).options(selectinload(ChannelEntity.permissions))
+                select(ChannelEntity)
+                # Remove the problematic eager loading for now
+                # .options(selectinload(ChannelEntity.permissions))
             )
             channels = result.scalars().all()
+            
+            # Manually load permissions for each channel if needed
+            for channel in channels:
+                # Ensure permissions are loaded if they exist
+                await session.refresh(channel, ["permissions"])
+            
             return [self._entity_to_model(channel) for channel in channels]
         finally:
             # Only close if we created a new session

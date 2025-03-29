@@ -65,7 +65,14 @@ class ChannelFactory:
             metadata=metadata
         )
         
-        # Save to DB first
+        # First check if this is an update or a new channel
+        existing = self.channel_repository.get_channel_by_name_and_category(
+            channel_model.name, 
+            channel_model.category_id
+        )
+        if existing:
+            # Update existing channel
+            channel_model.id = existing.id
         saved_channel = self.channel_repository.save_channel(channel_model)
         
         # Create in Discord
@@ -118,7 +125,14 @@ class ChannelFactory:
             metadata=metadata
         )
         
-        # Save to DB first
+        # First check if this is an update or a new channel
+        existing = self.channel_repository.get_channel_by_name_and_category(
+            channel_model.name, 
+            channel_model.category_id
+        )
+        if existing:
+            # Update existing channel
+            channel_model.id = existing.id
         saved_channel = self.channel_repository.save_channel(channel_model)
         
         # Create in Discord
@@ -186,7 +200,14 @@ class ChannelFactory:
             metadata=metadata
         )
         
-        # Save to DB first
+        # First check if this is an update or a new channel
+        existing = self.channel_repository.get_channel_by_name_and_category(
+            channel_model.name, 
+            channel_model.category_id
+        )
+        if existing:
+            # Update existing channel
+            channel_model.id = existing.id
         saved_channel = self.channel_repository.save_channel(channel_model)
         
         # Create in Discord

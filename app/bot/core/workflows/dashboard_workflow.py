@@ -10,7 +10,7 @@ from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOAR
 from app.bot.infrastructure.factories.service.service_resolver import ServiceResolver
 from .base_workflow import BaseWorkflow
 from app.bot.application.services.dashboard.dashboard_service import DashboardService
-from app.bot.domain.dashboards.repositories.dashboard_repository import DashboardRepository
+from app.shared.domain.repositories import DashboardRepository
 from app.shared.infrastructure.database.core.config import get_session
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.shared.infrastructure.repositories.discord.dashboard_repository_impl import DashboardRepositoryImpl

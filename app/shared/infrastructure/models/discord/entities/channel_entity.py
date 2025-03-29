@@ -49,5 +49,7 @@ class ChannelPermissionEntity(Base):
     attach_files = Column(Boolean, nullable=False, default=False)
     add_reactions = Column(Boolean, nullable=False, default=False)
     
-    # Relationships
-    channel = relationship("ChannelEntity", back_populates="permissions") 
+    # Only define the relationship to ChannelEntity, remove any Role relationship
+    channel = relationship("ChannelEntity", back_populates="permissions")
+    
+    # Remove any back_populates to guild_users or roles - this is likely causing the error 

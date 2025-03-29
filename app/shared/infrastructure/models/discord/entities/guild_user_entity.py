@@ -15,7 +15,7 @@ class GuildUserEntity(Base):
     
     # Beziehungen
     user = relationship("User")
-    role = relationship("Role", back_populates="guild_users")
+    role = relationship("Role")
     
     __table_args__ = (
         UniqueConstraint('guild_id', 'user_id', name='uq_guild_user'),

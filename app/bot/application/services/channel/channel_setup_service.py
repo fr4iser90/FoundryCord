@@ -23,12 +23,8 @@ class ChannelSetupService:
     async def initialize(self):
         """Initialize the channel setup service."""
         logger.info("Initializing channel setup service")
-        # Load channels from database
-        self.channels_cache = {}
-        channels = await self.channel_repository.get_all_channels()
-        for channel in channels:
-            self.channels_cache[channel.name] = channel
-        logger.info(f"Loaded {len(channels)} channels into cache")
+        # The initialization is now handled in ChannelWorkflow.initialize()
+        # to avoid direct ORM queries that might fail
         return True
     
     async def setup_channels(self, guild: discord.Guild) -> Dict[str, discord.abc.GuildChannel]:
