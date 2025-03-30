@@ -15,6 +15,7 @@ from app.bot.core.workflows.category_workflow import CategoryWorkflow
 from app.bot.core.workflows.channel_workflow import ChannelWorkflow
 from app.bot.core.workflows.dashboard_workflow import DashboardWorkflow
 from app.bot.core.workflows.task_workflow import TaskWorkflow
+from app.bot.core.workflows.user_workflow import UserWorkflow
 from app.shared.infrastructure.config.env_config import EnvConfig
 from app.shared.domain.repositories.discord import GuildConfigRepository
 from app.shared.infrastructure.database.session import session_context
@@ -52,7 +53,8 @@ class HomelabBot(commands.Bot):
         self.channel_workflow = ChannelWorkflow(self.database_workflow, self.category_workflow)
         self.dashboard_workflow = DashboardWorkflow(self.database_workflow, bot=self)
         self.task_workflow = TaskWorkflow(self)
-        #self.slash_commands_workflow = SlashCommandsWorkflow(self)
+        self.user_workflow = UserWorkflow(self.database_workflow)
+        self.user_workflow.bot = self
         
         # Register workflows with dependencies
         self.workflow_manager.register_workflow(self.database_workflow)
@@ -60,11 +62,11 @@ class HomelabBot(commands.Bot):
         self.workflow_manager.register_workflow(self.channel_workflow, ['database', 'category'])
         self.workflow_manager.register_workflow(self.dashboard_workflow, ['database'])
         self.workflow_manager.register_workflow(self.task_workflow, ['database'])
-        self.workflow_manager.register_workflow(self.slash_commands_workflow, ['database'])
+        self.workflow_manager.register_workflow(self.user_workflow, ['database'])
         
         # Set explicit initialization order
         self.workflow_manager.set_initialization_order([
-            'database', 'category', 'channel', 'dashboard', 'task', 'slash_commands'
+            'database', 'category', 'channel', 'dashboard', 'task', 'user'
         ])
         
         # Add shutdown handler
@@ -213,6 +215,10 @@ async def main():
         task_workflow = TaskWorkflow(bot)
         workflow_manager.register_workflow(task_workflow)
         
+        user_workflow = UserWorkflow(database_workflow)
+        user_workflow.bot = bot
+        workflow_manager.register_workflow(user_workflow)
+        
         # Set initialization order
         workflow_manager.set_initialization_order([
             "database",
@@ -220,7 +226,7 @@ async def main():
             "channel",
             "dashboard",
             "task",
-            "slash_commands"  # This might not be registered yet
+            "user"
         ])
         
         # Store workflow manager on bot for access
