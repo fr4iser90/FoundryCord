@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}401 Unauthorized - HomeLab Discord Bot{% endblock %}
+
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="/css/pages/errors.css">
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-card error-401">
+        <div class="error-icon">
+            <i class="bi bi-shield-lock"></i>
+        </div>
+        <h1 class="error-title">Authentication Required</h1>
+        <div class="error-code">Error 401</div>
+        <p class="error-message">
+            You need to be logged in to access this area.
+        </p>
+        {% if error %}
+        <div class="error-details">
+            {{ error }}
+        </div>
+        {% endif %}
+        <div class="error-action">
+            <a href="/auth/login" class="btn btn-primary">Login with Discord</a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -9,10 +9,22 @@ from sqlalchemy import select, func
 from app.shared.interface.logging.api import get_web_logger
 from app.shared.domain.auth.models import OWNER, ADMINS, MODERATORS, USERS, GUESTS
 from app.shared.domain.auth.policies.authorization_policies import is_bot_owner
+from datetime import datetime
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 templates = get_templates()
 logger = get_web_logger()
+
+def datetime_filter(value):
+    """Convert datetime object to string format"""
+    if value is None:
+        return "Never"
+    if isinstance(value, str):
+        try:
+            value = datetime.fromisoformat(value.replace('Z', '+00:00'))
+        except ValueError:
+            return value
+    return value.strftime("%Y-%m-%d %H:%M:%S")
 
 class AdminView:
     """View für Admin-Bereich"""
@@ -20,6 +32,8 @@ class AdminView:
     def __init__(self):
         self.router = router
         self._register_routes()
+        # Register the datetime filter
+        templates.env.filters["datetime"] = datetime_filter
     
     def _register_routes(self):
         """Registriert alle Routes für diese View"""
@@ -42,7 +56,7 @@ class AdminView:
             user = request.session.get("user")
             if not user or user.get("role") not in ["OWNER"]:
                 return templates.TemplateResponse(
-                    "auth/insufficient_permissions.html",
+                    "pages/errors/403.html",
                     {"request": request, "user": user, "error": "Insufficient permissions"}
                 )
             
@@ -87,7 +101,6 @@ class AdminView:
             )
         except Exception as e:
             logger.error(f"Error in admin dashboard: {e}")
-            user = request.session.get("user")
             return templates.TemplateResponse(
                 "pages/errors/403.html",
                 {"request": request, "user": user, "error": str(e)}
@@ -98,90 +111,114 @@ class AdminView:
         try:
             # Session-basierte Autorisierung
             user = request.session.get("user")
-            if not user or user.get("role") not in ["OWNER",]:
+            if not user or user.get("role") not in ["OWNER"]:
                 return templates.TemplateResponse(
                     "pages/errors/403.html",
                     {"request": request, "user": user, "error": "Insufficient permissions"}
                 )
+            
+            # Paginierungs-Parameter
+            page = int(request.query_params.get("page", 1))
+            per_page = 10  # Anzahl der Einträge pro Seite
             
             # URL-Parameter abrufen
             selected_server = request.query_params.get("server", "all")
             
             users = []
             servers = []
+            total_users = 0
             
             try:
                 async with session_context() as session:
                     # Verfügbare Server abrufen
-                    # Nehmen wir an, wir haben eine Guild-Entität oder eine ähnliche Tabelle
-                    # Passe dies entsprechend deiner tatsächlichen Modelle an
                     try:
                         guild_query = select(GuildEntity)
                         guild_result = await session.execute(guild_query)
                         db_guilds = guild_result.scalars().all()
                         
-                        for guild in db_guilds:
-                            servers.append({
-                                "id": guild.id,
-                                "name": guild.name
-                            })
+                        servers = [{
+                            "id": guild.id,
+                            "name": guild.name
+                        } for guild in db_guilds]
                     except Exception as guild_err:
                         logger.warning(f"Fehler beim Abrufen der Server: {guild_err}")
-                        servers = []  # Fallback: leere Liste
+                        servers = []
                     
-                    # Benutzer abrufen
-                    query = select(AppUserEntity)
-                    result = await session.execute(query)
-                    db_users = result.scalars().all()
+                    # Gesamtanzahl der Benutzer für Paginierung
+                    try:
+                        count_query = select(func.count(AppUserEntity.id))
+                        total_users = await session.execute(count_query)
+                        total_users = total_users.scalar()
+                    except Exception as count_err:
+                        logger.warning(f"Fehler beim Zählen der Benutzer: {count_err}")
+                        total_users = 0
                     
-                    for db_user in db_users:
-                        # Grundlegende Benutzerinformationen
-                        user_data = {
-                            "id": db_user.id,
-                            "username": db_user.username,
-                            "discord_id": db_user.discord_id,
-                            "role_id": db_user.role_id,  # Systemweite Rolle
-                            "is_active": db_user.is_active,
-                            "created_at": db_user.created_at,
-                            "server_ids": [],  # Liste der Server-IDs, in denen dieser Benutzer ist
-                            "server_roles": {}  # Server-spezifische Rollen
-                        }
+                    # Benutzer mit Paginierung abrufen
+                    try:
+                        offset = (page - 1) * per_page
+                        query = select(AppUserEntity).offset(offset).limit(per_page)
+                        result = await session.execute(query)
+                        db_users = result.scalars().all()
                         
-                        # Server-spezifische Informationen abrufen
-                        try:
-                            # DiscordGuildUserEntity-Abfrage für diesen Benutzer
-                            guild_user_query = select(DiscordGuildUserEntity).where(
-                                DiscordGuildUserEntity.user_id == db_user.id
-                            )
-                            guild_user_result = await session.execute(guild_user_query)
-                            guild_users = guild_user_result.scalars().all()
+                        for db_user in db_users:
+                            user_data = {
+                                "id": db_user.id,
+                                "username": db_user.username,
+                                "discord_id": db_user.discord_id,
+                                "role_id": db_user.role_id,
+                                "is_active": db_user.is_active,
+                                "created_at": db_user.created_at,
+                                "server_ids": [],
+                                "server_roles": {}
+                            }
                             
-                            for guild_user in guild_users:
-                                user_data["server_ids"].append(guild_user.guild_id)
-                                user_data["server_roles"][guild_user.guild_id] = guild_user.role_id
-                        except Exception as guild_user_err:
-                            logger.warning(f"Fehler beim Abrufen der Server-Benutzerinformationen: {guild_user_err}")
-                        
-                        users.append(user_data)
+                            # Server-spezifische Informationen abrufen
+                            try:
+                                guild_user_query = select(DiscordGuildUserEntity).where(
+                                    DiscordGuildUserEntity.user_id == db_user.id
+                                )
+                                guild_user_result = await session.execute(guild_user_query)
+                                guild_users = guild_user_result.scalars().all()
+                                
+                                for guild_user in guild_users:
+                                    user_data["server_ids"].append(guild_user.guild_id)
+                                    user_data["server_roles"][guild_user.guild_id] = guild_user.role_id
+                            except Exception as guild_user_err:
+                                logger.warning(f"Fehler beim Abrufen der Server-Benutzerinformationen: {guild_user_err}")
+                            
+                            users.append(user_data)
+                    except Exception as users_err:
+                        logger.error(f"Fehler beim Abrufen der Benutzer: {users_err}")
+                        users = []
+            
             except Exception as db_err:
-                logger.error(f"Datenbankfehler beim Abrufen der Benutzer: {db_err}")
+                logger.error(f"Datenbankfehler: {db_err}")
                 users = []
                 servers = []
+                total_users = 0
+            
+            # Paginierungsinformationen berechnen
+            total_pages = (total_users + per_page - 1) // per_page
+            has_prev = page > 1
+            has_next = page < total_pages
             
             return templates.TemplateResponse(
                 "pages/admin/user_management.html",
                 {
-                    "request": request, 
+                    "request": request,
                     "user": user,
                     "users": users,
                     "servers": servers,
                     "selected_server": selected_server,
+                    "page": page,
+                    "total_pages": total_pages,
+                    "has_prev": has_prev,
+                    "has_next": has_next,
                     "active_page": "admin-users"
                 }
             )
         except Exception as e:
             logger.error(f"Error in user management: {e}")
-            user = request.session.get("user")
             return templates.TemplateResponse(
                 "pages/errors/403.html",
                 {"request": request, "user": user, "error": str(e)}
@@ -240,7 +277,6 @@ class AdminView:
             )
         except Exception as e:
             logger.error(f"Error in system status: {e}")
-            user = request.session.get("user")
             return templates.TemplateResponse(
                 "pages/errors/403.html",
                 {"request": request, "user": user, "error": str(e)}

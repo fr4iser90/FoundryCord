@@ -1,0 +1,71 @@
+/* Error Pages Styling */
+.error-container {
+    max-width: 600px;
+    margin: 100px auto;
+    text-align: center;
+    padding: 30px;
+}
+
+.error-card {
+    background-color: var(--discord-lighter);
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    padding: 2rem;
+}
+
+.error-title {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.error-code {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+.error-message {
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    color: var(--text-secondary);
+}
+
+.error-details {
+    margin: 1rem 0;
+    padding: 1rem;
+    background-color: var(--discord-darker);
+    border-radius: 6px;
+    color: var(--text-secondary);
+}
+
+/* Error-spezifische Farben */
+.error-400 .error-title { color: var(--discord-warning); }
+.error-401 .error-title { color: var(--discord-warning); }
+.error-403 .error-title { color: var(--discord-danger); }
+.error-404 .error-title { color: var(--discord-warning); }
+.error-500 .error-title { color: var(--discord-danger); }
+.error-503 .error-title { color: var(--discord-danger); }
+
+/* Error Icon Styling */
+.error-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+}
+
+.error-400 .error-icon { color: var(--discord-warning); }
+.error-401 .error-icon { color: var(--discord-warning); }
+.error-403 .error-icon { color: var(--discord-danger); }
+.error-404 .error-icon { color: var(--discord-warning); }
+.error-500 .error-icon { color: var(--discord-danger); }
+.error-503 .error-icon { color: var(--discord-danger); }
+
+/* Action Button Styling */
+.error-action {
+    margin-top: 2rem;
+}
+
+.error-action .btn {
+    padding: 0.75rem 2rem;
+    font-size: 1.1rem;
+} 
