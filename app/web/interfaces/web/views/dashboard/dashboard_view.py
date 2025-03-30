@@ -5,6 +5,7 @@ from app.web.application.services.auth.dependencies import get_current_user
 from app.web.interfaces.api.rest.v1.bot.bot_admin_controller import get_overview_stats
 from app.web.interfaces.api.rest.v1.dashboard.dashboard_controller import get_layouts, get_layout
 from app.shared.interface.logging.api import get_web_logger
+from app.web.domain.error.error_service import ErrorService
 
 router = APIRouter(tags=["Dashboard"])
 templates = get_templates()
@@ -15,6 +16,7 @@ class DashboardView:
     
     def __init__(self):
         self.router = router
+        self.error_service = ErrorService()
         self._register_routes()
     
     def _register_routes(self):
@@ -58,10 +60,7 @@ class DashboardView:
             )
         except Exception as e:
             logger.error(f"Error in dashboard: {e}")
-            return templates.TemplateResponse(
-                "pages/errors/500.html",
-                {"request": request, "user": current_user, "error": str(e)}
-            )
+            return await self.error_service.handle_error(request, 500, str(e))
     
     async def dashboard_with_layout(self, layout_id: int, request: Request, current_user=Depends(get_current_user)):
         """Display dashboard with specific layout"""
@@ -98,10 +97,7 @@ class DashboardView:
             raise
         except Exception as e:
             logger.error(f"Error in dashboard with layout: {e}")
-            return templates.TemplateResponse(
-                "pages/errors/500.html",
-                {"request": request, "user": current_user, "error": str(e)}
-            )
+            return await self.error_service.handle_error(request, 500, str(e))
     
     async def dashboard_builder(self, request: Request, current_user=Depends(get_current_user)):
         """Dashboard builder interface"""
@@ -128,10 +124,7 @@ class DashboardView:
             )
         except Exception as e:
             logger.error(f"Error in dashboard builder: {e}")
-            return templates.TemplateResponse(
-                "pages/errors/500.html",
-                {"request": request, "user": current_user, "error": str(e)}
-            )
+            return await self.error_service.handle_error(request, 500, str(e))
     
     async def save_dashboard(self, 
                             request: Request, 
@@ -161,10 +154,7 @@ class DashboardView:
             )
         except Exception as e:
             logger.error(f"Error saving dashboard: {e}")
-            return templates.TemplateResponse(
-                "pages/errors/500.html",
-                {"request": request, "user": current_user, "error": str(e)}
-            )
+            return await self.error_service.handle_error(request, 500, str(e))
 
 # View-Instanz erzeugen
 dashboard_view = DashboardView()

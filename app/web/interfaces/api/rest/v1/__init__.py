@@ -12,5 +12,5 @@ routers = [
     health_router,
     bot_public_router,
     bot_admin_router,
-    guild_config_router
+    guild_config_router,
 ]

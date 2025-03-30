@@ -18,6 +18,7 @@ from app.web.core.workflow_manager import WebWorkflowManager
 from app.web.infrastructure.factories.service.web_service_factory import WebServiceFactory
 from contextlib import asynccontextmanager
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
+from app.web.domain.error.error_service import ErrorService
 
 logger = get_bot_logger()
 
@@ -116,6 +117,27 @@ class WebApplication:
             return JSONResponse(
                 status_code=500,
                 content={"message": "Internal server error", "details": str(exc)}
+            )
+
+    def setup_error_handlers(self):
+        """Setup error handlers"""
+        error_service = ErrorService()
+        
+        @self.app.exception_handler(HTTPException)
+        async def http_exception_handler(request: Request, exc: HTTPException):
+            return await error_service.handle_error(
+                request,
+                exc.status_code,
+                str(exc.detail)
+            )
+            
+        @self.app.exception_handler(Exception)
+        async def general_exception_handler(request: Request, exc: Exception):
+            logger.error(f"Unhandled exception: {str(exc)}")
+            return await error_service.handle_error(
+                request,
+                500,
+                "An unexpected error occurred"
             )
 
     async def initialize(self):

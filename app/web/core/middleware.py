@@ -1,10 +1,10 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from app.web.domain.auth.services.web_authentication_service import WebAuthenticationService
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interface.logging.api import get_bot_logger, get_web_logger
 import os
 import secrets
 
@@ -15,23 +15,30 @@ def get_auth_service():
     key_service = KeyManagementService()
     return WebAuthenticationService(key_service=key_service)
 
+PUBLIC_PATHS = {
+    "/static",
+    "/",
+    "/auth/login",
+    "/auth/callback",
+    "/health",
+    "/api/health",
+    "/favicon.ico"
+}
+
 async def auth_middleware(request: Request, call_next):
     """Authentication middleware"""
     path = request.url.path
     
-    # Public paths that don't require auth
-    if path.startswith("/static") or path in ["/", "/auth/login", "/auth/insufficient-permissions", "/auth/callback", "/health"]:
+    # Allow public paths
+    if any(path.startswith(public) for public in PUBLIC_PATHS):
         return await call_next(request)
-    
-    # Sicherstellen, dass eine Session existiert
-    if not hasattr(request, "session"):
-        logger.error("SessionMiddleware not installed properly")
-        return RedirectResponse(url="/auth/login")
         
-    # Check if user is authenticated
+    # Check auth
     if not request.session.get("user"):
-        return RedirectResponse(url="/auth/insufficient-permissions")
-
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have sufficient permissions to access this resource"
+        )
     
     return await call_next(request)
 

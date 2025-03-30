@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from app.web.core.extensions import get_templates
+from app.web.domain.error.error_service import ErrorService
 
 router = APIRouter(tags=["Main"])
 templates = get_templates()
@@ -10,26 +11,23 @@ class MainView:
     
     def __init__(self):
         self.router = router
+        self.error_service = ErrorService()
         self._register_routes()
     
     def _register_routes(self):
         """Registriert alle Routes für diese View"""
-        self.router.get("/", response_class=HTMLResponse)(self.home)
+        self.router.get("/", response_class=HTMLResponse)(self.index)
         self.router.get("/about", response_class=HTMLResponse)(self.about)
         self.router.get("/help", response_class=HTMLResponse)(self.help_page)
     
-    async def home(self, request: Request):
-        """Home page"""
-        # Hier ist das Problem - dieses Template existiert nicht
-        # Ändern zu "index.html", da dieses Template vorhanden ist
-        return templates.TemplateResponse(
-            "index.html",  # Korrigiert von "pages/home.html"
-            {
-                "request": request, 
-                "user": request.session.get("user"),
-                "active_page": "home"
-            }
-        )
+    async def index(self, request: Request):
+        try:
+            return templates.TemplateResponse(
+                "index.html",
+                {"request": request, "user": request.session.get("user")}
+            )
+        except Exception as e:
+            return await self.error_service.handle_error(request, 500, str(e))
     
     async def about(self, request: Request):
         """About page"""
@@ -55,6 +53,6 @@ class MainView:
 
 # View-Instanz erzeugen
 main_view = MainView()
-home = main_view.home
+home = main_view.index
 about = main_view.about
 help_page = main_view.help_page 
