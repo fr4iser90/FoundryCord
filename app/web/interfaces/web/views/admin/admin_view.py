@@ -4,7 +4,7 @@ from app.web.core.extensions import get_templates
 from app.web.application.services.auth.dependencies import get_current_user
 from app.web.domain.auth.permissions import Role, require_role
 from app.shared.infrastructure.database.session import session_context
-from app.shared.infrastructure.models import GuildEntity, AppUserEntity
+from app.shared.infrastructure.models import GuildEntity, AppUserEntity, DiscordGuildUserEntity
 from sqlalchemy import select, func
 from app.shared.interface.logging.api import get_web_logger
 from app.shared.domain.auth.models import OWNER, ADMINS, MODERATORS, USERS, GUESTS
@@ -94,38 +94,88 @@ class AdminView:
             )
     
     async def user_management(self, request: Request):
-        """User management interface"""
+        """User management page"""
         try:
             # Session-basierte Autorisierung
             user = request.session.get("user")
-            if not user or user.get("role") not in ["OWNER"]:
+            if not user or user.get("role") not in ["OWNER",]:
                 return templates.TemplateResponse(
                     "pages/errors/403.html",
                     {"request": request, "user": user, "error": "Insufficient permissions"}
                 )
             
-            # Nutzerdaten aus der Datenbank holen
-            async with session_context() as session:
-                result = await session.execute(select(AppUserEntity))
-                users = result.scalars().all()
-                
-                user_data = []
-                for user_entity in users:
-                    user_data.append({
-                        "id": user_entity.id,
-                        "username": user_entity.username,
-                        "discord_id": user_entity.discord_id,
-                        "role": user_entity.role,
-                        "created_at": user_entity.created_at,
-                        "is_active": user_entity.is_active
-                    })
+            # URL-Parameter abrufen
+            selected_server = request.query_params.get("server", "all")
+            
+            users = []
+            servers = []
+            
+            try:
+                async with session_context() as session:
+                    # Verfügbare Server abrufen
+                    # Nehmen wir an, wir haben eine Guild-Entität oder eine ähnliche Tabelle
+                    # Passe dies entsprechend deiner tatsächlichen Modelle an
+                    try:
+                        guild_query = select(GuildEntity)
+                        guild_result = await session.execute(guild_query)
+                        db_guilds = guild_result.scalars().all()
+                        
+                        for guild in db_guilds:
+                            servers.append({
+                                "id": guild.id,
+                                "name": guild.name
+                            })
+                    except Exception as guild_err:
+                        logger.warning(f"Fehler beim Abrufen der Server: {guild_err}")
+                        servers = []  # Fallback: leere Liste
+                    
+                    # Benutzer abrufen
+                    query = select(AppUserEntity)
+                    result = await session.execute(query)
+                    db_users = result.scalars().all()
+                    
+                    for db_user in db_users:
+                        # Grundlegende Benutzerinformationen
+                        user_data = {
+                            "id": db_user.id,
+                            "username": db_user.username,
+                            "discord_id": db_user.discord_id,
+                            "role_id": db_user.role_id,  # Systemweite Rolle
+                            "is_active": db_user.is_active,
+                            "created_at": db_user.created_at,
+                            "server_ids": [],  # Liste der Server-IDs, in denen dieser Benutzer ist
+                            "server_roles": {}  # Server-spezifische Rollen
+                        }
+                        
+                        # Server-spezifische Informationen abrufen
+                        try:
+                            # DiscordGuildUserEntity-Abfrage für diesen Benutzer
+                            guild_user_query = select(DiscordGuildUserEntity).where(
+                                DiscordGuildUserEntity.user_id == db_user.id
+                            )
+                            guild_user_result = await session.execute(guild_user_query)
+                            guild_users = guild_user_result.scalars().all()
+                            
+                            for guild_user in guild_users:
+                                user_data["server_ids"].append(guild_user.guild_id)
+                                user_data["server_roles"][guild_user.guild_id] = guild_user.role_id
+                        except Exception as guild_user_err:
+                            logger.warning(f"Fehler beim Abrufen der Server-Benutzerinformationen: {guild_user_err}")
+                        
+                        users.append(user_data)
+            except Exception as db_err:
+                logger.error(f"Datenbankfehler beim Abrufen der Benutzer: {db_err}")
+                users = []
+                servers = []
             
             return templates.TemplateResponse(
                 "pages/admin/user_management.html",
                 {
                     "request": request, 
                     "user": user,
-                    "users": user_data,
+                    "users": users,
+                    "servers": servers,
+                    "selected_server": selected_server,
                     "active_page": "admin-users"
                 }
             )

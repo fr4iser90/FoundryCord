@@ -1,0 +1,368 @@
+{% extends "layouts/admin_layout.html" %}
+
+{% block title %}User Management - HomeLab Discord Bot{% endblock %}
+
+{% block content %}
+<div class="users-container">
+    <div class="users-header">
+        <h1>User Management</h1>
+        <div class="header-actions">
+            <div class="server-select-container">
+                <select id="server-selector" class="form-select">
+                    <option value="all">All Users (System-Wide)</option>
+                    {% for server in servers %}
+                    <option value="{{ server.id }}">{{ server.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="search-box">
+                <input type="text" id="user-search" class="form-control" placeholder="Search users...">
+            </div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                <i class="bi bi-person-plus"></i> Add User
+            </button>
+        </div>
+    </div>
+
+    <div class="users-table-container">
+        <table class="table table-dark table-hover">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Discord ID</th>
+                    <th id="role-column-header">Role</th>
+                    <th>Status</th>
+                    <th>Last Active</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="users-table-body">
+                {% for user in users %}
+                <tr data-server-ids="{{ user.server_ids|join(',') }}" class="user-row">
+                    <td class="user-info">
+                        <img src="{{ user.avatar_url|default('/static/img/default_avatar.png') }}" alt="" class="user-avatar">
+                        <div class="user-details">
+                            <div class="username">{{ user.username }}</div>
+                            <div class="user-tag text-muted">#{{ user.discriminator|default('0000') }}</div>
+                        </div>
+                    </td>
+                    <td>{{ user.discord_id }}</td>
+                    <td>
+                        <div class="system-role-display" {% if selected_server != 'all' %}style="display:none"{% endif %}>
+                            <select class="form-select form-select-sm role-select" data-user-id="{{ user.id }}" data-type="system">
+                                <option value="USER" {% if user.system_role == 'USER' %}selected{% endif %}>User</option>
+                                <option value="MODERATOR" {% if user.system_role == 'MODERATOR' %}selected{% endif %}>Moderator</option>
+                                <option value="ADMIN" {% if user.system_role == 'ADMIN' %}selected{% endif %}>Admin</option>
+                                <option value="OWNER" {% if user.system_role == 'OWNER' %}selected{% endif %}>Owner</option>
+                            </select>
+                        </div>
+                        
+                        <div class="server-role-display" {% if selected_server == 'all' %}style="display:none"{% endif %}>
+                            <select class="form-select form-select-sm role-select" data-user-id="{{ user.id }}" data-server-id="{{ selected_server }}" data-type="server">
+                                <option value="">Not In Server</option>
+                                <option value="MEMBER" {% if user.server_roles and user.server_roles[selected_server] == 'MEMBER' %}selected{% endif %}>Member</option>
+                                <option value="MODERATOR" {% if user.server_roles and user.server_roles[selected_server] == 'MODERATOR' %}selected{% endif %}>Moderator</option>
+                                <option value="ADMIN" {% if user.server_roles and user.server_roles[selected_server] == 'ADMIN' %}selected{% endif %}>Admin</option>
+                            </select>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-{{ user.status|lower|default('inactive') }}">{{ user.status|default('Inactive') }}</span>
+                    </td>
+                    <td>{{ user.last_active|default('Never')|datetime }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-info" onclick="viewUser('{{ user.id }}')">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="editUser('{{ user.id }}')">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteUser('{{ user.id }}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination-container">
+        <nav aria-label="User pagination">
+            <ul class="pagination">
+                <li class="page-item {% if not has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ page - 1 }}">Previous</a>
+                </li>
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == page %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+                </li>
+                {% endfor %}
+                <li class="page-item {% if not has_next %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ page + 1 }}">Next</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Add/Edit User Modal -->
+<div class="modal fade" id="userModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="userModalLabel">Add User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <div class="mb-3">
+                        <label for="discord-id" class="form-label">Discord ID</label>
+                        <input type="text" class="form-control" id="discord-id" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="user-role" class="form-label">Role</label>
+                        <select class="form-select" id="user-role">
+                            <option value="USER">User</option>
+                            <option value="MODERATOR">Moderator</option>
+                            <option value="ADMIN">Admin</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveUserBtn">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.users-container {
+    padding: 20px;
+}
+
+.users-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.search-box {
+    min-width: 300px;
+}
+
+.users-table-container {
+    background: var(--discord-lighter);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.role-select {
+    background-color: var(--discord-channel);
+    color: var(--discord-text);
+    border-color: var(--discord-darker);
+}
+
+.badge {
+    padding: 5px 10px;
+}
+
+.bg-active {
+    background-color: var(--discord-success);
+}
+
+.bg-inactive {
+    background-color: var(--discord-danger);
+}
+
+.pagination-container {
+    display: flex;
+    justify-content: center;
+}
+
+.server-select-container {
+    min-width: 250px;
+    margin-right: 10px;
+}
+
+.user-row.server-filtered {
+    display: none;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const serverSelector = document.getElementById('server-selector');
+    const roleColumnHeader = document.getElementById('role-column-header');
+    const systemRoleDisplays = document.querySelectorAll('.system-role-display');
+    const serverRoleDisplays = document.querySelectorAll('.server-role-display');
+    
+    serverSelector.addEventListener('change', function() {
+        const selectedServer = this.value;
+        
+        if (selectedServer === 'all') {
+            roleColumnHeader.textContent = 'System Role';
+            systemRoleDisplays.forEach(el => el.style.display = 'block');
+            serverRoleDisplays.forEach(el => el.style.display = 'none');
+        } else {
+            roleColumnHeader.textContent = 'Server Role';
+            systemRoleDisplays.forEach(el => el.style.display = 'none');
+            serverRoleDisplays.forEach(el => el.style.display = 'block');
+            
+            serverRoleDisplays.forEach(el => {
+                const selector = el.querySelector('select');
+                if (selector) {
+                    selector.dataset.serverId = selectedServer;
+                }
+            });
+        }
+        
+        filterUsersByServer(selectedServer);
+    });
+    
+    function filterUsersByServer(serverId) {
+        const rows = document.querySelectorAll('.user-row');
+        
+        if (serverId === 'all') {
+            rows.forEach(row => row.classList.remove('server-filtered'));
+            return;
+        }
+        
+        rows.forEach(row => {
+            const serverIds = row.dataset.serverIds ? row.dataset.serverIds.split(',') : [];
+            if (serverIds.includes(serverId)) {
+                row.classList.remove('server-filtered');
+            } else {
+                row.classList.add('server-filtered');
+            }
+        });
+    }
+    
+    const searchInput = document.getElementById('user-search');
+    searchInput.addEventListener('input', debounce(searchUsers, 300));
+    
+    document.querySelectorAll('.role-select').forEach(select => {
+        select.addEventListener('change', async (e) => {
+            const userId = e.target.dataset.userId;
+            const newRole = e.target.value;
+            const roleType = e.target.dataset.type;
+            const serverId = e.target.dataset.serverId;
+            
+            let endpoint = '';
+            let payload = {};
+            
+            if (roleType === 'system') {
+                endpoint = `/api/admin/users/${userId}/role`;
+                payload = { role: newRole };
+            } else {
+                endpoint = `/api/admin/servers/${serverId}/users/${userId}/role`;
+                payload = { server_role: newRole };
+            }
+            
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) throw new Error('Failed to update role');
+                
+                showToast('Role updated successfully', 'success');
+            } catch (error) {
+                console.error('Error updating role:', error);
+                showToast('Error updating role: ' + error.message, 'error');
+                e.target.value = e.target.dataset.originalValue;
+            }
+        });
+        
+        select.dataset.originalValue = select.value;
+    });
+    
+    async function searchUsers(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const selectedServer = serverSelector.value;
+        
+        const rows = document.querySelectorAll('.user-row');
+        rows.forEach(row => {
+            const username = row.querySelector('.username').textContent.toLowerCase();
+            const discordId = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+            
+            if ((username.includes(searchTerm) || discordId.includes(searchTerm)) && 
+                !row.classList.contains('server-filtered')) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        if (searchTerm.length >= 3) {
+            try {
+                const queryParams = new URLSearchParams({
+                    q: searchTerm,
+                    server_id: selectedServer !== 'all' ? selectedServer : ''
+                });
+                
+                const response = await fetch(`/api/admin/users/search?${queryParams}`);
+                if (!response.ok) throw new Error('Search failed');
+                
+                const users = await response.json();
+                updateUsersTable(users, selectedServer);
+            } catch (error) {
+                console.error('Error searching users:', error);
+            }
+        }
+    }
+    
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    function showToast(message, type = 'info') {
+        alert(message);
+    }
+});
+</script>
+{% endblock %}

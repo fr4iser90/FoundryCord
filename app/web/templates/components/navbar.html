@@ -23,9 +23,8 @@
                     
                     <!-- Admin Dropdown - Only visible for Bot Owner -->
                     {% if user.role == "OWNER" %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" 
-                           data-bs-toggle="dropdown" aria-expanded="false">
+                    <li class="nav-item dropdown has-hover-dropdown">
+                        <a class="nav-link" href="/admin">
                             <i class="bi bi-tools"></i> Admin
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="adminDropdown">
