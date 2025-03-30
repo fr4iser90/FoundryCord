@@ -3,7 +3,7 @@ Dashboard message model for storing dashboard message IDs.
 """
 from sqlalchemy import Column, Integer, String, BigInteger, DateTime
 from sqlalchemy.sql import func
-from ..base import Base
+from app.shared.infrastructure.models import Base
 
 class DashboardMessageEntity(Base):
     """Dashboard message tracking model"""

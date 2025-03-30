@@ -3,9 +3,9 @@ Audit log model for system action tracking.
 """
 from sqlalchemy import Column, Integer, String, DateTime, Text, JSON
 from sqlalchemy.sql import func
-from ..base import Base
+from app.shared.infrastructure.models import Base
 
-class AuditLog(Base):
+class AuditLogEntity(Base):
     """Audit log for tracking actions in the system"""
     __tablename__ = "audit_logs"
     
@@ -21,4 +21,4 @@ class AuditLog(Base):
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     
     def __repr__(self):
-        return f"<AuditLog(id={self.id}, action='{self.action}', actor='{self.actor_id}')>" 
+        return f"<AuditLogEntity(id={self.id}, action='{self.action}', actor='{self.actor_id}')>" 

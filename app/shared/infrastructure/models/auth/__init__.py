@@ -1,14 +1,14 @@
 """
 Authentication models for user management and access control.
 """
-from .user import User
-from .session import Session
-from .rate_limit import RateLimit
-from .role import Role
+from .user_entity import UserEntity
+from .session_entity import SessionEntity
+from .rate_limit_entity import RateLimitEntity
+from .role_entity import RoleEntity
 
 __all__ = [
-    'User',
-    'Session', 
-    'RateLimit',
-    'Role'
+    'UserEntity',
+    'SessionEntity', 
+    'RateLimitEntity',
+    'RoleEntity'
 ] 

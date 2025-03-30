@@ -1,5 +1,5 @@
 from typing import Optional, Dict, Any
-from app.shared.domain.logging.services.logging_service import LoggingService
+from app.shared.domain.audit.services.logging_service import LoggingService
 from app.shared.application.logging.log_config import update_config
 import inspect
 # Don't import factories directly

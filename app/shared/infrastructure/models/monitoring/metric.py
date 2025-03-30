@@ -3,7 +3,7 @@ Metric model for system monitoring.
 """
 from sqlalchemy import Column, Integer, String, DateTime, Float, JSON
 from sqlalchemy.sql import func
-from ..base import Base
+from app.shared.infrastructure.models import Base
 
 class MetricModel(Base):
     """System metric measurement model"""

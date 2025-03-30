@@ -14,8 +14,8 @@ class GuildUserEntity(Base):
     updated_at = Column(DateTime, server_default=text('now()'), nullable=False)
     
     # Beziehungen
-    user = relationship("User")
-    role = relationship("Role")
+    user = relationship("UserEntity")
+    role = relationship("RoleEntity")
     
     __table_args__ = (
         UniqueConstraint('guild_id', 'user_id', name='uq_guild_user'),

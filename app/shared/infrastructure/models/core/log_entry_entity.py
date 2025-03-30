@@ -3,9 +3,9 @@ Log entry model for system logging.
 """
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy.orm import relationship
-from ..base import Base
+from app.shared.infrastructure.models import Base
 
-class LogEntry(Base):
+class LogEntryEntity(Base):
     """System log entry"""
     __tablename__ = "log_entries"
     
@@ -20,4 +20,4 @@ class LogEntry(Base):
     exception = Column(Text, nullable=True)
     
     def __repr__(self):
-        return f"<LogEntry(id={self.id}, level='{self.level}', message='{self.message[:30]}...')>" 
+        return f"<LogEntryEntity(id={self.id}, level='{self.level}', message='{self.message[:30]}...')>" 

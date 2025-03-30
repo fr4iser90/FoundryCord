@@ -1,6 +1,6 @@
 from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.shared.infrastructure.models import User, Role, GuildUserEntity
+from app.shared.infrastructure.models import UserEntity, RoleEntity, GuildUserEntity
 from typing import Optional, List
 from datetime import datetime
 from app.shared.domain.repositories.auth.user_repository import UserRepository
@@ -9,31 +9,31 @@ class UserRepositoryImpl(UserRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
     
-    async def get_by_id(self, user_id: int) -> Optional[User]:
-        result = await self.session.execute(select(User).where(User.id == user_id))
+    async def get_by_id(self, user_id: int) -> Optional[UserEntity]:
+        result = await self.session.execute(select(UserEntity).where(UserEntity.id == user_id))
         return result.scalar_one_or_none()
     
-    async def get_by_discord_id(self, discord_id: str) -> Optional[User]:
-        """Holt einen User anhand der Discord ID"""
+    async def get_by_discord_id(self, discord_id: str) -> Optional[UserEntity]:
+        """Holt einen UserEntity anhand der Discord ID"""
         result = await self.session.execute(
-            select(User).where(User.discord_id == discord_id)
+            select(UserEntity).where(UserEntity.discord_id == discord_id)
         )
         return result.scalar_one_or_none()
     
-    async def get_all(self) -> List[User]:
-        result = await self.session.execute(select(User))
+    async def get_all(self) -> List[UserEntity]:
+        result = await self.session.execute(select(UserEntity))
         return result.scalars().all()
     
-    async def get_by_discord_name(self, discord_name: str) -> Optional[User]:
-        """Holt einen User anhand des Discord Namens"""
+    async def get_by_discord_name(self, discord_name: str) -> Optional[UserEntity]:
+        """Holt einen UserEntity anhand des Discord Namens"""
         result = await self.session.execute(
-            select(User).where(User.discord_name == discord_name)
+            select(UserEntity).where(UserEntity.discord_name == discord_name)
         )
         return result.scalar_one_or_none()
     
-    async def create(self, discord_id: str, username: str, role: str = "user") -> User:
-        """Erstellt einen neuen User"""
-        user = User(
+    async def create(self, discord_id: str, username: str, role: str = "user") -> UserEntity:
+        """Erstellt einen neuen UserEntity"""
+        user = UserEntity(
             discord_id=discord_id,
             username=username,
             role=role
@@ -42,12 +42,12 @@ class UserRepositoryImpl(UserRepository):
         await self.session.commit()
         return user
     
-    async def update(self, user: User) -> User:
+    async def update(self, user: UserEntity) -> UserEntity:
         self.session.add(user)
         await self.session.commit()
         return user
     
-    async def delete(self, user: User) -> None:
+    async def delete(self, user: UserEntity) -> None:
         await self.session.delete(user)
         await self.session.commit()
     
@@ -73,7 +73,7 @@ class UserRepositoryImpl(UserRepository):
             # Wenn keine gildespezifische Rolle gefunden wurde, 
             # verwende die globale Standardrolle des Benutzers
             result = await self.session.execute(
-                select(User.role_id).join(Role).where(User.discord_id == discord_id)
+                select(UserEntity.role_id).join(RoleEntity).where(UserEntity.discord_id == discord_id)
             )
             return result.scalar_one_or_none()
     
@@ -81,12 +81,12 @@ class UserRepositoryImpl(UserRepository):
         """Setzt die Rolle eines Benutzers in einer bestimmten Gilde"""
         # Hole user_id und role_id
         user_result = await self.session.execute(
-            select(User.id).where(User.discord_id == discord_id)
+            select(UserEntity.id).where(UserEntity.discord_id == discord_id)
         )
         user_id = user_result.scalar_one_or_none()
         
         role_result = await self.session.execute(
-            select(Role.id).where(Role.name == role_name)
+            select(RoleEntity.id).where(RoleEntity.name == role_name)
         )
         role_id = role_result.scalar_one_or_none()
         

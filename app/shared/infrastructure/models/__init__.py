@@ -12,10 +12,10 @@ Organized in domain-specific subpackages:
 from .base import Base
 
 # Core models
-from .core import Config, AuditLog, LogEntry
+from .core import ConfigEntity, AuditLogEntity, LogEntryEntity
 
 # Auth models
-from .auth import User, Session, RateLimit, Role
+from .auth import UserEntity, SessionEntity, RateLimitEntity, RoleEntity
 
 # Discord models
 from .discord import ChannelMapping, CategoryMapping, AutoThreadChannelEntity, GuildConfigEntity, GuildEntity, MessageEntity, GuildUserEntity, ChannelEntity, ChannelPermissionEntity, CategoryEntity, CategoryPermissionEntity
@@ -34,9 +34,9 @@ __all__ = [
     # Base class
     'Base',
     # Core models
-    'Config', 'AuditLog', 'LogEntry',
+    'ConfigEntity', 'AuditLogEntity', 'LogEntryEntity',
     # Auth models
-    'User', 'Session', 'RateLimit', 'Role',
+    'UserEntity', 'SessionEntity', 'RateLimitEntity', 'RoleEntity',
     # Discord models
     'ChannelMapping', 'CategoryMapping', 'AutoThreadChannelEntity', 'GuildConfigEntity', 'GuildEntity', 'MessageEntity', 'GuildUserEntity', 'ChannelEntity', 'ChannelPermissionEntity', 'CategoryEntity', 'CategoryPermissionEntity',
     # Dashboard models

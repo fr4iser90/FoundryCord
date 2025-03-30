@@ -4,7 +4,7 @@ Project model for project management.
 from sqlalchemy import Column, Integer, String, DateTime, Text, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from ..base import Base
+from app.shared.infrastructure.models import Base
 
 class Project(Base):
     """Project model for project management"""

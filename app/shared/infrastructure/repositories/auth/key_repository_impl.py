@@ -1,6 +1,6 @@
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.shared.infrastructure.models import Config
+from app.shared.infrastructure.models import ConfigEntity
 from typing import Optional, Dict, Any
 from app.shared.interface.logging.api import get_bot_logger
 import logging

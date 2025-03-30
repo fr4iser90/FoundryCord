@@ -3,7 +3,7 @@ Alert model for system monitoring.
 """
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, JSON
 from sqlalchemy.sql import func
-from ..base import Base
+from app.shared.infrastructure.models import Base
 
 class AlertModel(Base):
     """System alert model"""

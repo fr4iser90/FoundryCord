@@ -4,7 +4,7 @@ Dashboard component model for UI dashboard components.
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from ..base import Base
+from app.shared.infrastructure.models import Base
 
 class DashboardComponentEntity(Base):
     """Dashboard component configuration model"""

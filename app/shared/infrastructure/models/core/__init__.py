@@ -1,12 +1,12 @@
 """
 Core system models for configuration and logging.
 """
-from .config import Config
-from .audit_log import AuditLog
-from .log_entry import LogEntry
+from .config_entity import ConfigEntity
+from .audit_log_entity import AuditLogEntity
+from .log_entry_entity import LogEntryEntity
 
 __all__ = [
-    'Config',
-    'AuditLog',
-    'LogEntry'
+    'ConfigEntity',
+    'AuditLogEntity',
+    'LogEntryEntity'
 ] 

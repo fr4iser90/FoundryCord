@@ -3,7 +3,7 @@ Content template model for dashboard components.
 """
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, JSON
 from sqlalchemy.orm import relationship
-from ..base import Base
+from app.shared.infrastructure.models import Base
 
 class ContentTemplateEntity(Base):
     """Content template for dashboard components"""

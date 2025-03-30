@@ -4,9 +4,9 @@ Role model for database representation of user app_roles.
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from ..base import Base
+from app.shared.infrastructure.models import Base
 
-class Role(Base):
+class RoleEntity(Base):
     """Database model for app_roles"""
     __tablename__ = "app_roles"
     
@@ -19,4 +19,4 @@ class Role(Base):
     users = relationship("GuildUserEntity", back_populates="role")
     
     def __repr__(self):
-        return f"<Role(id={self.id}, name='{self.name}')>"
+        return f"<RoleEntity(id={self.id}, name='{self.name}')>"

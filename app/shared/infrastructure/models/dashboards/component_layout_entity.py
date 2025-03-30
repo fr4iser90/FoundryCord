@@ -3,7 +3,8 @@ Component layout model for dashboard positioning.
 """
 from sqlalchemy import Column, Integer, String, ForeignKey, JSON
 from sqlalchemy.orm import relationship
-from ..base import Base
+from app.shared.infrastructure.models import Base
+
 
 class ComponentLayoutEntity(Base):
     """Layout information for dashboard components"""

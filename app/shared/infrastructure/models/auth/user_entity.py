@@ -4,9 +4,9 @@ User model for authentication.
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from ..base import Base
+from app.shared.infrastructure.models import Base
 
-class User(Base):
+class UserEntity(Base):
     """User authentication model"""
     __tablename__ = "users"
     
@@ -21,7 +21,7 @@ class User(Base):
     last_login = Column(DateTime, nullable=True)
     
     # Relationships
-    sessions = relationship("Session", back_populates="user", cascade="all, delete")
+    sessions = relationship("SessionEntity", back_populates="user", cascade="all, delete")
     
     def __repr__(self):
-        return f"<User(id={self.id}, username='{self.username}')>" 
+        return f"<UserEntity(id={self.id}, username='{self.username}')>" 

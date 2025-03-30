@@ -3,9 +3,9 @@ Rate limit model for API access control.
 """
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.sql import func
-from ..base import Base
+from app.shared.infrastructure.models import Base
 
-class RateLimit(Base):
+class RateLimitEntity(Base):
     """Rate limiting for API access"""
     __tablename__ = "rate_limits"
     
@@ -16,4 +16,4 @@ class RateLimit(Base):
     created_at = Column(DateTime, server_default=func.now())
     
     def __repr__(self):
-        return f"<RateLimit(id={self.id}, key='{self.key}', counter={self.counter})>" 
+        return f"<RateLimitEntity(id={self.id}, key='{self.key}', counter={self.counter})>" 

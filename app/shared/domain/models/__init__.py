@@ -12,5 +12,5 @@ __all__ = [
     'ChannelType',
     'ThreadConfig',
     'DashboardModel',
-    'DashboardComponentModel'
+    'DashboardComponentModel',
 ]

@@ -4,9 +4,9 @@ Session model for user authentication.
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from ..base import Base
+from app.shared.infrastructure.models import Base
 
-class Session(Base):
+class SessionEntity(Base):
     """User session model"""
     __tablename__ = "sessions"
     
@@ -20,7 +20,7 @@ class Session(Base):
     device_info = Column(JSON, nullable=True)
     
     # Relationships
-    user = relationship("User", back_populates="sessions")
+    user = relationship("UserEntity", back_populates="sessions")
     
     def __repr__(self):
-        return f"<Session(id={self.id}, user_id={self.user_id})>" 
+        return f"<SessionEntity(id={self.id}, user_id={self.user_id})>" 

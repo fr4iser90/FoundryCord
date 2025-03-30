@@ -3,9 +3,9 @@ Config database model for storing key-value configuration.
 """
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy.sql import func
-from ..base import Base
+from app.shared.infrastructure.models import Base
 
-class Config(Base):
+class ConfigEntity(Base):
     """Configuration key-value storage model."""
     __tablename__ = "config"
     
@@ -16,4 +16,4 @@ class Config(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     
     def __repr__(self):
-        return f"<Config(key='{self.key}', value='{self.value}')>" 
+        return f"<ConfigEntity(key='{self.key}', value='{self.value}')>" 

@@ -9,7 +9,7 @@ import os
 import asyncio
 
 from app.shared.interface.logging.api import get_bot_logger
-from app.shared.infrastructure.models import Config
+from app.shared.infrastructure.models import ConfigEntity
 from .config import get_database_url
 
 logger = get_bot_logger()
@@ -307,7 +307,7 @@ async def get_async_session():
     conn = await get_db_connection()
     return await conn.get_session()
 
-# Config utility functions
+# ConfigEntity utility functions
 async def get_config(session, key):
     """Get a configuration value from the database.
     
@@ -319,7 +319,7 @@ async def get_config(session, key):
         Configuration value or None if not found
     """
     result = await session.execute(
-        select(Config).where(Config.key == key)
+        select(ConfigEntity).where(ConfigEntity.key == key)
     )
     config = result.scalars().first()
     return config.value if config else None
@@ -338,20 +338,20 @@ async def set_config(session, key, value):
     try:
         # Check if config exists
         result = await session.execute(
-            select(Config).where(Config.key == key)
+            select(ConfigEntity).where(ConfigEntity.key == key)
         )
         config = result.scalars().first()
         
         if config:
             # Update existing config
             await session.execute(
-                update(Config)
-                .where(Config.key == key)
+                update(ConfigEntity)
+                .where(ConfigEntity.key == key)
                 .values(value=value)
             )
         else:
             # Create new config
-            config = Config(key=key, value=value)
+            config = ConfigEntity(key=key, value=value)
             session.add(config)
             
         await session.commit()

@@ -27,7 +27,7 @@ class OverviewWorkflow(BaseWorkflow):
         except Exception as e:
             logger.error(f"Overview workflow initialization failed: {e}")
             return False
-
+    #async def collect_guild_data(self, guild: nextcord.Guild):
     async def collect_guild_data(self, guild: nextcord.GuildEntity):
         """Collect data from the guild and store in database"""
         logger.info(f"Collecting data for guild: {guild.name}")
@@ -64,8 +64,8 @@ class OverviewWorkflow(BaseWorkflow):
             
             await session.commit()
             
-            # 2. Store members and their roles
-            # Implementiere hier die Benutzersynchronisierung mit dem Role-System
+            # 2. Synchronize members and their roles
+            await self.sync_guild_members(guild, session)
 
     async def cleanup(self):
         """Cleanup resources used by the overview workflow"""
