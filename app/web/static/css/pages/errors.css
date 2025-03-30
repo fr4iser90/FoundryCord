@@ -1,42 +1,112 @@
-/* Error Pages Styling */
-.error-container {
-    max-width: 600px;
-    margin: 100px auto;
+/* Error Pages Styling - Angepasst an index.html Style */
+.login-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
     text-align: center;
-    padding: 30px;
 }
 
 .error-card {
-    background-color: var(--discord-lighter);
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    padding: 2rem;
+    background-color: var(--discord-darker);
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    padding: 2.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.3s ease;
+    width: 100%;
+    max-width: 600px;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.error-card:hover {
+    transform: translateY(-5px);
 }
 
 .error-title {
-    font-size: 2.5rem;
+    font-size: 2.8rem;
     margin-bottom: 1rem;
-    font-weight: 600;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .error-code {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     color: var(--text-secondary);
     margin-bottom: 1.5rem;
+    opacity: 0.8;
 }
 
 .error-message {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     margin-bottom: 2rem;
     color: var(--text-secondary);
+    line-height: 1.6;
 }
 
 .error-details {
-    margin: 1rem 0;
-    padding: 1rem;
-    background-color: var(--discord-darker);
-    border-radius: 6px;
+    margin: 1.5rem 0;
+    padding: 1.2rem;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
     color: var(--text-secondary);
+    font-family: monospace;
+}
+
+/* Error-specific colors with gradients */
+.error-400 .error-icon { background: linear-gradient(135deg, var(--discord-warning), #ff9966); }
+.error-401 .error-icon { background: linear-gradient(135deg, var(--discord-warning), #ff9966); }
+.error-403 .error-icon { background: linear-gradient(135deg, var(--discord-danger), #ff6b6b); }
+.error-404 .error-icon { background: linear-gradient(135deg, var(--discord-warning), #ff9966); }
+.error-500 .error-icon { background: linear-gradient(135deg, var(--discord-danger), #ff6b6b); }
+.error-503 .error-icon { background: linear-gradient(135deg, var(--discord-danger), #ff6b6b); }
+
+/* Error Icon Styling */
+.error-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin: 0 auto 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: white;
+}
+
+/* Action Button Styling */
+.error-action {
+    margin-top: 2.5rem;
+}
+
+.error-action .btn {
+    padding: 0.8rem 2.5rem;
+    font-size: 1.2rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.error-action .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Error-spezifische Farben */
@@ -47,25 +117,21 @@
 .error-500 .error-title { color: var(--discord-danger); }
 .error-503 .error-title { color: var(--discord-danger); }
 
-/* Error Icon Styling */
-.error-icon {
-    font-size: 4rem;
-    margin-bottom: 1.5rem;
+/* btn-discord */
+.btn-discord {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background-color: var(--discord-accent);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.2s;
 }
 
-.error-400 .error-icon { color: var(--discord-warning); }
-.error-401 .error-icon { color: var(--discord-warning); }
-.error-403 .error-icon { color: var(--discord-danger); }
-.error-404 .error-icon { color: var(--discord-warning); }
-.error-500 .error-icon { color: var(--discord-danger); }
-.error-503 .error-icon { color: var(--discord-danger); }
-
-/* Action Button Styling */
-.error-action {
-    margin-top: 2rem;
-}
-
-.error-action .btn {
-    padding: 0.75rem 2rem;
-    font-size: 1.1rem;
+.btn-discord:hover {
+    background-color: #5c6fb1;
+    color: white;
 } 

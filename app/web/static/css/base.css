@@ -21,6 +21,8 @@
     --discord-danger: #f04747;
     --discord-warning: #faa61a;
     --discord-channel: #4f545c;
+    --header-height: 0px; /* Anpassen wenn Header vorhanden */
+    --footer-height: 60px;
 }
 
 body {
@@ -40,7 +42,8 @@ body {
 
 .main-content {
     flex: 1;
-    padding: 20px;
+    position: relative; /* Für die absolute Positionierung des error-container */
+    min-height: 100vh;
 }
 
 /* Header Styles */
