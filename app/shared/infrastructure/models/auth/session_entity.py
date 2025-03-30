@@ -11,7 +11,7 @@ class SessionEntity(Base):
     __tablename__ = "sessions"
     
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("app_users.id", ondelete="CASCADE"), nullable=False)
     token = Column(String(255), unique=True, nullable=False)
     ip_address = Column(String(50), nullable=True)
     user_agent = Column(String(255), nullable=True)
@@ -20,7 +20,7 @@ class SessionEntity(Base):
     device_info = Column(JSON, nullable=True)
     
     # Relationships
-    user = relationship("UserEntity", back_populates="sessions")
+    user = relationship("AppUserEntity", back_populates="sessions")
     
     def __repr__(self):
         return f"<SessionEntity(id={self.id}, user_id={self.user_id})>" 

@@ -15,10 +15,10 @@ from .base import Base
 from .core import ConfigEntity, AuditLogEntity, LogEntryEntity
 
 # Auth models
-from .auth import UserEntity, SessionEntity, RateLimitEntity, RoleEntity
+from .auth import AppUserEntity, SessionEntity, RateLimitEntity, AppRoleEntity
 
 # Discord models
-from .discord import ChannelMapping, CategoryMapping, AutoThreadChannelEntity, GuildConfigEntity, GuildEntity, MessageEntity, GuildUserEntity, ChannelEntity, ChannelPermissionEntity, CategoryEntity, CategoryPermissionEntity
+from .discord import ChannelMapping, CategoryMapping, AutoThreadChannelEntity, GuildConfigEntity, GuildEntity, MessageEntity, DiscordGuildUserEntity, ChannelEntity, ChannelPermissionEntity, CategoryEntity, CategoryPermissionEntity
 
 # Dashboard models
 from .dashboards import DashboardEntity, DashboardComponentEntity, ComponentLayoutEntity, ContentTemplateEntity, DashboardMessageEntity
@@ -36,9 +36,9 @@ __all__ = [
     # Core models
     'ConfigEntity', 'AuditLogEntity', 'LogEntryEntity',
     # Auth models
-    'UserEntity', 'SessionEntity', 'RateLimitEntity', 'RoleEntity',
+    'AppUserEntity', 'SessionEntity', 'RateLimitEntity', 'AppRoleEntity',
     # Discord models
-    'ChannelMapping', 'CategoryMapping', 'AutoThreadChannelEntity', 'GuildConfigEntity', 'GuildEntity', 'MessageEntity', 'GuildUserEntity', 'ChannelEntity', 'ChannelPermissionEntity', 'CategoryEntity', 'CategoryPermissionEntity',
+    'ChannelMapping', 'CategoryMapping', 'AutoThreadChannelEntity', 'GuildConfigEntity', 'GuildEntity', 'MessageEntity', 'DiscordGuildUserEntity', 'ChannelEntity', 'ChannelPermissionEntity', 'CategoryEntity', 'CategoryPermissionEntity',
     # Dashboard models
     'DashboardEntity', 'DashboardComponentEntity', 'ComponentLayoutEntity', 'ContentTemplateEntity', 'DashboardMessageEntity',
     # Project models

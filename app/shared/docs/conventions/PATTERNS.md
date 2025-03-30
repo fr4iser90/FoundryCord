@@ -31,15 +31,15 @@ class SQLAlchemyRepository(IRepository[T]):
 ### 1.2 Entity Mapping Pattern
 ```python
 class UserRepositoryImpl(SQLAlchemyRepository[User]):
-    def _to_entity(self, domain: User) -> UserEntity:
+    def _to_entity(self, domain: User) -> AppUserEntity:
         """Map domain object to database entity"""
-        return UserEntity(
+        return AppUserEntity(
             id=domain.id,
             username=domain.username,
             email=domain.email.value
         )
     
-    def _to_domain(self, entity: UserEntity) -> User:
+    def _to_domain(self, entity: AppUserEntity) -> User:
         """Map database entity to domain object"""
         return User(
             id=entity.id,

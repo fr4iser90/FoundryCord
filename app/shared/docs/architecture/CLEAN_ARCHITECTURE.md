@@ -101,6 +101,6 @@ class UserRepositoryImpl(IUserRepository):
         self.session = session
         
     async def get_by_id(self, id: str) -> User:
-        user_entity = await self.session.get(UserEntity, id)
+        user_entity = await self.session.get(AppUserEntity, id)
         return self._to_domain(user_entity)
 ``` 

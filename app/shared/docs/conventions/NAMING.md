@@ -33,7 +33,7 @@
 - Suffix with 'Entity'
 - Match domain model names
 - Examples:
-  - `UserEntity`
+  - `AppUserEntity`
   - `ProjectEntity`
   - `AuditLogEntity`
 

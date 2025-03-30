@@ -68,14 +68,14 @@ class EmailAddress:
 
 ### 3.1 Entity Models
 ```python
-class UserEntity(Base):
+class AppUserEntity(Base):
     __tablename__ = "users"
     
     id = Column(Integer, primary_key=True)
     username = Column(String(100), nullable=False)
     
     def __repr__(self) -> str:
-        return f"<UserEntity(id={self.id}, username='{self.username}')>"
+        return f"<AppUserEntity(id={self.id}, username='{self.username}')>"
 ```
 
 ### 3.2 Repository Implementation
@@ -85,10 +85,10 @@ class UserRepositoryImpl(IUserRepository):
         self._session = session  # Use underscore for internal attributes
     
     async def get_by_id(self, id: str) -> Optional[User]:
-        result = await self._session.get(UserEntity, id)
+        result = await self._session.get(AppUserEntity, id)
         return self._to_domain(result) if result else None
     
-    def _to_domain(self, entity: UserEntity) -> User:  # Internal helper methods with underscore
+    def _to_domain(self, entity: AppUserEntity) -> User:  # Internal helper methods with underscore
         return User(
             id=str(entity.id),
             username=entity.username
@@ -144,7 +144,7 @@ class TestUser(unittest.TestCase):
 @patch('app.shared.infrastructure.repositories.user_repository.AsyncSession')
 async def test_get_user(self, mock_session):
     # Arrange
-    mock_session.get.return_value = UserEntity(id=1, username="test")
+    mock_session.get.return_value = AppUserEntity(id=1, username="test")
     repository = UserRepositoryImpl(mock_session)
     
     # Act

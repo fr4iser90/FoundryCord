@@ -39,7 +39,7 @@ from app.shared.infrastructure.database.migrations.wait_for_postgres import wait
 # Import models
 from app.shared.infrastructure.models import (
     Base,
-    UserEntity, SessionEntity, RateLimitEntity, AuditLogEntity,
+    AppUserEntity, SessionEntity, RateLimitEntity, AuditLogEntity,
     ChannelMapping, CategoryMapping,
     DashboardMessageEntity,
     Project, Task,
@@ -80,7 +80,7 @@ __all__ = [
     
     # Models
     'Base',
-    'UserEntity', 'SessionEntity', 'RateLimitEntity', 'AuditLogEntity',
+    'AppUserEntity', 'SessionEntity', 'RateLimitEntity', 'AuditLogEntity',
     'ChannelMapping', 'CategoryMapping',
     'DashboardMessage',
     'Project', 'Task',

@@ -6,7 +6,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.shared.infrastructure.models import Base
 
-class RoleEntity(Base):
+class AppRoleEntity(Base):
     """Database model for app_roles"""
     __tablename__ = "app_roles"
     
@@ -16,7 +16,7 @@ class RoleEntity(Base):
     created_at = Column(DateTime, server_default=func.now())
     
     # Relationships
-    users = relationship("GuildUserEntity", back_populates="role")
+    users = relationship("DiscordGuildUserEntity", back_populates="role")
     
     def __repr__(self):
-        return f"<RoleEntity(id={self.id}, name='{self.name}')>"
+        return f"<AppRoleEntity(id={self.id}, name='{self.name}')>"

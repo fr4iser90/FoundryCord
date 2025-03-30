@@ -32,7 +32,7 @@ Die Repository-Implementierungen in `app/shared/infrastructure/repositories/` si
 Beispiel:
 ```python
 # Umwandlung SQLAlchemy → Domain-Entität
-def _entity_to_domain(user_entity: UserEntity) -> User:
+def _entity_to_domain(user_entity: AppUserEntity) -> User:
     return User(
         id=user_entity.id,
         username=user_entity.username,
@@ -40,8 +40,8 @@ def _entity_to_domain(user_entity: UserEntity) -> User:
     )
 
 # Umwandlung Domain-Entität → SQLAlchemy
-def _domain_to_entity(user: User) -> UserEntity:
-    return UserEntity(
+def _domain_to_entity(user: User) -> AppUserEntity:
+    return AppUserEntity(
         id=user.id,
         username=user.username,
         email=user.email

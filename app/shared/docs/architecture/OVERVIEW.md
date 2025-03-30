@@ -71,7 +71,7 @@ graph TD
 2. **Infrastructure Layer**
    ```python
    # Database Entity
-   class UserEntity(Base):
+   class AppUserEntity(Base):
        __tablename__ = 'users'
        id = Column(String, primary_key=True)
        username = Column(String)

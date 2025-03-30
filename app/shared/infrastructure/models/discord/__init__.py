@@ -7,7 +7,7 @@ from .entities.category_entity import CategoryEntity, CategoryPermissionEntity
 from .entities.auto_thread_channel_entity import AutoThreadChannelEntity
 from .entities.guild_entity import GuildEntity
 from .entities.message_entity import MessageEntity
-from .entities.guild_user_entity import GuildUserEntity
+from .entities.guild_user_entity import DiscordGuildUserEntity
 from .entities.guild_config_entity import GuildConfigEntity
 
 # Importing mappings
@@ -20,7 +20,7 @@ __all__ = [
     'AutoThreadChannelEntity',
     'GuildEntity',
     'MessageEntity',
-    'GuildUserEntity',
+    'DiscordGuildUserEntity',
     'GuildConfigEntity',
     'ChannelEntity',
     'CategoryEntity',

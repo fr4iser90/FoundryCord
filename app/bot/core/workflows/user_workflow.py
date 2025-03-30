@@ -1,7 +1,7 @@
 from typing import List
 import logging
 from nextcord import Guild, Member
-from app.shared.infrastructure.models.discord.entities.guild_user_entity import GuildUserEntity
+from app.shared.infrastructure.models.discord.entities.guild_user_entity import DiscordGuildUserEntity
 from app.shared.domain.repositories.auth.user_repository import UserRepository
 from .base_workflow import BaseWorkflow
 from app.shared.interface.logging.api import get_bot_logger
