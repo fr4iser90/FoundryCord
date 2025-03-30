@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
 # =======================================================
-# HomeLab Discord Bot - Display Functions
+# Docker Deployment Center - Display Functions
 # =======================================================
 
 # Display header with dynamic content
 show_header() {
     clear
     echo -e "${YELLOW}=========================================================${NC}"
-    echo -e "${YELLOW}     HomeLab Discord Bot - Central Management Tool       ${NC}"
+    echo -e "${YELLOW}                  Docker Deployment Center               ${NC}"
     echo -e "${YELLOW}=========================================================${NC}"
     echo -e "${YELLOW}Current Settings:${NC}"
     echo -e "  Server: ${GREEN}${SERVER_USER}@${SERVER_HOST}${NC}"

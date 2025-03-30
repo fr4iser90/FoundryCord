@@ -4,6 +4,7 @@ import logging
 from app.shared.domain.models.discord.channel_model import ChannelModel, ChannelType, ChannelTemplate
 from app.shared.domain.repositories.discord.channel_repository import ChannelRepository
 from app.bot.domain.categories.repositories.category_repository import CategoryRepository
+from app.shared.infrastructure.database.session.context import session_context
 
 logger = logging.getLogger(__name__)
 
@@ -180,23 +181,35 @@ class ChannelBuilder:
     
     async def sync_channels(self, guild: discord.Guild) -> None:
         """Sync database channels with existing Discord channels"""
-        for discord_channel in guild.channels:
-            # Skip categories
-            if isinstance(discord_channel, discord.CategoryChannel):
-                continue
-                
-            # Check if channel exists in database
-            channel = self.channel_repository.get_channel_by_discord_id(discord_channel.id)
-            if not channel:
-                # Try to find by name and category
-                if discord_channel.category:
-                    db_category = self.category_repository.get_category_by_discord_id(discord_channel.category.id)
-                    if db_category:
-                        channel = self.channel_repository.get_channel_by_name_and_category(
-                            discord_channel.name, db_category.id
-                        )
-                
-                if channel:
-                    # Update Discord ID
-                    self.channel_repository.update_discord_id(channel.id, discord_channel.id)
-                    logger.info(f"Linked existing channel: {discord_channel.name} (ID: {discord_channel.id})") 
+        from app.shared.infrastructure.database.api import get_session
+        
+        async with session_context() as session:
+            # Create temporary repository instances with the current session
+            from app.shared.infrastructure.repositories.discord.channel_repository_impl import ChannelRepositoryImpl
+            from app.shared.infrastructure.repositories.discord.category_repository_impl import CategoryRepositoryImpl
+            
+            temp_channel_repo = ChannelRepositoryImpl(session)
+            temp_category_repo = CategoryRepositoryImpl(session)
+            
+            for discord_channel in guild.channels:
+                # Skip categories
+                if isinstance(discord_channel, discord.CategoryChannel):
+                    continue
+                    
+                # Check if channel exists in database
+                channel = await temp_channel_repo.get_channel_by_discord_id(discord_channel.id)
+                if not channel:
+                    # Try to find by name and category
+                    if discord_channel.category:
+                        db_category = await temp_category_repo.get_by_discord_id(discord_channel.category.id)
+                        if db_category:
+                            channel = await temp_channel_repo.get_channel_by_name_and_category(
+                                discord_channel.name, db_category.id
+                            )
+                    
+                    if channel:
+                        # Update Discord ID
+                        await temp_channel_repo.update_discord_id(channel.id, discord_channel.id)
+                        logger.info(f"Linked existing channel: {discord_channel.name} (ID: {discord_channel.id})")
+        
+        logger.info("Channel synchronization completed") 

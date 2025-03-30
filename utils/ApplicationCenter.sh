@@ -98,37 +98,7 @@ main() {
         run_initial_setup
         exit $?
     fi
-    
-    # Check if this is the first run
-    local first_run=false
-    if [ ! -f "./utils/config/local_config.sh" ] || [ ! -f "${PROJECT_ROOT_DIR}/.env" ]; then
-        first_run=true
-    fi
-    
-    # For initial setup, check remote directories
-    if [ "$first_run" = true ]; then
-        echo "Checking remote directories..."
-        if check_ssh_connection; then
-            # Check project directory and create if needed
-            if ! ssh -p "${SERVER_PORT}" "${SERVER_USER}@${SERVER_HOST}" "test -d ${PROJECT_ROOT_DIR}" > /dev/null 2>&1; then
-                echo -e "${YELLOW}Project directory not found: ${PROJECT_ROOT_DIR}${NC}"
-                if get_yes_no "Would you like to create the directory structure?"; then
-                    ssh -p "${SERVER_PORT}" "${SERVER_USER}@${SERVER_HOST}" "mkdir -p ${PROJECT_ROOT_DIR}/{docker,app,web,backups}"
-                    echo -e "${GREEN}Directory structure created.${NC}"
-                fi
-            fi
-            
-            # Check Docker directory and create if needed
-            if ! ssh -p "${SERVER_PORT}" "${SERVER_USER}@${SERVER_HOST}" "test -d ${DOCKER_DIR}" > /dev/null 2>&1; then
-                echo -e "${YELLOW}Docker directory not found: ${DOCKER_DIR}${NC}"
-                if get_yes_no "Would you like to create the Docker directory?"; then
-                    ssh -p "${SERVER_PORT}" "${SERVER_USER}@${SERVER_HOST}" "mkdir -p ${DOCKER_DIR}"
-                    echo -e "${GREEN}Docker directory created.${NC}"
-                fi
-            fi
-        fi
-    fi
-    
+        
     # Display main menu
     show_main_menu
 }

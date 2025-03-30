@@ -170,7 +170,10 @@ class ChannelRepositoryImpl(ChannelRepository):
         """Get a channel by its Discord ID"""
         session = await self._get_session()
         try:
-            channel = await session.get(ChannelEntity, {'discord_id': discord_id})
+            result = await session.execute(
+                select(ChannelEntity).where(ChannelEntity.discord_id == discord_id)
+            )
+            channel = result.scalar_one_or_none()
             return self._entity_to_model(channel) if channel else None
         finally:
             if session != self.session_or_service:

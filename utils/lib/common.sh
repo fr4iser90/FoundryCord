@@ -206,26 +206,6 @@ get_yes_no() {
     esac
 }
 
-# Check if docker-compose.yml exists (for both bot and web)
-check_docker_compose_files() {
-    log_info "Checking for docker-compose files..."
-    
-    if run_remote_command "test -f ${BOT_COMPOSE_FILE}" "true"; then
-        log_success "Bot docker-compose.yml exists."
-    else
-        log_error "Bot docker-compose.yml NOT found at ${BOT_COMPOSE_FILE}"
-        return 1
-    fi
-    
-    if run_remote_command "test -f ${WEB_COMPOSE_FILE}" "true"; then
-        log_success "Web docker-compose.yml exists."
-    else
-        log_warning "Web docker-compose.yml NOT found at ${WEB_COMPOSE_FILE}"
-        # Not returning error as web might be optional
-    fi
-    
-    return 0
-}
 
 # ------------------------------------------------------
 # Docker Functions

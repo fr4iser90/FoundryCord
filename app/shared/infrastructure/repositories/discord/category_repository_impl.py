@@ -13,9 +13,13 @@ class CategoryRepositoryImpl(CategoryRepository):
         result = await self.session.execute(select(CategoryMapping).where(CategoryMapping.id == category_id))
         return result.scalar_one_or_none()
     
-    async def get_by_discord_id(self, category_discord_id: str) -> Optional[CategoryMapping]:
+    async def get_by_discord_id(self, category_discord_id: int) -> Optional[CategoryMapping]:
         """Get a category by its Discord category ID"""
-        result = await self.session.execute(select(CategoryMapping).where(CategoryMapping.category_id == category_discord_id))
+        # Convert the numeric Discord ID to string for database comparison
+        category_id_str = str(category_discord_id)
+        result = await self.session.execute(
+            select(CategoryMapping).where(CategoryMapping.category_id == category_id_str)
+        )
         return result.scalar_one_or_none()
     
     async def get_by_guild_and_type(self, guild_id: str, category_type: str) -> Optional[CategoryMapping]:
