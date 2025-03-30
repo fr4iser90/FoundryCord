@@ -13,11 +13,11 @@ class BotPublicController:
     
     def _register_routes(self):
         """Registriert alle Routes für diesen Controller"""
-        self.router.get("/status", endpoint=self.get_bot_status)
-        self.router.get("/servers", endpoint=self.get_servers_info)
-        self.router.get("/system-resources", endpoint=self.get_system_resources)
-        self.router.get("/recent-activities", endpoint=self.get_recent_activities)
-        self.router.get("/popular-commands", endpoint=self.get_popular_commands)
+        self.router.get("/status")(self.get_bot_status)
+        self.router.get("/servers")(self.get_servers_info)
+        self.router.get("/system-resources")(self.get_system_resources)
+        self.router.get("/recent-activities")(self.get_recent_activities)
+        self.router.get("/popular-commands")(self.get_popular_commands)
     
     async def get_bot_status(self, 
                            bot_connector=Depends(get_bot_connector),
@@ -74,8 +74,9 @@ class BotPublicController:
         ]
 
 # Für API-Kompatibilität: Exportiere die einzelnen Funktionen auch direkt
-get_bot_status = BotPublicController().get_bot_status
-get_servers_info = BotPublicController().get_servers_info
-get_system_resources = BotPublicController().get_system_resources
-get_recent_activities = BotPublicController().get_recent_activities
-get_popular_commands = BotPublicController().get_popular_commands
+bot_public_controller = BotPublicController()
+get_bot_status = bot_public_controller.get_bot_status
+get_servers_info = bot_public_controller.get_servers_info
+get_system_resources = bot_public_controller.get_system_resources
+get_recent_activities = bot_public_controller.get_recent_activities
+get_popular_commands = bot_public_controller.get_popular_commands

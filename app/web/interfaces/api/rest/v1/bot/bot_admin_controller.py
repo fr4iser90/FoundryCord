@@ -21,14 +21,14 @@ class BotAdminController:
     
     def _register_routes(self):
         """Registriert alle Routes für diesen Controller"""
-        self.router.get("/status", endpoint=self.get_bot_status)
-        self.router.post("/start", endpoint=self.start_bot)
-        self.router.post("/stop", endpoint=self.stop_bot)
-        self.router.post("/restart", endpoint=self.restart_bot)
-        self.router.post("/workflow/{workflow_name}/enable", endpoint=self.enable_workflow)
-        self.router.post("/workflow/{workflow_name}/disable", endpoint=self.disable_workflow)
-        self.router.get("/overview-stats", endpoint=self.get_overview_stats)
-        self.router.get("/servers", endpoint=self.get_servers)
+        self.router.get("/status")(self.get_bot_status)
+        self.router.post("/start")(self.start_bot)
+        self.router.post("/stop")(self.stop_bot)
+        self.router.post("/restart")(self.restart_bot)
+        self.router.post("/workflow/{workflow_name}/enable")(self.enable_workflow)
+        self.router.post("/workflow/{workflow_name}/disable")(self.disable_workflow)
+        self.router.get("/overview-stats")(self.get_overview_stats)
+        self.router.get("/servers")(self.get_servers)
     
     async def get_bot_status(self, current_user=Depends(get_current_user)):
         """Get current bot status"""
@@ -223,11 +223,12 @@ class BotAdminController:
             )
 
 # Für API-Kompatibilität: Exportiere die einzelnen Funktionen auch direkt
-get_bot_status = BotAdminController().get_bot_status
-start_bot = BotAdminController().start_bot
-stop_bot = BotAdminController().stop_bot
-restart_bot = BotAdminController().restart_bot
-enable_workflow = BotAdminController().enable_workflow
-disable_workflow = BotAdminController().disable_workflow
-get_overview_stats = BotAdminController().get_overview_stats
-get_servers = BotAdminController().get_servers 
+bot_admin_controller = BotAdminController()
+get_bot_status = bot_admin_controller.get_bot_status
+start_bot = bot_admin_controller.start_bot
+stop_bot = bot_admin_controller.stop_bot
+restart_bot = bot_admin_controller.restart_bot
+enable_workflow = bot_admin_controller.enable_workflow
+disable_workflow = bot_admin_controller.disable_workflow
+get_overview_stats = bot_admin_controller.get_overview_stats
+get_servers = bot_admin_controller.get_servers 

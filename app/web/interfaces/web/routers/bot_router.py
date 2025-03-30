@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from app.web.core.extensions import get_templates
 from app.web.application.services.auth.dependencies import get_current_user
 from app.web.domain.auth.permissions import Role, require_role
-from app.web.interfaces.api.rest.v1.bot_admin_router import get_overview_stats
+from app.web.interfaces.api.rest.v1.bot.bot_admin_controller import get_overview_stats
 from app.shared.infrastructure.integration.bot_connector import get_bot_connector
 import psutil
 

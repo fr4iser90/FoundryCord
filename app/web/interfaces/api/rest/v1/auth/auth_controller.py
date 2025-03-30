@@ -12,8 +12,8 @@ class AuthController:
     
     def _register_routes(self):
         """Registriert alle Routes für diesen Controller"""
-        self.router.get("/me", endpoint=self.get_current_user_info)
-        self.router.get("/logout", endpoint=self.logout)
+        self.router.get("/me")(self.get_current_user_info)
+        self.router.get("/logout")(self.logout)
     
     async def get_current_user_info(self, user = Depends(get_current_user)):
         """Get current user information"""
@@ -33,4 +33,9 @@ class AuthController:
         """Returns instruction for client-side logout"""
         return {
             "message": "To logout, delete the access_token cookie"
-        } 
+        }
+
+# Für API-Kompatibilität
+auth_controller = AuthController()
+get_current_user_info = auth_controller.get_current_user_info
+logout = auth_controller.logout 
