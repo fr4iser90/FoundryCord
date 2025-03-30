@@ -29,6 +29,26 @@ def upgrade() -> None:
     )
     
     # ==========================================================================
+    # Discord Guild Configuration Table
+    # ==========================================================================
+    op.create_table(
+        'guild_configs',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('guild_id', sa.String(length=255), nullable=False, unique=True),
+        sa.Column('guild_name', sa.String(length=255), nullable=False),
+        sa.Column('enable_categories', sa.Boolean(), nullable=False, server_default=sa.text('true')),
+        sa.Column('enable_channels', sa.Boolean(), nullable=False, server_default=sa.text('true')),
+        sa.Column('enable_dashboard', sa.Boolean(), nullable=False, server_default=sa.text('true')),
+        sa.Column('enable_tasks', sa.Boolean(), nullable=False, server_default=sa.text('true')),
+        sa.Column('enable_services', sa.Boolean(), nullable=False, server_default=sa.text('true')),
+        sa.Column('settings', sa.Text(), nullable=True),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), 
+                  onupdate=sa.text('now()'), nullable=False),
+        sa.PrimaryKeyConstraint('id')
+    )
+    
+    # ==========================================================================
     # App Tables - Users and Roles
     # ==========================================================================
     op.create_table(
@@ -341,3 +361,6 @@ def downgrade() -> None:
     
     # CORE Tables
     op.drop_table('security_keys')
+    
+    # Drop the guild_configs table
+    op.drop_table('guild_configs')

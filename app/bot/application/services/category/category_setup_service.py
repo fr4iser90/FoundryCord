@@ -91,7 +91,6 @@ class CategorySetupService:
     
     async def sync_with_discord(self, guild: discord.Guild) -> None:
         """Sync categories with existing Discord categories"""
-        logger.info(f"Syncing categories with Discord for guild {guild.name}")
         
         # Get all categories from the repository
         categories = await self.category_repository.get_all_categories()

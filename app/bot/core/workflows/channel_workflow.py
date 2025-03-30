@@ -143,7 +143,9 @@ class ChannelWorkflow(BaseWorkflow):
             
         # Check if this workflow is enabled for this guild
         async with session_context() as session:
-            guild_config_repo = GuildConfigRepository(session)
+            # Use the implementation class instead of the abstract base class
+            from app.shared.infrastructure.repositories.discord.guild_config_repository_impl import GuildConfigRepositoryImpl
+            guild_config_repo = GuildConfigRepositoryImpl(session)
             config = await guild_config_repo.get_by_guild_id(str(guild.id))
             
             if not config or not config.enable_channels:

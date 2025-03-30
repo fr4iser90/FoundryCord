@@ -1,10 +1,11 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.shared.infrastructure.models import GuildConfigEntity
+from app.shared.domain.repositories.discord.guild_config_repository import GuildConfigRepository
 from typing import Optional, List, Dict, Any
 import json
 
-class GuildConfigRepositoryImpl:
+class GuildConfigRepositoryImpl(GuildConfigRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
     
@@ -24,6 +25,7 @@ class GuildConfigRepositoryImpl:
                               features: Dict[str, bool] = None, 
                               settings: Dict[str, Any] = None) -> GuildConfigEntity:
         """Create or update guild configuration"""
+        # First check if config exists
         config = await self.get_by_guild_id(guild_id)
         
         if not config:
