@@ -7,7 +7,7 @@ from app.shared.infrastructure.models.base import Base
 
 class GuildEntity(Base):
     """Discord guild model"""
-    __tablename__ = "guilds"
+    __tablename__ = "discord_guilds"
     
     id = Column(Integer, primary_key=True)  # Primärschlüssel hinzugefügt
     guild_id = Column(String(20), unique=True, nullable=False)

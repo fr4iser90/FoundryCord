@@ -1,0 +1,112 @@
+{% extends "layouts/admin_layout.html" %}
+
+{% block title %}Admin Dashboard - HomeLab Discord Bot{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Bot Admin Dashboard</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item active">Dashboard</li>
+    </ol>
+    
+    <div class="row">
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">
+                    <h2 class="card-title">{{ stats.user_count }}</h2>
+                    <p>Registered Users</p>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" href="/admin/users">View Details</a>
+                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-warning text-white mb-4">
+                <div class="card-body">
+                    <h2 class="card-title">{{ stats.active_users }}</h2>
+                    <p>Active Users</p>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" href="/admin/users">View Details</a>
+                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-success text-white mb-4">
+                <div class="card-body">
+                    <h2 class="card-title">{{ stats.bot_uptime }}</h2>
+                    <p>Bot Uptime</p>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" href="/admin/system">View System</a>
+                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-xl-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-chart-area me-1"></i>
+                    System Resources
+                </div>
+                <div class="card-body">
+                    <div id="systemResourcesChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-chart-bar me-1"></i>
+                    Recent Activity
+                </div>
+                <div class="card-body">
+                    <div id="activityLog" style="height: 300px; overflow-y: auto;">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Action</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Just now</td>
+                                    <td>Admin Login</td>
+                                    <td>{{ user.username }} logged in</td>
+                                </tr>
+                                <tr>
+                                    <td>5 min ago</td>
+                                    <td>System</td>
+                                    <td>Bot status checked</td>
+                                </tr>
+                                <tr>
+                                    <td>1 hour ago</td>
+                                    <td>Config</td>
+                                    <td>Settings updated</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Hier könnten in Zukunft Chart.js oder andere Visualisierungen eingefügt werden
+        console.log("Admin dashboard loaded");
+    });
+</script>
+{% endblock %} 

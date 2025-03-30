@@ -58,7 +58,7 @@ class UserWorkflow(BaseWorkflow):
             for member in members:
                 try:
                     # Debug log for each member being processed
-                    logger.debug(f"Processing member: {member.name}#{member.discriminator} (ID: {member.id})")
+                    #logger.debug(f"Processing member: {member.name}#{member.discriminator} (ID: {member.id})")
                     
                     user_data = {
                         'discord_id': member.id,
