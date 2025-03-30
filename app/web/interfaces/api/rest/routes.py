@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.web.interfaces.api.v1 import routers as v1_routers
+from app.web.interfaces.api.rest.v1 import routers as v1_routers
 
 # Create a master router for all API routes
 router = APIRouter(prefix="/api", tags=["API"])

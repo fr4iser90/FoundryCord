@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from app.web.interfaces.web.routers import routers
 #from app.web.api.dashboard import router as dashboard_api_router
-from app.web.interfaces.api.routes import router as api_router
+from app.web.interfaces.api.rest.routes import router as api_router
 from app.shared.interface.logging.api import get_bot_logger
 
 logger = get_bot_logger()
