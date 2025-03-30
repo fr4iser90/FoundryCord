@@ -2,17 +2,16 @@
 import asyncio
 import logging
 from typing import Optional
-
 from app.shared.infrastructure.database.bootstrapper import initialize_database
 from app.shared.infrastructure.security.security_bootstrapper import initialize_security
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interface.logging.api import get_db_logger
 
 class ApplicationBootstrap:
     """Class for bootstrapping application components."""
     
     def __init__(self, container_type: str):
         self.container_type = container_type
-        self.logger = get_bot_logger()
+        self.logger = get_db_logger()
 
     async def bootstrap(self) -> bool:
         """

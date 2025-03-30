@@ -47,15 +47,17 @@ class DashboardWorkflow(BaseWorkflow):
             # Implementierung verwenden, aber Interface-Typ deklarieren
             self.dashboard_repository: DashboardRepository = DashboardRepositoryImpl(db_service)
             
-            # Initialize service
-            self.dashboard_service = DashboardService(
-                db_service, 
-                self.bot
-            )
-            
             # Initialize registries
             self.component_registry = ComponentRegistry()
             self.data_source_registry = DataSourceRegistry()
+            
+            # Initialize service
+            self.dashboard_service = DashboardService(
+                db_service, 
+                self.bot,
+                self.component_registry,
+                self.data_source_registry
+            )
             
             return True
             

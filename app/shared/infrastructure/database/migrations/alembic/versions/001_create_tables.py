@@ -93,6 +93,29 @@ def upgrade() -> None:
         sa.UniqueConstraint('name')
     )
     
+    # Category mappings table (added to initial migration)
+    op.create_table(
+        'category_mappings',
+        sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
+        sa.Column('guild_id', sa.String(20), nullable=False),
+        sa.Column('category_id', sa.String(20), nullable=False),
+        sa.Column('category_name', sa.String(100), nullable=False),
+        sa.Column('category_type', sa.String(50), nullable=False),
+        sa.Column('enabled', sa.Boolean(), nullable=False, server_default='true'),
+        # Additional behavior flags
+        sa.Column('delete_on_shutdown', sa.Boolean(), nullable=False, server_default='false'),
+        sa.Column('create_on_startup', sa.Boolean(), nullable=False, server_default='true'),
+        sa.Column('sync_permissions', sa.Boolean(), nullable=False, server_default='true'),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), onupdate=sa.text('now()'), nullable=False),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('guild_id', 'category_name', name='uq_guild_category_name')
+    )
+    
+    # Create index for faster lookups
+    op.create_index('idx_category_mappings_guild', 'category_mappings', ['guild_id'])
+    op.create_index('idx_category_mappings_enabled', 'category_mappings', ['enabled'])
+    
     op.create_table(
         'discord_channels',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -117,6 +140,30 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('name')
     )
+    
+    # Channel mappings table (added to initial migration)
+    op.create_table(
+        'channel_mappings',
+        sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
+        sa.Column('guild_id', sa.String(20), nullable=False),
+        sa.Column('channel_id', sa.String(20), nullable=False),
+        sa.Column('channel_name', sa.String(100), nullable=False),
+        sa.Column('channel_type', sa.String(50), nullable=False),
+        sa.Column('parent_channel_id', sa.String(20), nullable=True),
+        sa.Column('enabled', sa.Boolean(), nullable=False, server_default='true'),
+        # Additional behavior flags
+        sa.Column('delete_on_shutdown', sa.Boolean(), nullable=False, server_default='false'),
+        sa.Column('create_on_startup', sa.Boolean(), nullable=False, server_default='true'),
+        sa.Column('sync_permissions', sa.Boolean(), nullable=False, server_default='true'),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), onupdate=sa.text('now()'), nullable=False),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('guild_id', 'channel_name', name='uq_guild_channel_name')
+    )
+    
+    # Create index for faster lookups
+    op.create_index('idx_channel_mappings_guild', 'channel_mappings', ['guild_id'])
+    op.create_index('idx_channel_mappings_enabled', 'channel_mappings', ['enabled'])
     
     op.create_table(
         'discord_guild_users',
