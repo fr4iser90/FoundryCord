@@ -39,12 +39,8 @@ export PROJECT_NAME="${PROJECT_NAME:-discord-server-bot}"
 # Bot paths
 export DOCKER_DIR="${PROJECT_ROOT_DIR}/docker"
 export APP_DIR="${PROJECT_ROOT_DIR}/app"
-export BOT_DIR="${PROJECT_ROOT_DIR}/app/bot"
-export WEB_DIR="${PROJECT_ROOT_DIR}/app/web"
 export TEST_DIR="${PROJECT_ROOT_DIR}/app/tests"
 
-# Database paths
-export POSTGRES_DIR="${PROJECT_ROOT_DIR}/app/postgres"
 
 # Local paths
 export LOCAL_RESULTS_DIR="./test-results"

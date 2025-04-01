@@ -47,8 +47,8 @@ if [ -z "$APP_DB_PASSWORD" ]; then
 fi
 
 # Set default values for other variables if not provided
-APP_DB_USER=${APP_DB_USER:-homelab_discord_bot}
-POSTGRES_DB=${POSTGRES_DB:-homelab}
+APP_DB_USER=${APP_DB_USER:-foundrycord_bot}
+POSTGRES_DB=${POSTGRES_DB:-foundrycord}
 
 # Create databases and users
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL

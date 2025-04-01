@@ -14,24 +14,43 @@ deploy_app() {
         # Ensure local directories exist
         mkdir -p "${LOCAL_APP_DIR}"
         
-        # Copy application files
-        cp -r "${LOCAL_GIT_DIR}/app/"* "${LOCAL_APP_DIR}/"
-        
-        if [ $? -eq 0 ]; then
-            print_success "Application files deployed locally to ${LOCAL_APP_DIR}!"
+        # Copy application files from git directory to local development directory
+        if [ -d "${LOCAL_GIT_DIR}/app" ]; then
+            cp -r "${LOCAL_GIT_DIR}/app/"* "${LOCAL_APP_DIR}/"
+            
+            if [ $? -eq 0 ]; then
+                print_success "Application files deployed locally to ${LOCAL_APP_DIR}!"
+            else
+                print_error "Failed to copy application files locally"
+                return 1
+            fi
         else
-            print_error "Failed to copy application files locally"
+            print_error "Source directory ${LOCAL_GIT_DIR}/app not found!"
             return 1
         fi
     else
+        # Create remote directories first
+        print_info "Creating remote directories..."
+        ssh ${SERVER_USER}@${SERVER_HOST} "mkdir -p ${SERVER_PROJECT_DIR}/{app,docker,utils/config}"
+        
+        if [ $? -ne 0 ]; then
+            print_error "Failed to create remote directories"
+            return 1
+        fi
+        
         # Copy application files to remote server
         print_info "Copying application files to remote server..."
-        scp -r "${LOCAL_GIT_DIR}/app/"* "${SERVER_USER}@${SERVER_HOST}:${APP_DIR}/"
-        
-        if [ $? -eq 0 ]; then
-            print_success "Application files deployed successfully to remote server!"
+        if [ -d "${LOCAL_GIT_DIR}/app" ]; then
+            scp -r "${LOCAL_GIT_DIR}/app/"* "${SERVER_USER}@${SERVER_HOST}:${SERVER_PROJECT_DIR}/app/"
+            
+            if [ $? -eq 0 ]; then
+                print_success "Application files deployed successfully to remote server!"
+            else
+                print_error "Failed to copy application files to remote server"
+                return 1
+            fi
         else
-            print_error "Failed to copy application files to remote server"
+            print_error "Source directory ${LOCAL_GIT_DIR}/app not found!"
             return 1
         fi
     fi
@@ -49,53 +68,52 @@ deploy_docker() {
         # Ensure local docker directory exists
         mkdir -p "${LOCAL_DOCKER_DIR}"
         
-        # Copy Docker files
-        cp -r "${LOCAL_GIT_DIR}/docker/"* "${LOCAL_DOCKER_DIR}/"
-        
-        # Copy .env files (explicitly to make sure they're included)
-        if [ -f "${LOCAL_GIT_DIR}/docker/.env" ]; then
-            cp "${LOCAL_GIT_DIR}/docker/.env" "${LOCAL_DOCKER_DIR}/.env"
-            print_success "Copied .env file from ${LOCAL_GIT_DIR}/docker/.env"
-        elif [ -f "${LOCAL_GIT_DIR}/.env" ]; then
-            cp "${LOCAL_GIT_DIR}/.env" "${LOCAL_DOCKER_DIR}/.env"
-            print_success "Copied .env file from ${LOCAL_GIT_DIR}/.env"
-        elif [ -f "${LOCAL_GIT_DIR}/docker/.env.example" ]; then
-            print_warning "No .env file found, copying .env.example. You'll need to edit this!"
-            cp "${LOCAL_GIT_DIR}/docker/.env.example" "${LOCAL_DOCKER_DIR}/.env"
+        # Copy Docker files from git directory
+        if [ -d "${LOCAL_GIT_DIR}/docker" ]; then
+            cp -r "${LOCAL_GIT_DIR}/docker/"* "${LOCAL_DOCKER_DIR}/"
+            
+            # Handle .env file
+            if [ -f "${LOCAL_GIT_DIR}/docker/.env" ]; then
+                cp "${LOCAL_GIT_DIR}/docker/.env" "${LOCAL_DOCKER_DIR}/.env"
+                print_success "Copied .env file"
+            elif [ -f "${LOCAL_GIT_DIR}/.env" ]; then
+                cp "${LOCAL_GIT_DIR}/.env" "${LOCAL_DOCKER_DIR}/.env"
+                print_success "Copied .env file from root"
+            elif [ -f "${LOCAL_GIT_DIR}/docker/.env.example" ]; then
+                print_warning "No .env file found, copying .env.example. You'll need to edit this!"
+                cp "${LOCAL_GIT_DIR}/docker/.env.example" "${LOCAL_DOCKER_DIR}/.env"
+            else
+                print_error "No .env or .env.example file found! Deployment may fail."
+            fi
         else
-            print_error "No .env or .env.example file found! Deployment may fail."
-        fi
-        
-        if [ $? -eq 0 ]; then
-            print_success "Docker configuration files deployed locally to ${LOCAL_DOCKER_DIR}!"
-        else
-            print_error "Failed to copy Docker configuration files locally"
+            print_error "Source directory ${LOCAL_GIT_DIR}/docker not found!"
             return 1
         fi
     else
+        # Create remote directories first (if not already done in deploy_app)
+        print_info "Ensuring remote directories exist..."
+        ssh ${SERVER_USER}@${SERVER_HOST} "mkdir -p ${SERVER_PROJECT_DIR}/docker"
+        
         # Copy Docker files to remote server
         print_info "Copying Docker configuration files..."
-        scp -r "${LOCAL_GIT_DIR}/docker/"* "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/"
-        
-        # Copy .env files (explicitly to make sure they're included)
-        print_info "Copying environment files..."
-        if [ -f "${LOCAL_GIT_DIR}/docker/.env" ]; then
-            scp "${LOCAL_GIT_DIR}/docker/.env" "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/.env"
-            print_success "Copied .env file from ${LOCAL_GIT_DIR}/docker/.env"
-        elif [ -f "${LOCAL_GIT_DIR}/.env" ]; then
-            scp "${LOCAL_GIT_DIR}/.env" "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/.env"
-            print_success "Copied .env file from ${LOCAL_GIT_DIR}/.env"
-        elif [ -f "${LOCAL_GIT_DIR}/docker/.env.example" ]; then
-            print_warning "No .env file found, copying .env.example. You'll need to edit this!"
-            scp "${LOCAL_GIT_DIR}/docker/.env.example" "${SERVER_USER}@${SERVER_HOST}:${DOCKER_DIR}/.env"
+        if [ -d "${LOCAL_GIT_DIR}/docker" ]; then
+            scp -r "${LOCAL_GIT_DIR}/docker/"* "${SERVER_USER}@${SERVER_HOST}:${SERVER_PROJECT_DIR}/docker/"
+            
+            # Handle .env file
+            if [ -f "${LOCAL_GIT_DIR}/docker/.env" ]; then
+                scp "${LOCAL_GIT_DIR}/docker/.env" "${SERVER_USER}@${SERVER_HOST}:${SERVER_PROJECT_DIR}/docker/.env"
+                print_success "Copied .env file"
+            elif [ -f "${LOCAL_GIT_DIR}/.env" ]; then
+                scp "${LOCAL_GIT_DIR}/.env" "${SERVER_USER}@${SERVER_HOST}:${SERVER_PROJECT_DIR}/docker/.env"
+                print_success "Copied .env file from root"
+            elif [ -f "${LOCAL_GIT_DIR}/docker/.env.example" ]; then
+                print_warning "No .env file found, copying .env.example. You'll need to edit this!"
+                scp "${LOCAL_GIT_DIR}/docker/.env.example" "${SERVER_USER}@${SERVER_HOST}:${SERVER_PROJECT_DIR}/docker/.env"
+            else
+                print_error "No .env or .env.example file found! Deployment may fail."
+            fi
         else
-            print_error "No .env or .env.example file found! Deployment may fail."
-        fi
-        
-        if [ $? -eq 0 ]; then
-            print_success "Docker configuration files deployed successfully!"
-        else
-            print_error "Failed to copy Docker configuration files"
+            print_error "Source directory ${LOCAL_GIT_DIR}/docker not found!"
             return 1
         fi
     fi
@@ -582,14 +600,24 @@ run_quick_deploy_attach() {
     if [ "$RUN_LOCALLY" = true ]; then
         print_info "Containers started locally."
         print_info "Check your local Docker Dashboard to verify services are running"
+        
+        # Warte kurz, damit die Container Zeit haben zu starten
+        sleep 5
+        
+        # Attach zum Hauptcontainer
+        if docker ps | grep -q "${MAIN_CONTAINER}"; then
+            print_info "Attaching to ${MAIN_CONTAINER}..."
+            docker attach "${MAIN_CONTAINER}"
+        else
+            print_error "Container ${MAIN_CONTAINER} not found or not running!"
+            return 1
+        fi
     else
         check_deployed_services
-    fi
-    
-    if [ "$RUN_LOCALLY" = true ]; then
-        docker attach ${PROJECT_NAME}
-    else
-        ssh ${SERVER_USER}@${SERVER_HOST} docker attach ${PROJECT_NAME}
+        
+        # Attach zum Remote-Container
+        print_info "Attaching to remote container ${MAIN_CONTAINER}..."
+        ssh ${SERVER_USER}@${SERVER_HOST} "docker attach ${MAIN_CONTAINER}"
     fi   
 
     print_success "Quick deployment completed successfully!"

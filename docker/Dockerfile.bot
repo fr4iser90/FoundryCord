@@ -21,7 +21,7 @@ ENV PYTHONPATH="/"
 COPY app/bot/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-LABEL maintainer="Discord Server Bot"
+LABEL maintainer="FoundryCord Bot"
 
 # Run entrypoint script
 #ENTRYPOINT ["/entrypoint.sh"]

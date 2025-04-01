@@ -29,10 +29,7 @@ def get_database_url():
             ('POSTGRES_DB', db_name)
         ]:
             logger.warning(f"{name}: {value or '[NOT SET]'}")
-            
-        # Fallback to standard URL if environment variables are missing
-        # return os.environ.get("DATABASE_URL", "postgresql+asyncpg://homelab_discord_bot:homelab_discord_bot@homelab-postgres:5432/homelab")
-    
+                
     return f"postgresql+asyncpg://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
 async def create_db_engine(url=None, max_retries=5, retry_interval=5):

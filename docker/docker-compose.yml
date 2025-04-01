@@ -3,8 +3,8 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.bot
-    image: discord-server-bot:latest
-    container_name: discord-server-bot
+    image: foundrycord-bot:latest
+    container_name: foundrycord-bot
     restart: unless-stopped
     env_file:
       - .env
@@ -48,8 +48,8 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.web
-    image: discord-server-web:latest
-    container_name: discord-server-web
+    image: foundrycord-web:latest
+    container_name: foundrycord-web
     restart: unless-stopped
     env_file:
       - .env
@@ -74,7 +74,7 @@ services:
 
   postgres:
     image: postgres:17-alpine
-    container_name: discord-server-db
+    container_name: foundrycord-db
     restart: unless-stopped
     env_file:
       - .env
@@ -86,7 +86,7 @@ services:
       - ./postgres/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
       - ./postgres/init-tables.sql:/docker-entrypoint-initdb.d/init-tables.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres && psql -U postgres -d homelab -c 'SELECT 1 FROM pg_database'"]
+      test: ["CMD-SHELL", "pg_isready -U postgres && psql -U postgres -d foundrycord -c 'SELECT 1 FROM pg_database'"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -104,7 +104,7 @@ services:
 
   redis:
     image: redis:alpine
-    container_name: discord-server-cache
+    container_name: foundrycord-cache
     restart: unless-stopped
     networks:
       - discord-net
@@ -127,6 +127,7 @@ services:
 
 networks:
   discord-net:
+    name: foundrycord-network
     driver: bridge
   proxy:
     external: true

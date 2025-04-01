@@ -1,17 +1,34 @@
 #!/usr/bin/env bash
 
-# Local configuration - AUTOMATICALLY GENERATED
+# Server Configuration
 export SERVER_USER="docker"
-export SERVER_HOST="192.111.111.111"
+export SERVER_HOST="192.168.178.33"
 export SERVER_PORT="22"
-export PROJECT_ROOT_DIR="/home/docker/docker/companion-management/discord-server-bot"
-export ENVIRONMENT=""
+export SERVER_KEY="$HOME/.ssh/id_rsa"
 
-# Local mode configuration
-export LOCAL_PROJECT_DIR="$HOME/Documents/Development/NCC-DiscordBot"
-export LOCAL_DOCKER_DIR="$LOCAL_PROJECT_DIR/docker"
-export LOCAL_APP_DIR="$LOCAL_PROJECT_DIR/app"
-export LOCAL_BOT_DIR="$LOCAL_PROJECT_DIR/app/bot"
-export LOCAL_WEB_DIR="$LOCAL_PROJECT_DIR/app/web"
+# Project Configuration
+export PROJECT_NAME="FoundryCord"
+export ENVIRONMENT="development"
 
-# Saved from your config.sh on $(date)
+# Remote Server Paths
+export SERVER_ROOT="/home/docker/docker"
+export SERVER_PROJECT_DIR="${SERVER_ROOT}/companion-management/FoundryCord"
+
+# Local Development Configuration
+export LOCAL_GIT_DIR="$HOME/Documents/Git/${PROJECT_NAME}"
+
+export LOCAL_DEV_ROOT="$HOME/Documents/Development"
+export LOCAL_PROJECT_DIR="${LOCAL_DEV_ROOT}/FoundryCord"
+export LOCAL_DOCKER_DIR="${LOCAL_PROJECT_DIR}/docker"
+export LOCAL_APP_DIR="${LOCAL_PROJECT_DIR}/app"
+
+# Container configuration
+export CONTAINER_NAMES="foundrycord-bot,foundrycord-db,foundrycord-cache,foundrycord-web"
+export MAIN_CONTAINER="foundrycord-bot"
+
+# Project-specific settings
+export AUTO_START="true"
+export AUTO_BUILD_ENABLED="true"
+export REBUILD_ON_DEPLOY="true"
+
+# Saved from unified config on $(date)

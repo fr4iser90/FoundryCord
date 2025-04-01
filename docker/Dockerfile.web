@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Expose port
 EXPOSE 8000
 
-LABEL maintainer="Discord Server Bot Web Interface"
+LABEL maintainer="FoundryCord Web Interface"
 
 # Run the application with our startup script
 #CMD ["/entrypoint.sh"]

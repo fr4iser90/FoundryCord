@@ -42,4 +42,4 @@ ENV PYTEST_ADDOPTS="--capture=no"
 # Keep container running
 CMD ["tail", "-f", "/dev/null"]
 
-LABEL maintainer="Discord Server Bot Tests"
+LABEL maintainer="FoundryCord Tests"
