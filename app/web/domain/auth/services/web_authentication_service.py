@@ -4,9 +4,9 @@ from jose import jwt
 import os
 from fastapi import HTTPException, status
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interface.logging.api import get_web_logger
 
-logger = get_bot_logger()
+logger = get_web_logger()
 
 class WebAuthenticationService:
     def __init__(self, key_service: KeyManagementService):

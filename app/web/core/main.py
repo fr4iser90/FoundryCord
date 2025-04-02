@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interface.logging.api import get_web_logger
 from app.web.core.middleware import setup_middleware
 from app.web.core.extensions import init_all_extensions
 from app.web.core.router_registry import register_routers
@@ -19,8 +19,9 @@ from app.web.infrastructure.factories.service.web_service_factory import WebServ
 from contextlib import asynccontextmanager
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
 from app.web.domain.error.error_service import ErrorService
+from app.web.core.exception_handlers import http_exception_handler, generic_exception_handler
 
-logger = get_bot_logger()
+logger = get_web_logger()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -77,18 +78,25 @@ class WebApplication:
 
     async def setup(self):
         """Setup the web application asynchronously."""
-        # Initialize templates
-        self.templates = init_all_extensions(self.app)
-        
-        # Register routers
-        register_routers(self.app)
-        
-        # Initialize managers
-        self.lifecycle_manager.initialize(self.app, self.service_factory)
-        self.workflow_manager.initialize(self.service_factory)
-        
-        # Setup base routes
-        self.setup_base_routes()
+        try:
+            # Initialize templates
+            self.templates = init_all_extensions(self.app)
+            
+            # Setup error handlers FIRST
+            self.setup_error_handlers()
+            
+            # Then register routers
+            register_routers(self.app)
+            
+            # Initialize managers
+            self.lifecycle_manager.initialize(self.app, self.service_factory)
+            self.workflow_manager.initialize(self.service_factory)
+            
+            # Setup base routes
+            self.setup_base_routes()
+        except Exception as e:
+            logger.error(f"Error during application setup: {e}", exc_info=True)
+            raise
 
     def setup_base_routes(self):
         """Setup basic application routes."""
@@ -112,19 +120,26 @@ class WebApplication:
                 "directory_contents": os.listdir("/app") if os.path.exists("/app") else "Not available"
             }
 
-        @self.app.exception_handler(Exception)
-        async def global_exception_handler(request, exc):
-            return JSONResponse(
-                status_code=500,
-                content={"message": "Internal server error", "details": str(exc)}
-            )
-
     def setup_error_handlers(self):
         """Setup error handlers"""
+        logger.info("Setting up error handlers")
         error_service = ErrorService()
         
         @self.app.exception_handler(HTTPException)
         async def http_exception_handler(request: Request, exc: HTTPException):
+            logger.info(f"HTTP exception handler called: {exc.status_code} - {exc.detail}")
+            # Always use HTML for browser requests (except API routes)
+            path = request.url.path
+            is_api_path = path.startswith("/api/")
+            
+            if is_api_path:
+                logger.info(f"API path detected, returning JSON response")
+                return JSONResponse(
+                    status_code=exc.status_code,
+                    content={"detail": exc.detail}
+                )
+            
+            logger.info(f"Web path detected, returning HTML response")
             return await error_service.handle_error(
                 request,
                 exc.status_code,
@@ -139,6 +154,15 @@ class WebApplication:
                 500,
                 "An unexpected error occurred"
             )
+        
+        logger.info("Error handlers registered successfully")
+
+    def setup_exception_handlers(self):
+        """Register exception handlers"""
+        logger.info("Registering exception handlers")
+        self.app.add_exception_handler(HTTPException, http_exception_handler)
+        self.app.add_exception_handler(Exception, generic_exception_handler)
+        logger.info("Exception handlers registered")
 
     async def initialize(self):
         """Initialize the web application."""

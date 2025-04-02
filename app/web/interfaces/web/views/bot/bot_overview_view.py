@@ -10,13 +10,13 @@ from app.shared.interface.logging.api import get_web_logger
 router = APIRouter(prefix="/bot", tags=["Bot"])
 logger = get_web_logger()
 templates = get_templates()
+error_service = ErrorService()
 
 class BotOverviewView:
     """View für Bot-Übersicht"""
     
     def __init__(self):
         self.router = router
-        self.error_service = ErrorService()
         self._register_routes()
     
     def _register_routes(self):
@@ -50,13 +50,10 @@ class BotOverviewView:
                     "active_page": "bot-overview"
                 }
             )
-            
         except Exception as e:
-            return await self.error_service.handle_error(
-                request,
-                500,
-                str(e)
-            )
+            logger.error(f"Error in bot_overview: {str(e)}", exc_info=True)
+            # Let the global exception handler handle it
+            raise
 
 # View-Instanz erzeugen
 bot_overview_view = BotOverviewView()

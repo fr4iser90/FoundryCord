@@ -1,9 +1,9 @@
 from app.web.infrastructure.factories.base.base_factory import BaseFactory
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
 from app.web.domain.auth.services.web_authentication_service import WebAuthenticationService
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interface.logging.api import get_web_logger
 
-logger = get_bot_logger()
+logger = get_web_logger()
 
 class WebServiceFactory(BaseFactory):
     def create(self) -> dict:

@@ -62,7 +62,7 @@ class TestWebAuthenticationService:
     async def test_initialization_error_handling(self, auth_service):
         """Test that initialization handles errors gracefully."""
         with patch('app.web.domain.auth.dependencies.get_db_connection') as mock_db_conn, \
-             patch('app.web.domain.auth.dependencies.get_bot_logger') as mock_logger, \
+             patch('app.web.domain.auth.dependencies.get_web_logger') as mock_logger, \
              patch.dict(os.environ, {"JWT_SECRET_KEY": "fallback_key"}):
             
             # Make the database connection raise an exception

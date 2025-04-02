@@ -7,10 +7,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import os
 from pathlib import Path
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interface.logging.api import get_web_logger
 from datetime import datetime
 
-logger = get_bot_logger()
+logger = get_web_logger()
 
 # Templates - initialized later
 _templates = None
@@ -87,15 +87,25 @@ def init_all_extensions(app: FastAPI):
 def get_templates() -> Jinja2Templates:
     """Get configured Jinja2 templates instance"""
     global _templates
+    logger.info(f"get_templates called, current _templates: {_templates}")
+    
     if _templates is None:
+        logger.info("Templates not initialized yet, creating new instance")
         web_dir = Path(__file__).parent.parent
         templates_dir = web_dir / "templates"
+        
         if not templates_dir.exists():
+            logger.error(f"Templates directory not found: {templates_dir}")
             raise FileNotFoundError(f"Templates directory not found: {templates_dir}")
+            
+        # List template files to verify they exist
+        logger.info(f"Template directory exists, contains: {os.listdir(templates_dir)}")
+        
         _templates = Jinja2Templates(directory=str(templates_dir))
         
         # Register the custom filter
         _templates.env.filters['formatTimeAgo'] = format_time_ago
+        logger.info(f"Created new templates instance: {_templates}")
         
     return _templates
 

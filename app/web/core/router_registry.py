@@ -2,9 +2,9 @@ from fastapi import FastAPI
 from app.web.interfaces.web import web_router  # Neuer Import für die Web-Views
 #from app.web.api.dashboard import router as dashboard_api_router
 from app.web.interfaces.api import api_router  # Behalten wir für API-Routen
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interface.logging.api import get_web_logger
 
-logger = get_bot_logger()
+logger = get_web_logger()
 
 def register_routers(app: FastAPI):
     """Register all routers with the application"""

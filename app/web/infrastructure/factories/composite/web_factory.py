@@ -1,7 +1,7 @@
 from app.web.infrastructure.factories.service.web_service_factory import WebServiceFactory
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interface.logging.api import get_web_logger
 
-logger = get_bot_logger()
+logger = get_web_logger()
 
 class WebCompositeFactory:
     def __init__(self):

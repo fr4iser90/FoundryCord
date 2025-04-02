@@ -2,11 +2,11 @@ from typing import Dict, List, Any, Optional, Callable
 import asyncio
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
 from app.web.domain.auth.services.web_authentication_service import WebAuthenticationService
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interface.logging.api import get_web_logger
 from fastapi import FastAPI
 from app.web.infrastructure.factories.service.web_service_factory import WebServiceFactory
 
-logger = get_bot_logger()
+logger = get_web_logger()
 
 class WebLifecycleManager:
     """Manages the lifecycle of the web application."""
