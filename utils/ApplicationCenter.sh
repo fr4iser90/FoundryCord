@@ -13,6 +13,25 @@ find utils -name "*.sh" -type f -exec chmod +x {} \;
 find utils -name "*.py" -type f -exec chmod +x {} \;
 echo "Permissions set successfully."
 
+# Check if local_config.sh exists, if not create it from example
+if [ ! -f "./utils/config/local_config.sh" ]; then
+    echo "No local configuration found. Creating from example..."
+    if [ -f "./utils/config/local_config.example.sh" ]; then
+        cp "./utils/config/local_config.example.sh" "./utils/config/local_config.sh"
+        # Replace $(date) with actual date in the copied file
+        sed -i "s/\$(date)/$(date)/g" "./utils/config/local_config.sh"
+        echo "✅ Created local_config.sh from example."
+        echo "⚠️ Please review and edit ./utils/config/local_config.sh to match your environment before proceeding."
+        echo "    You can press Ctrl+C now to exit and edit the file,"
+        echo "    or continue with default values."
+        read -p "Press Enter to continue or Ctrl+C to exit..." response
+    else
+        echo "❌ Error: Could not find local_config.example.sh!"
+        echo "Please create ./utils/config/local_config.sh manually before continuing."
+        exit 1
+    fi
+fi
+
 # Check for Docker .env file and load if it exists
 if [ -f "../docker/.env" ]; then
     echo "Loading environment variables from ../docker/.env..."

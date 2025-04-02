@@ -33,26 +33,15 @@ async def get_jwt_secret():
     return await key_service.get_jwt_secret_key()
 
 async def get_current_user(request: Request):
-    """Get current user from session or raise an exception"""
-    if not hasattr(request, "session"):
-        logger.error("Session middleware not properly configured")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server configuration error",
-        )
-    
+    """Get the authenticated user or raise an exception (for API routes only)."""
     user = request.session.get("user")
     
-    # Debug user session
-    logger.debug(f"Session contents: {request.session}")
-    logger.debug(f"User from session: {user}")
-    
     if not user:
-        logger.warning("User not authenticated, redirecting to login")
+        logger.warning("User not authenticated in API dependency")
+        # For API calls, always return 401 Unauthorized
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail="Authentication required"
         )
     
     return user

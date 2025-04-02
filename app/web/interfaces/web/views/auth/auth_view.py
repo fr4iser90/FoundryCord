@@ -4,12 +4,11 @@ from app.web.core.extensions import get_templates
 from app.web.domain.auth.services.web_authentication_service import WebAuthenticationService
 from app.web.infrastructure.config.env_loader import get_discord_oauth_config
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
-from app.web.domain.error.error_service import ErrorService
-import httpx
 from app.shared.infrastructure.constants import OWNER, ADMINS, MODERATORS, USERS
 from app.shared.domain.auth.models import Role
 from app.web.domain.auth.permissions import get_user_role
 from app.shared.interface.logging.api import get_web_logger
+import httpx
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 logger = get_web_logger()
@@ -20,7 +19,6 @@ class AuthView:
     
     def __init__(self):
         self.router = router
-        self.error_service = ErrorService()
         self._register_routes()
     
     def _register_routes(self):
@@ -66,11 +64,7 @@ class AuthView:
                 )
                 
                 if token_response.status_code != 200:
-                    return await self.error_service.handle_error(
-                        request, 
-                        401, 
-                        "Failed to authenticate with Discord"
-                    )
+                    raise HTTPException(status_code=401, detail="Failed to authenticate with Discord")
                 
                 token = token_response.json()
                 
@@ -81,11 +75,7 @@ class AuthView:
                 )
                 
                 if user_response.status_code != 200:
-                    return await self.error_service.handle_error(
-                        request,
-                        401,
-                        "Failed to get user information"
-                    )
+                    raise HTTPException(status_code=401, detail="Failed to get user information")
                 
                 user_data = user_response.json()
                 user_id = user_data["id"]
@@ -124,11 +114,7 @@ class AuthView:
                 
         except Exception as e:
             logger.error(f"OAuth callback failed: {e}")
-            return await self.error_service.handle_error(
-                request,
-                500,
-                f"Login failed: {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
     
     async def logout(self, request: Request):
         """Clear session and redirect to home"""
@@ -138,11 +124,7 @@ class AuthView:
     async def debug_session(self, request: Request):
         """Debug endpoint to see session contents"""
         if not request.session.get("user", {}).get("role") == "OWNER":
-            return await self.error_service.handle_error(
-                request,
-                403,
-                "Only OWNER can access debug information"
-            )
+            raise HTTPException(status_code=403, detail="Only OWNER can access debug information")
             
         return {
             "session": request.session,

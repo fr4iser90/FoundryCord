@@ -19,20 +19,30 @@ def init_templates(app: FastAPI):
     """Initialize Jinja2 templates"""
     global _templates
     
-    # Der Pfad war falsch - wir müssen zum web/templates Verzeichnis
     web_dir = Path(__file__).parent.parent
     templates_dir = web_dir / "templates"
     
     logger.info(f"Initializing templates from directory: {templates_dir}")
-    logger.debug(f"Template directory contents: {os.listdir(templates_dir) if templates_dir.exists() else 'Directory not found'}")
     
     if not templates_dir.exists():
         logger.error(f"Templates directory not found: {templates_dir}")
         raise FileNotFoundError(f"Templates directory not found: {templates_dir}")
     
-    _templates = Jinja2Templates(directory=str(templates_dir))
+    # Verify error templates exist
+    error_templates_dir = templates_dir / "pages" / "errors"
+    if not error_templates_dir.exists():
+        logger.error(f"Error templates directory not found: {error_templates_dir}")
+        raise FileNotFoundError(f"Error templates directory not found: {error_templates_dir}")
     
-    # Register the formatTimeAgo filter
+    # Check for required error templates
+    required_error_templates = ['400.html', '401.html', '403.html', '404.html', '500.html', '503.html']
+    for template in required_error_templates:
+        template_path = error_templates_dir / template
+        if not template_path.exists():
+            logger.error(f"Required error template not found: {template_path}")
+            raise FileNotFoundError(f"Required error template not found: {template_path}")
+    
+    _templates = Jinja2Templates(directory=str(templates_dir))
     _templates.env.filters['formatTimeAgo'] = format_time_ago
     
     return _templates
@@ -87,25 +97,18 @@ def init_all_extensions(app: FastAPI):
 def get_templates() -> Jinja2Templates:
     """Get configured Jinja2 templates instance"""
     global _templates
-    logger.info(f"get_templates called, current _templates: {_templates}")
     
     if _templates is None:
-        logger.info("Templates not initialized yet, creating new instance")
+        # Instead of warning, initialize properly
         web_dir = Path(__file__).parent.parent
         templates_dir = web_dir / "templates"
         
         if not templates_dir.exists():
-            logger.error(f"Templates directory not found: {templates_dir}")
             raise FileNotFoundError(f"Templates directory not found: {templates_dir}")
             
-        # List template files to verify they exist
-        logger.info(f"Template directory exists, contains: {os.listdir(templates_dir)}")
-        
         _templates = Jinja2Templates(directory=str(templates_dir))
-        
-        # Register the custom filter
         _templates.env.filters['formatTimeAgo'] = format_time_ago
-        logger.info(f"Created new templates instance: {_templates}")
+        logger.info("Templates initialized successfully")
         
     return _templates
 

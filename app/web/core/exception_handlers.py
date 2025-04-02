@@ -1,55 +1,82 @@
 from fastapi import Request, HTTPException, status
-from fastapi.responses import JSONResponse, RedirectResponse
-from app.web.domain.error.error_service import ErrorService
+from fastapi.responses import JSONResponse, HTMLResponse
+from app.web.core.extensions import get_templates
 from app.shared.interface.logging.api import get_web_logger
 
 logger = get_web_logger()
-error_service = ErrorService()
 
 async def http_exception_handler(request: Request, exc: HTTPException):
-    """Handle HTTPExceptions by rendering appropriate error pages"""
-    logger.info(f"HTTP exception handler called: {exc.status_code} - {exc.detail}")
-    
-    # Check if this is an API request or browser request
+    """Unified HTTP exception handler"""
     path = request.url.path
     is_api_path = path.startswith("/api/")
-    accepts_html = "text/html" in request.headers.get("accept", "")
     
-    logger.info(f"Request headers: {dict(request.headers)}")
-    logger.info(f"Is API path: {is_api_path}, Accepts HTML: {accepts_html}")
+    # Log the error
+    if exc.status_code >= 500:
+        logger.error(f"HTTP {exc.status_code} error at {path}: {exc.detail}", exc_info=True)
+    else:
+        logger.warning(f"HTTP {exc.status_code} error at {path}: {exc.detail}")
     
-    if is_api_path or not accepts_html:
-        logger.info(f"Returning JSON response for {exc.status_code}")
+    # Handle API requests
+    if is_api_path:
         return JSONResponse(
             status_code=exc.status_code,
-            content={"detail": exc.detail}
+            content={"detail": str(exc.detail)}
         )
     
-    # For web routes, use our error service to render HTML pages
-    logger.info(f"Rendering HTML error {exc.status_code} page")
-    return await error_service.handle_error(
-        request=request,
-        status_code=exc.status_code,
-        error_message=str(exc.detail)
-    )
+    # Handle web requests
+    try:
+        templates = get_templates()
+        template_path = f"pages/errors/{exc.status_code}.html"
+        
+        context = {
+            "request": request,
+            "error": str(exc.detail),
+            "user": request.session.get("user"),
+            "status_code": exc.status_code
+        }
+        
+        return templates.TemplateResponse(
+            template_path,
+            context,
+            status_code=exc.status_code
+        )
+    except Exception as e:
+        logger.error(f"Error rendering error template: {e}", exc_info=True)
+        # Fallback to basic error response
+        return HTMLResponse(
+            content=f"Error {exc.status_code}: {exc.detail}",
+            status_code=exc.status_code
+        )
 
 async def generic_exception_handler(request: Request, exc: Exception):
-    """Handle all other exceptions with a 500 error page"""
-    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
-    
-    # Check if this is an API request
+    """Unified generic exception handler"""
     path = request.url.path
     is_api_path = path.startswith("/api/")
-    accepts_html = "text/html" in request.headers.get("accept", "")
     
-    if is_api_path or not accepts_html:
+    # Always log the full exception for 500 errors
+    logger.error(f"Unhandled exception at {path}", exc_info=True)
+    
+    if is_api_path:
         return JSONResponse(
             status_code=500,
             content={"detail": "Internal server error"}
         )
     
-    return await error_service.handle_error(
-        request=request,
-        status_code=500,
-        error_message="An unexpected error occurred"
-    )
+    try:
+        templates = get_templates()
+        return templates.TemplateResponse(
+            "pages/errors/500.html",
+            {
+                "request": request,
+                "error": str(exc) if app.debug else "An unexpected error occurred",
+                "user": request.session.get("user"),
+                "status_code": 500
+            },
+            status_code=500
+        )
+    except Exception as e:
+        logger.error(f"Error rendering 500 template: {e}", exc_info=True)
+        return HTMLResponse(
+            content="Internal Server Error",
+            status_code=500
+        )

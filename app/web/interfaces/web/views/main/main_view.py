@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from app.web.core.extensions import get_templates
-from app.web.domain.error.error_service import ErrorService
 
 router = APIRouter(tags=["Main"])
 templates = get_templates()
@@ -11,7 +10,6 @@ class MainView:
     
     def __init__(self):
         self.router = router
-        self.error_service = ErrorService()
         self._register_routes()
     
     def _register_routes(self):
@@ -27,7 +25,7 @@ class MainView:
                 {"request": request, "user": request.session.get("user")}
             )
         except Exception as e:
-            return await self.error_service.handle_error(request, 500, str(e))
+            raise HTTPException(status_code=500, detail=str(e))
     
     async def about(self, request: Request):
         """About page"""
