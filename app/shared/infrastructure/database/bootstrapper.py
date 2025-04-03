@@ -16,10 +16,10 @@ import logging
 import os
 from pathlib import Path
 from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import text
 
 from app.shared.interface.logging.api import get_db_logger
 from app.shared.infrastructure.database.migrations.wait_for_postgres import wait_for_postgres
-from app.shared.infrastructure.database.migrations.init_db import init_db, is_database_empty
 from app.shared.infrastructure.database.migrations.migration_service import MigrationService
 from app.shared.infrastructure.database.core.credentials import DatabaseCredentialManager
 
@@ -40,12 +40,6 @@ async def initialize_database() -> bool:
         if not await wait_for_postgres():
             logger.error("Failed to connect to PostgreSQL after multiple attempts")
             return False
-        
-        # Initialize basic database structure is handled by postgres ???
-        # Step 2: Initialize basic database structure
-        #if not await init_db():
-        #    logger.error("Failed to initialize database schema")
-        #    return False
             
         # Step 3: Run migrations to update schema to latest version
         migration_service = MigrationService()
@@ -113,6 +107,27 @@ async def check_database_status() -> dict:
             "status": "error",
             "message": str(e)
         }
+
+async def is_database_empty(engine) -> bool:
+    """Check if the database is empty (no tables exist)."""
+    try:
+        async with engine.connect() as conn:
+            # Check if any tables exist in the public schema
+            result = await conn.execute(text(
+                "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public'"
+            ))
+            table_count = await result.scalar()
+            
+            if table_count == 0:
+                logger.warning("Database is empty (no tables)")
+                return True
+                
+            logger.info(f"Database has {table_count} tables")
+            return False
+    except Exception as e:
+        logger.error(f"Failed to check if database is empty: {e}")
+        # Assume not empty on error to be safe
+        return False
 
 if __name__ == "__main__":
     asyncio.run(initialize_database()) 

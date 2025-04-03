@@ -27,5 +27,5 @@ EXPOSE 8000
 LABEL maintainer="FoundryCord Web Interface"
 
 # Run the application with our startup script
-CMD python -m app.shared.web.infrastructure.entrypoint && python -m app.web.core.main
+CMD python -m app.web.core.main
 

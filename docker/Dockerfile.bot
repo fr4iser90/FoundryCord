@@ -24,5 +24,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 LABEL maintainer="FoundryCord Bot"
 
 # Run entrypoint script
-#ENTRYPOINT ["/entrypoint.sh"]
 ENTRYPOINT ["python", "-m", "app.shared.bot.infrastructure.entrypoint", "bot"]

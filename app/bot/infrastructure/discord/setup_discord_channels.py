@@ -1,4 +1,3 @@
-from app.shared.infrastructure.database.migrations.init_db import init_db
 from app.bot.application.services.channel.channel_setup_service import ChannelSetupService
 from .game_server_channels import setup_minecraft_channels
 from app.shared.interface.logging.api import get_bot_logger
@@ -8,7 +7,6 @@ async def setup_discord_channels(bot):
     """Setup function for Discord channels"""
     try:
         # 1. Erst Datenbank initialisieren
-        await init_db()
         logger.info("Database tables created")
         
         # 2. Dann Channel Setup Service erstellen

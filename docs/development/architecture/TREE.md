@@ -459,7 +459,6 @@ app
 │   │   │   │   │       ├── selectors.py
 │   │   │   │   │       └── views.py
 │   │   │   │   ├── env.py
-│   │   │   │   ├── init_db.py
 │   │   │   │   ├── __init__.py
 │   │   │   │   ├── init_variables.py
 │   │   │   │   ├── README.md

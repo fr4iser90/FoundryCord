@@ -1,65 +1,50 @@
 {
   "default-rules": {
-    "development-protocol": {
-      "description": "Follow HomeLab Discord Bot Development Protocol",
+    "development-standards": {
+      "description": "Follow Development Standards and Conventions",
       "require-consistency": true,
       "active": true,
       "files": [
-        "docs/core/PROTOCOL.md"
-      ]
-    },
-    "architecture-guidelines": {
-      "description": "Follow HomeLab Discord Bot Architecture Guidelines",
-      "require-consistency": true,
-      "active": true,
-      "files": [
-        "docs/core/ARCHITECTURE.md",
+        "docs/development/guidelines/CONVENTIONS.md",
         "docs/development/patterns/DESIGN_PATTERN.md"
       ]
     },
-    "communication-language": {
-      "description": "All communication, comments, and documentation should be in English",
+    "architecture": {
+      "description": "Follow Architecture Guidelines and Patterns",
+      "require-consistency": true,
+      "active": true,
+      "files": [
+        "docs/development/architecture/LAYERS.md",
+        "docs/development/patterns/DASHBOARD_PATTERN.md",
+        "docs/development/patterns/SLASHCOMMAND_PATTERN.md"
+      ]
+    },
+    "communication": {
+      "description": "English-only communication standards",
       "require-consistency": true,
       "active": true,
       "files": [
         "docs/ai/context/COMMUNICATION.md"
       ]
     },
-    "coding-standards": {
-      "description": "Follow HomeLab Discord Bot Coding Conventions",
-      "require-consistency": true,
-      "active": true,
-      "files": [
-        "docs/development/guidelines/CONVENTIONS.md"
-      ]
-    },
-    "implementation-patterns": {
-      "description": "Follow HomeLab Discord Bot Implementation Patterns",
-      "require-consistency": true,
-      "active": true,
-      "files": [
-        "docs/development/patterns/DASHBOARD_PATTERN.md",
-        "docs/development/patterns/SLASHCOMMAND_PATTERN.md"
-      ]
-    },
-    "current-priorities": {
-      "description": "Align with current project priorities",
-      "require-consistency": false,
-      "active": false,
-      "files": [
-        "docs/planning/ACTION_PLAN.md"
-      ]
-    },
-    "role-definitions": {
-      "description": "Follow HomeLab Discord Bot Role Definitions",
+    "roles": {
+      "description": "Core Role Definitions",
       "require-consistency": true,
       "active": true,
       "files": [
         "docs/ai/roles/core/BOT_CORE_ARCHITECT.md",
-        "docs/ai/roles/system/BOT_SYSTEM_MONITOR.md",
         "docs/ai/roles/core/BOT_CORE_SECURITY.md",
+        "docs/ai/roles/system/BOT_SYSTEM_MONITOR.md",
         "docs/ai/roles/ui/BOT_UI_DESIGNER.md",
         "docs/ai/roles/ui/BOT_UI_COMMANDS.md"
+      ]
+    },
+    "priorities": {
+      "description": "Project Priorities",
+      "require-consistency": false,
+      "active": false,
+      "files": [
+        "docs/tasks/data_driven_refactoring/ACTION_PLAN.md"
       ]
     }
   }

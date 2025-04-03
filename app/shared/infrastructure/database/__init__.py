@@ -19,12 +19,7 @@ Environment Configuration:
 - APP_DB_PASSWORD: Application database password
 """
 
-import logging
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, Any, Optional
 
-# Configure module logger
-logger = logging.getLogger("homelab.database")
 
 # First import the essentials for database connection
 from app.shared.infrastructure.database.core import (
@@ -33,7 +28,6 @@ from app.shared.infrastructure.database.core import (
 )
 
 # Only after db connection is available, import migrations
-from app.shared.infrastructure.database.migrations.init_db import init_db, is_database_empty
 from app.shared.infrastructure.database.migrations.wait_for_postgres import wait_for_postgres
 
 # Import models
@@ -96,8 +90,6 @@ __all__ = [
     'AUTO_DB_CREDENTIAL_MANAGEMENT',
     
     # Database initialization
-    'init_db',
-    'is_database_empty',
     'wait_for_postgres',
     
     # API functions
@@ -113,37 +105,3 @@ __all__ = [
     'AsyncSession'
 ]
 
-# Database utility functions
-async def get_database_status():
-    """
-    Get the current status of the database connection.
-    
-    Returns:
-        dict: Status information including connection state,
-              database version, and connection details
-    """
-    try:
-        conn = get_db_connection()
-        result = await conn.fetch_one("SELECT version();")
-        return {
-            "status": "connected",
-            "version": result.get("version"),
-            "details": "PostgreSQL connection successful"
-        }
-    except Exception as e:
-        return {
-            "status": "error",
-            "error": str(e),
-            "details": "Failed to connect to PostgreSQL database"
-        }
-
-# Database connection setup function
-async def setup_database_connection():
-    """
-    Set up and return a database connection for use in application components.
-    This function centralizes database connection logic.
-    
-    Returns:
-        AsyncSession: An active database session
-    """
-    return await get_session()
