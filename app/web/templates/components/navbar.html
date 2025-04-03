@@ -54,7 +54,7 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
                            data-bs-toggle="dropdown" aria-expanded="false">
-                            <img src="{{ user.avatar_url }}" alt="" class="rounded-circle me-2" style="width: 24px; height: 24px;">
+                            <img src="{{ url_for('static', path='img/avatars/' + (user.avatar or 'default.png')) }}" alt="Avatar" class="rounded-circle me-2" style="width: 24px; height: 24px;">
                             {{ user.username }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="userDropdown">

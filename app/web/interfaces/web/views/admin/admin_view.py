@@ -29,10 +29,16 @@ def datetime_filter(value):
 class AdminView:
     """View für Admin-Bereich"""
     
+    ROLE_MAPPING = {
+        1: "USER",
+        2: "MODERATOR", 
+        3: "ADMIN",
+        4: "OWNER"
+    }
+    
     def __init__(self):
         self.router = router
         self._register_routes()
-        # Register the datetime filter
         templates.env.filters["datetime"] = datetime_filter
     
     def _register_routes(self):
@@ -106,123 +112,91 @@ class AdminView:
                 {"request": request, "user": user, "error": str(e)}
             )
     
+    @staticmethod
+    def _map_role_id_to_name(role_id: int) -> str:
+        return AdminView.ROLE_MAPPING.get(role_id, "USER")
+
     async def user_management(self, request: Request):
         """User management page"""
         try:
-            # Session-basierte Autorisierung
             user = request.session.get("user")
             if not user or user.get("role") not in ["OWNER"]:
                 return templates.TemplateResponse(
                     "pages/errors/403.html",
                     {"request": request, "user": user, "error": "Insufficient permissions"}
                 )
-            
-            # Paginierungs-Parameter
-            page = int(request.query_params.get("page", 1))
-            per_page = 10  # Anzahl der Einträge pro Seite
-            
-            # URL-Parameter abrufen
-            selected_server = request.query_params.get("server", "all")
-            
-            users = []
-            servers = []
-            total_users = 0
-            
-            try:
-                async with session_context() as session:
-                    # Verfügbare Server abrufen
-                    try:
-                        guild_query = select(GuildEntity)
-                        guild_result = await session.execute(guild_query)
-                        db_guilds = guild_result.scalars().all()
-                        
-                        servers = [{
-                            "id": guild.id,
-                            "name": guild.name
-                        } for guild in db_guilds]
-                    except Exception as guild_err:
-                        logger.warning(f"Fehler beim Abrufen der Server: {guild_err}")
-                        servers = []
-                    
-                    # Gesamtanzahl der Benutzer für Paginierung
-                    try:
-                        count_query = select(func.count(AppUserEntity.id))
-                        total_users = await session.execute(count_query)
-                        total_users = total_users.scalar()
-                    except Exception as count_err:
-                        logger.warning(f"Fehler beim Zählen der Benutzer: {count_err}")
-                        total_users = 0
-                    
-                    # Benutzer mit Paginierung abrufen
-                    try:
-                        offset = (page - 1) * per_page
-                        query = select(AppUserEntity).offset(offset).limit(per_page)
-                        result = await session.execute(query)
-                        db_users = result.scalars().all()
-                        
-                        for db_user in db_users:
-                            user_data = {
-                                "id": db_user.id,
-                                "username": db_user.username,
-                                "discord_id": db_user.discord_id,
-                                "role_id": db_user.role_id,
-                                "is_active": db_user.is_active,
-                                "created_at": db_user.created_at,
-                                "server_ids": [],
-                                "server_roles": {}
-                            }
-                            
-                            # Server-spezifische Informationen abrufen
-                            try:
-                                guild_user_query = select(DiscordGuildUserEntity).where(
-                                    DiscordGuildUserEntity.user_id == db_user.id
-                                )
-                                guild_user_result = await session.execute(guild_user_query)
-                                guild_users = guild_user_result.scalars().all()
-                                
-                                for guild_user in guild_users:
-                                    user_data["server_ids"].append(guild_user.guild_id)
-                                    user_data["server_roles"][guild_user.guild_id] = guild_user.role_id
-                            except Exception as guild_user_err:
-                                logger.warning(f"Fehler beim Abrufen der Server-Benutzerinformationen: {guild_user_err}")
-                            
-                            users.append(user_data)
-                    except Exception as users_err:
-                        logger.error(f"Fehler beim Abrufen der Benutzer: {users_err}")
-                        users = []
-            
-            except Exception as db_err:
-                logger.error(f"Datenbankfehler: {db_err}")
+
+            async with session_context() as session:
+                # Get users with their app roles
+                query = select(AppUserEntity)
+                result = await session.execute(query)
+                db_users = result.scalars().all()
+
                 users = []
-                servers = []
-                total_users = 0
-            
-            # Paginierungsinformationen berechnen
-            total_pages = (total_users + per_page - 1) // per_page
-            has_prev = page > 1
-            has_next = page < total_pages
-            
-            return templates.TemplateResponse(
-                "pages/admin/user_management.html",
-                {
-                    "request": request,
-                    "user": user,
-                    "users": users,
-                    "servers": servers,
-                    "selected_server": selected_server,
-                    "page": page,
-                    "total_pages": total_pages,
-                    "has_prev": has_prev,
-                    "has_next": has_next,
-                    "active_page": "admin-users"
-                }
-            )
+                for db_user in db_users:
+                    # Get guild memberships and roles
+                    guild_query = select(DiscordGuildUserEntity, GuildEntity).join(
+                        GuildEntity,
+                        GuildEntity.guild_id == DiscordGuildUserEntity.guild_id
+                    ).where(DiscordGuildUserEntity.user_id == db_user.id)
+                    
+                    guild_result = await session.execute(guild_query)
+                    guild_roles = []
+                    
+                    for guild_user, guild in guild_result:
+                        guild_roles.append({
+                            "guild_name": guild.name,
+                            "role": guild_user.role_id
+                        })
+
+                    users.append({
+                        "id": db_user.id,
+                        "username": db_user.username,
+                        "discord_id": db_user.discord_id,
+                        "app_role": self._map_role_id_to_name(db_user.role_id),
+                        "is_active": db_user.is_active,
+                        "guilds": guild_roles,
+                        "avatar": db_user.avatar or "default.png"
+                    })
+
+                return templates.TemplateResponse(
+                    "pages/admin/user_management.html",
+                    {
+                        "request": request,
+                        "user": user,
+                        "users": users,
+                        "active_page": "admin-users"
+                    }
+                )
         except Exception as e:
             logger.error(f"Error in user management: {e}")
             return templates.TemplateResponse(
-                "pages/errors/403.html",
-                {"request": request, "user": user, "error": str(e)}
+                "pages/errors/500.html",
+                {"request": request, "error": str(e)}
             )
+
+    async def _get_user_guild_roles(self, session, user_id):
+        """Helper to get user's guild roles (read-only)"""
+        try:
+            query = select(DiscordGuildUserEntity, GuildEntity).join(
+                GuildEntity,
+                GuildEntity.guild_id == DiscordGuildUserEntity.guild_id
+            ).where(DiscordGuildUserEntity.user_id == user_id)
+            
+            result = await session.execute(query)
+            guild_roles = []
+            
+            for guild_user, guild in result:
+                guild_roles.append({
+                    "guild_name": guild.name,
+                    "role": guild_user.role_id,  # Nur zum Anzeigen
+                    "color": "#99AAB5"  # Standard-Farbe
+                })
+            
+            return guild_roles
+        except Exception as e:
+            logger.error(f"Error fetching guild roles: {e}")
+            return []
     
     async def system_status(self, request: Request):
         """System status and logs"""

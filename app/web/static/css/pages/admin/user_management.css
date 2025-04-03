@@ -1,0 +1,52 @@
+/* User Management specific styles */
+.user-management-container {
+    padding: 20px;
+    background: var(--discord-darker);
+    border-radius: 8px;
+}
+
+.role-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 500;
+    background: var(--discord-accent);
+    color: white;
+}
+
+.guild-role-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px;
+    margin: 2px 0;
+    background: var(--discord-channel);
+    border-radius: 4px;
+}
+
+.guild-name {
+    font-weight: 500;
+    color: var(--discord-text);
+}
+
+.app-role-select {
+    min-width: 120px;
+    background: var(--discord-channel);
+    border-color: var(--discord-accent);
+    color: var(--discord-text);
+}
+
+.app-role-select:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Status badges */
+.badge.bg-success {
+    background-color: var(--discord-success) !important;
+}
+
+.badge.bg-danger {
+    background-color: var(--discord-danger) !important;
+} 

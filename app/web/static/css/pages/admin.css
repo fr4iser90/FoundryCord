@@ -1,0 +1,135 @@
+/* User Management Styles */
+.users-container {
+    padding: 20px;
+}
+
+.users-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.search-box {
+    min-width: 300px;
+}
+
+.users-table-container {
+    background: var(--discord-lighter);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.role-select {
+    background-color: var(--discord-channel);
+    color: var(--discord-text);
+    border-color: var(--discord-darker);
+    min-width: 120px;
+}
+
+.badge {
+    padding: 5px 10px;
+}
+
+.bg-active {
+    background-color: var(--discord-success);
+}
+
+.bg-inactive {
+    background-color: var(--discord-danger);
+}
+
+.pagination-container {
+    display: flex;
+    justify-content: center;
+}
+
+.server-select-container {
+    min-width: 250px;
+    margin-right: 10px;
+}
+
+/* Guild Role Styles */
+.guild-roles {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.guild-role-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    background: var(--discord-darker);
+    border-radius: 4px;
+}
+
+.guild-name {
+    font-weight: bold;
+    min-width: 100px;
+}
+
+.guild-role-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.role-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    background: var(--discord-accent);
+    color: white;
+}
+
+/* App Role Styles */
+.app-role {
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.app-role.owner {
+    background-color: #e4b400;
+    color: white;
+}
+
+.app-role.admin {
+    background-color: #ff4444;
+    color: white;
+}
+
+.app-role.moderator {
+    background-color: #43b581;
+    color: white;
+}
+
+.app-role.user {
+    background-color: var(--discord-accent);
+    color: white;
+}
