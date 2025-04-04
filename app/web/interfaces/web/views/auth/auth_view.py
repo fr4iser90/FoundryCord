@@ -108,7 +108,7 @@ class AuthView:
                 
                 # Redirect based on role
                 return RedirectResponse(
-                    url="/bot/overview" if user_role == "OWNER" else "/dashboard",
+                    url="/home" if user_role == "OWNER" else "/dashboard",
                     status_code=status.HTTP_303_SEE_OTHER
                 )
                 
