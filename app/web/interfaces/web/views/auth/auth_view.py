@@ -117,6 +117,7 @@ class AuthView:
                             "name": first_guild.name,
                             "icon_url": first_guild.icon_url or "https://cdn.discordapp.com/embed/avatars/0.png"
                         }
+                        logger.debug(f"Set initial active_guild in session: {request.session['active_guild']}")
                 
                 # Update session directly
                 request.session["user"] = user

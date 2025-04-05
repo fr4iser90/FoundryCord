@@ -98,13 +98,13 @@ class UserWorkflow(BaseWorkflow):
             for member in members:
                 try:
                     # Debug log for each member being processed
-                    #logger.debug(f"Processing member: {member.name}#{member.discriminator} (ID: {member.id})")
+                    logger.debug(f"Processing member: {member.name}#{member.discriminator} (ID: {member.id})")
                     
                     user_data = {
                         'discord_id': member.id,
                         'username': member.name,
                         'discriminator': member.discriminator,
-                        'guild_id': guild.id,
+                        'guild_id': str(guild.id),  # Convert to string for consistency
                         'is_bot': member.bot,
                         'joined_at': member.joined_at,
                         'nickname': member.nick,
@@ -118,11 +118,12 @@ class UserWorkflow(BaseWorkflow):
                         
                     await self.user_repository.create_or_update(user_data)
                     synced_count += 1
-                    logger.debug(f"Successfully synced user: {member.name}")
+                    logger.debug(f"Successfully synced user: {member.name} to guild {guild.id}")
                     
                 except Exception as e:
                     error_count += 1
                     logger.error(f"Failed to sync member {member.name}: {str(e)}")
+                    logger.exception("Full traceback:")
                     continue
             
             # Log final statistics
@@ -134,6 +135,7 @@ class UserWorkflow(BaseWorkflow):
             
         except Exception as e:
             logger.error(f"Failed to sync guild members: {str(e)}")
+            logger.exception("Full traceback:")
 
     async def cleanup(self) -> None:
         """Cleanup user workflow resources"""

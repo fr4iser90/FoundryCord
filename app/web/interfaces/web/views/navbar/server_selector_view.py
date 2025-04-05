@@ -72,6 +72,7 @@ class ServerSelectorView:
                         "icon_url": server.icon_url or "https://cdn.discordapp.com/embed/avatars/0.png"
                     }
                     await request.session.save()
+                    logger.debug(f"Set active_guild in session: {request.session['active_guild']}")
                 
                 return {
                     "success": True,

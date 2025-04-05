@@ -1,83 +1,94 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from app.web.application.services.auth.dependencies import get_current_user
-from app.shared.infrastructure.database.session import session_context
-from app.shared.infrastructure.models.discord import GuildEntity
-from sqlalchemy import select
+from app.web.core.extensions import session_extension
 from app.shared.interface.logging.api import get_web_logger
+from app.shared.infrastructure.database.session import session_context
+from app.shared.infrastructure.models import GuildEntity
+from typing import Optional
+from sqlalchemy import select
 
-router = APIRouter(prefix="/v1/servers", tags=["Server Selection"])
 logger = get_web_logger()
+router = APIRouter(prefix="/v1/servers", tags=["Server Selection"])
 
 class ServerSelectorController:
-    """Controller für Server-Auswahl API"""
-    
     def __init__(self):
         self.router = router
         self._register_routes()
     
     def _register_routes(self):
-        """Registriert alle Routes für diesen Controller"""
-        self.router.get("/list")(self.get_available_servers)
-        self.router.post("/switch/{guild_id}")(self.switch_server)
+        self.router.post("/select")(self.select_guild)
+        self.router.get("/current")(self.get_current_guild)
     
-    async def get_available_servers(self, current_user=Depends(get_current_user)):
-        """Get list of available servers for the current user"""
+    async def select_guild(self, request: Request, guild_id: Optional[str] = None, current_user=Depends(get_current_user)):
+        """Select a guild and store it in session"""
         try:
-            # Debug-Ausgabe des aktuellen Benutzers
-            logger.debug(f"Current user: {current_user}")
+            session = session_extension(request)
             
-            async with session_context() as session:
-                # Vereinfachte Abfrage ohne Filter
-                result = await session.execute(
-                    select(GuildEntity)
-                )
-                servers = result.scalars().all()
-                
-                # Debug-Ausgabe der gefundenen Server
-                logger.debug(f"Found {len(servers)} servers")
-                for server in servers:
-                    logger.debug(f"Server: {server.name} (ID: {server.guild_id})")
-                
-                return [{
-                    "id": server.guild_id,
-                    "name": server.name,
-                    "icon_url": server.icon_url or "https://cdn.discordapp.com/embed/avatars/0.png",
-                    "member_count": getattr(server, 'member_count', 0)
-                } for server in servers]
-        except Exception as e:
-            logger.error(f"Error getting available servers: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
-    
-    async def switch_server(self, guild_id: str, current_user=Depends(get_current_user)):
-        """Switch the current active server"""
-        try:
-            async with session_context() as session:
-                # Vereinfachte Abfrage ohne owner_id-Filter
-                result = await session.execute(
-                    select(GuildEntity).where(
-                        GuildEntity.guild_id == guild_id
+            if guild_id:
+                # Verify guild exists and user has access
+                async with session_context() as db_session:
+                    result = await db_session.execute(
+                        select(GuildEntity).where(GuildEntity.guild_id == guild_id)
                     )
-                )
-                server = result.scalars().first()
+                    guild = result.scalar_one_or_none()
+                    
+                    if not guild:
+                        raise HTTPException(
+                            status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Guild not found"
+                        )
                 
-                if not server:
-                    raise HTTPException(status_code=404, detail="Server not found")
+                # Store in session
+                session['selected_guild'] = guild_id
+                return {"message": f"Selected guild {guild_id}", "guild_id": guild_id}
+            else:
+                # Clear selection
+                session['selected_guild'] = None
+                return {"message": "Guild selection cleared"}
                 
-                return {
-                    "success": True,
-                    "server": {
-                        "id": server.guild_id,
-                        "name": server.name,
-                        "icon_url": server.icon_url or "https://cdn.discordapp.com/embed/avatars/0.png"
-                    }
-                }
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Error switching server: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"Error selecting guild: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
+            )
+    
+    async def get_current_guild(self, request: Request, current_user=Depends(get_current_user)):
+        """Get currently selected guild from session"""
+        try:
+            session = session_extension(request)
+            guild_id = session.get('selected_guild')
+            
+            if not guild_id:
+                return {"guild_id": None}
+            
+            # Get guild details
+            async with session_context() as db_session:
+                result = await db_session.execute(
+                    select(GuildEntity).where(GuildEntity.guild_id == guild_id)
+                )
+                guild = result.scalar_one_or_none()
+                
+                if not guild:
+                    session['selected_guild'] = None
+                    return {"guild_id": None}
+                
+                return {
+                    "guild_id": guild.guild_id,
+                    "name": guild.name,
+                    "is_active": guild.is_active
+                }
+                
+        except Exception as e:
+            logger.error(f"Error getting current guild: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
+            )
 
-# Controller-Instanz erzeugen
+# Create controller instance
 server_selector_controller = ServerSelectorController()
-get_available_servers = server_selector_controller.get_available_servers
-switch_server = server_selector_controller.switch_server 
+select_guild = server_selector_controller.select_guild
+get_current_guild = server_selector_controller.get_current_guild 

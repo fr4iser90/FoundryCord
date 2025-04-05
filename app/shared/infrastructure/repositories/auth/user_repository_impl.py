@@ -163,6 +163,18 @@ class UserRepositoryImpl(UserRepository):
                     avatar=user_data.get('avatar')
                 )
                 self.session.add(user)
+                await self.session.flush()  # Flush to get the user ID
+                
+                # Create guild user entry
+                guild_id = str(user_data.get('guild_id'))
+                if guild_id:
+                    logger.debug(f"Creating guild user entry for user {user.username} in guild {guild_id}")
+                    guild_user = DiscordGuildUserEntity(
+                        guild_id=guild_id,
+                        user_id=user.id,
+                        role_id=role.id  # Use same role as app user for now
+                    )
+                    self.session.add(guild_user)
             
             await self.session.commit()
             return user

@@ -1,0 +1,17 @@
+{# app/web/templates/components/navigation/server_selector.html #}
+<div class="navbar-item has-dropdown">
+    <button class="navbar-link server-selector" id="server-selector-button">
+        {% if request.session.get('active_guild') %}
+        <img src="{{ request.session.active_guild.icon_url }}" alt="{{ request.session.active_guild.name }}" class="server-icon">
+        <span>{{ request.session.active_guild.name }}</span>
+        {% else %}
+        <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Select Server" class="server-icon">
+        <span>Select Server</span>
+        {% endif %}
+    </button>
+    <div class="navbar-dropdown" id="server-dropdown">
+        <div class="server-list">
+            <!-- Server list will be populated by JavaScript -->
+        </div>
+    </div>
+</div> 

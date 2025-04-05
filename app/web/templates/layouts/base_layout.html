@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FoundryCord{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <!-- Theme CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', path='css/themes/dark.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/themes/light.css') }}">
+    
+    <!-- Core CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', path='css/core/reset.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/core/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/core/utilities.css') }}">
+    
+    <!-- Components CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', path='css/components/navbar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/components/server_selector.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/components/index.css') }}">
+    
+    <!-- Page-specific CSS -->
+    {% block extra_css %}{% endblock %}
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        {% include 'components/common/header.html' %}
+        
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+        
+        {% include 'components/common/footer.html' %}
+    </div>
+    
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Core JavaScript -->
+    <script src="{{ url_for('static', path='js/core/theme_switcher.js') }}"></script>
+    <script src="{{ url_for('static', path='js/core/main.js') }}"></script>
+    
+    <!-- Component JavaScript -->
+    <script src="{{ url_for('static', path='js/components/server_selector.js') }}"></script>
+    
+    <!-- Page-specific JavaScript -->
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

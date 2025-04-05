@@ -62,6 +62,8 @@ class UserManagementView:
         """Server-specific user management page"""
         try:
             user = request.session.get("user")
+            logger.debug(f"Current user from session: {user}")
+            
             if not user or user.get("role") not in ["OWNER", "ADMIN", "MODERATOR"]:
                 return templates.TemplateResponse(
                     "pages/errors/403.html",
@@ -69,7 +71,9 @@ class UserManagementView:
                 )
 
             # Get current guild from session
-            current_guild = request.session.get("guild")
+            current_guild = request.session.get("active_guild")
+            logger.debug(f"Current guild from session: {current_guild}")
+            
             if not current_guild:
                 return templates.TemplateResponse(
                     "pages/errors/400.html",
@@ -80,21 +84,37 @@ class UserManagementView:
                 # Get guild users with roles
                 users = await self._get_guild_users(session, current_guild["id"])
                 
+                # Debug log
+                logger.debug(f"Found {len(users)} users for guild {current_guild['name']}")
+                
+                # Get guild roles
+                guild_roles = [
+                    {"id": "USER", "name": "User"},
+                    {"id": "MODERATOR", "name": "Moderator"},
+                    {"id": "ADMIN", "name": "Admin"},
+                    {"id": "OWNER", "name": "Owner"}
+                ]
+                
                 return templates.TemplateResponse(
-                    "pages/admin/user_management.html",
+                    "pages/admin/users.html",
                     {
                         "request": request,
                         "user": user,
                         "users": users,
                         "current_guild": current_guild,
+                        "guild_roles": guild_roles,
                         "active_page": "admin",
                         "active_section": "users",
                         "can_manage_role": self.can_manage_role,
-                        "can_manage_status": self.can_manage_status
+                        "can_manage_status": self.can_manage_status,
+                        "can_manage_user": lambda u, cu: cu.get("role") in ["OWNER", "ADMIN"] or 
+                                                      (cu.get("role") == "MODERATOR" and u.get("app_role") == "USER"),
+                        "current_user": user
                     }
                 )
         except Exception as e:
             logger.error(f"Error in user management: {e}")
+            logger.exception("Full traceback:")
             return templates.TemplateResponse(
                 "pages/errors/500.html",
                 {"request": request, "error": str(e)}
@@ -102,38 +122,62 @@ class UserManagementView:
 
     async def _get_guild_users(self, session, guild_id: str) -> list:
         """Get users for a specific guild with their roles"""
-        query = select(
-            AppUserEntity,
-            DiscordGuildUserEntity
-        ).join(
-            DiscordGuildUserEntity,
-            DiscordGuildUserEntity.user_id == AppUserEntity.id
-        ).where(
-            DiscordGuildUserEntity.guild_id == guild_id
-        )
-        
-        result = await session.execute(query)
-        users = []
-        
-        for user, guild_user in result:
-            users.append({
-                "id": user.id,
-                "username": user.username,
-                "discord_id": user.discord_id,
-                "app_role": self._map_role_id_to_name(user.role_id),
-                "guild_role": guild_user.role_id,
-                "is_active": user.is_active,
-                "avatar": user.avatar,
-                "last_active": self._format_datetime(user.last_login),
-                "joined_at": self._format_datetime(guild_user.joined_at)
-            })
-        
-        return users
+        try:
+            logger.debug(f"Fetching users for guild {guild_id}")
+            
+            # First check if guild exists
+            guild_query = select(GuildEntity).where(GuildEntity.guild_id == str(guild_id))
+            guild = await session.execute(guild_query)
+            guild = guild.scalar()
+            logger.debug(f"Found guild: {guild.name if guild else 'None'}")
+            
+            # Debug: Print the query we're about to execute
+            query = select(
+                DiscordGuildUserEntity,
+                AppUserEntity
+            ).join(
+                AppUserEntity,
+                DiscordGuildUserEntity.user_id == AppUserEntity.id
+            ).where(
+                DiscordGuildUserEntity.guild_id == str(guild_id)
+            )
+            logger.debug(f"SQL Query: {query}")
+            
+            # Execute query and get raw result for debugging
+            result = await session.execute(query)
+            raw_result = result.fetchall()
+            logger.debug(f"Raw query result: {raw_result}")
+            
+            users = []
+            for guild_user, user in raw_result:
+                logger.debug(f"Processing user: {user.username} (ID: {user.id}) with role {user.role_id}")
+                logger.debug(f"User details: avatar={user.avatar}, discord_id={user.discord_id}")
+                logger.debug(f"Guild user details: role_id={guild_user.role_id}, created_at={guild_user.created_at}")
+                
+                users.append({
+                    "id": user.id,
+                    "username": user.username,
+                    "discord_id": user.discord_id,
+                    "app_role": self._map_role_id_to_name(user.role_id),
+                    "guild_role": guild_user.role_id,
+                    "is_active": user.is_active,
+                    "avatar": user.avatar or "https://cdn.discordapp.com/embed/avatars/0.png",
+                    "last_active": self._format_datetime(user.last_login),
+                    "joined_at": self._format_datetime(guild_user.created_at)
+                })
+            
+            logger.debug(f"Returning {len(users)} users")
+            return users
+            
+        except Exception as e:
+            logger.error(f"Error fetching guild users: {e}")
+            logger.exception("Full traceback:")
+            return []
 
     async def get_user_details(self, request: Request, user_id: str):
         """Get detailed information about a user in the current guild"""
         try:
-            current_guild = request.session.get("guild")
+            current_guild = request.session.get("active_guild")
             if not current_guild:
                 raise HTTPException(status_code=400, detail="No guild selected")
 
@@ -188,7 +232,7 @@ class UserManagementView:
         try:
             data = await request.json()
             new_role = data.get("role")
-            current_guild = request.session.get("guild")
+            current_guild = request.session.get("active_guild")
             
             if not current_guild:
                 raise HTTPException(status_code=400, detail="No guild selected")
@@ -211,7 +255,7 @@ class UserManagementView:
         try:
             data = await request.json()
             is_active = data.get("is_active")
-            current_guild = request.session.get("guild")
+            current_guild = request.session.get("active_guild")
             
             if not current_guild:
                 raise HTTPException(status_code=400, detail="No guild selected")
@@ -232,7 +276,7 @@ class UserManagementView:
     async def delete_user(self, request: Request, user_id: str):
         """Remove a user from the current guild"""
         try:
-            current_guild = request.session.get("guild")
+            current_guild = request.session.get("active_guild")
             if not current_guild:
                 raise HTTPException(status_code=400, detail="No guild selected")
             

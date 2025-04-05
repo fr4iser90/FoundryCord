@@ -15,95 +15,103 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Initialize components
-    const searchInput = document.querySelector('.search-box input');
-    const guildFilter = document.querySelector('#guild-filter');
-    const roleSelect = document.querySelector('#role-select');
-    const statusToggle = document.querySelector('#status-toggle');
+    const searchInput = document.querySelector('#user-search');
+    const roleFilter = document.querySelector('#role-filter');
+    const appRoleSelects = document.querySelectorAll('.app-role-select');
+    const statusButtons = document.querySelectorAll('.toggle-status');
     
-    // User details modal
-    function showUserDetails(userId) {
-        const userRow = document.querySelector(`tr[data-user-id="${userId}"]`);
-        if (!userRow) return;
-        
-        const userData = {
-            id: userId,
-            username: userRow.querySelector('.username').textContent,
-            created_at: userRow.dataset.createdAt,
-            last_active: userRow.dataset.lastActive,
-            guilds: JSON.parse(userRow.dataset.guilds || '[]')
-        };
-        
-        const modalContent = `
-            <div class="user-details-modal">
-                <h3>${userData.username}</h3>
-                <div class="user-info-grid">
-                    <div class="info-item">
-                        <label>Discord ID:</label>
-                        <span>${userData.id}</span>
-                    </div>
-                    <div class="info-item">
-                        <label>Created At:</label>
-                        <span>${formatDate(userData.created_at)}</span>
-                    </div>
-                    <div class="info-item">
-                        <label>Last Active:</label>
-                        <span>${formatDate(userData.last_active)}</span>
-                    </div>
-                </div>
-                <div class="guild-memberships">
-                    <h4>Guild Memberships</h4>
-                    ${userData.guilds.map(guild => `
-                        <div class="guild-item">
-                            <div class="guild-header">
-                                <span class="guild-name">${guild.name}</span>
-                                <span class="guild-role">${guild.role}</span>
-                            </div>
-                            <div class="guild-dates">
-                                <span>Joined: ${formatDate(guild.joined_at)}</span>
-                                <span>Last Active: ${formatDate(guild.last_active)}</span>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-        
-        // Show modal with content
-        showModal('User Details', modalContent);
-    }
-    
-    // Event Listeners
+    // Search functionality
     if (searchInput) {
         searchInput.addEventListener('input', debounce(function(e) {
-            filterUsers(e.target.value);
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#users-table-body tr');
+            
+            rows.forEach(row => {
+                const username = row.querySelector('.username').textContent.toLowerCase();
+                const discordId = row.querySelector('.discord-id').textContent.toLowerCase();
+                
+                const matches = username.includes(searchTerm) || discordId.includes(searchTerm);
+                row.style.display = matches ? '' : 'none';
+            });
         }, 300));
     }
     
-    if (guildFilter) {
-        guildFilter.addEventListener('change', function() {
-            filterUsers();
+    // Role filter functionality
+    if (roleFilter) {
+        roleFilter.addEventListener('change', function(e) {
+            const selectedRole = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#users-table-body tr');
+            
+            rows.forEach(row => {
+                if (!selectedRole) {
+                    row.style.display = '';
+                    return;
+                }
+                
+                const userRole = row.querySelector('.server-role .role-badge').textContent.toLowerCase();
+                row.style.display = userRole === selectedRole ? '' : 'none';
+            });
         });
     }
     
-    if (roleSelect) {
-        roleSelect.addEventListener('change', function(e) {
-            const userId = e.target.closest('tr').dataset.userId;
-            updateUserRole(userId, e.target.value);
+    // App role update functionality
+    appRoleSelects.forEach(select => {
+        select.addEventListener('change', async function(e) {
+            const userId = this.dataset.userId;
+            const newRole = this.value;
+            
+            try {
+                const response = await fetch(`/api/v1/admin/users/${userId}/role`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ role: newRole })
+                });
+                
+                if (!response.ok) throw new Error('Failed to update role');
+                
+                showToast('Role updated successfully', 'success');
+            } catch (error) {
+                console.error('Error updating role:', error);
+                showToast('Failed to update role', 'error');
+                // Reset select to previous value
+                this.value = this.dataset.originalRole;
+            }
         });
-    }
+    });
     
-    if (statusToggle) {
-        statusToggle.addEventListener('change', function(e) {
-            const userId = e.target.closest('tr').dataset.userId;
-            updateUserStatus(userId, e.target.checked);
-        });
-    }
-    
-    // Attach click handlers for user details
-    document.querySelectorAll('.view-details-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const userId = this.closest('tr').dataset.userId;
-            showUserDetails(userId);
+    // Status toggle functionality
+    statusButtons.forEach(button => {
+        button.addEventListener('click', async function() {
+            const userId = this.dataset.userId;
+            const currentStatus = this.dataset.status === 'true';
+            const newStatus = !currentStatus;
+            
+            try {
+                const response = await fetch(`/api/v1/admin/users/${userId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ active: newStatus })
+                });
+                
+                if (!response.ok) throw new Error('Failed to update status');
+                
+                // Update button state
+                this.dataset.status = String(newStatus);
+                this.classList.toggle('btn-success');
+                this.classList.toggle('btn-danger');
+                this.querySelector('i').classList.toggle('bi-check-circle');
+                this.querySelector('i').classList.toggle('bi-x-circle');
+                this.textContent = newStatus ? 'Active' : 'Inactive';
+                
+                showToast('Status updated successfully', 'success');
+            } catch (error) {
+                console.error('Error updating status:', error);
+                showToast('Failed to update status', 'error');
+            }
         });
     });
     
@@ -120,67 +128,77 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
     
-    function filterUsers(searchTerm = '') {
-        const rows = document.querySelectorAll('table tbody tr');
-        const guildId = guildFilter ? guildFilter.value : '';
-        
-        rows.forEach(row => {
-            const username = row.querySelector('.username').textContent.toLowerCase();
-            const userGuilds = JSON.parse(row.dataset.guilds || '[]');
-            
-            const matchesSearch = !searchTerm || username.includes(searchTerm.toLowerCase());
-            const matchesGuild = !guildId || userGuilds.some(g => g.id === guildId);
-            
-            row.style.display = matchesSearch && matchesGuild ? '' : 'none';
-        });
-    }
-    
-    async function updateUserRole(userId, newRole) {
-        try {
-            const response = await fetch(`/api/v1/admin/users/${userId}/role`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ role: newRole })
-            });
-            
-            if (!response.ok) throw new Error('Failed to update role');
-            
-            showToast('Role updated successfully', 'success');
-        } catch (error) {
-            console.error('Error updating role:', error);
-            showToast('Failed to update role', 'error');
-        }
-    }
-    
-    async function updateUserStatus(userId, isActive) {
-        try {
-            const response = await fetch(`/api/v1/admin/users/${userId}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ active: isActive })
-            });
-            
-            if (!response.ok) throw new Error('Failed to update status');
-            
-            showToast('Status updated successfully', 'success');
-        } catch (error) {
-            console.error('Error updating status:', error);
-            showToast('Failed to update status', 'error');
-        }
-    }
-    
     function showToast(message, type = 'info') {
-        // Implementation depends on your toast notification system
-        console.log(`${type}: ${message}`);
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        
+        document.body.appendChild(toast);
+        
+        // Trigger reflow
+        toast.offsetHeight;
+        
+        // Add show class
+        toast.classList.add('show');
+        
+        // Remove after animation
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
     
-    function showModal(title, content) {
-        // Implementation depends on your modal system
-        console.log('Show modal:', title, content);
-    }
+    // View user details
+    window.viewUser = async function(userId) {
+        try {
+            const response = await fetch(`/api/v1/admin/users/${userId}`);
+            if (!response.ok) throw new Error('Failed to fetch user details');
+            
+            const userData = await response.json();
+            const modal = document.getElementById('userViewModal');
+            const content = document.getElementById('userViewContent');
+            
+            content.innerHTML = `
+                <div class="user-details">
+                    <div class="user-header">
+                        <img src="${userData.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png'}" 
+                             alt="" class="user-avatar">
+                        <h3>${userData.username}</h3>
+                        <span class="discord-id">Discord ID: ${userData.discord_id}</span>
+                    </div>
+                    <div class="user-info-grid">
+                        <div class="info-item">
+                            <label>App Role:</label>
+                            <span>${userData.app_role}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Guild Role:</label>
+                            <span>${userData.guild_role}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Status:</label>
+                            <span class="status-badge ${userData.is_active ? 'active' : 'inactive'}">
+                                ${userData.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <label>Joined Server:</label>
+                            <span>${formatDate(userData.joined_at)}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Last Active:</label>
+                            <span>${formatDate(userData.last_active)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const modalInstance = new bootstrap.Modal(modal);
+            modalInstance.show();
+        } catch (error) {
+            console.error('Error fetching user details:', error);
+            showToast('Failed to load user details', 'error');
+        }
+    };
 });
 

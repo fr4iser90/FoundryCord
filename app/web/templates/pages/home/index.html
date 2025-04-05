@@ -1,0 +1,82 @@
+{% extends "layouts/base_layout.html" %}
+
+{% block title %}Bot Overview - HomeLab Discord Bot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack.min.css"/>
+<link rel="stylesheet" href="{{ url_for('static', path='css/components/stats.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/components/widgets.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/pages/overview.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="overview-container">
+    <div class="overview-content">
+        <div class="page-header">
+            <div>
+                <h1>Bot Dashboard</h1>
+                <p class="text-muted">Welcome, {{ user.username }}! Here's an overview of your HomeLab Discord Bot.</p>
+            </div>
+            <button id="reset-layout" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-repeat"></i>
+                <span>Reset Layout</span>
+            </button>
+        </div>
+        
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon {% if bot_status == 'ONLINE' %}text-success{% else %}text-danger{% endif %}">
+                    <i class="bi bi-circle-fill"></i>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-label">Bot Status</div>
+                    <div class="stat-value">{{ bot_status }}</div>
+                    <div class="stat-subtext">Uptime: {{ uptime }}</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-hdd-rack"></i>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-label">Servers</div>
+                    <div class="stat-value">{{ stats.server_count }}</div>
+                    <div class="stat-subtext">Active in {{ stats.active_servers }} servers</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-label">Users</div>
+                    <div class="stat-value">{{ stats.total_users }}</div>
+                    <div class="stat-subtext">{{ stats.online_users }} users online</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-chat-dots"></i>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-label">Commands</div>
+                    <div class="stat-value">{{ stats.command_count }}</div>
+                    <div class="stat-subtext">Last 24 hours: {{ stats.recent_commands }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Widget Grid -->
+        <div class="grid-stack" id="overview-grid"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack-all.js"></script>
+<script src="{{ url_for('static', path='js/pages/overview.js') }}"></script>
+{% endblock %}

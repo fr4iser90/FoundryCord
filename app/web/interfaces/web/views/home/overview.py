@@ -35,7 +35,7 @@ class HomeOverviewView:
         memory = psutil.virtual_memory()
         
         return templates.TemplateResponse(
-            "pages/home/overview.html",
+            "pages/home/index.html",
             {
                 "request": request,
                 "user": current_user,

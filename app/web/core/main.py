@@ -7,6 +7,8 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
 from app.shared.interface.logging.api import get_web_logger
 from app.web.core.middleware import setup_middleware
 from app.web.core.extensions import init_extensions

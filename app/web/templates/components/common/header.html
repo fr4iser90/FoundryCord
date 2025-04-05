@@ -1,0 +1,30 @@
+{# app/web/templates/components/common/header.html #}
+<header class="main-header">
+    <nav class="navbar">
+        <div class="navbar-container">
+            <!-- Left Section - Server Selector -->
+            <div class="navbar-left">
+                {% if request.session.get('user') %}
+                    {% include "components/navigation/server_selector.html" %}
+                {% endif %}
+            </div>
+
+            <!-- Middle Section - Navigation -->
+            <div class="navbar-middle">
+                {% if request.session.get('user') %}
+                    {% include "components/navigation/nav_links.html" %}
+                {% endif %}
+            </div>
+
+            <!-- Right Section - Theme Switch and User Menu -->
+            <div class="navbar-right">
+                <button id="theme-switch" class="theme-switch" title="Switch theme">
+                    <i id="theme-icon" class="bi bi-sun-fill"></i>
+                </button>
+                {% if request.session.get('user') %}
+                    {% include "components/navigation/user_menu.html" %}
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+</header>

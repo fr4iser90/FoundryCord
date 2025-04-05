@@ -2,11 +2,13 @@ from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from app.web.domain.auth.services.web_authentication_service import WebAuthenticationService
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
 from app.shared.interface.logging.api import get_web_logger
 import os
 import secrets
+from app.web.core.extensions import session_extension
 
 logger = get_web_logger()
 
@@ -24,7 +26,6 @@ PUBLIC_PATHS = {
     "/api/health",
     "/favicon.ico"
 }
-
 
 async def auth_middleware(request: Request, call_next):
     """Authentication middleware"""
@@ -46,4 +47,25 @@ async def auth_middleware(request: Request, call_next):
 async def setup_middleware(app: FastAPI):
     """Setup auth middleware for the application"""
     app.middleware("http")(auth_middleware)
-    logger.info("Middleware setup completed") 
+    logger.info("Middleware setup completed")
+
+class SessionMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # Get session from request
+        session = session_extension(request)
+        
+        # Ensure selected_guild is in session
+        if 'selected_guild' not in session:
+            session['selected_guild'] = None
+            
+        # Add session to request state
+        request.state.session = session
+        
+        response = await call_next(request)
+        return response
+
+class LoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        logger.info(f"Request: {request.method} {request.url.path}")
+        response = await call_next(request)
+        return response 

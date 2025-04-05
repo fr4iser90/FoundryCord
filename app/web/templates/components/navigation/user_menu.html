@@ -1,0 +1,26 @@
+{# app/web/templates/components/navigation/user_menu.html #}
+<div class="navbar-item has-dropdown">
+    <button class="navbar-link user-menu" id="user-menu-button">
+        {% if request.session.user.avatar %}
+        <img src="https://cdn.discordapp.com/avatars/{{ request.session.user.id }}/{{ request.session.user.avatar }}.png" alt="{{ request.session.user.username }}" class="user-avatar">
+        {% else %}
+        <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="{{ request.session.user.username }}" class="user-avatar">
+        {% endif %}
+        <span>{{ request.session.user.username }}</span>
+    </button>
+    <div class="navbar-dropdown is-right" id="user-dropdown">
+        <a href="/profile" class="dropdown-item">
+            <i class="bi bi-person"></i>
+            <span>Profile</span>
+        </a>
+        <a href="/settings" class="dropdown-item">
+            <i class="bi bi-gear"></i>
+            <span>Settings</span>
+        </a>
+        <hr class="dropdown-divider">
+        <a href="/auth/logout" class="dropdown-item">
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Logout</span>
+        </a>
+    </div>
+</div> 

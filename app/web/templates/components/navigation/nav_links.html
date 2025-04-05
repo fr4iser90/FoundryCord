@@ -1,0 +1,23 @@
+{# app/web/templates/components/navigation/nav_links.html #}
+<ul class="nav-links">
+    <li class="nav-item">
+        <a class="nav-link {% if request.url.path == '/home' %}active{% endif %}" href="/home">
+            <i class="bi bi-house"></i>
+            <span>Home</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if request.url.path == '/guilds/users' %}active{% endif %}" href="/guilds/users">
+            <i class="bi bi-people"></i>
+            <span>Guild Users</span>
+        </a>
+    </li>
+    {% if request.session.user.role == "OWNER" %}
+    <li class="nav-item">
+        <a class="nav-link {% if request.url.path.startswith('/admin') %}active{% endif %}" href="/admin/users">
+            <i class="bi bi-shield-lock"></i>
+            <span>Admin</span>
+        </a>
+    </li>
+    {% endif %}
+</ul> 
