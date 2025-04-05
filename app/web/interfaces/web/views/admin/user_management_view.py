@@ -68,24 +68,17 @@ class UserManagementView:
                     {"request": request, "user": user, "error": "Insufficient permissions"}
                 )
 
-            guild_id = request.query_params.get("guild_id")
-            if not guild_id:
+            # Get current guild from session
+            current_guild = request.session.get("guild")
+            if not current_guild:
                 return templates.TemplateResponse(
                     "pages/errors/400.html",
                     {"request": request, "error": "No guild selected"}
                 )
 
             async with session_context() as session:
-                # Get current guild
-                guild = await self._get_guild(session, guild_id)
-                if not guild:
-                    return templates.TemplateResponse(
-                        "pages/errors/404.html",
-                        {"request": request, "error": "Guild not found"}
-                    )
-
                 # Get guild users with roles
-                users = await self._get_guild_users(session, guild_id)
+                users = await self._get_guild_users(session, current_guild["id"])
                 
                 return templates.TemplateResponse(
                     "pages/admin/user_management.html",
@@ -93,8 +86,7 @@ class UserManagementView:
                         "request": request,
                         "user": user,
                         "users": users,
-                        "current_guild": guild,
-                        "guild_roles": await self._get_guild_roles(session, guild_id),
+                        "current_guild": current_guild,
                         "active_page": "admin",
                         "active_section": "users",
                         "can_manage_role": self.can_manage_role,
@@ -107,30 +99,6 @@ class UserManagementView:
                 "pages/errors/500.html",
                 {"request": request, "error": str(e)}
             )
-
-    async def _get_guild(self, session, guild_id: str) -> Dict[str, Any]:
-        """Get guild information"""
-        query = select(GuildEntity).where(GuildEntity.guild_id == guild_id)
-        result = await session.execute(query)
-        guild = result.scalar_one_or_none()
-        
-        if not guild:
-            return None
-            
-        return {
-            "id": guild.guild_id,
-            "name": guild.name,
-            "icon": guild.icon
-        }
-
-    async def _get_guild_roles(self, session, guild_id: str) -> list:
-        """Get available roles for the guild"""
-        # This would be replaced with actual Discord role fetching
-        return [
-            {"id": "user", "name": "User"},
-            {"id": "moderator", "name": "Moderator"},
-            {"id": "admin", "name": "Admin"}
-        ]
 
     async def _get_guild_users(self, session, guild_id: str) -> list:
         """Get users for a specific guild with their roles"""
@@ -165,12 +133,12 @@ class UserManagementView:
     async def get_user_details(self, request: Request, user_id: str):
         """Get detailed information about a user in the current guild"""
         try:
-            guild_id = request.query_params.get("guild_id")
-            if not guild_id:
+            current_guild = request.session.get("guild")
+            if not current_guild:
                 raise HTTPException(status_code=400, detail="No guild selected")
 
             async with session_context() as session:
-                user_data = await self._get_user_guild_details(session, user_id, guild_id)
+                user_data = await self._get_user_guild_details(session, user_id, current_guild["id"])
                 if not user_data:
                     raise HTTPException(status_code=404, detail="User not found")
                 return JSONResponse(content=user_data)
@@ -220,9 +188,9 @@ class UserManagementView:
         try:
             data = await request.json()
             new_role = data.get("role")
-            guild_id = request.query_params.get("guild_id")
+            current_guild = request.session.get("guild")
             
-            if not guild_id:
+            if not current_guild:
                 raise HTTPException(status_code=400, detail="No guild selected")
             
             current_user = request.session.get("user")
@@ -230,7 +198,7 @@ class UserManagementView:
                 raise HTTPException(status_code=403, detail="Insufficient permissions")
             
             async with session_context() as session:
-                await self._update_user_role(session, user_id, guild_id, new_role)
+                await self._update_user_role(session, user_id, current_guild["id"], new_role)
                 await session.commit()
                 
             return JSONResponse(content={"message": "Role updated successfully"})
@@ -243,9 +211,9 @@ class UserManagementView:
         try:
             data = await request.json()
             is_active = data.get("is_active")
-            guild_id = request.query_params.get("guild_id")
+            current_guild = request.session.get("guild")
             
-            if not guild_id:
+            if not current_guild:
                 raise HTTPException(status_code=400, detail="No guild selected")
             
             current_user = request.session.get("user")
@@ -264,8 +232,8 @@ class UserManagementView:
     async def delete_user(self, request: Request, user_id: str):
         """Remove a user from the current guild"""
         try:
-            guild_id = request.query_params.get("guild_id")
-            if not guild_id:
+            current_guild = request.session.get("guild")
+            if not current_guild:
                 raise HTTPException(status_code=400, detail="No guild selected")
             
             current_user = request.session.get("user")
@@ -273,7 +241,7 @@ class UserManagementView:
                 raise HTTPException(status_code=403, detail="Insufficient permissions")
             
             async with session_context() as session:
-                await self._remove_user_from_guild(session, user_id, guild_id)
+                await self._remove_user_from_guild(session, user_id, current_guild["id"])
                 await session.commit()
                 
             return JSONResponse(content={"message": "User removed from guild successfully"})
