@@ -63,39 +63,133 @@
 
 /* Theme-spezifische Styles */
 .dark-theme {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-}
+    /* Core Colors */
+    --primary: #7289da;
+    --secondary: #4f545c;
+    --success: #43b581;
+    --danger: #f04747;
+    --warning: #faa61a;
+    --info: #00b0f4;
 
-.dark-theme .header {
-    background-color: var(--bg-secondary);
-}
+    /* Background Colors */
+    --bg-primary: #36393f;
+    --bg-secondary: #2f3136;
+    --bg-tertiary: #202225;
+    --bg-overlay: rgba(0, 0, 0, 0.3);
 
-.dark-theme .navbar {
-    background-color: var(--navbar-bg);
-    color: var(--navbar-text);
-    border-bottom: 1px solid var(--navbar-border);
-}
+    /* Text Colors */
+    --text-primary: #ffffff;
+    --text-secondary: #b9bbbe;
+    --text-muted: #72767d;
 
-.dark-theme .footer {
-    background-color: var(--footer-bg);
-    color: var(--footer-text);
-}
+    /* Border Colors */
+    --border-color: #40444b;
+    --border-radius: 4px;
 
-/* Global dark theme styles */
-body {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    min-height: 100vh;
+    /* Component Specific */
+    --navbar-bg: var(--bg-secondary);
+    --navbar-text: var(--text-primary);
+    --navbar-border: var(--border-color);
+
+    --sidebar-bg: var(--bg-tertiary);
+    --sidebar-text: var(--text-secondary);
+    --sidebar-hover: var(--primary);
+
+    --footer-bg: var(--bg-secondary);
+    --footer-text: var(--text-secondary);
+    --footer-link: var(--primary);
+    --footer-link-hover: #5c6fb1;
+
+    /* Card Styles */
+    --card-bg: var(--bg-secondary);
+    --card-border: var(--border-color);
+    --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    --card-header-bg: var(--bg-tertiary);
+    --card-hover-transform: translateY(-2px);
+    --card-hover-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+
+    /* Stats Card */
+    --stat-card-bg: var(--bg-secondary);
+    --stat-card-border: var(--border-color);
+    --stat-icon-bg: var(--bg-tertiary);
+    --stat-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+    /* Widget Card */
+    --widget-card-bg: var(--bg-secondary);
+    --widget-header-bg: var(--bg-tertiary);
+    --widget-border: var(--border-color);
+    --widget-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    --widget-hover-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+
+    /* Table Styles */
+    --table-bg: var(--bg-secondary);
+    --table-header-bg: var(--bg-tertiary);
+    --table-border: var(--border-color);
+    --table-hover-bg: var(--bg-tertiary);
+    --table-stripe-bg: var(--bg-tertiary);
+
+    /* Form Controls */
+    --input-bg: var(--bg-tertiary);
+    --input-border: var(--border-color);
+    --input-text: var(--text-primary);
+    --input-placeholder: var(--text-muted);
+    --input-focus-border: var(--primary);
+    --input-focus-shadow: 0 0 0 0.2rem rgba(114, 137, 218, 0.25);
+
+    /* Button Colors */
+    --btn-primary-bg: var(--primary);
+    --btn-primary-text: white;
+    --btn-primary-hover: #5c6fb1;
+    --btn-primary-active: #4e5d94;
+    
+    --btn-secondary-bg: var(--secondary);
+    --btn-secondary-text: white;
+    --btn-secondary-hover: #43464d;
+    --btn-secondary-active: #383b41;
+
+    /* Dropdown Styles */
+    --dropdown-bg: var(--bg-secondary);
+    --dropdown-border: var(--border-color);
+    --dropdown-shadow: 0 4px 12px var(--bg-overlay);
+    --dropdown-hover-bg: var(--bg-tertiary);
+    --dropdown-item-color: var(--text-secondary);
+    --dropdown-item-hover-color: var(--text-primary);
+
+    /* Server Selector */
+    --server-selector-bg: var(--bg-tertiary);
+    --server-selector-border: var(--border-color);
+    --server-selector-hover: var(--bg-secondary);
+    --server-icon-border: var(--border-color);
+    --server-icon-bg: var(--bg-tertiary);
+
+    /* User Menu */
+    --user-menu-bg: var(--bg-secondary);
+    --user-menu-hover: var(--bg-tertiary);
+    --user-avatar-border: var(--primary);
+    --user-status-bg: var(--bg-tertiary);
+
+    /* Badge Colors */
+    --badge-bg: var(--bg-tertiary);
+    --badge-text: var(--text-primary);
+    --badge-border: var(--border-color);
+    --badge-success: var(--success);
+    --badge-danger: var(--danger);
+    --badge-warning: var(--warning);
+    --badge-info: var(--info);
+
+    /* Scrollbar */
+    --scrollbar-bg: var(--bg-tertiary);
+    --scrollbar-thumb: var(--text-muted);
+    --scrollbar-thumb-hover: var(--text-secondary);
 }
 
 /* Theme-specific component styling */
-.sidebar {
+.dark-theme .sidebar {
     background-color: var(--sidebar-bg);
     color: var(--sidebar-text);
 }
 
-.sidebar-item {
+.dark-theme .sidebar-item {
     padding: 10px;
     margin-bottom: 5px;
     background-color: var(--bg-tertiary);
@@ -103,11 +197,11 @@ body {
     cursor: pointer;
 }
 
-.sidebar-item:hover {
+.dark-theme .sidebar-item:hover {
     background-color: var(--sidebar-hover);
 }
 
-.section-title {
+.dark-theme .section-title {
     font-weight: bold;
     margin-top: 20px;
     margin-bottom: 10px;
@@ -115,100 +209,107 @@ body {
 }
 
 /* Navbar and footer customization */
-.navbar {
+.dark-theme .navbar {
     background-color: var(--navbar-bg);
     color: var(--navbar-text);
     border-bottom: 1px solid var(--navbar-border);
+    box-shadow: 0 1px 3px var(--bg-overlay);
 }
 
-.footer {
+.dark-theme .footer {
     background-color: var(--footer-bg);
     color: var(--footer-text);
 }
 
-.footer a {
+.dark-theme .footer a {
     color: var(--footer-link);
 }
 
-.footer a:hover {
+.dark-theme .footer a:hover {
     color: var(--footer-link-hover);
 }
 
 /* Modal styling */
-.modal-content {
+.dark-theme .modal-content {
     background-color: var(--bg-secondary);
     border-color: var(--border-color);
 }
 
-.modal-header {
+.dark-theme .modal-header {
     border-bottom-color: var(--border-color);
 }
 
-.modal-footer {
+.dark-theme .modal-footer {
     border-top-color: var(--border-color);
 }
 
 /* Card styling for dark theme */
-.card {
-    background-color: var(--bg-secondary);
-    border-color: var(--border-color);
+.dark-theme .card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--card-shadow);
 }
 
-.card-header {
-    background-color: var(--bg-tertiary);
-    border-bottom-color: var(--border-color);
+.dark-theme .card:hover {
+    transform: var(--card-hover-transform);
+    box-shadow: var(--card-hover-shadow);
 }
 
-.card-title, .card-text {
+.dark-theme .card-header {
+    background-color: var(--card-header-bg);
+    border-bottom: 1px solid var(--card-border);
+}
+
+.dark-theme .card-title, .dark-theme .card-text {
     color: var(--text-primary);
 }
 
 /* Button styling overrides */
-.btn-primary {
+.dark-theme .btn-primary {
     background-color: var(--btn-primary-bg);
     border-color: var(--btn-primary-bg);
     color: var(--btn-primary-text);
 }
 
-.btn-primary:hover {
+.dark-theme .btn-primary:hover {
     background-color: var(--btn-primary-hover);
     border-color: var(--btn-primary-hover);
 }
 
-.btn-secondary {
+.dark-theme .btn-secondary {
     background-color: var(--btn-secondary-bg);
     border-color: var(--btn-secondary-bg);
     color: var(--btn-secondary-text);
 }
 
-.btn-secondary:hover {
+.dark-theme .btn-secondary:hover {
     background-color: var(--btn-secondary-hover);
     border-color: var(--btn-secondary-hover);
 }
 
 /* Form control styling */
-.form-control {
+.dark-theme .form-control {
     background-color: var(--input-bg);
-    border-color: var(--input-border);
+    border: 1px solid var(--input-border);
     color: var(--input-text);
 }
 
-.form-control::placeholder {
+.dark-theme .form-control::placeholder {
     color: var(--input-placeholder);
 }
 
-.form-control:focus {
+.dark-theme .form-control:focus {
     border-color: var(--input-focus-border);
-    box-shadow: 0 0 0 0.2rem rgba(114, 137, 218, 0.25);
+    box-shadow: var(--input-focus-shadow);
 }
 
 /* Text coloring */
-h1, h2, h3, h4, h5, h6, p {
+.dark-theme h1, .dark-theme h2, .dark-theme h3, .dark-theme h4, .dark-theme h5, .dark-theme h6, .dark-theme p {
     color: var(--text-primary);
 }
 
 /* Login page specific styling */
-.login-container {
+.dark-theme .login-container {
     max-width: 500px;
     margin: 100px auto;
     text-align: center;
@@ -218,17 +319,17 @@ h1, h2, h3, h4, h5, h6, p {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.login-title {
+.dark-theme .login-title {
     margin-bottom: 20px;
     color: var(--text-primary);
 }
 
-.login-subtitle {
+.dark-theme .login-subtitle {
     margin-bottom: 30px;
     color: var(--text-primary);
 }
 
-.btn-discord {
+.dark-theme .btn-discord {
     background-color: var(--primary);
     color: white;
     padding: 12px 24px;
@@ -245,38 +346,141 @@ h1, h2, h3, h4, h5, h6, p {
     gap: 8px;
 }
 
-.btn-discord:hover {
+.dark-theme .btn-discord:hover {
     background-color: var(--btn-primary-hover);
 }
 
-.btn-discord:active {
+.dark-theme .btn-discord:active {
     background-color: #4e5d94;
 }
 
 /* Tables */
-.table {
-    color: var(--text-primary);
+.dark-theme .table {
+    background-color: var(--table-bg);
 }
 
-.table thead th {
-    border-bottom-color: var(--border-color);
+.dark-theme .table thead th {
+    background-color: var(--table-header-bg);
+    border-bottom: 2px solid var(--table-border);
 }
 
-.table td, .table th {
-    border-top-color: var(--border-color);
-}
-
-/* Dropdowns */
-.dropdown-menu {
-    background-color: var(--bg-secondary);
+.dark-theme .table td {
     border-color: var(--border-color);
 }
 
-.dropdown-item {
+/* Dropdowns */
+.dark-theme .dropdown-menu {
+    background-color: var(--dropdown-bg);
+    border: 1px solid var(--dropdown-border);
+    box-shadow: var(--dropdown-shadow);
+}
+
+.dark-theme .dropdown-item {
+    color: var(--dropdown-item-color);
+}
+
+.dark-theme .dropdown-item:hover {
+    background-color: var(--dropdown-hover-bg);
+    color: var(--dropdown-item-hover-color);
+}
+
+/* Scrollbar for Dark Theme */
+.dark-theme ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.dark-theme ::-webkit-scrollbar-track {
+    background: var(--scrollbar-bg);
+}
+
+.dark-theme ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 4px;
+}
+
+.dark-theme ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+}
+
+/* Apply Dark Theme Styles */
+.dark-theme body {
+    background-color: var(--bg-primary);
     color: var(--text-primary);
 }
 
-.dropdown-item:hover {
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
+/* Stats Card */
+.dark-theme .stat-card {
+    background-color: var(--stat-card-bg);
+    border: 1px solid var(--stat-card-border);
+}
+
+.dark-theme .stat-card:hover {
+    box-shadow: var(--stat-hover-shadow);
+}
+
+.dark-theme .stat-icon {
+    background-color: var(--stat-icon-bg);
+}
+
+/* Widget Card */
+.dark-theme .widget-card {
+    background-color: var(--widget-card-bg);
+    border: 1px solid var(--widget-border);
+    box-shadow: var(--widget-shadow);
+}
+
+.dark-theme .widget-card:hover {
+    box-shadow: var(--widget-hover-shadow);
+}
+
+.dark-theme .widget-header {
+    background-color: var(--widget-header-bg);
+    border-bottom: 1px solid var(--widget-border);
+}
+
+/* Table Styles */
+.dark-theme .table tbody tr:hover {
+    background-color: var(--table-hover-bg);
+}
+
+/* Server Selector */
+.dark-theme .server-selector .btn {
+    background-color: var(--server-selector-bg);
+    border: 1px solid var(--server-selector-border);
+}
+
+.dark-theme .server-selector .server-icon {
+    border-color: var(--server-icon-border);
+    background-color: var(--server-icon-bg);
+}
+
+/* User Menu */
+.dark-theme .user-menu {
+    background-color: var(--user-menu-bg);
+}
+
+.dark-theme .user-menu:hover {
+    background-color: var(--user-menu-hover);
+}
+
+.dark-theme .user-avatar {
+    border-color: var(--user-avatar-border);
+}
+
+/* Badges */
+.dark-theme .badge {
+    background-color: var(--badge-bg);
+    color: var(--badge-text);
+    border: 1px solid var(--badge-border);
+}
+
+.dark-theme .badge.bg-success {
+    background-color: var(--badge-success) !important;
+    color: white;
+}
+
+.dark-theme .badge.bg-danger {
+    background-color: var(--badge-danger) !important;
+    color: white;
 }

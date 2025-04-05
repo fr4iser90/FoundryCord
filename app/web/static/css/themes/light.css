@@ -1,182 +1,503 @@
 /* Discord-spezifische Variablen */
 :root {
-    --discord-bg: #36393f;
-    --discord-channel: #2f3136;
-    --discord-lighter: #40444b;
-    --discord-text: #dcddde;
-    --discord-accent: #7289da;
-    --discord-link: #00b0f4;
-    --discord-danger: #f04747;
-    --discord-success: #43b581;
+    /* Core Colors */
+    --primary: #5865F2;
+    --secondary: #6c757d;
+    --success: #198754;
+    --danger: #dc3545;
+    --warning: #ffc107;
+    --info: #0dcaf0;
+
+    /* Background Colors */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-tertiary: #e9ecef;
+    --bg-overlay: rgba(0, 0, 0, 0.1);
+
+    /* Text Colors */
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --text-muted: #adb5bd;
+
+    /* Border Colors */
+    --border-color: #dee2e6;
+    --border-radius: 4px;
+
+    /* Spacing */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+
+    /* Component Specific */
+    --navbar-bg: #ffffff;
+    --navbar-text: #212529;
+    --navbar-border: #dee2e6;
+
+    --sidebar-bg: #f8f9fa;
+    --sidebar-text: #6c757d;
+    --sidebar-hover: #5865F2;
+
+    --footer-bg: #ffffff;
+    --footer-text: #6c757d;
+    --footer-link: #5865F2;
+    --footer-link-hover: #4752c4;
+
+    /* Button Colors */
+    --btn-primary-bg: #5865F2;
+    --btn-primary-text: #ffffff;
+    --btn-primary-hover: #4752c4;
     
-    /* Footer variables */
-    --footer-bg: var(--discord-channel);
-    --footer-text: var(--discord-text);
-    --footer-link: var(--discord-link);
-    --footer-link-hover: var(--discord-accent);
+    --btn-secondary-bg: #6c757d;
+    --btn-secondary-text: #ffffff;
+    --btn-secondary-hover: #5a6268;
 
+    /* Form Controls */
+    --input-bg: #ffffff;
+    --input-border: #dee2e6;
+    --input-text: #212529;
+    --input-placeholder: #adb5bd;
+    --input-focus-border: #5865F2;
 
-
-    /* Bestehende Variablen beibehalten */
-    --bg-primary: #1a1a1a;
-    --bg-secondary: #2d2d2d;
-    --text-primary: #ffffff;
-    --text-secondary: #b3b3b3;
-    --accent-color: #7289da;
-    --error-color: #ff4444;
-    --success-color: #43b581;
+    /* Discord-specific */
+    --discord-bg: #ffffff;
+    --discord-channel: #f8f9fa;
+    --discord-lighter: #e9ecef;
+    --discord-darker: #dee2e6;
+    --discord-text: #212529;
+    --discord-accent: #5865F2;
+    --discord-link: #0dcaf0;
+    --discord-danger: #dc3545;
+    --discord-success: #198754;
 }
 
-/* Theme-spezifische Styles */
-.dark-theme {
-    background-color: var(--discord-bg);
-    color: var(--discord-text);
-}
-
-.dark-theme .header {
-    background-color: var(--bg-secondary);
-}
-
-.dark-theme .navbar {
-    background-color: var(--bg-secondary);
-}
-
-.dark-theme .footer {
-    background-color: var(--bg-secondary);
-    color: var(--text-secondary);
-}
-
-/* Global dark theme styles */
+/* Theme-specific styles */
 body {
-    background-color: var(--discord-bg);
-    color: var(--discord-text);
-    min-height: 100vh;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
 }
 
-/* Theme-specific component styling */
+/* Navbar and Header */
+.navbar {
+    background-color: var(--navbar-bg);
+    border-bottom: 1px solid var(--navbar-border);
+    box-shadow: 0 1px 3px var(--bg-overlay);
+}
+
+/* Sidebar */
 .sidebar {
-    background-color: var(--discord-channel);
-}
-
-.sidebar-item {
-    padding: 10px;
-    margin-bottom: 5px;
-    background-color: var(--discord-lighter);
-    border-radius: 4px;
-    cursor: pointer;
+    background-color: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
 }
 
 .sidebar-item:hover {
-    background-color: var(--discord-accent);
+    background-color: var(--bg-tertiary);
+    color: var(--primary);
 }
 
-.section-title {
-    font-weight: bold;
-    margin-top: 20px;
-    margin-bottom: 10px;
-    color: #ffffff;
-}
-
-/* Navbar and footer customization */
-.navbar {
-    background-color: var(--discord-channel);
-}
-
-.footer {
-    background-color: var(--discord-channel);
-}
-
-/* Modal styling */
-.modal-content {
-    background-color: var(--discord-lighter);
-    color: var(--discord-text);
-}
-
-/* Card styling for dark theme */
+/* Cards and Containers */
 .card {
-    background-color: var(--discord-lighter);
-    border-color: var(--discord-channel);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px var(--bg-overlay);
 }
 
-.card-title, .card-text {
-    color: var(--discord-text);
+.card-header {
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
 }
 
-/* Button styling overrides */
-.btn-primary {
-    background-color: var(--discord-accent);
-    border-color: var(--discord-accent);
+/* Tables */
+.table {
+    background-color: var(--bg-primary);
 }
 
-.btn-primary:hover {
-    background-color: #4752c4; /* Slightly darker than accent */
-    border-color: #4752c4;
+.table thead th {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--border-color);
 }
 
-.btn-secondary {
-    background-color: var(--discord-lighter);
-    border-color: var(--discord-channel);
+.table tbody tr:hover {
+    background-color: var(--bg-secondary);
 }
 
-/* Form control styling */
+/* Forms and Inputs */
 .form-control {
-    background-color: var(--discord-channel);
-    border-color: var(--discord-lighter);
-    color: var(--discord-text);
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--input-text);
 }
 
 .form-control:focus {
-    background-color: var(--discord-channel);
-    color: var(--discord-text);
+    border-color: var(--input-focus-border);
+    box-shadow: 0 0 0 0.2rem rgba(88, 101, 242, 0.25);
 }
 
-/* Text coloring */
-h1, h2, h3, h4, h5, h6, p {
-    color: var(--discord-text);
+/* Buttons */
+.btn-primary {
+    background-color: var(--btn-primary-bg);
+    border-color: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
 }
 
-/* Login page specific styling */
-.login-container {
-    max-width: 500px;
-    margin: 100px auto;
-    text-align: center;
-    padding: 30px;
-    background-color: var(--discord-lighter);
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+.btn-primary:hover {
+    background-color: var(--btn-primary-hover);
+    border-color: var(--btn-primary-hover);
 }
 
-.login-title {
-    margin-bottom: 20px;
-    color: var(--discord-text);
+/* Dropdowns */
+.dropdown-menu {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px var(--bg-overlay);
 }
 
-.login-subtitle {
-    margin-bottom: 30px;
-    color: var(--discord-text);
+.dropdown-item:hover {
+    background-color: var(--bg-secondary);
+    color: var(--primary);
 }
 
-.btn-discord {
-    background-color: var(--discord-accent);
+/* User Menu */
+.user-menu {
+    background-color: var(--bg-primary);
+}
+
+.user-menu:hover {
+    background-color: var(--bg-secondary);
+}
+
+/* Server Selector */
+.server-selector .btn {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.server-selector .btn:hover {
+    background-color: var(--bg-tertiary);
+}
+
+/* Badges and Status Indicators */
+.badge.bg-success {
+    background-color: var(--success) !important;
     color: white;
-    padding: 12px 24px;
+}
+
+.badge.bg-danger {
+    background-color: var(--danger) !important;
+    color: white;
+}
+
+/* Footer */
+.footer {
+    background-color: var(--footer-bg);
+    border-top: 1px solid var(--border-color);
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--text-muted);
     border-radius: 4px;
-    border: none;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
 }
 
-.btn-discord:hover {
-    background-color: #5c6fb1;
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
 }
 
-.btn-discord:active {
-    background-color: #4e5d94;
+.light-theme {
+    /* Core Colors */
+    --primary: #5865f2;
+    --secondary: #99aab5;
+    --success: #57f287;
+    --danger: #ed4245;
+    --warning: #fee75c;
+    --info: #5865f2;
+
+    /* Background Colors */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f2f3f5;
+    --bg-tertiary: #e3e5e8;
+    --bg-overlay: rgba(0, 0, 0, 0.1);
+
+    /* Text Colors */
+    --text-primary: #2e3338;
+    --text-secondary: #4f5660;
+    --text-muted: #747f8d;
+
+    /* Border Colors */
+    --border-color: #e3e5e8;
+    --border-radius: 4px;
+
+    /* Component Specific */
+    --navbar-bg: var(--bg-secondary);
+    --navbar-text: var(--text-primary);
+    --navbar-border: var(--border-color);
+
+    --sidebar-bg: var(--bg-tertiary);
+    --sidebar-text: var(--text-secondary);
+    --sidebar-hover: var(--primary);
+
+    --footer-bg: var(--bg-secondary);
+    --footer-text: var(--text-secondary);
+    --footer-link: var(--primary);
+    --footer-link-hover: #4752c4;
+
+    /* Card Styles */
+    --card-bg: var(--bg-primary);
+    --card-border: var(--border-color);
+    --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    --card-header-bg: var(--bg-secondary);
+    --card-hover-transform: translateY(-2px);
+    --card-hover-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+    /* Stats Card */
+    --stat-card-bg: var(--bg-primary);
+    --stat-card-border: var(--border-color);
+    --stat-icon-bg: var(--bg-secondary);
+    --stat-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+    /* Widget Card */
+    --widget-card-bg: var(--bg-primary);
+    --widget-header-bg: var(--bg-secondary);
+    --widget-border: var(--border-color);
+    --widget-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    --widget-hover-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+    /* Table Styles */
+    --table-bg: var(--bg-primary);
+    --table-header-bg: var(--bg-secondary);
+    --table-border: var(--border-color);
+    --table-hover-bg: var(--bg-secondary);
+    --table-stripe-bg: var(--bg-secondary);
+
+    /* Form Controls */
+    --input-bg: var(--bg-primary);
+    --input-border: var(--border-color);
+    --input-text: var(--text-primary);
+    --input-placeholder: var(--text-muted);
+    --input-focus-border: var(--primary);
+    --input-focus-shadow: 0 0 0 0.2rem rgba(88, 101, 242, 0.25);
+
+    /* Button Colors */
+    --btn-primary-bg: var(--primary);
+    --btn-primary-text: white;
+    --btn-primary-hover: #4752c4;
+    --btn-primary-active: #3c45a5;
+    
+    --btn-secondary-bg: var(--secondary);
+    --btn-secondary-text: white;
+    --btn-secondary-hover: #7d8590;
+    --btn-secondary-active: #6b7278;
+
+    /* Dropdown Styles */
+    --dropdown-bg: var(--bg-primary);
+    --dropdown-border: var(--border-color);
+    --dropdown-shadow: 0 4px 12px var(--bg-overlay);
+    --dropdown-hover-bg: var(--bg-secondary);
+    --dropdown-item-color: var(--text-secondary);
+    --dropdown-item-hover-color: var(--text-primary);
+
+    /* Server Selector */
+    --server-selector-bg: var(--bg-primary);
+    --server-selector-border: var(--border-color);
+    --server-selector-hover: var(--bg-secondary);
+    --server-icon-border: var(--border-color);
+    --server-icon-bg: var(--bg-secondary);
+
+    /* User Menu */
+    --user-menu-bg: var(--bg-primary);
+    --user-menu-hover: var(--bg-secondary);
+    --user-avatar-border: var(--primary);
+    --user-status-bg: var(--bg-secondary);
+
+    /* Badge Colors */
+    --badge-bg: var(--bg-secondary);
+    --badge-text: var(--text-primary);
+    --badge-border: var(--border-color);
+    --badge-success: var(--success);
+    --badge-danger: var(--danger);
+    --badge-warning: var(--warning);
+    --badge-info: var(--info);
+
+    /* Scrollbar */
+    --scrollbar-bg: var(--bg-tertiary);
+    --scrollbar-thumb: var(--text-muted);
+    --scrollbar-thumb-hover: var(--text-secondary);
+}
+
+/* Apply Light Theme Styles */
+.light-theme body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+/* Card Styles */
+.light-theme .card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--card-shadow);
+}
+
+.light-theme .card:hover {
+    transform: var(--card-hover-transform);
+    box-shadow: var(--card-hover-shadow);
+}
+
+.light-theme .card-header {
+    background-color: var(--card-header-bg);
+    border-bottom: 1px solid var(--card-border);
+}
+
+/* Stats Card */
+.light-theme .stat-card {
+    background-color: var(--stat-card-bg);
+    border: 1px solid var(--stat-card-border);
+}
+
+.light-theme .stat-card:hover {
+    box-shadow: var(--stat-hover-shadow);
+}
+
+.light-theme .stat-icon {
+    background-color: var(--stat-icon-bg);
+}
+
+/* Widget Card */
+.light-theme .widget-card {
+    background-color: var(--widget-card-bg);
+    border: 1px solid var(--widget-border);
+    box-shadow: var(--widget-shadow);
+}
+
+.light-theme .widget-card:hover {
+    box-shadow: var(--widget-hover-shadow);
+}
+
+.light-theme .widget-header {
+    background-color: var(--widget-header-bg);
+    border-bottom: 1px solid var(--widget-border);
+}
+
+/* Table Styles */
+.light-theme .table {
+    background-color: var(--table-bg);
+}
+
+.light-theme .table thead th {
+    background-color: var(--table-header-bg);
+    border-bottom: 2px solid var(--table-border);
+}
+
+.light-theme .table tbody tr:hover {
+    background-color: var(--table-hover-bg);
+}
+
+/* Form Controls */
+.light-theme .form-control {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--input-text);
+}
+
+.light-theme .form-control:focus {
+    border-color: var(--input-focus-border);
+    box-shadow: var(--input-focus-shadow);
+}
+
+/* Buttons */
+.light-theme .btn-primary {
+    background-color: var(--btn-primary-bg);
+    border-color: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+}
+
+.light-theme .btn-primary:hover {
+    background-color: var(--btn-primary-hover);
+    border-color: var(--btn-primary-hover);
+}
+
+/* Dropdowns */
+.light-theme .dropdown-menu {
+    background-color: var(--dropdown-bg);
+    border: 1px solid var(--dropdown-border);
+    box-shadow: var(--dropdown-shadow);
+}
+
+.light-theme .dropdown-item {
+    color: var(--dropdown-item-color);
+}
+
+.light-theme .dropdown-item:hover {
+    background-color: var(--dropdown-hover-bg);
+    color: var(--dropdown-item-hover-color);
+}
+
+/* Server Selector */
+.light-theme .server-selector .btn {
+    background-color: var(--server-selector-bg);
+    border: 1px solid var(--server-selector-border);
+}
+
+.light-theme .server-selector .server-icon {
+    border-color: var(--server-icon-border);
+    background-color: var(--server-icon-bg);
+}
+
+/* User Menu */
+.light-theme .user-menu {
+    background-color: var(--user-menu-bg);
+}
+
+.light-theme .user-menu:hover {
+    background-color: var(--user-menu-hover);
+}
+
+.light-theme .user-avatar {
+    border-color: var(--user-avatar-border);
+}
+
+/* Badges */
+.light-theme .badge {
+    background-color: var(--badge-bg);
+    color: var(--badge-text);
+    border: 1px solid var(--badge-border);
+}
+
+.light-theme .badge.bg-success {
+    background-color: var(--badge-success) !important;
+    color: white;
+}
+
+.light-theme .badge.bg-danger {
+    background-color: var(--badge-danger) !important;
+    color: white;
+}
+
+/* Scrollbar */
+.light-theme ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.light-theme ::-webkit-scrollbar-track {
+    background: var(--scrollbar-bg);
+}
+
+.light-theme ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 4px;
+}
+
+.light-theme ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
 }

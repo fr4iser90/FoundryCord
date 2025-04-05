@@ -89,12 +89,12 @@
 }
 
 .user-avatar {
-    width: 32px;
-    height: 32px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
-    border: 2px solid var(--primary);
-    flex-shrink: 0;
     object-fit: cover;
+    border: 2px solid var(--discord-accent);
+    background-color: var(--discord-dark);
 }
 
 .user-info {
@@ -167,6 +167,25 @@
 
 .server-selector .dropdown-menu {
     width: 100%;
+}
+
+/* Theme Switcher */
+.theme-switch {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-right: var(--spacing-md);
+}
+
+.theme-switch:hover {
+    color: var(--text-primary);
+}
+
+.theme-switch i {
+    font-size: 1.2rem;
 }
 
 /* Responsive Design */

@@ -1,4 +1,4 @@
-{% extends "layouts/admin_layout.html" %}
+{% extends "base.html" %}
 
 {% block title %}System Status - Admin Dashboard{% endblock %}
 
@@ -79,88 +79,173 @@
                                     <div class="progress">
                                         <div class="progress-bar bg-warning" role="progressbar" style="width: {{ system_info.disk_usage|default(40) }}%;" 
                                             aria-valuenow="{{ system_info.disk_usage|default(40) }}" aria-valuemin="0" aria-valuemax="100">
-                                            {{ system_info.disk_usage|default(40) }}%
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+<div class="admin-container">
+    <!-- Admin sidebar -->
+    <div class="admin-sidebar">
+        {% include "components/sidebars/admin_sidebar.html" %}
     </div>
-    
-    <div class="row">
-        <div class="col-xl-12">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <i class="fas fa-list-alt me-1"></i>
-                    System Logs
+
+    <div class="admin-content">
+        <div class="container-fluid px-4">
+            <h1 class="mt-4">System Status</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="/admin/dashboard">Dashboard</a></li>
+                <li class="breadcrumb-item active">System Status</li>
+            </ol>
+            
+            <div class="row">
+                <div class="col-xl-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-server me-1"></i>
+                            Bot Status
+                        </div>
+                        <div class="card-body">
+                            <table class="table">
+                                <tbody>
+                                    <tr>
+                                        <th>Status</th>
+                                        <td><span class="badge bg-success">Online</span></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Uptime</th>
+                                        <td>{{ system_info.uptime|default('Unknown') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Version</th>
+                                        <td>{{ system_info.version|default('1.0.0') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Environment</th>
+                                        <td>{{ system_info.environment|default('Production') }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div style="height: 300px; overflow-y: auto;">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Timestamp</th>
-                                    <th>Level</th>
-                                    <th>Message</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for log in system_logs|default([]) %}
-                                <tr class="{% if log.level == 'ERROR' %}table-danger{% elif log.level == 'WARNING' %}table-warning{% endif %}">
-                                    <td>{{ log.timestamp }}</td>
-                                    <td>{{ log.level }}</td>
-                                    <td>{{ log.message }}</td>
-                                </tr>
-                                {% else %}
-                                <tr>
-                                    <td colspan="3" class="text-center">No logs available</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                
+                <div class="col-xl-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-microchip me-1"></i>
+                            System Resources
+                        </div>
+                        <div class="card-body">
+                            <table class="table">
+                                <tbody>
+                                    <tr>
+                                        <th>CPU Usage</th>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar" role="progressbar" style="width: {{ system_info.cpu_usage|default(5) }}%;" 
+                                                    aria-valuenow="{{ system_info.cpu_usage|default(5) }}" aria-valuemin="0" aria-valuemax="100">
+                                                    {{ system_info.cpu_usage|default(5) }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Memory Usage</th>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar bg-info" role="progressbar" style="width: {{ system_info.memory_usage|default(25) }}%;" 
+                                                    aria-valuenow="{{ system_info.memory_usage|default(25) }}" aria-valuemin="0" aria-valuemax="100">
+                                                    {{ system_info.memory_usage|default(25) }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Disk Usage</th>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar bg-warning" role="progressbar" style="width: {{ system_info.disk_usage|default(40) }}%;" 
+                                                    aria-valuenow="{{ system_info.disk_usage|default(40) }}" aria-valuemin="0" aria-valuemax="100">
+                                                    {{ system_info.disk_usage|default(40) }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-    
-    <div class="row">
-        <div class="col-12">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <i class="fas fa-tools me-1"></i>
-                    Maintenance Actions
+            
+            <div class="row">
+                <div class="col-xl-12">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-list-alt me-1"></i>
+                            System Logs
+                        </div>
+                        <div class="card-body">
+                            <div style="height: 300px; overflow-y: auto;">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Timestamp</th>
+                                            <th>Level</th>
+                                            <th>Message</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for log in system_logs|default([]) %}
+                                        <tr class="{% if log.level == 'ERROR' %}table-danger{% elif log.level == 'WARNING' %}table-warning{% endif %}">
+                                            <td>{{ log.timestamp }}</td>
+                                            <td>{{ log.level }}</td>
+                                            <td>{{ log.message }}</td>
+                                        </tr>
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="3" class="text-center">No logs available</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">Restart Bot</h5>
-                                    <p class="card-text">Restart the bot service</p>
-                                    <button class="btn btn-warning" id="restartBot">Restart</button>
-                                </div>
-                            </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-tools me-1"></i>
+                            Maintenance Actions
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">Clear Cache</h5>
-                                    <p class="card-text">Clear system cache</p>
-                                    <button class="btn btn-info" id="clearCache">Clear</button>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h5 class="card-title">Restart Bot</h5>
+                                            <p class="card-text">Restart the bot service</p>
+                                            <button class="btn btn-warning" id="restartBot">Restart</button>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">Update System</h5>
-                                    <p class="card-text">Check for updates</p>
-                                    <button class="btn btn-success" id="checkUpdates">Check</button>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h5 class="card-title">Clear Cache</h5>
+                                            <p class="card-text">Clear system cache</p>
+                                            <button class="btn btn-info" id="clearCache">Clear</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h5 class="card-title">Update System</h5>
+                                            <p class="card-text">Check for updates</p>
+                                            <button class="btn btn-success" id="checkUpdates">Check</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -170,6 +255,11 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', path='css/pages/admin/system_status.css') }}">
 {% endblock %}
 
 {% block scripts %}

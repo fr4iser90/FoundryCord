@@ -108,39 +108,40 @@
 
         <!-- Right Section - User Menu -->
         <div class="navbar-right">
+            <button id="theme-switch" class="theme-switch" title="Switch theme">
+                <i id="theme-icon" class="bi bi-sun-fill"></i>
+            </button>
             {% if user %}
-            <div class="user-menu dropdown">
-                <div class="d-flex align-items-center" data-bs-toggle="dropdown">
-                    <img src="{{ user.avatar_url or '/static/img/default_avatar.png' }}" 
-                         alt="Avatar" 
-                         class="user-avatar">
-                    <div class="user-info">
-                        <span class="user-name">{{ user.username }}</span>
-                        <span class="user-status">{{ user.role }}</span>
-                    </div>
+            <div class="user-menu dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown">
+                <img src="{{ user.avatar or 'https://cdn.discordapp.com/embed/avatars/0.png' }}" 
+                     alt="{{ user.username }}" 
+                     class="user-avatar">
+                <div class="user-info">
+                    <span class="user-name">{{ user.username }}</span>
+                    <span class="user-status">{{ user.app_role }}</span>
                 </div>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                        <a class="dropdown-item" href="/user/profile">
-                            <i class="bi bi-person"></i>
-                            <span>Profile</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="/user/settings">
-                            <i class="bi bi-gear"></i>
-                            <span>Settings</span>
-                        </a>
-                    </li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                        <a class="dropdown-item" href="/auth/logout">
-                            <i class="bi bi-box-arrow-right"></i>
-                            <span>Logout</span>
-                        </a>
-                    </li>
-                </ul>
             </div>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                    <a class="dropdown-item" href="/user/profile">
+                        <i class="bi bi-person"></i>
+                        <span>Profile</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="/user/settings">
+                        <i class="bi bi-gear"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item" href="/auth/logout">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
             {% endif %}
         </div>
     </div>

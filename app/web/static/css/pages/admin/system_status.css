@@ -1,0 +1,100 @@
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.status-card {
+    background-color: var(--background-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.status-card h3 {
+    margin: 0 0 1rem;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+}
+
+.resource-bar {
+    width: 100%;
+    height: 8px;
+    background-color: var(--background-tertiary);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0.5rem 0;
+}
+
+.resource-bar-fill {
+    height: 100%;
+    background-color: var(--accent-primary);
+    transition: width 0.3s ease;
+}
+
+.resource-bar-fill.warning {
+    background-color: var(--warning);
+}
+
+.resource-bar-fill.danger {
+    background-color: var(--danger);
+}
+
+.resource-label {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.system-logs {
+    background-color: var(--background-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.log-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.log-table th,
+.log-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.log-table th {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.log-table td {
+    color: var(--text-muted);
+}
+
+.log-level {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.log-level.info {
+    background-color: var(--info-bg);
+    color: var(--info);
+}
+
+.log-level.warning {
+    background-color: var(--warning-bg);
+    color: var(--warning);
+}
+
+.log-level.error {
+    background-color: var(--danger-bg);
+    color: var(--danger);
+} 
