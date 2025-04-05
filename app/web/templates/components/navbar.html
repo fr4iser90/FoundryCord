@@ -1,7 +1,43 @@
 {# app/web/templates/components/navbar.html #}
 <nav class="navbar navbar-expand-lg navbar-dark">
     <div class="container">
-        <a class="navbar-brand" href="/bot/overview">Discord Bot</a>
+        <a class="navbar-brand" href="/home">Discord Bot</a>
+        
+        <!-- Server Selector Dropdown -->
+        {% if user %}
+        <div class="server-selector dropdown me-4">
+            <button class="btn btn-dark dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <img src="{{ current_server.icon_url if current_server else '/static/img/default_server_icon.png' }}" 
+                     alt="Server Icon" 
+                     class="server-icon rounded-circle"
+                     width="32" 
+                     height="32">
+                <div class="d-flex flex-column align-items-start">
+                    <span class="server-name">{{ current_server.name if current_server else 'Select Server' }}</span>
+                    <small class="server-id text-muted">{{ current_server.id if current_server else '' }}</small>
+                </div>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-dark">
+                {% for server in user.servers %}
+                <li>
+                    <a class="dropdown-item {% if current_server and current_server.id == server.id %}active{% endif %}" 
+                       href="/switch-server/{{ server.id }}">
+                        <img src="{{ server.icon_url }}" 
+                             alt="{{ server.name }}" 
+                             class="server-icon rounded-circle me-2"
+                             width="24" 
+                             height="24">
+                        <div class="d-flex flex-column">
+                            <span>{{ server.name }}</span>
+                            <small class="text-muted">{{ server.id }}</small>
+                        </div>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>

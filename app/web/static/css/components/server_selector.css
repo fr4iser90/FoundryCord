@@ -1,0 +1,80 @@
+.server-selector {
+    position: relative;
+}
+
+.server-selector .btn {
+    background: var(--discord-dark);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    min-width: 200px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.server-selector .btn:hover,
+.server-selector .btn:focus {
+    background: var(--discord-darker);
+    border-color: var(--discord-accent);
+}
+
+.server-selector .server-icon {
+    flex-shrink: 0;
+    object-fit: cover;
+    border: 2px solid transparent;
+    transition: border-color 0.2s ease;
+}
+
+.server-selector .dropdown-item:hover .server-icon {
+    border-color: var(--discord-accent);
+}
+
+.server-selector .server-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+
+.server-selector .server-id {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+.server-selector .dropdown-menu {
+    min-width: 250px;
+    padding: 0.5rem 0;
+    margin-top: 0.25rem;
+    border: 1px solid var(--border-color);
+    background: var(--discord-dark);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.server-selector .dropdown-item {
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius);
+    margin: 0 0.25rem;
+    width: calc(100% - 0.5rem);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.server-selector .dropdown-item:hover {
+    background: var(--discord-darker);
+}
+
+.server-selector .dropdown-item.active {
+    background: var(--discord-accent);
+}
+
+.server-selector .dropdown-item.active .server-id {
+    color: rgba(255, 255, 255, 0.8);
+}

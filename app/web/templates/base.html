@@ -18,8 +18,6 @@
 </head>
 <body class="dark-theme">  <!-- Theme-Klasse hinzugefügt -->
     <div class="app-container">  <!-- Container für Layout -->
-        <!-- If u want to add a header, uncomment the following line -->
-        <!-- {% include "components/header.html" %} -->
         {% if user %}  <!-- Überprüfen, ob der Benutzer eingeloggt ist -->
             {% include "components/navbar.html" %}
         {% endif %}
@@ -39,5 +37,6 @@
     <script src="/static/js/components/widgets/servers_widget.js"></script>
     <!-- Andere Widget-Typen -->
     {% block scripts %}{% endblock %}
+    <script src="{{ url_for('static', path='js/pages/navbar/server_selector.js') }}"></script>
 </body>
 </html>

@@ -68,6 +68,7 @@ def upgrade() -> None:
         sa.Column('discord_id', sa.String(length=255), nullable=False),
         sa.Column('role_id', sa.Integer(), nullable=False),
         sa.Column('is_active', sa.Boolean(), nullable=False, default=True),
+        sa.Column('avatar', sa.String(255), nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('discord_id'),

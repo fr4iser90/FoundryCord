@@ -4,6 +4,7 @@ from .guild.guild_config_controller import router as guild_config_router
 from .bot.bot_admin_controller import router as bot_admin_router
 from .bot.bot_public_controller import router as bot_public_router
 from .auth.auth_controller import router as auth_router
+from .server.server_selector_controller import router as server_selector_router
 
 # Liste aller Router in der API v1
 routers = [
@@ -13,4 +14,5 @@ routers = [
     bot_public_router,
     bot_admin_router,
     guild_config_router,
+    server_selector_router,
 ]

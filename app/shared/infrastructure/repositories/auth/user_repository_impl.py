@@ -4,6 +4,9 @@ from app.shared.infrastructure.models import AppUserEntity, AppRoleEntity, Disco
 from typing import Optional, List
 from datetime import datetime
 from app.shared.domain.repositories.auth.user_repository import UserRepository
+import logging
+
+logger = logging.getLogger(__name__)
 
 class UserRepositoryImpl(UserRepository):
     def __init__(self, session: AsyncSession):
@@ -122,46 +125,48 @@ class UserRepositoryImpl(UserRepository):
         await self.session.commit()
         return True
     
-    async def create_or_update(self, user_data: dict) -> AppUserEntity:
-        """Create or update a user based on discord_id"""
+    async def create_or_update(self, user_data):
+        """Create or update a user"""
         try:
-            # Get default role_id (assuming 'user' role exists)
-            role_result = await self.session.execute(
-                select(AppRoleEntity.id).where(AppRoleEntity.name == 'user')
+            # Suche nach existierendem Benutzer
+            discord_id = str(user_data.get('discord_id'))
+            result = await self.session.execute(
+                select(AppUserEntity).where(AppUserEntity.discord_id == discord_id)
             )
-            default_role_id = role_result.scalar_one_or_none()
+            user = result.scalars().first()
             
-            if not default_role_id:
-                # Create default role if it doesn't exist
-                default_role = AppRoleEntity(name='user', description='Default user role')
-                self.session.add(default_role)
-                await self.session.commit()
-                default_role_id = default_role.id
-            
-            # Check if user exists
-            existing_user = await self.get_by_discord_id(str(user_data['discord_id']))
-            
-            if existing_user:
-                # Update existing user
-                existing_user.username = user_data['username']
-                if 'nickname' in user_data:
-                    existing_user.nickname = user_data['nickname']
-                
-                await self.update(existing_user)
-                return existing_user
+            if user:
+                # Benutzer aktualisieren
+                user.username = user_data.get('username')
+                # Avatar-URL aktualisieren, wenn vorhanden
+                if 'avatar' in user_data:
+                    user.avatar = user_data.get('avatar')
             else:
-                # Create new user - entferne is_bot, es ist nicht im Entity definiert
-                new_user = AppUserEntity(
-                    discord_id=str(user_data['discord_id']),
-                    username=user_data['username'],
-                    role_id=default_role_id,  # Set default role
-                    is_active=True
+                # Neuen Benutzer erstellen
+                # Standardrolle (USER) abrufen
+                role_result = await self.session.execute(
+                    select(AppRoleEntity).where(AppRoleEntity.name == 'USER')
                 )
+                role = role_result.scalars().first()
                 
-                self.session.add(new_user)
-                await self.session.commit()
-                return new_user
+                if not role:
+                    # Rolle erstellen, wenn sie nicht existiert
+                    role = AppRoleEntity(name='USER', description='Standard user role')
+                    self.session.add(role)
+                    await self.session.flush()
                 
+                # Neuen Benutzer erstellen
+                user = AppUserEntity(
+                    username=user_data.get('username'),
+                    discord_id=discord_id,
+                    role_id=role.id,
+                    avatar=user_data.get('avatar')
+                )
+                self.session.add(user)
+            
+            await self.session.commit()
+            return user
         except Exception as e:
             await self.session.rollback()
-            raise Exception(f"Failed to create/update user: {str(e)}")
+            logger.error(f"Error creating/updating user: {e}")
+            raise

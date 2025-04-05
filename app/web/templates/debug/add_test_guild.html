@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Add Test Guild{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Add Test Guild</h1>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Add "LeL" Test Guild</h5>
+            <p class="card-text">This will add a test guild with ID 151414244603068426 to the database.</p>
+            
+            <form action="/debug/add-test-guild" method="post">
+                <button type="submit" class="btn btn-primary">Add Test Guild</button>
+            </form>
+        </div>
+    </div>
+    
+    <a href="/debug" class="btn btn-secondary mt-3">Back to Debug Home</a>
+</div>
+{% endblock %} 
