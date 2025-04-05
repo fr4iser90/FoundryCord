@@ -1,40 +1,111 @@
-/* User Management specific styles */
-.user-management-container {
+/* User Management Page */
+.users-container {
     padding: 20px;
     background: var(--discord-darker);
     border-radius: 8px;
 }
 
-.role-badge {
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.85em;
-    font-weight: 500;
-    background: var(--discord-accent);
-    color: white;
+/* Header Section */
+.users-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 0 20px;
 }
 
-.guild-role-item {
+.header-actions {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px;
-    margin: 2px 0;
+    gap: 16px;
+}
+
+/* Search Box */
+.search-box {
+    min-width: 300px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 8px 12px;
     background: var(--discord-channel);
+    border: 1px solid var(--discord-accent);
+    color: var(--text-primary);
     border-radius: 4px;
 }
 
-.guild-name {
-    font-weight: 500;
-    color: var(--discord-text);
+/* Table Container */
+.users-table-container {
+    background: var(--discord-lighter);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
 }
 
+.table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table th {
+    padding: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: left;
+    border-bottom: 2px solid var(--discord-accent);
+}
+
+.table td {
+    padding: 16px 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--discord-dark);
+}
+
+/* User Info Cell */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 200px;
+}
+
+.user-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--discord-accent);
+    background-color: var(--discord-dark);
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.username {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+/* Discord ID Column */
+.discord-id {
+    font-family: monospace;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* App Role Column */
 .app-role-select {
-    min-width: 120px;
+    min-width: 140px;
     background: var(--discord-channel);
-    border-color: var(--discord-accent);
-    color: var(--discord-text);
+    border: 1px solid var(--discord-accent);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.9rem;
 }
 
 .app-role-select:disabled {
@@ -42,11 +113,92 @@
     cursor: not-allowed;
 }
 
-/* Status badges */
+/* Guild Roles Column */
+.guild-roles {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 300px;
+}
+
+.guild-role-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: var(--discord-dark);
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.guild-name {
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.role-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    background: var(--discord-accent);
+    color: white;
+    white-space: nowrap;
+}
+
+/* Status Column */
+.badge {
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
 .badge.bg-success {
     background-color: var(--discord-success) !important;
 }
 
 .badge.bg-danger {
     background-color: var(--discord-danger) !important;
+}
+
+/* Actions Column */
+.btn-group {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    background: var(--discord-channel);
+    border: 1px solid var(--discord-accent);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-sm:hover {
+    background: var(--discord-accent);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1200px) {
+    .guild-roles {
+        max-width: 250px;
+    }
+}
+
+@media (max-width: 992px) {
+    .users-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+    
+    .search-box {
+        width: 100%;
+        min-width: auto;
+    }
 } 

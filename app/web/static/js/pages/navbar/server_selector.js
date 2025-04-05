@@ -1,32 +1,33 @@
 class ServerSelector {
     constructor() {
         this.dropdown = document.querySelector('.server-selector');
+        this.button = this.dropdown?.querySelector('.server-select-btn');
         this.currentServer = null;
         this.init();
     }
 
     init() {
-        // Initialize event listeners
-        if (this.dropdown) {
-            this.dropdown.addEventListener('click', (e) => {
-                const item = e.target.closest('.dropdown-item');
-                if (item) {
-                    e.preventDefault();
-                    const serverId = item.dataset.serverId;
-                    this.switchServer(serverId);
-                }
-            });
-
-            // Load initial server data
-            this.loadServerData();
-        } else {
+        if (!this.dropdown) {
             console.error('Server selector dropdown not found');
+            return;
         }
+
+        // Initialize event listeners
+        this.dropdown.addEventListener('click', (e) => {
+            const item = e.target.closest('.dropdown-item');
+            if (item) {
+                e.preventDefault();
+                const serverId = item.getAttribute('href').split('/').pop();
+                this.switchServer(serverId);
+            }
+        });
+
+        // Load initial server data
+        this.loadServerData();
     }
 
     async loadServerData() {
         try {
-            // Verwende die korrekte API-Route
             const response = await fetch('/api/servers/list');
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -54,7 +55,6 @@ class ServerSelector {
             
             const result = await response.json();
             if (result.success) {
-                // Reload the page to reflect the new server
                 window.location.reload();
             }
         } catch (error) {
@@ -78,15 +78,15 @@ class ServerSelector {
         
         serverList.innerHTML = servers.map(server => `
             <li>
-                <a class="dropdown-item" href="#" data-server-id="${server.id}">
-                    <img src="${server.icon_url}" 
+                <a class="dropdown-item" href="/switch-server/${server.id}">
+                    <img src="${server.icon_url || '/static/img/default_server_icon.png'}" 
                          alt="${server.name}" 
-                         class="server-icon rounded-circle"
+                         class="server-icon"
                          width="24" 
                          height="24">
-                    <div class="d-flex flex-column">
+                    <div class="server-info">
                         <span class="server-name">${server.name}</span>
-                        <small class="server-id text-muted">${server.id}</small>
+                        <small class="server-id">${server.id}</small>
                     </div>
                 </a>
             </li>
@@ -100,20 +100,19 @@ class ServerSelector {
 
     updateCurrentServer(server) {
         this.currentServer = server;
-        const button = this.dropdown.querySelector('.btn');
-        if (button) {
-            button.innerHTML = `
-                <img src="${server.icon_url}" 
-                     alt="Server Icon" 
-                     class="server-icon rounded-circle"
-                     width="32" 
-                     height="32">
-                <div class="d-flex flex-column align-items-start">
-                    <span class="server-name">${server.name}</span>
-                    <small class="server-id text-muted">${server.id}</small>
-                </div>
-            `;
-        }
+        if (!this.button) return;
+
+        this.button.innerHTML = `
+            <img src="${server.icon_url || '/static/img/default_server_icon.png'}" 
+                 alt="Server Icon" 
+                 class="server-icon"
+                 width="32" 
+                 height="32">
+            <div class="server-info">
+                <span class="server-name">${server.name}</span>
+                <small class="server-id">${server.id}</small>
+            </div>
+        `;
     }
 }
 

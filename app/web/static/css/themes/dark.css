@@ -1,0 +1,282 @@
+/* Discord-spezifische Variablen */
+:root {
+    /* Core Colors */
+    --primary: #7289da;
+    --secondary: #4f545c;
+    --success: #43b581;
+    --danger: #f04747;
+    --warning: #faa61a;
+    --info: #00b0f4;
+
+    /* Background Colors */
+    --bg-primary: #36393f;
+    --bg-secondary: #2f3136;
+    --bg-tertiary: #202225;
+    --bg-overlay: rgba(0, 0, 0, 0.3);
+
+    /* Text Colors */
+    --text-primary: #ffffff;
+    --text-secondary: #b9bbbe;
+    --text-muted: #72767d;
+
+    /* Border Colors */
+    --border-color: #40444b;
+    --border-radius: 4px;
+
+    /* Spacing */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+
+    /* Component Specific */
+    --navbar-bg: var(--bg-secondary);
+    --navbar-text: var(--text-primary);
+    --navbar-border: var(--border-color);
+
+    --sidebar-bg: var(--bg-tertiary);
+    --sidebar-text: var(--text-secondary);
+    --sidebar-hover: var(--primary);
+
+    --footer-bg: var(--bg-secondary);
+    --footer-text: var(--text-secondary);
+    --footer-link: var(--primary);
+    --footer-link-hover: #5c6fb1;
+
+    /* Button Colors */
+    --btn-primary-bg: var(--primary);
+    --btn-primary-text: white;
+    --btn-primary-hover: #5c6fb1;
+    
+    --btn-secondary-bg: var(--secondary);
+    --btn-secondary-text: white;
+    --btn-secondary-hover: #43464d;
+
+    /* Form Controls */
+    --input-bg: var(--bg-tertiary);
+    --input-border: var(--border-color);
+    --input-text: var(--text-primary);
+    --input-placeholder: var(--text-muted);
+    --input-focus-border: var(--primary);
+}
+
+/* Theme-spezifische Styles */
+.dark-theme {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.dark-theme .header {
+    background-color: var(--bg-secondary);
+}
+
+.dark-theme .navbar {
+    background-color: var(--navbar-bg);
+    color: var(--navbar-text);
+    border-bottom: 1px solid var(--navbar-border);
+}
+
+.dark-theme .footer {
+    background-color: var(--footer-bg);
+    color: var(--footer-text);
+}
+
+/* Global dark theme styles */
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+}
+
+/* Theme-specific component styling */
+.sidebar {
+    background-color: var(--sidebar-bg);
+    color: var(--sidebar-text);
+}
+
+.sidebar-item {
+    padding: 10px;
+    margin-bottom: 5px;
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.sidebar-item:hover {
+    background-color: var(--sidebar-hover);
+}
+
+.section-title {
+    font-weight: bold;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+}
+
+/* Navbar and footer customization */
+.navbar {
+    background-color: var(--navbar-bg);
+    color: var(--navbar-text);
+    border-bottom: 1px solid var(--navbar-border);
+}
+
+.footer {
+    background-color: var(--footer-bg);
+    color: var(--footer-text);
+}
+
+.footer a {
+    color: var(--footer-link);
+}
+
+.footer a:hover {
+    color: var(--footer-link-hover);
+}
+
+/* Modal styling */
+.modal-content {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+.modal-header {
+    border-bottom-color: var(--border-color);
+}
+
+.modal-footer {
+    border-top-color: var(--border-color);
+}
+
+/* Card styling for dark theme */
+.card {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+.card-header {
+    background-color: var(--bg-tertiary);
+    border-bottom-color: var(--border-color);
+}
+
+.card-title, .card-text {
+    color: var(--text-primary);
+}
+
+/* Button styling overrides */
+.btn-primary {
+    background-color: var(--btn-primary-bg);
+    border-color: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+}
+
+.btn-primary:hover {
+    background-color: var(--btn-primary-hover);
+    border-color: var(--btn-primary-hover);
+}
+
+.btn-secondary {
+    background-color: var(--btn-secondary-bg);
+    border-color: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+}
+
+.btn-secondary:hover {
+    background-color: var(--btn-secondary-hover);
+    border-color: var(--btn-secondary-hover);
+}
+
+/* Form control styling */
+.form-control {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--input-text);
+}
+
+.form-control::placeholder {
+    color: var(--input-placeholder);
+}
+
+.form-control:focus {
+    border-color: var(--input-focus-border);
+    box-shadow: 0 0 0 0.2rem rgba(114, 137, 218, 0.25);
+}
+
+/* Text coloring */
+h1, h2, h3, h4, h5, h6, p {
+    color: var(--text-primary);
+}
+
+/* Login page specific styling */
+.login-container {
+    max-width: 500px;
+    margin: 100px auto;
+    text-align: center;
+    padding: 30px;
+    background-color: var(--bg-tertiary);
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.login-title {
+    margin-bottom: 20px;
+    color: var(--text-primary);
+}
+
+.login-subtitle {
+    margin-bottom: 30px;
+    color: var(--text-primary);
+}
+
+.btn-discord {
+    background-color: var(--primary);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 4px;
+    border: none;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-discord:hover {
+    background-color: var(--btn-primary-hover);
+}
+
+.btn-discord:active {
+    background-color: #4e5d94;
+}
+
+/* Tables */
+.table {
+    color: var(--text-primary);
+}
+
+.table thead th {
+    border-bottom-color: var(--border-color);
+}
+
+.table td, .table th {
+    border-top-color: var(--border-color);
+}
+
+/* Dropdowns */
+.dropdown-menu {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+.dropdown-item {
+    color: var(--text-primary);
+}
+
+.dropdown-item:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}

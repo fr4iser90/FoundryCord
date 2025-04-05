@@ -1,119 +1,146 @@
 {# app/web/templates/components/navbar.html #}
-<nav class="navbar navbar-expand-lg navbar-dark">
-    <div class="container">
-        <a class="navbar-brand" href="/home">Discord Bot</a>
-        
-        <!-- Server Selector Dropdown -->
-        {% if user %}
-        <div class="server-selector dropdown me-4">
-            <button class="btn btn-dark dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <img src="{{ current_server.icon_url if current_server else '/static/img/default_server_icon.png' }}" 
-                     alt="Server Icon" 
-                     class="server-icon rounded-circle"
-                     width="32" 
-                     height="32">
-                <div class="d-flex flex-column align-items-start">
-                    <span class="server-name">{{ current_server.name if current_server else 'Select Server' }}</span>
-                    <small class="server-id text-muted">{{ current_server.id if current_server else '' }}</small>
-                </div>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-dark">
-                {% for server in user.servers %}
-                <li>
-                    <a class="dropdown-item {% if current_server and current_server.id == server.id %}active{% endif %}" 
-                       href="/switch-server/{{ server.id }}">
-                        <img src="{{ server.icon_url }}" 
-                             alt="{{ server.name }}" 
-                             class="server-icon rounded-circle me-2"
-                             width="24" 
-                             height="24">
-                        <div class="d-flex flex-column">
-                            <span>{{ server.name }}</span>
-                            <small class="text-muted">{{ server.id }}</small>
-                        </div>
+<nav class="navbar">
+    <div class="navbar-container">
+        <!-- Left Section - Server Selector -->
+        <div class="navbar-left">
+            {% if user %}
+            <div class="server-selector dropdown">
+                <button class="server-select-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <img src="{{ current_server.icon_url if current_server else '/static/img/default_server_icon.png' }}" 
+                         alt="Server Icon" 
+                         class="server-icon"
+                         width="32" 
+                         height="32">
+                    <div class="server-info">
+                        <span class="server-name">{{ current_server.name if current_server else 'Select Server' }}</span>
+                        <small class="server-id">{{ current_server.id if current_server else '' }}</small>
+                    </div>
+                </button>
+                <ul class="dropdown-menu">
+                    {% for server in user.servers %}
+                    <li>
+                        <a class="dropdown-item {% if current_server and current_server.id == server.id %}active{% endif %}" 
+                           href="/switch-server/{{ server.id }}">
+                            <img src="{{ server.icon_url }}" 
+                                 alt="{{ server.name }}" 
+                                 class="server-icon"
+                                 width="24" 
+                                 height="24">
+                            <div class="server-info">
+                                <span class="server-name">{{ server.name }}</span>
+                                <small class="server-id">{{ server.id }}</small>
+                            </div>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Middle Section - Navigation -->
+        <div class="navbar-middle">
+            {% if user %}
+            <ul class="nav-links">
+                <li class="nav-item">
+                    <a class="nav-link" href="/home">
+                        <i class="bi bi-house"></i>
+                        <span>Home</span>
                     </a>
                 </li>
-                {% endfor %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/channel-builder">
+                        <i class="bi bi-grid"></i>
+                        <span>Channel Builder</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/dashboard-builder">
+                        <i class="bi bi-layout-text-sidebar"></i>
+                        <span>Dashboard Builder</span>
+                    </a>
+                </li>
+                
+                {% if user.role == "OWNER" %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-tools"></i>
+                        <span>Admin</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="/admin/bot-control">
+                                <i class="bi bi-gear"></i>
+                                <span>Bot Control</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="/admin/users">
+                                <i class="bi bi-people"></i>
+                                <span>User Management</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="/admin/server-config">
+                                <i class="bi bi-hdd-rack"></i>
+                                <span>Server Config</span>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="/admin/system-stats">
+                                <i class="bi bi-graph-up"></i>
+                                <span>System Stats</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="/admin/logs">
+                                <i class="bi bi-journal-text"></i>
+                                <span>Logs & Metrics</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                {% endif %}
             </ul>
+            {% endif %}
         </div>
-        {% endif %}
 
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        
-        <div class="collapse navbar-collapse" id="navbarNav">
-            {% if user %}  {# Nur Navigation zeigen wenn eingeloggt #}
-                <!-- Main Navigation -->
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/channel-builder">
-                            <i class="bi bi-grid"></i> Channel Builder
+        <!-- Right Section - User Menu -->
+        <div class="navbar-right">
+            {% if user %}
+            <div class="user-menu dropdown">
+                <div class="d-flex align-items-center" data-bs-toggle="dropdown">
+                    <img src="{{ user.avatar_url or '/static/img/default_avatar.png' }}" 
+                         alt="Avatar" 
+                         class="user-avatar">
+                    <div class="user-info">
+                        <span class="user-name">{{ user.username }}</span>
+                        <span class="user-status">{{ user.role }}</span>
+                    </div>
+                </div>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="/user/profile">
+                            <i class="bi bi-person"></i>
+                            <span>Profile</span>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/dashboard-builder">
-                            <i class="bi bi-layout-text-sidebar"></i> Dashboard Builder
+                    <li>
+                        <a class="dropdown-item" href="/user/settings">
+                            <i class="bi bi-gear"></i>
+                            <span>Settings</span>
                         </a>
                     </li>
-                    
-                    <!-- Admin Dropdown - Only visible for Bot Owner -->
-                    {% if user.role == "OWNER" %}
-                    <li class="nav-item dropdown has-hover-dropdown">
-                        <a class="nav-link" href="/admin">
-                            <i class="bi bi-tools"></i> Admin
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item" href="/auth/logout">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Logout</span>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="adminDropdown">
-                            <li><a class="dropdown-item" href="/admin/bot-control">
-                                <i class="bi bi-gear"></i> Bot Control
-                            </a></li>
-                            <li><a class="dropdown-item" href="/admin/users">
-                                <i class="bi bi-people"></i> User Management
-                            </a></li>
-                            <li><a class="dropdown-item" href="/admin/server-config">
-                                <i class="bi bi-hdd-rack"></i> Server Config
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/admin/system-stats">
-                                <i class="bi bi-graph-up"></i> System Stats
-                            </a></li>
-                            <li><a class="dropdown-item" href="/admin/logs">
-                                <i class="bi bi-journal-text"></i> Logs & Metrics
-                            </a></li>
-                        </ul>
-                    </li>
-                    {% endif %}
-                </ul>
-
-                <!-- User Navigation -->
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
-                           data-bs-toggle="dropdown" aria-expanded="false">
-                            <img src="{{ url_for('static', path='img/avatars/' + (user.avatar or 'default.png')) }}" alt="Avatar" class="rounded-circle me-2" style="width: 24px; height: 24px;">
-                            {{ user.username }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="/user/profile">
-                                <i class="bi bi-person"></i> Profile
-                            </a></li>
-                            <li><a class="dropdown-item" href="/user/settings">
-                                <i class="bi bi-gear"></i> Settings
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/auth/logout">
-                                <i class="bi bi-box-arrow-right"></i> Logout
-                            </a></li>
-                        </ul>
                     </li>
                 </ul>
-            {% else %}
-                <!-- Login Button wenn nicht eingeloggt -->
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/auth/login">Login</a>
-                    </li>
-                </ul>
+            </div>
             {% endif %}
         </div>
     </div>

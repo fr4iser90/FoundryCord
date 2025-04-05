@@ -1,0 +1,73 @@
+/* app/web/static/css/components/widgets.css */
+.widget-grid {
+    display: grid;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-xl);
+}
+
+.widget-card {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.widget-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px var(--bg-overlay);
+}
+
+.widget-header {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-tertiary);
+}
+
+.widget-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.widget-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.widget-content {
+    padding: var(--spacing-md);
+    background: var(--bg-secondary);
+}
+
+/* Grid Stack Layout */
+.grid-stack {
+    background: transparent;
+}
+
+.grid-stack > .grid-stack-item {
+    min-width: 250px;
+}
+
+.grid-stack-item-content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+}
+
+.grid-stack-item-content:hover {
+    box-shadow: 0 4px 8px var(--bg-overlay);
+}
+
+/* Widget Placeholder */
+.grid-stack-placeholder > .placeholder-content {
+    background: var(--bg-tertiary);
+    border: 2px dashed var(--border-color);
+    border-radius: var(--border-radius);
+}

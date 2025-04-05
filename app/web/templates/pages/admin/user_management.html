@@ -2,6 +2,10 @@
 
 {% block title %}User Management - HomeLab Discord Bot{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/pages/admin/user_management.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="users-container">
     <div class="users-header">
@@ -35,9 +39,9 @@
                             <div class="username">{{ user.username }}</div>
                         </div>
                     </td>
-                    <td>{{ user.discord_id }}</td>
+                    <td class="discord-id">{{ user.discord_id }}</td>
                     <td>
-                        <select class="form-select app-role-select" 
+                        <select class="app-role-select" 
                                 data-user-id="{{ user.id }}"
                                 {% if user.app_role == 'OWNER' %}disabled{% endif %}>
                             <option value="USER" {% if user.app_role == 'USER' %}selected{% endif %}>User</option>
@@ -74,10 +78,6 @@
         </table>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', path='css/pages/admin.css') }}">
 {% endblock %}
 
 {% block extra_js %}

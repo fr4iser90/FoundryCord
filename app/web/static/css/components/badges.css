@@ -1,0 +1,50 @@
+/* Badge Component Styles */
+.badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 500;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+}
+
+/* Status Badges */
+.badge.bg-success {
+    background-color: var(--discord-success) !important;
+    color: white;
+}
+
+.badge.bg-danger {
+    background-color: var(--discord-danger) !important;
+    color: white;
+}
+
+.badge.bg-warning {
+    background-color: var(--discord-warning) !important;
+    color: white;
+}
+
+/* Role Badges */
+.role-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    background: var(--discord-accent);
+    color: white;
+    white-space: nowrap;
+}
+
+.role-badge.admin {
+    background: var(--discord-success);
+}
+
+.role-badge.mod {
+    background: var(--discord-accent);
+}
+
+.role-badge.user {
+    background: var(--discord-channel);
+} 

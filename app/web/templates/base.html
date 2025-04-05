@@ -1,42 +1,59 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Discord Bot Web Interface{% endblock %}</title>
+    <title>{% block title %}FoundryCord{% endblock %}</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     
-    <!-- CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', path='css/base.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', path='css/themes/dark/theme.css') }}" id="theme-style">
+    <!-- Theme CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', path='css/themes/dark.css') }}" id="theme-style">
     
-    {% block head %}{% endblock %}
+    <!-- Core CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', path='css/core/reset.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/core/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/core/utilities.css') }}">
+    
+    <!-- Components CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', path='css/components/navbar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/components/server_selector.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/components/index.css') }}">
+    
+    <!-- Layout CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', path='css/layout/header.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/layout/footer.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/layout/sidebar.css') }}">
+    
+    <!-- Page-specific CSS -->
+    {% block extra_css %}{% endblock %}
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body class="dark-theme">  <!-- Theme-Klasse hinzugefügt -->
-    <div class="app-container">  <!-- Container für Layout -->
-        {% if user %}  <!-- Überprüfen, ob der Benutzer eingeloggt ist -->
-            {% include "components/navbar.html" %}
-        {% endif %}
+<body>
+    <div class="app-container">
+        {% include 'components/navbar.html' %}
         
         <main class="main-content">
             {% block content %}{% endblock %}
         </main>
         
-        {% include "components/footer.html" %}
+        {% include 'components/footer.html' %}
     </div>
     
+    <!-- Bootstrap JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Base JavaScript -->
     <script src="{{ url_for('static', path='js/main.js') }}"></script>
-    <script src="/static/js/components/widget_ui.js"></script>
-    <!-- Widget-Definitionen -->
-    <script src="/static/js/components/widgets/status_widget.js"></script>
-    <script src="/static/js/components/widgets/servers_widget.js"></script>
-    <!-- Andere Widget-Typen -->
-    {% block scripts %}{% endblock %}
+    
+    <!-- Component JavaScript -->
     <script src="{{ url_for('static', path='js/pages/navbar/server_selector.js') }}"></script>
+    
+    <!-- Page-specific JavaScript -->
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

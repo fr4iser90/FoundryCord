@@ -1,0 +1,43 @@
+/* Table Component Styles */
+.table-container {
+    background: var(--discord-lighter);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table th {
+    padding: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: left;
+    border-bottom: 2px solid var(--discord-accent);
+}
+
+.table td {
+    padding: 16px 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--discord-dark);
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}
+
+.table tr:hover {
+    background: var(--discord-dark);
+}
+
+/* Responsive Table */
+@media (max-width: 768px) {
+    .table-container {
+        margin: 0 -16px;
+        border-radius: 0;
+    }
+} 
