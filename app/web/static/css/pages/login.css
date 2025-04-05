@@ -2,19 +2,19 @@
     max-width: 500px;
     margin: 100px auto;
     text-align: center;
-    padding: 30px;
-    background-color: var(--discord-lighter);
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    padding: var(--spacing-xl);
+    background-color: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 8px var(--bg-overlay);
 }
 
 .btn-discord {
-    background-color: var(--discord-accent);
-    color: white;
-    padding: 12px 24px;
-    border-radius: 4px;
+    background-color: var(--primary);
+    color: var(--text-primary);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--border-radius);
     border: none;
-    font-size: 16px;
+    font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
     transition: background-color 0.2s;
@@ -22,13 +22,13 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: var(--spacing-sm);
 }
 
 .btn-discord:hover {
-    background-color: #5c6fb1;
+    background-color: var(--btn-primary-hover);
 }
 
 .btn-discord:active {
-    background-color: #4e5d94;
+    background-color: var(--btn-primary-active);
 }

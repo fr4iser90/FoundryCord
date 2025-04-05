@@ -1,28 +1,5 @@
 /* Core Variables */
 :root {
-    /* Colors */
-    --primary: #7289da;
-    --secondary: #4f545c;
-    --success: #43b581;
-    --danger: #f04747;
-    --warning: #faa61a;
-    --info: #00b0f4;
-
-    /* Text Colors */
-    --text-primary: #ffffff;
-    --text-secondary: #b9bbbe;
-    --text-muted: #72767d;
-
-    /* Background Colors */
-    --bg-primary: #36393f;
-    --bg-secondary: #2f3136;
-    --bg-tertiary: #202225;
-    --bg-overlay: rgba(0, 0, 0, 0.3);
-
-    /* Border Colors */
-    --border-color: #40444b;
-    --border-radius: 4px;
-
     /* Spacing */
     --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
@@ -43,6 +20,12 @@
     --z-modal: 1040;
     --z-popover: 1050;
     --z-tooltip: 1060;
+
+    /* Border Radius */
+    --border-radius-sm: 2px;
+    --border-radius: 4px;
+    --border-radius-lg: 8px;
+    --border-radius-xl: 12px;
 }
 
 /* Reset & Base Styles */

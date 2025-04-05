@@ -9,14 +9,10 @@ from app.shared.domain.auth.models import Role
 from app.web.domain.auth.permissions import get_user_role
 from app.shared.interface.logging.api import get_web_logger
 import httpx
-from sqlalchemy import select
-from app.shared.infrastructure.models.discord import GuildEntity
-from app.shared.infrastructure.database.session import session_context
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 logger = get_web_logger()
 discord_config = get_discord_oauth_config()
-templates = templates_extension()
 
 class AuthView:
     """View für Authentifizierung über Discord OAuth"""
@@ -105,28 +101,14 @@ class AuthView:
                     "role": user_role
                 }
                 
-                # Get first available guild and set as active
-                async with session_context() as session:
-                    result = await session.execute(select(GuildEntity))
-                    first_guild = result.scalars().first()
-                    
-                    if first_guild:
-                        # Update session directly
-                        request.session["active_guild"] = {
-                            "id": first_guild.guild_id,
-                            "name": first_guild.name,
-                            "icon_url": first_guild.icon_url or "https://cdn.discordapp.com/embed/avatars/0.png"
-                        }
-                
-                # Update session directly
                 request.session["user"] = user
-                request.session["token"] = token["access_token"]
+                request.session["token"] = token
                 
                 logger.info(f"User {user['username']} logged in successfully with role {user_role}")
                 
                 # Redirect based on role
                 return RedirectResponse(
-                    url="/home",
+                    url="/home" if user_role == "OWNER" else "/dashboard",
                     status_code=status.HTTP_303_SEE_OTHER
                 )
                 

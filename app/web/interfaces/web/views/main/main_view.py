@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
-from app.web.core.extensions import get_templates
+from app.web.core.extensions import templates_extension
 
 router = APIRouter(tags=["Main"])
-templates = get_templates()
+templates = templates_extension()
 
 class MainView:
     """View für Hauptseiten"""

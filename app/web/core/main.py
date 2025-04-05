@@ -6,12 +6,10 @@ import os
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from app.shared.interface.logging.api import get_web_logger
 from app.web.core.middleware import setup_middleware
-from app.web.core.extensions import init_all_extensions
+from app.web.core.extensions import init_extensions
 from app.web.core.router_registry import register_routers
 from app.web.core.lifecycle_manager import WebLifecycleManager
 from app.web.core.workflow_manager import WebWorkflowManager
@@ -25,11 +23,27 @@ logger = get_web_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for FastAPI application"""
-    # Startup
-    await web_app.initialize()
-    yield
-    # Shutdown
-    await web_app.shutdown_event()
+    # Initialize extensions first
+    extensions = init_extensions(app)
+    app.state.extensions = extensions
+    logger.info("Extensions initialized in lifespan context")
+    
+    # Initialize the application
+    try:
+        # Setup the application
+        await web_app.setup()
+        
+        # Initialize workflows
+        await web_app.workflow_manager.initialize_workflows()
+        
+        # Setup lifecycle events
+        app.on_event("startup")(web_app.startup_event)
+        app.on_event("shutdown")(web_app.shutdown_event)
+        
+        yield
+    finally:
+        # Shutdown
+        await web_app.shutdown_event()
 
 class WebApplication:
     def __init__(self):
@@ -73,7 +87,6 @@ class WebApplication:
             allow_methods=["*"],
             allow_headers=["*"],
         )
-        
 
     def _setup_exception_handlers(self):
         """Register exception handlers"""
@@ -88,17 +101,12 @@ class WebApplication:
     async def setup(self):
         """Setup the web application asynchronously."""
         try:
-            # Initialize templates
-            self.templates = init_all_extensions(self.app)
-            
-
-            
-            # Then register routers
-            register_routers(self.app)
-            
             # Initialize managers
             self.lifecycle_manager.initialize(self.app, self.service_factory)
             self.workflow_manager.initialize(self.service_factory)
+            
+            # Then register routers
+            register_routers(self.app)
             
             # Setup base routes
             self.setup_base_routes()
@@ -127,24 +135,6 @@ class WebApplication:
                 "current_directory": os.getcwd(),
                 "directory_contents": os.listdir("/app") if os.path.exists("/app") else "Not available"
             }
-
-
-    async def initialize(self):
-        """Initialize the web application."""
-        try:
-            # Setup the application
-            await self.setup()
-            
-            # Initialize workflows
-            await self.workflow_manager.initialize_workflows()
-            
-            # Setup lifecycle events
-            self.app.on_event("startup")(self.startup_event)
-            self.app.on_event("shutdown")(self.shutdown_event)
-
-        except Exception as e:
-            logger.error(f"Failed to initialize web application: {e}")
-            raise
 
     async def startup_event(self):
         """Handle application startup."""

@@ -1,245 +1,186 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize server selector and role displays
-    const serverSelector = document.getElementById('server-selector');
-    const roleColumnHeader = document.getElementById('role-column-header');
-    const userRows = document.querySelectorAll('.user-row');
-    
-    // Track current view state
-    let currentView = {
-        server: 'all',
-        searchTerm: ''
-    };
-    
-    // Initialize search functionality
-    const searchInput = document.getElementById('user-search');
-    if (searchInput) {
-        searchInput.addEventListener('input', debounce(handleSearch, 300));
-    }
-    
-    // Server selection handler
-    if (serverSelector) {
-        serverSelector.addEventListener('change', function() {
-            currentView.server = this.value;
-            updateRoleDisplay();
-            filterUsers(this.value);
-        });
-    }
-    
-    // Role change handlers
-    document.querySelectorAll('.role-select').forEach(select => {
-        select.addEventListener('change', handleRoleChange);
-        // Store original value for rollback if update fails
-        select.dataset.originalValue = select.value;
-    });
-    
-    // App Role Change Handler
-    document.querySelectorAll('.app-role-select').forEach(select => {
-        select.addEventListener('change', handleAppRoleChange);
-        select.dataset.originalValue = select.value;
-    });
-    
-    function updateRoleDisplay() {
-        const isSystemView = currentView.server === 'all';
-        
-        // Update column header
-        if (roleColumnHeader) {
-            roleColumnHeader.textContent = isSystemView ? 'System Role' : 'Server Role';
-        }
-        
-        // Toggle role display sections
-        document.querySelectorAll('.system-role-display').forEach(el => {
-            el.style.display = isSystemView ? 'block' : 'none';
-        });
-        
-        document.querySelectorAll('.server-role-display').forEach(el => {
-            el.style.display = isSystemView ? 'none' : 'block';
-        });
-        
-        // Update actual role displays
-        if (!isSystemView) {
-            updateServerRoles(currentView.server);
-        }
-    }
-    
-    async function updateServerRoles(serverId) {
-        try {
-            const response = await fetch(`/api/v1/servers/${serverId}/roles`);
-            if (!response.ok) throw new Error('Failed to fetch server roles');
-            
-            const roles = await response.json();
-            
-            // Update role displays with actual server roles
-            userRows.forEach(row => {
-                const userId = row.dataset.userId;
-                const userRole = roles.find(r => r.user_id === userId);
-                
-                const roleDisplay = row.querySelector('.server-role-display select');
-                if (roleDisplay && userRole) {
-                    roleDisplay.value = userRole.role;
-                    roleDisplay.dataset.originalValue = userRole.role;
-                }
-            });
-        } catch (error) {
-            console.error('Error fetching server roles:', error);
-            showNotification('Failed to load server roles', 'error');
-        }
-    }
-    
-    async function handleRoleChange(event) {
-        const select = event.target;
-        const userId = select.dataset.userId;
-        const newRole = select.value;
-        const roleType = select.dataset.type;
-        const serverId = currentView.server;
+    // Format date helper function
+    function formatDate(isoString) {
+        if (!isoString) return 'Never';
         
         try {
-            const endpoint = roleType === 'system' 
-                ? `/api/v1/admin/users/${userId}/role`
-                : `/api/v1/servers/${serverId}/users/${userId}/role`;
-                
-            const response = await fetch(endpoint, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    role: newRole,
-                    server_id: roleType === 'server' ? serverId : undefined
-                })
-            });
+            const date = new Date(isoString);
+            if (isNaN(date.getTime())) return 'Invalid Date';
             
-            if (!response.ok) throw new Error('Failed to update role');
-            
-            showNotification('Role updated successfully', 'success');
-            select.dataset.originalValue = newRole;
-        } catch (error) {
-            console.error('Error updating role:', error);
-            showNotification('Failed to update role', 'error');
-            // Rollback to original value
-            select.value = select.dataset.originalValue;
+            return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+        } catch (e) {
+            console.error('Error formatting date:', e);
+            return 'Invalid Date';
         }
     }
-    
-    async function handleAppRoleChange(event) {
-        const select = event.target;
-        const userId = select.dataset.userId;
-        const newRole = select.value;
 
+    // Initialize components
+    const searchInput = document.querySelector('.search-box input');
+    const guildFilter = document.querySelector('#guild-filter');
+    const roleSelect = document.querySelector('#role-select');
+    const statusToggle = document.querySelector('#status-toggle');
+    
+    // User details modal
+    function showUserDetails(userId) {
+        const userRow = document.querySelector(`tr[data-user-id="${userId}"]`);
+        if (!userRow) return;
+        
+        const userData = {
+            id: userId,
+            username: userRow.querySelector('.username').textContent,
+            created_at: userRow.dataset.createdAt,
+            last_active: userRow.dataset.lastActive,
+            guilds: JSON.parse(userRow.dataset.guilds || '[]')
+        };
+        
+        const modalContent = `
+            <div class="user-details-modal">
+                <h3>${userData.username}</h3>
+                <div class="user-info-grid">
+                    <div class="info-item">
+                        <label>Discord ID:</label>
+                        <span>${userData.id}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Created At:</label>
+                        <span>${formatDate(userData.created_at)}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Last Active:</label>
+                        <span>${formatDate(userData.last_active)}</span>
+                    </div>
+                </div>
+                <div class="guild-memberships">
+                    <h4>Guild Memberships</h4>
+                    ${userData.guilds.map(guild => `
+                        <div class="guild-item">
+                            <div class="guild-header">
+                                <span class="guild-name">${guild.name}</span>
+                                <span class="guild-role">${guild.role}</span>
+                            </div>
+                            <div class="guild-dates">
+                                <span>Joined: ${formatDate(guild.joined_at)}</span>
+                                <span>Last Active: ${formatDate(guild.last_active)}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        // Show modal with content
+        showModal('User Details', modalContent);
+    }
+    
+    // Event Listeners
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(function(e) {
+            filterUsers(e.target.value);
+        }, 300));
+    }
+    
+    if (guildFilter) {
+        guildFilter.addEventListener('change', function() {
+            filterUsers();
+        });
+    }
+    
+    if (roleSelect) {
+        roleSelect.addEventListener('change', function(e) {
+            const userId = e.target.closest('tr').dataset.userId;
+            updateUserRole(userId, e.target.value);
+        });
+    }
+    
+    if (statusToggle) {
+        statusToggle.addEventListener('change', function(e) {
+            const userId = e.target.closest('tr').dataset.userId;
+            updateUserStatus(userId, e.target.checked);
+        });
+    }
+    
+    // Attach click handlers for user details
+    document.querySelectorAll('.view-details-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const userId = this.closest('tr').dataset.userId;
+            showUserDetails(userId);
+        });
+    });
+    
+    // Helper Functions
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    function filterUsers(searchTerm = '') {
+        const rows = document.querySelectorAll('table tbody tr');
+        const guildId = guildFilter ? guildFilter.value : '';
+        
+        rows.forEach(row => {
+            const username = row.querySelector('.username').textContent.toLowerCase();
+            const userGuilds = JSON.parse(row.dataset.guilds || '[]');
+            
+            const matchesSearch = !searchTerm || username.includes(searchTerm.toLowerCase());
+            const matchesGuild = !guildId || userGuilds.some(g => g.id === guildId);
+            
+            row.style.display = matchesSearch && matchesGuild ? '' : 'none';
+        });
+    }
+    
+    async function updateUserRole(userId, newRole) {
         try {
             const response = await fetch(`/api/v1/admin/users/${userId}/role`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    role: newRole
-                })
+                body: JSON.stringify({ role: newRole })
             });
-
-            if (!response.ok) throw new Error('Failed to update role');
-
-            showNotification('App role updated successfully', 'success');
-            select.dataset.originalValue = newRole;
-
-        } catch (error) {
-            console.error('Error updating app role:', error);
-            showNotification('Failed to update app role', 'error');
-            select.value = select.dataset.originalValue;
-        }
-    }
-    
-    async function updateUserGuildRoles(userId) {
-        try {
-            const response = await fetch(`/api/v1/admin/users/${userId}/guild-roles`);
-            if (!response.ok) throw new Error('Failed to fetch guild roles');
-
-            const guildRoles = await response.json();
-            const userRow = document.querySelector(`tr[data-user-id="${userId}"]`);
-            if (!userRow) return;
-
-            const guildRolesCell = userRow.querySelector('.guild-roles');
-            if (!guildRolesCell) return;
-
-            // Aktualisiere die Guild-Roles-Anzeige
-            guildRolesCell.innerHTML = guildRoles.guilds.map(guild => `
-                <div class="guild-role-item">
-                    <span class="guild-name">${guild.name}:</span>
-                    <span class="guild-role-badges">
-                        ${guild.roles.map(role => `
-                            <span class="badge bg-discord-role" style="background-color: ${role.color || '#99AAB5'}">
-                                ${role.name}
-                            </span>
-                        `).join('')}
-                    </span>
-                </div>
-            `).join('');
-
-        } catch (error) {
-            console.error('Error updating guild roles:', error);
-        }
-    }
-    
-    function filterUsers(serverId) {
-        const rows = document.querySelectorAll('.user-row');
-        
-        rows.forEach(row => {
-            const serverIds = row.dataset.serverIds ? row.dataset.serverIds.split(',') : [];
-            if (serverId === 'all' || serverIds.includes(serverId)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }
-    
-    function handleSearch(event) {
-        const searchTerm = event.target.value.toLowerCase();
-        
-        document.querySelectorAll('.user-row').forEach(row => {
-            const username = row.querySelector('.username').textContent.toLowerCase();
-            const discordId = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
             
-            if (username.includes(searchTerm) || discordId.includes(searchTerm)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }
-    
-    function updateUserTable(users) {
-        const tbody = document.querySelector('#users-table-body');
-        if (!tbody || !users.length) return;
-        
-        // Update existing rows or add new ones
-        users.forEach(user => {
-            let row = tbody.querySelector(`tr[data-user-id="${user.id}"]`);
-            if (!row) {
-                row = createUserRow(user);
-                tbody.appendChild(row);
-            } else {
-                updateUserRow(row, user);
-            }
-        });
-    }
-    
-    function debounce(func, wait) {
-        let timeout;
-        return function(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
-    }
-    
-    function showNotification(message, type) {
-        if (typeof window.showNotification === 'function') {
-            window.showNotification(message, type);
-        } else {
-            alert(message);
+            if (!response.ok) throw new Error('Failed to update role');
+            
+            showToast('Role updated successfully', 'success');
+        } catch (error) {
+            console.error('Error updating role:', error);
+            showToast('Failed to update role', 'error');
         }
     }
     
-    // Initial setup
-    updateRoleDisplay();
-    filterUsers(currentView.server);
+    async function updateUserStatus(userId, isActive) {
+        try {
+            const response = await fetch(`/api/v1/admin/users/${userId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ active: isActive })
+            });
+            
+            if (!response.ok) throw new Error('Failed to update status');
+            
+            showToast('Status updated successfully', 'success');
+        } catch (error) {
+            console.error('Error updating status:', error);
+            showToast('Failed to update status', 'error');
+        }
+    }
+    
+    function showToast(message, type = 'info') {
+        // Implementation depends on your toast notification system
+        console.log(`${type}: ${message}`);
+    }
+    
+    function showModal(title, content) {
+        // Implementation depends on your modal system
+        console.log('Show modal:', title, content);
+    }
 });
+

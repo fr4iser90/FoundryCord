@@ -1,6 +1,6 @@
 from fastapi import Request, HTTPException, status
 from fastapi.responses import JSONResponse, HTMLResponse
-from app.web.core.extensions import get_templates
+from app.web.core.extensions import templates_extension
 from app.shared.interface.logging.api import get_web_logger
 
 logger = get_web_logger()
@@ -12,7 +12,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     
     # Log the error
     if exc.status_code >= 500:
-        logger.error(f"HTTP {exc.status_code} error at {path}: {exc.detail}", exc_info=True)
+        logger.error(f"HTTP {exc.status_code} error at {path}: {exc.detail}")
     else:
         logger.warning(f"HTTP {exc.status_code} error at {path}: {exc.detail}")
     
@@ -25,7 +25,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     
     # Handle web requests
     try:
-        templates = get_templates()
+        templates = templates_extension()
         template_path = f"pages/errors/{exc.status_code}.html"
         
         context = {
@@ -41,7 +41,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             status_code=exc.status_code
         )
     except Exception as e:
-        logger.error(f"Error rendering error template: {e}", exc_info=True)
+        logger.error(f"Error rendering error template: {e}")
         # Fallback to basic error response
         return HTMLResponse(
             content=f"Error {exc.status_code}: {exc.detail}",
@@ -54,7 +54,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
     is_api_path = path.startswith("/api/")
     
     # Always log the full exception for 500 errors
-    logger.error(f"Unhandled exception at {path}", exc_info=True)
+    logger.error(f"Unhandled exception at {path}")
     
     if is_api_path:
         return JSONResponse(
@@ -63,19 +63,19 @@ async def generic_exception_handler(request: Request, exc: Exception):
         )
     
     try:
-        templates = get_templates()
+        templates = templates_extension()
         return templates.TemplateResponse(
             "pages/errors/500.html",
             {
                 "request": request,
-                "error": str(exc) if app.debug else "An unexpected error occurred",
+                "error": str(exc),
                 "user": request.session.get("user"),
                 "status_code": 500
             },
             status_code=500
         )
     except Exception as e:
-        logger.error(f"Error rendering 500 template: {e}", exc_info=True)
+        logger.error(f"Error rendering 500 template: {e}")
         return HTMLResponse(
             content="Internal Server Error",
             status_code=500

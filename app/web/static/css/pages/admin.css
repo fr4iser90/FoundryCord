@@ -1,18 +1,18 @@
 /* User Management Styles */
 .users-container {
-    padding: 20px;
+    padding: var(--spacing-lg);
 }
 
 .users-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: var(--spacing-lg);
 }
 
 .header-actions {
     display: flex;
-    gap: 10px;
+    gap: var(--spacing-sm);
 }
 
 .search-box {
@@ -20,16 +20,16 @@
 }
 
 .users-table-container {
-    background: var(--discord-lighter);
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
 }
 
 .user-info {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--spacing-sm);
 }
 
 .user-avatar {
@@ -44,22 +44,22 @@
 }
 
 .role-select {
-    background-color: var(--discord-channel);
-    color: var(--discord-text);
-    border-color: var(--discord-darker);
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
     min-width: 120px;
 }
 
 .badge {
-    padding: 5px 10px;
+    padding: var(--spacing-xs) var(--spacing-sm);
 }
 
 .bg-active {
-    background-color: var(--discord-success);
+    background-color: var(--success);
 }
 
 .bg-inactive {
-    background-color: var(--discord-danger);
+    background-color: var(--danger);
 }
 
 .pagination-container {
@@ -69,23 +69,23 @@
 
 .server-select-container {
     min-width: 250px;
-    margin-right: 10px;
+    margin-right: var(--spacing-sm);
 }
 
 /* Guild Role Styles */
 .guild-roles {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--spacing-xs);
 }
 
 .guild-role-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 4px 8px;
-    background: var(--discord-darker);
-    border-radius: 4px;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--bg-tertiary);
+    border-radius: var(--border-radius);
 }
 
 .guild-name {
@@ -96,40 +96,40 @@
 .guild-role-badges {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: var(--spacing-xs);
 }
 
 .role-badge {
-    padding: 2px 8px;
-    border-radius: 12px;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-lg);
     font-size: 0.8em;
-    background: var(--discord-accent);
-    color: white;
+    background: var(--primary);
+    color: var(--text-primary);
 }
 
 /* App Role Styles */
 .app-role {
     font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 12px;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-lg);
 }
 
 .app-role.owner {
-    background-color: #e4b400;
-    color: white;
+    background-color: var(--warning);
+    color: var(--text-primary);
 }
 
 .app-role.admin {
-    background-color: #ff4444;
-    color: white;
+    background-color: var(--danger);
+    color: var(--text-primary);
 }
 
 .app-role.moderator {
-    background-color: #43b581;
-    color: white;
+    background-color: var(--success);
+    color: var(--text-primary);
 }
 
 .app-role.user {
-    background-color: var(--discord-accent);
-    color: white;
+    background-color: var(--primary);
+    color: var(--text-primary);
 }

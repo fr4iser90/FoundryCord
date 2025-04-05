@@ -1,90 +1,49 @@
-/* Discord-spezifische Variablen */
-:root {
-    /* Core Colors */
-    --primary: #7289da;
-    --secondary: #4f545c;
-    --success: #43b581;
-    --danger: #f04747;
-    --warning: #faa61a;
-    --info: #00b0f4;
-
-    /* Background Colors */
-    --bg-primary: #36393f;
-    --bg-secondary: #2f3136;
-    --bg-tertiary: #202225;
-    --bg-overlay: rgba(0, 0, 0, 0.3);
-
-    /* Text Colors */
-    --text-primary: #ffffff;
-    --text-secondary: #b9bbbe;
-    --text-muted: #72767d;
-
-    /* Border Colors */
-    --border-color: #40444b;
-    --border-radius: 4px;
-
-    /* Spacing */
-    --spacing-xs: 0.25rem;
-    --spacing-sm: 0.5rem;
-    --spacing-md: 1rem;
-    --spacing-lg: 1.5rem;
-    --spacing-xl: 2rem;
-
-    /* Component Specific */
-    --navbar-bg: var(--bg-secondary);
-    --navbar-text: var(--text-primary);
-    --navbar-border: var(--border-color);
-
-    --sidebar-bg: var(--bg-tertiary);
-    --sidebar-text: var(--text-secondary);
-    --sidebar-hover: var(--primary);
-
-    --footer-bg: var(--bg-secondary);
-    --footer-text: var(--text-secondary);
-    --footer-link: var(--primary);
-    --footer-link-hover: #5c6fb1;
-
-    /* Button Colors */
-    --btn-primary-bg: var(--primary);
-    --btn-primary-text: white;
-    --btn-primary-hover: #5c6fb1;
-    
-    --btn-secondary-bg: var(--secondary);
-    --btn-secondary-text: white;
-    --btn-secondary-hover: #43464d;
-
-    /* Form Controls */
-    --input-bg: var(--bg-tertiary);
-    --input-border: var(--border-color);
-    --input-text: var(--text-primary);
-    --input-placeholder: var(--text-muted);
-    --input-focus-border: var(--primary);
-}
-
-/* Theme-spezifische Styles */
 .dark-theme {
     /* Core Colors */
-    --primary: #7289da;
-    --secondary: #4f545c;
-    --success: #43b581;
-    --danger: #f04747;
-    --warning: #faa61a;
-    --info: #00b0f4;
+    --primary: #5865F2;
+    --secondary: #4F545C;
+    --success: #57F287;
+    --danger: #ED4245;
+    --warning: #FEE75C;
+    --info: #5865F2;
 
     /* Background Colors */
-    --bg-primary: #36393f;
-    --bg-secondary: #2f3136;
+    --bg-primary: #36393F;
+    --bg-secondary: #2F3136;
     --bg-tertiary: #202225;
+    --bg-accent: #4F545C;
+    --bg-floating: #18191C;
     --bg-overlay: rgba(0, 0, 0, 0.3);
 
     /* Text Colors */
+    --text-normal: #DCDDDE;
+    --text-muted: #72767D;
+    --text-link: #00B0F4;
+    --text-positive: #57F287;
+    --text-warning: #FEE75C;
+    --text-danger: #ED4245;
+    --text-brand: #5865F2;
     --text-primary: #ffffff;
     --text-secondary: #b9bbbe;
-    --text-muted: #72767d;
 
     /* Border Colors */
+    --border-primary: #242628;
+    --border-secondary: #3F4147;
+    --border-tertiary: #202225;
     --border-color: #40444b;
     --border-radius: 4px;
+
+    /* Component Colors */
+    --channel-text: #8E9297;
+    --channel-text-active: #FFFFFF;
+    --channel-bg: #2F3136;
+    --channel-bg-active: #42464D;
+    
+    /* Interactive Colors */
+    --interactive-normal: #B9BBBE;
+    --interactive-hover: #DCDDDE;
+    --interactive-active: #FFFFFF;
+    --interactive-muted: #4F545C;
 
     /* Component Specific */
     --navbar-bg: var(--bg-secondary);
@@ -391,16 +350,16 @@
 }
 
 .dark-theme ::-webkit-scrollbar-track {
-    background: var(--scrollbar-bg);
+    background: var(--bg-tertiary);
 }
 
 .dark-theme ::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
+    background: var(--bg-accent);
     border-radius: 4px;
 }
 
 .dark-theme ::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover);
+    background: var(--interactive-hover);
 }
 
 /* Apply Dark Theme Styles */

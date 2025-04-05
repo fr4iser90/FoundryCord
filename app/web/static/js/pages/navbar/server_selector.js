@@ -28,13 +28,14 @@ class ServerSelector {
 
     async loadServerData() {
         try {
-            const response = await fetch('/api/servers/list');
+            const response = await fetch('/api/v1/servers');
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            const servers = await response.json();
-            console.log('Loaded servers:', servers);
-            this.updateServerList(servers);
+            const data = await response.json();
+            if (data.success && data.servers) {
+                this.updateServerList(data.servers);
+            }
         } catch (error) {
             console.error('Error loading server data:', error);
         }
@@ -42,19 +43,17 @@ class ServerSelector {
 
     async switchServer(serverId) {
         try {
-            const response = await fetch(`/api/servers/switch/${serverId}`, {
+            const response = await fetch('/api/v1/servers/switch', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
-                }
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ guild_id: serverId })
             });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const result = await response.json();
-            if (result.success) {
+
+            const data = await response.json();
+            if (data.success && data.server) {
+                this.updateCurrentServer(data.server);
                 window.location.reload();
             }
         } catch (error) {

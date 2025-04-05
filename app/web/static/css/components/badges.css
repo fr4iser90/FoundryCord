@@ -13,18 +13,18 @@
 
 /* Status Badges */
 .badge.bg-success {
-    background-color: var(--discord-success) !important;
-    color: white;
+    background-color: var(--badge-success) !important;
+    color: var(--badge-text);
 }
 
 .badge.bg-danger {
-    background-color: var(--discord-danger) !important;
-    color: white;
+    background-color: var(--badge-danger) !important;
+    color: var(--badge-text);
 }
 
 .badge.bg-warning {
-    background-color: var(--discord-warning) !important;
-    color: white;
+    background-color: var(--badge-warning) !important;
+    color: var(--badge-text);
 }
 
 /* Role Badges */
@@ -32,19 +32,19 @@
     padding: 2px 8px;
     border-radius: 12px;
     font-size: 0.85em;
-    background: var(--discord-accent);
-    color: white;
+    background: var(--primary);
+    color: var(--badge-text);
     white-space: nowrap;
 }
 
 .role-badge.admin {
-    background: var(--discord-success);
+    background: var(--success);
 }
 
 .role-badge.mod {
-    background: var(--discord-accent);
+    background: var(--primary);
 }
 
 .role-badge.user {
-    background: var(--discord-channel);
+    background: var(--bg-tertiary);
 } 

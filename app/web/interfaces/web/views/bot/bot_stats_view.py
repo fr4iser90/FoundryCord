@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
-from app.web.core.extensions import get_templates
+from app.web.core.extensions import templates_extension
 from app.web.application.services.auth.dependencies import get_current_user
 from app.web.interfaces.api.rest.v1.bot.bot_public_controller import (
     get_system_resources,
@@ -9,7 +9,7 @@ from app.web.interfaces.api.rest.v1.bot.bot_public_controller import (
 )
 
 router = APIRouter(prefix="/bot", tags=["Bot Stats"])
-templates = get_templates()
+templates = templates_extension()
 
 class BotStatsView:
     """View für Bot-Statistiken"""

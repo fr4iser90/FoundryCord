@@ -16,6 +16,7 @@ class AppUserEntity(Base):
     role_id = Column(Integer, ForeignKey('app_roles.id'), nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
+    last_login = Column(DateTime, nullable=True)
     avatar = Column(String(255), nullable=True)  # URL zum Avatar-Bild
     
     sessions = relationship("SessionEntity", back_populates="user", cascade="all, delete")

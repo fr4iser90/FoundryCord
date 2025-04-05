@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse
-from app.web.core.extensions import get_templates
+from app.web.core.extensions import templates_extension
 from app.web.application.services.auth.dependencies import get_current_user
 from app.web.interfaces.api.rest.v1.bot.bot_admin_controller import get_overview_stats
 import psutil
@@ -8,7 +8,7 @@ from app.shared.interface.logging.api import get_web_logger
 
 router = APIRouter(tags=["Home"])
 logger = get_web_logger()
-templates = get_templates()
+templates = templates_extension()
 
 class HomeOverviewView:
     """View für Home-Übersicht"""

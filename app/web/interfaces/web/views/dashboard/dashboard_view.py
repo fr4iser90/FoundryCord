@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, status, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from app.web.core.extensions import get_templates
+from app.web.core.extensions import templates_extension
 from app.web.application.services.auth.dependencies import get_current_user
 from app.web.interfaces.api.rest.v1.bot.bot_admin_controller import get_overview_stats
 from app.web.interfaces.api.rest.v1.dashboard.dashboard_controller import get_layouts, get_layout
 from app.shared.interface.logging.api import get_web_logger
 
 router = APIRouter(tags=["Dashboard"])
-templates = get_templates()
+templates = templates_extension()
 logger = get_web_logger()
 
 class DashboardView:

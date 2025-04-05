@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Server User Management - HomeLab Discord Bot{% endblock %}
+{% block title %}{{ guild.name }} - User Management{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', path='css/pages/admin/user_management.css') }}">
@@ -10,8 +10,8 @@
 <div class="users-container">
     <div class="users-header">
         <div class="header-title">
-            <h1>Server User Management</h1>
-            <p class="text-muted">Manage users for server: {{ current_guild.name }}</p>
+            <h1>{{ guild.name }} - User Management</h1>
+            <p class="text-muted">Manage users in your guild</p>
         </div>
         <div class="header-actions">
             <div class="search-box">
@@ -19,7 +19,7 @@
             </div>
             <select id="role-filter" class="form-select">
                 <option value="">All Roles</option>
-                {% for role in guild_roles %}
+                {% for role in guild.roles %}
                 <option value="{{ role.id }}">{{ role.name }}</option>
                 {% endfor %}
             </select>
@@ -32,56 +32,61 @@
                 <tr>
                     <th>User</th>
                     <th>Discord ID</th>
-                    <th>Server Role</th>
-                    <th>Bot Role</th>
-                    <th>Status</th>
+                    <th>Guild Role</th>
+                    <th>App Role</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="users-table-body">
                 {% for user in users %}
-                <tr class="user-row" data-user-id="{{ user.id }}" data-guild-id="{{ current_guild.id }}">
+                <tr class="user-row" data-user-id="{{ user.id }}">
                     <td class="user-info">
                         <img src="{{ user.avatar or 'https://cdn.discordapp.com/embed/avatars/0.png' }}" 
                              alt="" class="user-avatar">
                         <div class="user-details">
                             <div class="username">{{ user.username }}</div>
-                            <small class="text-muted">Last active: {{ user.last_active|timeago if user.last_active else 'Never' }}</small>
+                            <small class="text-muted">Joined: {{ user.joined_at|timeago }}</small>
                         </div>
                     </td>
                     <td class="discord-id">{{ user.discord_id }}</td>
-                    <td class="server-role">
-                        <div class="role-badge">{{ user.guild_role }}</div>
-                    </td>
                     <td>
-                        <select class="app-role-select" 
+                        <select class="guild-role-select" 
                                 data-user-id="{{ user.id }}"
-                                {% if not can_manage_role(user, current_user) %}disabled{% endif %}>
-                            <option value="USER" {% if user.app_role == 'USER' %}selected{% endif %}>User</option>
-                            <option value="MODERATOR" {% if user.app_role == 'MODERATOR' %}selected{% endif %}>Moderator</option>
-                            <option value="ADMIN" {% if user.app_role == 'ADMIN' %}selected{% endif %}>Admin</option>
+                                {% if not can_manage_roles or user.is_owner %}disabled{% endif %}>
+                            {% for role in guild.roles %}
+                            <option value="{{ role.id }}" {% if role.id == user.guild_role_id %}selected{% endif %}>
+                                {{ role.name }}
+                            </option>
+                            {% endfor %}
                         </select>
                     </td>
                     <td>
-                        <button class="btn btn-sm {% if user.is_active %}btn-success{% else %}btn-danger{% endif %} toggle-status"
-                                data-user-id="{{ user.id }}"
-                                data-status="{{ user.is_active }}"
-                                {% if not can_manage_status(user, current_user) %}disabled{% endif %}>
-                            <i class="bi {% if user.is_active %}bi-check-circle{% else %}bi-x-circle{% endif %}"></i>
-                            {{ 'Active' if user.is_active else 'Inactive' }}
-                        </button>
+                        {% if can_manage_app_roles and not user.is_owner %}
+                        <select class="app-role-select" 
+                                data-user-id="{{ user.id }}">
+                            <option value="USER" {% if user.app_role == 'USER' %}selected{% endif %}>User</option>
+                            <option value="MODERATOR" {% if user.app_role == 'MODERATOR' %}selected{% endif %}>Moderator</option>
+                            {% if is_admin %}
+                            <option value="ADMIN" {% if user.app_role == 'ADMIN' %}selected{% endif %}>Admin</option>
+                            {% endif %}
+                        </select>
+                        {% else %}
+                        <span class="badge app-role {{ user.app_role.lower() }}">{{ user.app_role }}</span>
+                        {% endif %}
                     </td>
                     <td>
                         <div class="btn-group">
                             <button class="btn btn-sm btn-primary" onclick="viewUser('{{ user.id }}')">
                                 <i class="bi bi-eye"></i>
                             </button>
-                            {% if can_manage_user(user, current_user) %}
+                            {% if can_manage_roles and not user.is_owner %}
                             <button class="btn btn-sm btn-info" onclick="editUser('{{ user.id }}')">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteUser('{{ user.id }}')">
-                                <i class="bi bi-trash"></i>
+                            {% endif %}
+                            {% if can_kick_users and not user.is_owner %}
+                            <button class="btn btn-sm btn-danger" onclick="kickUser('{{ user.id }}')">
+                                <i class="bi bi-box-arrow-right"></i>
                             </button>
                             {% endif %}
                         </div>
@@ -110,5 +115,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', path='js/pages/admin/user_management.js') }}"></script>
-{% endblock %}
+<script src="{{ url_for('static', path='js/pages/guilds/user_management.js') }}"></script>
+{% endblock %} 

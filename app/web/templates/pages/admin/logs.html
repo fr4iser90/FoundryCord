@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}System Logs - HomeLab Discord Bot{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">System Logs</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="/admin">Dashboard</a></li>
+        <li class="breadcrumb-item active">System Logs</li>
+    </ol>
+
+    <!-- Log Filter Controls -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-filter me-1"></i>
+            Log Filters
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="log-level" class="form-label">Log Level</label>
+                    <select class="form-select" id="log-level">
+                        <option value="all">All Levels</option>
+                        <option value="error">Error</option>
+                        <option value="warning">Warning</option>
+                        <option value="info">Info</option>
+                        <option value="debug">Debug</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="log-source" class="form-label">Source</label>
+                    <select class="form-select" id="log-source">
+                        <option value="all">All Sources</option>
+                        <option value="system">System</option>
+                        <option value="bot">Bot</option>
+                        <option value="web">Web Interface</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="date-range" class="form-label">Date Range</label>
+                    <input type="text" class="form-control" id="date-range">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button class="btn btn-primary w-100" id="apply-filters">Apply Filters</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Table -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-list-alt me-1"></i>
+                    System Logs
+                </div>
+                <div>
+                    <button class="btn btn-sm btn-secondary me-2" id="refresh-logs">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="btn btn-sm btn-primary" id="export-logs">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="logs-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Level</th>
+                            <th>Source</th>
+                            <th>Message</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr class="log-entry {{ log.level|lower }}">
+                            <td>{{ log.timestamp }}</td>
+                            <td>
+                                <span class="badge bg-{{ log.level|lower }}">
+                                    {{ log.level }}
+                                </span>
+                            </td>
+                            <td>{{ log.source }}</td>
+                            <td>{{ log.message }}</td>
+                            <td>
+                                {% if log.details %}
+                                <button class="btn btn-sm btn-info view-details" 
+                                        data-log-id="{{ log.id }}">
+                                    View
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Details Modal -->
+<div class="modal fade" id="logDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Log Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="log-details-content"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', path='css/pages/admin/logs.css') }}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', path='js/pages/admin/logs.js') }}"></script>
+{% endblock %} 

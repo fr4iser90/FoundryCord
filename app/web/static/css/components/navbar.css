@@ -73,56 +73,52 @@
     gap: var(--spacing-md);
 }
 
-/* User Menu */
-.user-menu {
+/* Dropdown Components */
+.navbar-item.has-dropdown {
+    position: relative;
+}
+
+.navbar-link {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
-    padding: var(--spacing-sm);
-    border-radius: var(--border-radius);
+    padding: var(--spacing-sm) var(--spacing-md);
+    color: var(--text-primary);
+    background: none;
+    border: none;
     cursor: pointer;
+    border-radius: var(--border-radius);
     transition: all 0.2s ease;
 }
 
-.user-menu:hover {
+.navbar-link:hover {
     background: var(--bg-tertiary);
 }
 
-.user-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--discord-accent);
-    background-color: var(--discord-dark);
-}
-
-.user-info {
-    display: flex;
-    flex-direction: column;
-    margin-left: var(--spacing-sm);
-}
-
-.user-name {
-    color: var(--text-primary);
-    font-weight: 500;
-    font-size: 0.9rem;
-}
-
-.user-status {
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-}
-
-/* Dropdown Menus */
-.dropdown-menu {
+.navbar-dropdown {
+    position: absolute;
+    top: 100%;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    padding: var(--spacing-xs);
     min-width: 200px;
-    margin-top: var(--spacing-xs);
     box-shadow: 0 4px 12px var(--bg-overlay);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    z-index: var(--z-dropdown);
+}
+
+.navbar-dropdown.is-right {
+    right: 0;
+}
+
+.navbar-item.has-dropdown:hover .navbar-dropdown,
+.navbar-item.has-dropdown:focus-within .navbar-dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
 }
 
 .dropdown-item {
@@ -130,15 +126,13 @@
     align-items: center;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
-    color: var(--text-secondary);
+    color: var(--text-primary);
     text-decoration: none;
-    border-radius: var(--border-radius);
     transition: all 0.2s ease;
 }
 
 .dropdown-item:hover {
     background: var(--bg-tertiary);
-    color: var(--text-primary);
 }
 
 .dropdown-item i {
@@ -148,25 +142,35 @@
 }
 
 .dropdown-divider {
-    border-top: 1px solid var(--border-color);
     margin: var(--spacing-xs) 0;
+    border-top: 1px solid var(--border-color);
 }
 
-/* Server Selector Specific */
-.server-selector .btn {
-    width: 100%;
-    text-align: left;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
+/* Server Selector */
+.server-selector {
+    min-width: 200px;
 }
 
-.server-selector .btn:hover {
-    background: var(--bg-secondary);
+.server-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
-.server-selector .dropdown-menu {
-    width: 100%;
+/* User Menu */
+.user-menu {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--primary);
 }
 
 /* Theme Switcher */
@@ -175,9 +179,10 @@
     align-items: center;
     padding: var(--spacing-sm);
     color: var(--text-secondary);
+    background: none;
+    border: none;
     cursor: pointer;
     transition: all 0.2s ease;
-    margin-right: var(--spacing-md);
 }
 
 .theme-switch:hover {

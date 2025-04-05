@@ -1,8 +1,8 @@
 /* Table Component Styles */
 .table-container {
-    background: var(--discord-lighter);
-    border-radius: 8px;
-    padding: 16px;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
     overflow-x: auto;
 }
 
@@ -13,17 +13,17 @@
 }
 
 .table th {
-    padding: 12px;
+    padding: var(--spacing-md);
     font-weight: 600;
     color: var(--text-primary);
     text-align: left;
-    border-bottom: 2px solid var(--discord-accent);
+    border-bottom: 2px solid var(--primary);
 }
 
 .table td {
-    padding: 16px 12px;
+    padding: var(--spacing-md);
     vertical-align: middle;
-    border-bottom: 1px solid var(--discord-dark);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .table tr:last-child td {
@@ -31,7 +31,7 @@
 }
 
 .table tr:hover {
-    background: var(--discord-dark);
+    background: var(--bg-tertiary);
 }
 
 /* Responsive Table */

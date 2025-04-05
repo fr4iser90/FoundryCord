@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from app.web.interfaces.web import web_router  # Neuer Import für die Web-Views
-#from app.web.api.dashboard import router as dashboard_api_router
 from app.web.interfaces.api import api_router  # Behalten wir für API-Routen
 from app.shared.interface.logging.api import get_web_logger
 
@@ -13,8 +12,6 @@ def register_routers(app: FastAPI):
     app.include_router(web_router)
     logger.debug(f"Registered web router: {web_router}")
     
-    # Register API routers
-    #app.include_router(dashboard_api_router)
     
     # Register the main API router which includes all v1 routes
     app.include_router(api_router)

@@ -1,20 +1,20 @@
-/* Error Pages Styling - Angepasst an index.html Style */
+/* Error Pages Styling */
 .login-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    padding: 20px;
+    padding: var(--spacing-lg);
     text-align: center;
 }
 
 .error-card {
-    background-color: var(--discord-darker);
-    border-radius: 12px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    background-color: var(--bg-secondary);
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 8px 16px var(--bg-overlay);
     padding: 2.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
     transition: transform 0.3s ease;
     width: 100%;
     max-width: 600px;
@@ -27,74 +27,74 @@
 
 .error-title {
     font-size: 2.8rem;
-    margin-bottom: 1rem;
+    margin-bottom: var(--spacing-md);
     font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    text-shadow: 0 2px 4px var(--bg-overlay);
 }
 
 .error-code {
     font-size: 1.3rem;
     color: var(--text-secondary);
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--spacing-lg);
     opacity: 0.8;
 }
 
 .error-message {
     font-size: 1.2rem;
-    margin-bottom: 2rem;
+    margin-bottom: var(--spacing-lg);
     color: var(--text-secondary);
     line-height: 1.6;
 }
 
 .error-details {
-    margin: 1.5rem 0;
-    padding: 1.2rem;
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
+    margin: var(--spacing-lg) 0;
+    padding: var(--spacing-md);
+    background-color: var(--bg-tertiary);
+    border-radius: var(--border-radius);
     color: var(--text-secondary);
     font-family: monospace;
 }
 
 /* Error-specific colors with gradients */
-.error-400 .error-icon { background: linear-gradient(135deg, var(--discord-warning), #ff9966); }
-.error-401 .error-icon { background: linear-gradient(135deg, var(--discord-warning), #ff9966); }
-.error-403 .error-icon { background: linear-gradient(135deg, var(--discord-danger), #ff6b6b); }
-.error-404 .error-icon { background: linear-gradient(135deg, var(--discord-warning), #ff9966); }
-.error-500 .error-icon { background: linear-gradient(135deg, var(--discord-danger), #ff6b6b); }
-.error-503 .error-icon { background: linear-gradient(135deg, var(--discord-danger), #ff6b6b); }
+.error-400 .error-icon { background: linear-gradient(135deg, var(--warning), var(--btn-primary-hover)); }
+.error-401 .error-icon { background: linear-gradient(135deg, var(--warning), var(--btn-primary-hover)); }
+.error-403 .error-icon { background: linear-gradient(135deg, var(--danger), var(--btn-danger-hover)); }
+.error-404 .error-icon { background: linear-gradient(135deg, var(--warning), var(--btn-primary-hover)); }
+.error-500 .error-icon { background: linear-gradient(135deg, var(--danger), var(--btn-danger-hover)); }
+.error-503 .error-icon { background: linear-gradient(135deg, var(--danger), var(--btn-danger-hover)); }
 
 /* Error Icon Styling */
 .error-icon {
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    margin: 0 auto 2rem;
+    margin: 0 auto var(--spacing-lg);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2.5rem;
-    color: white;
+    color: var(--text-primary);
 }
 
 /* Action Button Styling */
 .error-action {
-    margin-top: 2.5rem;
+    margin-top: var(--spacing-xl);
 }
 
 .error-action .btn {
-    padding: 0.8rem 2.5rem;
+    padding: var(--spacing-md) var(--spacing-xl);
     font-size: 1.2rem;
-    border-radius: 8px;
+    border-radius: var(--border-radius);
     transition: all 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-weight: 600;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 8px var(--bg-overlay);
 }
 
 .error-action .btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 6px 12px var(--bg-overlay);
 }
 
 /* Animation */
@@ -109,29 +109,29 @@
     }
 }
 
-/* Error-spezifische Farben */
-.error-400 .error-title { color: var(--discord-warning); }
-.error-401 .error-title { color: var(--discord-warning); }
-.error-403 .error-title { color: var(--discord-danger); }
-.error-404 .error-title { color: var(--discord-warning); }
-.error-500 .error-title { color: var(--discord-danger); }
-.error-503 .error-title { color: var(--discord-danger); }
+/* Error-specific colors */
+.error-400 .error-title { color: var(--warning); }
+.error-401 .error-title { color: var(--warning); }
+.error-403 .error-title { color: var(--danger); }
+.error-404 .error-title { color: var(--warning); }
+.error-500 .error-title { color: var(--danger); }
+.error-503 .error-title { color: var(--danger); }
 
 /* btn-discord */
 .btn-discord {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    background-color: var(--discord-accent);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
+    gap: var(--spacing-sm);
+    background-color: var(--primary);
+    color: var(--text-primary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius);
     text-decoration: none;
     font-weight: 500;
     transition: background-color 0.2s;
 }
 
 .btn-discord:hover {
-    background-color: #5c6fb1;
-    color: white;
+    background-color: var(--btn-primary-hover);
+    color: var(--text-primary);
 } 

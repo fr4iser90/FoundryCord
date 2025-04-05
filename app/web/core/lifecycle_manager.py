@@ -136,10 +136,6 @@ class WebLifecycleManager:
             from app.web.core.router_registry import register_routers
             register_routers(self.app)
             
-            # Setup static files and templates
-            from app.web.core.extensions import init_all_extensions
-            init_all_extensions(self.app)
-            
             logger.info("Web infrastructure setup completed")
             
         except Exception as e:

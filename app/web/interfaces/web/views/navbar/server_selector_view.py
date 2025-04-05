@@ -53,7 +53,6 @@ class ServerSelectorView:
         """Switch the current active server"""
         try:
             async with session_context() as session:
-                # Vereinfachte Abfrage ohne owner_id-Filter
                 result = await session.execute(
                     select(GuildEntity).where(
                         GuildEntity.guild_id == guild_id
@@ -63,6 +62,16 @@ class ServerSelectorView:
                 
                 if not server:
                     raise HTTPException(status_code=404, detail="Server not found")
+                
+                # Update session with active guild
+                request = current_user.get("request")
+                if request and hasattr(request, "session"):
+                    request.session["active_guild"] = {
+                        "id": server.guild_id,
+                        "name": server.name,
+                        "icon_url": server.icon_url or "https://cdn.discordapp.com/embed/avatars/0.png"
+                    }
+                    await request.session.save()
                 
                 return {
                     "success": True,

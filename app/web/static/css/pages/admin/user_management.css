@@ -1,8 +1,9 @@
 /* User Management Page */
 .users-container {
-    padding: 20px;
-    background: var(--discord-darker);
-    border-radius: 8px;
+    padding: var(--spacing-md);
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
 }
 
 /* Header Section */
@@ -10,35 +11,64 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding: 0 20px;
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--bg-tertiary);
+    border-radius: var(--border-radius);
+}
+
+.header-title {
+    flex: 1;
+}
+
+.header-title h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--text-primary);
 }
 
 .header-actions {
     display: flex;
-    gap: 16px;
+    gap: var(--spacing-md);
+    align-items: center;
 }
 
-/* Search Box */
+/* Search and Filter */
 .search-box {
-    min-width: 300px;
+    min-width: 250px;
 }
 
 .search-box input {
     width: 100%;
-    padding: 8px 12px;
-    background: var(--discord-channel);
-    border: 1px solid var(--discord-accent);
-    color: var(--text-primary);
-    border-radius: 4px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--input-text);
+    border-radius: var(--border-radius);
+}
+
+.search-box input:focus {
+    border-color: var(--input-focus-border);
+    box-shadow: var(--input-focus-shadow);
+    outline: none;
+}
+
+#role-filter {
+    min-width: 150px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--input-text);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius);
 }
 
 /* Table Container */
 .users-table-container {
-    background: var(--discord-lighter);
-    border-radius: 8px;
-    padding: 16px;
+    background: var(--bg-primary);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
     overflow-x: auto;
+    border: 1px solid var(--border-color);
 }
 
 .table {
@@ -48,34 +78,34 @@
 }
 
 .table th {
-    padding: 12px;
+    padding: var(--spacing-md);
     font-weight: 600;
     color: var(--text-primary);
     text-align: left;
-    border-bottom: 2px solid var(--discord-accent);
+    border-bottom: 2px solid var(--border-color);
+    background-color: var(--bg-secondary);
 }
 
 .table td {
-    padding: 16px 12px;
+    padding: var(--spacing-md);
     vertical-align: middle;
-    border-bottom: 1px solid var(--discord-dark);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
 }
 
 /* User Info Cell */
 .user-info {
     display: flex;
     align-items: center;
-    gap: 12px;
-    min-width: 200px;
+    gap: var(--spacing-md);
 }
 
 .user-avatar {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid var(--discord-accent);
-    background-color: var(--discord-dark);
+    border: 2px solid var(--primary);
 }
 
 .user-details {
@@ -87,118 +117,134 @@
 .username {
     font-weight: 600;
     color: var(--text-primary);
-    font-size: 1rem;
 }
 
-/* Discord ID Column */
-.discord-id {
-    font-family: monospace;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
+.text-muted {
+    color: var(--text-muted);
+    font-size: 0.85rem;
 }
 
-/* App Role Column */
-.app-role-select {
-    min-width: 140px;
-    background: var(--discord-channel);
-    border: 1px solid var(--discord-accent);
+/* Role Badges */
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    background: var(--primary);
+    color: white;
+}
+
+.role-badge.owner {
+    background: var(--danger);
+}
+
+.role-badge.admin {
+    background: var(--warning);
     color: var(--text-primary);
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 0.9rem;
+}
+
+.role-badge.moderator {
+    background: var(--info);
+}
+
+.role-badge.user {
+    background: var(--secondary);
+}
+
+/* Role Select */
+.app-role-select {
+    width: 100%;
+    min-width: 120px;
+    padding: 6px 12px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--input-text);
 }
 
 .app-role-select:disabled {
     opacity: 0.7;
     cursor: not-allowed;
+    background: var(--bg-tertiary);
 }
 
-/* Guild Roles Column */
-.guild-roles {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-width: 300px;
-}
-
-.guild-role-item {
-    display: flex;
+/* Status Button */
+.toggle-status {
+    min-width: 100px;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 8px;
-    background: var(--discord-dark);
-    border-radius: 4px;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--border-radius);
     font-size: 0.9rem;
 }
 
-.guild-name {
-    font-weight: 500;
-    color: var(--text-primary);
-    white-space: nowrap;
+.toggle-status:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
-.role-badge {
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.85em;
-    background: var(--discord-accent);
-    color: white;
-    white-space: nowrap;
+.toggle-status i {
+    font-size: 1rem;
 }
 
-/* Status Column */
-.badge {
-    padding: 6px 12px;
-    border-radius: 12px;
-    font-size: 0.85em;
-    font-weight: 500;
-}
-
-.badge.bg-success {
-    background-color: var(--discord-success) !important;
-}
-
-.badge.bg-danger {
-    background-color: var(--discord-danger) !important;
-}
-
-/* Actions Column */
+/* Action Buttons */
 .btn-group {
     display: flex;
-    gap: 8px;
+    gap: 6px;
 }
 
-.btn-sm {
+.btn-group .btn {
     padding: 6px 12px;
-    font-size: 0.9rem;
-    border-radius: 4px;
-    background: var(--discord-channel);
-    border: 1px solid var(--discord-accent);
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all 0.2s ease;
+    border-radius: var(--border-radius);
 }
 
-.btn-sm:hover {
-    background: var(--discord-accent);
+.btn-group .btn i {
+    font-size: 1rem;
 }
 
-/* Responsive Adjustments */
-@media (max-width: 1200px) {
-    .guild-roles {
-        max-width: 250px;
-    }
+/* Modal Styling */
+.modal-content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
 }
 
+.modal-header {
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    padding: var(--spacing-md);
+}
+
+.modal-body {
+    padding: var(--spacing-md);
+}
+
+.user-details-modal {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+/* Responsive Design */
 @media (max-width: 992px) {
     .users-header {
         flex-direction: column;
-        gap: 16px;
-        align-items: stretch;
+        gap: var(--spacing-md);
+    }
+    
+    .header-actions {
+        width: 100%;
+        flex-direction: column;
     }
     
     .search-box {
         width: 100%;
         min-width: auto;
+    }
+    
+    #role-filter {
+        width: 100%;
     }
 } 

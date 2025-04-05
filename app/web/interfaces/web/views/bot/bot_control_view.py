@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
-from app.web.core.extensions import get_templates
+from app.web.core.extensions import templates_extension
 from app.web.application.services.auth.dependencies import get_current_user
 from app.web.domain.auth.permissions import Role, require_role
 
 router = APIRouter(prefix="/bot", tags=["Bot Control"])
-templates = get_templates()
+templates = templates_extension()
 
 class BotControlView:
     """View für Bot-Steuerung"""
