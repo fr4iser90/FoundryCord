@@ -17,31 +17,35 @@
         <!-- Pending Servers Section -->
         {% if pending_servers %}
         <div class="server-section pending-servers mb-4">
-            <div class="section-header">
-                <h3><i class="bi bi-clock-history"></i> Pending Approvals ({{ pending_servers|length }})</h3>
+            <div class="section-header d-flex justify-content-between align-items-center mb-3">
+                <h3><i class="bi bi-clock-history"></i> Pending Approvals</h3>
+                <span class="badge bg-warning text-dark">{{ pending_servers|length }}</span>
             </div>
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover align-middle">
                     <thead>
                         <tr>
-                            <th>Server Name</th>
-                            <th>Server ID</th>
+                            <th>Server</th>
                             <th>Status</th>
                             <th>Members</th>
-                            <th>Requested At</th>
+                            <th>Requested</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for server in pending_servers %}
                         <tr>
-                            <td>
+                            <td class="d-flex align-items-center">
                                 {% if server.icon_url %}
-                                <img src="{{ server.icon_url }}" alt="{{ server.name }}" class="server-icon me-2">
+                                <img src="{{ server.icon_url }}" alt="" class="server-icon rounded me-2" width="32" height="32">
+                                {% else %}
+                                <div class="server-icon-placeholder rounded me-2"></div>
                                 {% endif %}
-                                {{ server.name }}
+                                <div>
+                                    <div class="server-name">{{ server.name }}</div>
+                                    <small class="text-muted">{{ server.guild_id }}</small>
+                                </div>
                             </td>
-                            <td>{{ server.guild_id }}</td>
                             <td>{{ server_status_badge(server.access_status) }}</td>
                             <td>{{ server.member_count or 0 }}</td>
                             <td>{{ server.access_requested_at|datetime }}</td>
@@ -54,18 +58,18 @@
         </div>
         {% endif %}
 
-        <!-- Approved Servers Section -->
+        <!-- Active Servers Section -->
         {% if approved_servers %}
         <div class="server-section approved-servers mb-4">
-            <div class="section-header">
-                <h3><i class="bi bi-check-circle"></i> Approved Servers ({{ approved_servers|length }})</h3>
+            <div class="section-header d-flex justify-content-between align-items-center mb-3">
+                <h3><i class="bi bi-check-circle"></i> Active Servers</h3>
+                <span class="badge bg-success">{{ approved_servers|length }}</span>
             </div>
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover align-middle">
                     <thead>
                         <tr>
-                            <th>Server Name</th>
-                            <th>Server ID</th>
+                            <th>Server</th>
                             <th>Status</th>
                             <th>Members</th>
                             <th>Connection</th>
@@ -75,13 +79,17 @@
                     <tbody>
                         {% for server in approved_servers %}
                         <tr>
-                            <td>
+                            <td class="d-flex align-items-center">
                                 {% if server.icon_url %}
-                                <img src="{{ server.icon_url }}" alt="{{ server.name }}" class="server-icon me-2">
+                                <img src="{{ server.icon_url }}" alt="" class="server-icon rounded me-2" width="32" height="32">
+                                {% else %}
+                                <div class="server-icon-placeholder rounded me-2"></div>
                                 {% endif %}
-                                {{ server.name }}
+                                <div>
+                                    <div class="server-name">{{ server.name }}</div>
+                                    <small class="text-muted">{{ server.guild_id }}</small>
+                                </div>
                             </td>
-                            <td>{{ server.guild_id }}</td>
                             <td>{{ server_status_badge(server.access_status) }}</td>
                             <td>{{ server.member_count or 0 }}</td>
                             <td>{{ server_connection_status(server) }}</td>
@@ -97,15 +105,15 @@
         <!-- Blocked Servers Section -->
         {% if blocked_servers %}
         <div class="server-section blocked-servers">
-            <div class="section-header">
-                <h3><i class="bi bi-shield-x"></i> Blocked Servers ({{ blocked_servers|length }})</h3>
+            <div class="section-header d-flex justify-content-between align-items-center mb-3">
+                <h3><i class="bi bi-shield-x"></i> Blocked Servers</h3>
+                <span class="badge bg-danger">{{ blocked_servers|length }}</span>
             </div>
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover align-middle">
                     <thead>
                         <tr>
-                            <th>Server Name</th>
-                            <th>Server ID</th>
+                            <th>Server</th>
                             <th>Status</th>
                             <th>Members</th>
                             <th>Blocked At</th>
@@ -115,16 +123,20 @@
                     <tbody>
                         {% for server in blocked_servers %}
                         <tr>
-                            <td>
+                            <td class="d-flex align-items-center">
                                 {% if server.icon_url %}
-                                <img src="{{ server.icon_url }}" alt="{{ server.name }}" class="server-icon me-2">
+                                <img src="{{ server.icon_url }}" alt="" class="server-icon rounded me-2" width="32" height="32">
+                                {% else %}
+                                <div class="server-icon-placeholder rounded me-2"></div>
                                 {% endif %}
-                                {{ server.name }}
+                                <div>
+                                    <div class="server-name">{{ server.name }}</div>
+                                    <small class="text-muted">{{ server.guild_id }}</small>
+                                </div>
                             </td>
-                            <td>{{ server.guild_id }}</td>
                             <td>{{ server_status_badge(server.access_status) }}</td>
                             <td>{{ server.member_count or 0 }}</td>
-                            <td>{{ server.blocked_at|datetime }}</td>
+                            <td>{{ server.access_reviewed_at|datetime }}</td>
                             <td>{{ server_action_buttons(server) }}</td>
                         </tr>
                         {% endfor %}
@@ -133,6 +145,54 @@
             </div>
         </div>
         {% endif %}
+    </div>
+</div>
+
+<!-- Server Details Modal -->
+<div class="modal fade" id="serverDetailsModal" tabindex="-1" aria-labelledby="serverDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="serverDetailsModalLabel">Server Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="server-info mb-4">
+                    <h6>Basic Information</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <p><strong>Name:</strong> <span class="server-name"></span></p>
+                            <p><strong>ID:</strong> <span class="server-id"></span></p>
+                            <p><strong>Members:</strong> <span class="member-count"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> <span class="status"></span></p>
+                            <p><strong>Joined:</strong> <span class="join-date"></span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ban-info alert alert-danger mb-4" style="display: none;">
+                    <h6><i class="bi bi-exclamation-triangle"></i> Ban Information</h6>
+                    <p><strong>Reason:</strong> <span class="ban-reason"></span></p>
+                    <p><strong>Banned By:</strong> <span class="banned-by"></span></p>
+                    <p><strong>Banned At:</strong> <span class="banned-at"></span></p>
+                </div>
+                
+                <div class="bot-permissions mb-4">
+                    <h6>Bot Permissions</h6>
+                    <div class="permissions-list"></div>
+                </div>
+                
+                <div class="features-section">
+                    <h6>Server Features</h6>
+                    <ul class="features-list list-group"></ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
     </div>
 </div>
 
