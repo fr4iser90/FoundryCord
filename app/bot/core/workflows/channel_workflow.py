@@ -22,7 +22,7 @@ logger = get_bot_logger()
 class ChannelWorkflow(BaseWorkflow):
     """Workflow for channel setup and management"""
     
-    def __init__(self, category_workflow: CategoryWorkflow, database_workflow: DatabaseWorkflow):
+    def __init__(self, database_workflow: DatabaseWorkflow, category_workflow: CategoryWorkflow):
         super().__init__("channel")
         self.category_workflow = category_workflow
         self.database_workflow = database_workflow

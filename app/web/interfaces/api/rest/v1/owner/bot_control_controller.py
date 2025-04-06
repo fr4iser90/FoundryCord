@@ -36,6 +36,7 @@ class BotControlController:
         self.router.post("/config")(self.update_bot_config)
         
         # Server Management
+        self.router.get("/servers")(self.get_servers)
         self.router.post("/servers/join/{guild_id}")(self.join_server)
         self.router.post("/servers/leave/{guild_id}")(self.leave_server)
         self.router.post("/servers/{guild_id}/access")(self.update_server_access)
@@ -315,6 +316,48 @@ class BotControlController:
             raise
         except Exception as e:
             logger.error(f"Error disabling workflow {workflow_name}: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
+            )
+
+    async def get_servers(self, current_user=Depends(get_current_user)):
+        """Get all servers with their access status"""
+        try:
+            await require_role(current_user, Role.OWNER)
+            
+            async with session_context() as session:
+                # Get all guilds from database
+                result = await session.execute(
+                    select(GuildEntity)
+                )
+                guilds = result.scalars().all()
+                
+                # Convert to list of dicts
+                guild_list = []
+                for guild in guilds:
+                    guild_list.append({
+                        "guild_id": guild.guild_id,
+                        "name": guild.name,
+                        "access_status": guild.access_status,
+                        "member_count": guild.member_count,
+                        "joined_at": guild.joined_at,
+                        "access_requested_at": guild.access_requested_at,
+                        "access_reviewed_at": guild.access_reviewed_at,
+                        "access_reviewed_by": guild.access_reviewed_by,
+                        "access_notes": guild.access_notes,
+                        "icon_url": guild.icon_url
+                    })
+                
+                logger.debug(f"Current user: {current_user}")
+                logger.debug(f"Found {len(guild_list)} servers")
+                for guild in guild_list:
+                    logger.debug(f"Server: {guild['name']} (ID: {guild['guild_id']})")
+                
+                return guild_list
+                
+        except Exception as e:
+            logger.error(f"Error getting servers: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=str(e)

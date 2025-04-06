@@ -27,57 +27,10 @@
             </div>
         </div>
         <div class="card-body">
-            <!-- Accepted Servers Section -->
-            <div class="server-section active-servers">
-                <div class="section-header">
-                    <h3><i class="bi bi-check-circle"></i> Accepted Servers</h3>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Server Name</th>
-                                <th>Server ID</th>
-                                <th>Status</th>
-                                <th>Members</th>
-                                <th>Joined At</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for server in servers if server.access_status == 'APPROVED' %}
-                            <tr>
-                                <td>{{ server.name }}</td>
-                                <td>{{ server.guild_id }}</td>
-                                <td>
-                                    <div class="server-status">
-                                        <span class="status-indicator accepted"></span>
-                                        Accepted
-                                    </div>
-                                </td>
-                                <td>{{ server.member_count or 0 }}</td>
-                                <td>{{ server.joined_at|datetime or "Not joined" }}</td>
-                                <td>
-                                    <div class="btn-group">
-                                        <button class="btn btn-sm btn-info" onclick="showServerDetails('{{ server.guild_id }}')" title="Details">
-                                            <i class="bi bi-info-circle"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-dark" onclick="updateAccess('{{ server.guild_id }}', 'BLOCKED')" title="Block">
-                                            <i class="bi bi-shield-x"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
             <!-- Pending Servers Section -->
             {% set pending_servers = servers|selectattr('access_status', 'equalto', 'PENDING')|list %}
             {% if pending_servers %}
-            <div class="server-section pending-servers">
+            <div class="server-section pending-servers mb-4">
                 <div class="section-header">
                     <h3><i class="bi bi-clock-history"></i> Pending Approvals ({{ pending_servers|length }})</h3>
                 </div>
@@ -109,6 +62,53 @@
                                         </button>
                                         <button class="btn btn-sm btn-info" onclick="showServerDetails('{{ server.guild_id }}')" title="Details">
                                             <i class="bi bi-info-circle"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Accepted Servers Section -->
+            {% set approved_servers = servers|selectattr('access_status', 'equalto', 'APPROVED')|list %}
+            {% if approved_servers %}
+            <div class="server-section accepted-servers">
+                <div class="section-header">
+                    <h3><i class="bi bi-check-circle"></i> Accepted Servers</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Server Name</th>
+                                <th>Server ID</th>
+                                <th>Status</th>
+                                <th>Members</th>
+                                <th>Joined At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for server in approved_servers %}
+                            <tr>
+                                <td>{{ server.name }}</td>
+                                <td>{{ server.guild_id }}</td>
+                                <td>
+                                    <span class="badge bg-success">Accepted</span>
+                                </td>
+                                <td>{{ server.member_count or 0 }}</td>
+                                <td>{{ server.joined_at|datetime or "Not joined" }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-info" onclick="showServerDetails('{{ server.guild_id }}')" title="Details">
+                                            <i class="bi bi-info-circle"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-dark" onclick="updateAccess('{{ server.guild_id }}', 'BLOCKED')" title="Block">
+                                            <i class="bi bi-shield-x"></i>
                                         </button>
                                     </div>
                                 </td>

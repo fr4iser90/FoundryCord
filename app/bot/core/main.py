@@ -19,9 +19,6 @@ from app.bot.core.workflows import (
     TaskWorkflow,
     UserWorkflow
 )
-from app.shared.infrastructure.config.env_config import EnvConfig
-from app.shared.domain.repositories.discord import GuildConfigRepository
-from app.shared.infrastructure.database.session import session_context
 
 logger = get_bot_logger()
 
@@ -41,9 +38,6 @@ class HomelabBot(commands.Bot):
         
         super().__init__(command_prefix=command_prefix, intents=intents)
         
-        # Load environment configuration
-        self.env_config = EnvConfig().load()
-        
         # Initialize lifecycle manager
         self.lifecycle = BotLifecycleManager()
         
@@ -55,9 +49,8 @@ class HomelabBot(commands.Bot):
         self.category_workflow = CategoryWorkflow(self.database_workflow)
         self.channel_workflow = ChannelWorkflow(self.database_workflow, self.category_workflow)
         self.dashboard_workflow = DashboardWorkflow(self.database_workflow, bot=self)
-        self.task_workflow = TaskWorkflow(self.database_workflow, self.bot)
-        self.user_workflow = UserWorkflow(self.database_workflow, self.bot)
-        self.user_workflow.bot = self
+        self.task_workflow = TaskWorkflow(self.database_workflow, self)
+        self.user_workflow = UserWorkflow(self.database_workflow, self)
         self.guild_workflow = GuildWorkflow(self.database_workflow, bot=self)
         
         # Register workflows with dependencies
@@ -76,31 +69,10 @@ class HomelabBot(commands.Bot):
         
         # Add shutdown handler
         self.shutdown_handler = ShutdownHandler(self)
-        
-        # Store guild references
-        self.guilds_by_id = {}
     
     async def on_ready(self):
         """Called when the bot is ready"""
         logger.info(f"Logged in as {self.user.name} (ID: {self.user.id})")
-        
-        # Store guild references for quick access
-        self.guilds_by_id = {}
-        for guild in self.guilds:
-            self.guilds_by_id[guild.id] = guild
-            logger.info(f"Connected to guild: {guild.name} (ID: {guild.id})")
-            
-            # Create default configuration for new guilds
-            async with session_context() as session:
-                guild_config_repo = GuildConfigRepository(session)
-                existing_config = await guild_config_repo.get_by_guild_id(str(guild.id))
-                
-                if not existing_config:
-                    logger.info(f"Creating default configuration for guild: {guild.name}")
-                    await guild_config_repo.create_or_update(
-                        guild_id=str(guild.id),
-                        guild_name=guild.name
-                    )
         
         # Start initialization
         await self.start_initialization()
@@ -118,57 +90,6 @@ class HomelabBot(commands.Bot):
             
         logger.info("Bot initialization completed successfully")
         return True
-    
-    async def sync_guild_data(self, guild: nextcord.Guild):
-        """Synchronize database with Discord guild data"""
-        logger.info(f"Syncing data for guild: {guild.name}")
-        
-        # Sync guild data first
-        if hasattr(self, 'guild_workflow') and self.guild_workflow:
-            await self.guild_workflow.sync_guild(guild)
-        
-        # Get guild configuration
-        async with session_context() as session:
-            guild_config_repo = GuildConfigRepository(session)
-            config = await guild_config_repo.get_by_guild_id(str(guild.id))
-            
-            if not config:
-                logger.warning(f"No configuration found for guild {guild.name}, using defaults")
-                # Create default configuration
-                config = await guild_config_repo.create_or_update(
-                    guild_id=str(guild.id),
-                    guild_name=guild.name
-                )
-        
-        # Only run workflows that are enabled for this guild
-        results = {}
-        
-        # Sync categories if enabled
-        if config.enable_categories:
-            # Sync categories first
-            await self.category_workflow.sync_with_discord(guild)
-            
-            # Then set them up (this will only create missing categories)
-            categories = await self.category_workflow.setup_categories(guild)
-            results["categories"] = categories
-        
-        # Sync channels if enabled
-        if config.enable_channels:
-            # Sync channels
-            await self.channel_workflow.sync_with_discord(guild)
-            
-            # Set up channels
-            channels = await self.channel_workflow.setup_channels(guild)
-            results["channels"] = channels
-        
-        # Sync dashboard if enabled
-        if config.enable_dashboard and hasattr(self, 'dashboard_workflow'):
-            # Set up dashboard
-            dashboard = await self.dashboard_workflow.setup_guild_dashboard(guild)
-            results["dashboard"] = dashboard
-        
-        logger.info(f"Finished syncing guild data for: {guild.name}")
-        return results
 
     async def cleanup(self):
         """Clean up all resources before shutdown"""
@@ -188,142 +109,21 @@ class HomelabBot(commands.Bot):
         from app.shared.infrastructure.integration.bot_connector import BotConnector
         bot_connector = BotConnector()
         bot_connector.register_bot(self)
-        
-    async def on_guild_join(self, guild):
-        """Handler für neue Guild-Joins"""
-        logger.info(f"Bot joined new guild: {guild.name} (ID: {guild.id})")
-        
-        # Speichere Guild-Referenz
-        self.guilds_by_id[guild.id] = guild
-        
-        # Erstelle Konfiguration für neue Guild
-        async with session_context() as session:
-            guild_config_repo = GuildConfigRepository(session)
-            existing_config = await guild_config_repo.get_by_guild_id(str(guild.id))
-            
-            if not existing_config:
-                logger.info(f"Creating default configuration for guild: {guild.name}")
-                await guild_config_repo.create_or_update(
-                    guild_id=str(guild.id),
-                    guild_name=guild.name
-                )
-        
-        # Synchronisiere Guild-Daten
-        if hasattr(self, 'guild_workflow') and self.guild_workflow:
-            await self.guild_workflow.sync_guild(guild)
-        
-        # Initialisiere Workflows für diese Guild
-        await self.sync_guild_data(guild)
 
 async def main():
     """Main entry point for the bot"""
     try:
-        # Lade Umgebungsvariablen mit EnvConfig
-        env_config = EnvConfig().load()
-        
         # Set up intents
-        intents = env_config.get_intents()
+        intents = nextcord.Intents.default()
+        intents.members = True
+        intents.message_content = True
         
         # Create the bot
-        bot = commands.Bot(command_prefix="!", intents=intents)
-        
-        # Set up shutdown handler
-        shutdown_handler = ShutdownHandler(bot)
-        
-        # Initialize workflow manager
-        workflow_manager = BotWorkflowManager()
-        
-        # Register workflows
-        database_workflow = DatabaseWorkflow(bot)
-        workflow_manager.register_workflow(database_workflow)
-        
-        category_workflow = CategoryWorkflow(database_workflow)
-        workflow_manager.register_workflow(category_workflow)
-        
-        channel_workflow = ChannelWorkflow(category_workflow, database_workflow)
-        workflow_manager.register_workflow(channel_workflow)
-        
-        # Wichtig: Hier den Bot-Parameter übergeben
-        dashboard_workflow = DashboardWorkflow(database_workflow, bot=bot)
-        workflow_manager.register_workflow(dashboard_workflow)
-        
-        task_workflow = TaskWorkflow(database_workflow, bot)
-        workflow_manager.register_workflow(task_workflow)
-        
-        user_workflow = UserWorkflow(database_workflow, bot)
-        user_workflow.bot = bot
-        workflow_manager.register_workflow(user_workflow)
-        
-        guild_workflow = GuildWorkflow(database_workflow, bot=bot)
-        workflow_manager.register_workflow(guild_workflow)
-        
-        # Set initialization order
-        workflow_manager.set_initialization_order([
-            "database",
-            "guild",
-            "category",
-            "channel",
-            "dashboard",
-            "task",
-            "user"
-        ])
-        
-        # Store workflow manager on bot for access
-        bot.workflow_manager = workflow_manager
-        
-        # Add cleanup method to bot
-        bot.cleanup = workflow_manager.cleanup_all
-        
-        @bot.event
-        async def on_ready():
-            """Called when the bot is ready"""
-            logger.info(f"Logged in as {bot.user.name}#{bot.user.discriminator} (ID: {bot.user.id})")
-            
-            # Log connected guilds
-            guilds = bot.guilds
-            logger.info(f"Connected to {len(guilds)} guilds")
-            for guild in guilds:
-                logger.info(f"Connected to guild: {guild.name} (ID: {guild.id})")
-            
-            # Initialize workflows
-            logger.info("Starting bot initialization")
-            try:
-                if await workflow_manager.initialize_all():
-                    logger.info("All workflows initialized successfully")
-                    
-                    # Set up categories and channels for each guild
-                    for guild in bot.guilds:
-                        # Get category workflow
-                        category_wf = workflow_manager.get_workflow("category")
-                        if category_wf:
-                            # Set up categories
-                            categories = await category_wf.setup_categories(guild)
-                            logger.info(f"Set up {len(categories)} categories for guild {guild.name}")
-                            
-                            # Sync with Discord
-                            await category_wf.sync_with_discord(guild)
-                            
-                        # Get channel workflow
-                        channel_wf = workflow_manager.get_workflow("channel")
-                        if channel_wf:
-                            # Set up channels
-                            channels = await channel_wf.setup_channels(guild)
-                            logger.info(f"Set up {len(channels)} channels for guild {guild.name}")
-                            
-                            # Sync with Discord
-                            await channel_wf.sync_with_discord(guild)
-                else:
-                    logger.error("Bot initialization failed")
-            except Exception as e:
-                logger.error(f"Error during bot initialization: {e}")
-                import traceback
-                logger.error(traceback.format_exc())
+        bot = HomelabBot(command_prefix="!", intents=intents)
         
         # Run the bot
         logger.info("Starting the bot...")
-        
-        # Start the bot mit dem Token aus env_config
-        await bot.start(env_config.DISCORD_BOT_TOKEN)
+        await bot.start(os.getenv('DISCORD_BOT_TOKEN'))
         
     except Exception as e:
         logger.error(f"Error starting bot: {e}")

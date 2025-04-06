@@ -5,6 +5,11 @@ from app.web.application.services.auth.dependencies import get_current_user
 from app.web.domain.auth.permissions import Role, require_role
 from app.shared.interface.logging.api import get_web_logger
 from app.shared.infrastructure.integration.bot_connector import get_bot_connector
+from app.shared.infrastructure.database.session import session_context
+from app.shared.infrastructure.models import GuildEntity
+from app.shared.domain.models.discord.guild_model import GuildAccessStatus
+from sqlalchemy import select
+
 from app.web.interfaces.api.rest.v1.owner.owner_controller import (
     list_servers,
     add_server,
@@ -48,45 +53,37 @@ class BotControlView:
             session = session_extension(request)
             active_guild = session.get('active_guild')
             
-            # Get bot configuration and server list
+            # Get bot configuration
             bot_connector = await get_bot_connector()
             config = await bot_connector.get_bot_config(current_user)
             
-            # Initialize empty server list
-            servers = []
+            # Get servers from database
+            async with session_context() as db_session:
+                result = await db_session.execute(select(GuildEntity))
+                guilds = result.scalars().all()
+                
+                servers = []
+                for guild in guilds:
+                    server_data = {
+                        "guild_id": guild.guild_id,
+                        "name": guild.name,
+                        "access_status": guild.access_status or GuildAccessStatus.PENDING.value,
+                        "member_count": guild.member_count,
+                        "joined_at": guild.joined_at,
+                        "access_requested_at": guild.access_requested_at,
+                        "access_reviewed_at": guild.access_reviewed_at,
+                        "icon_url": guild.icon_url
+                    }
+                    servers.append(server_data)
+                    logger.debug(f"Server: {guild.name} (ID: {guild.guild_id})")
             
-            # Get bot instance to access workflows
-            bot = await bot_connector.get_bot()
-            if bot:
-                # Get guild workflow to access guild data
-                guild_workflow = bot.workflow_manager.get_workflow("guild")
-                if guild_workflow:
-                    # Get all servers with their current status
-                    for guild in await guild_workflow.get_all_guilds():
-                        # Ensure access_status has a default value
-                        access_status = guild.access_status if hasattr(guild, 'access_status') else 'PENDING'
-                        
-                        server_data = {
-                            "guild_id": guild.guild_id,
-                            "name": guild.name,
-                            "is_active": await guild_workflow.is_guild_active(guild.guild_id),
-                            "access_status": access_status,
-                            "member_count": guild.member_count,
-                            "joined_at": guild.joined_at,
-                            "access_requested_at": guild.access_requested_at if hasattr(guild, 'access_requested_at') else None,
-                            "access_reviewed_at": guild.access_reviewed_at if hasattr(guild, 'access_reviewed_at') else None,
-                            "icon_url": guild.icon_url if hasattr(guild, 'icon_url') else None
-                        }
-                        servers.append(server_data)
-                        logger.debug(f"Added server to list: {server_data}")
-                else:
-                    logger.warning("Guild workflow not found in bot instance")
-            else:
-                logger.warning("Bot instance not available - showing empty server list")
-            
-            # Log the number of pending servers
-            pending_count = len([s for s in servers if s['access_status'] == 'PENDING'])
+            # Log server counts
+            pending_count = len([s for s in servers if s['access_status'] == GuildAccessStatus.PENDING.value])
             logger.info(f"Found {pending_count} pending servers out of {len(servers)} total servers")
+            
+            # Get bot status
+            bot = await bot_connector.get_bot()
+            bot_status = "online" if bot else "offline"
             
             return templates.TemplateResponse(
                 "views/owner/bot.html",
@@ -97,7 +94,7 @@ class BotControlView:
                     "config": config,
                     "servers": servers,
                     "active_guild": active_guild,
-                    "bot_status": "offline" if not bot else "online"
+                    "bot_status": bot_status
                 }
             )
         except HTTPException as e:

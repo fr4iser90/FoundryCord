@@ -193,6 +193,7 @@ async function saveServerDetails() {
 
 async function refreshServerList() {
     try {
+        console.log("Refreshing server list...");
         const response = await fetch('/api/v1/owner/servers', {
             method: 'GET',
             headers: {
@@ -200,14 +201,19 @@ async function refreshServerList() {
             }
         });
         
+        console.log("Response status:", response.status);
+        const data = await response.json();
+        console.log("Received data:", data);
+        
         if (response.ok) {
-            const data = await response.json();
             updateServerTable(data);
         } else {
             const error = await response.json();
+            console.error("Server list refresh failed:", error);
             showToast('Error', error.detail || 'Failed to refresh server list');
         }
     } catch (error) {
+        console.error("Error refreshing server list:", error);
         showToast('Error', 'Failed to refresh server list: ' + error.message);
     }
 }
