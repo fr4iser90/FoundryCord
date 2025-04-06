@@ -101,7 +101,7 @@ def upgrade() -> None:
         sa.Column('settings', sa.JSON(), nullable=True),
         sa.Column('is_active', sa.Boolean(), default=True),
         # Access Control Fields
-        sa.Column('access_status', sa.String(20), nullable=False, server_default='PENDING'),
+        sa.Column('access_status', sa.String(20), nullable=False, server_default='pending'),
         sa.Column('access_requested_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
         sa.Column('access_reviewed_at', sa.DateTime(), nullable=True),
         sa.Column('access_reviewed_by', sa.String(32), nullable=True),
@@ -112,7 +112,7 @@ def upgrade() -> None:
         sa.Column('enable_automod', sa.Boolean(), nullable=False, server_default='false'),
         sa.Column('enable_welcome', sa.Boolean(), nullable=False, server_default='false'),
         sa.PrimaryKeyConstraint('id'),
-        sa.CheckConstraint("access_status IN ('PENDING', 'APPROVED', 'DENIED', 'BLOCKED')", name='valid_access_status')
+        sa.CheckConstraint("access_status IN ('pending', 'approved', 'rejected', 'suspended')", name='valid_access_status')
     )
     
     op.create_table(

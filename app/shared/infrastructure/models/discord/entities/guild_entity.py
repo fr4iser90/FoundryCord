@@ -4,7 +4,6 @@ Guild model for Discord servers.
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, JSON
 from sqlalchemy.sql import func
 from app.shared.infrastructure.models.base import Base
-from app.shared.infrastructure.models.discord.enums.guild import GuildAccessStatus
 from datetime import datetime
 
 class GuildEntity(Base):
@@ -22,7 +21,7 @@ class GuildEntity(Base):
     is_active = Column(Boolean, default=True)
     
     # Access Control Fields
-    access_status = Column(String(20), nullable=False, server_default=GuildAccessStatus.PENDING.value)
+    access_status = Column(String(20), nullable=False, server_default='pending')
     access_requested_at = Column(DateTime, server_default='now()', nullable=False)
     access_reviewed_at = Column(DateTime, nullable=True)
     access_reviewed_by = Column(String(32), nullable=True)

@@ -8,13 +8,18 @@ from app.shared.infrastructure.models.discord.entities.guild_entity import Guild
 from app.shared.infrastructure.models.discord.entities.guild_user_entity import DiscordGuildUserEntity
 from app.shared.domain.repositories.discord.guild_config_repository import GuildConfigRepository
 from app.shared.infrastructure.repositories.discord.guild_config_repository_impl import GuildConfigRepositoryImpl
-from app.shared.infrastructure.models.discord.enums.guild import GuildAccessStatus
 from sqlalchemy import select
 from datetime import datetime
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.shared.infrastructure.repositories.discord.guild_repository_impl import GuildRepositoryImpl
 
 logger = get_bot_logger()
+
+# String constants for access status
+ACCESS_PENDING = "pending"
+ACCESS_APPROVED = "approved"
+ACCESS_REJECTED = "rejected"
+ACCESS_SUSPENDED = "suspended"
 
 class GuildWorkflow(BaseWorkflow):
     """Manages guild-related operations and synchronization"""
@@ -25,7 +30,7 @@ class GuildWorkflow(BaseWorkflow):
         self.database_workflow = database_workflow
         self.requires_guild_approval = True
         self._guild_statuses: Dict[str, WorkflowStatus] = {}
-        self._guild_access_statuses: Dict[str, GuildAccessStatus] = {}
+        self._guild_access_statuses: Dict[str, str] = {}
         self.guild_repo = None
         self.guild_config_repo = None
         
@@ -54,7 +59,7 @@ class GuildWorkflow(BaseWorkflow):
                         guild = await self.guild_repo.create_or_update(
                             guild_id=str(discord_guild.id),
                             name=discord_guild.name,
-                            access_status=GuildAccessStatus.PENDING.value,
+                            access_status=ACCESS_PENDING,
                             member_count=discord_guild.member_count,
                             icon_url=str(discord_guild.icon.url) if discord_guild.icon else None,
                             owner_id=str(discord_guild.owner_id) if discord_guild.owner_id else None
@@ -65,14 +70,13 @@ class GuildWorkflow(BaseWorkflow):
                     logger.info(f"Processing guild {guild.name} ({guild.guild_id}) with status {guild.access_status}")
                     
                     # Get current access status or set to PENDING if none
-                    current_status = guild.access_status or GuildAccessStatus.PENDING.value
-                    access_status = GuildAccessStatus(current_status)
+                    current_status = guild.access_status or ACCESS_PENDING
                     
                     # Store access status
-                    self._guild_access_statuses[guild.guild_id] = access_status
+                    self._guild_access_statuses[guild.guild_id] = current_status
                     
                     # Set workflow status based on access status
-                    if access_status == GuildAccessStatus.APPROVED:
+                    if current_status == ACCESS_APPROVED:
                         self._guild_statuses[guild.guild_id] = WorkflowStatus.ACTIVE
                         logger.info(f"Guild {guild.guild_id} is already APPROVED")
                         
@@ -84,21 +88,21 @@ class GuildWorkflow(BaseWorkflow):
                                 guild_name=guild.name
                             )
                             
-                    elif access_status == GuildAccessStatus.DENIED:
+                    elif current_status == ACCESS_REJECTED:
                         self._guild_statuses[guild.guild_id] = WorkflowStatus.UNAUTHORIZED
-                        logger.info(f"Guild {guild.guild_id} is DENIED")
-                    elif access_status == GuildAccessStatus.BLOCKED:
+                        logger.info(f"Guild {guild.guild_id} is REJECTED")
+                    elif current_status == ACCESS_SUSPENDED:
                         self._guild_statuses[guild.guild_id] = WorkflowStatus.UNAUTHORIZED
-                        logger.info(f"Guild {guild.guild_id} is BLOCKED")
+                        logger.info(f"Guild {guild.guild_id} is SUSPENDED")
                         await self.enforce_access_control(guild)
                     else:
                         # For PENDING or unknown status
                         self._guild_statuses[guild.guild_id] = WorkflowStatus.PENDING
-                        if guild.access_status != GuildAccessStatus.PENDING.value:
+                        if guild.access_status != ACCESS_PENDING:
                             logger.info(f"Setting guild {guild.guild_id} to PENDING")
                             await self.guild_repo.update_access_status(
                                 guild.guild_id, 
-                                GuildAccessStatus.PENDING.value
+                                ACCESS_PENDING
                             )
                         logger.info(f"Guild {guild.guild_id} is waiting for approval (PENDING)")
                     
@@ -129,7 +133,7 @@ class GuildWorkflow(BaseWorkflow):
                 guild = await self.guild_repo.create_or_update(
                     guild_id=guild_id,
                     name=discord_guild.name,
-                    access_status=GuildAccessStatus.PENDING.value,
+                    access_status=ACCESS_PENDING,
                     member_count=discord_guild.member_count,
                     icon_url=str(discord_guild.icon.url) if discord_guild.icon else None,
                     owner_id=str(discord_guild.owner_id) if discord_guild.owner_id else None
@@ -149,7 +153,7 @@ class GuildWorkflow(BaseWorkflow):
                 )
                 
                 # Update local status
-                self._guild_access_statuses[guild_id] = GuildAccessStatus.PENDING
+                self._guild_access_statuses[guild_id] = ACCESS_PENDING
                 self._guild_statuses[guild_id] = WorkflowStatus.PENDING
                 
                 logger.info(f"New guild {guild_id} set to PENDING approval")
@@ -178,16 +182,15 @@ class GuildWorkflow(BaseWorkflow):
                     return False
                     
                 # Store and check access status
-                access_status = GuildAccessStatus(guild.access_status)
-                self._guild_access_statuses[guild_id] = access_status
+                self._guild_access_statuses[guild_id] = guild.access_status
                 
-                if access_status == GuildAccessStatus.DENIED:
-                    logger.warning(f"Guild {guild_id} is DENIED access")
+                if guild.access_status == ACCESS_REJECTED:
+                    logger.warning(f"Guild {guild_id} is REJECTED access")
                     self._guild_statuses[guild_id] = WorkflowStatus.UNAUTHORIZED
                     await self.enforce_access_control(guild)
                     return False
                     
-                if access_status != GuildAccessStatus.APPROVED:
+                if guild.access_status != ACCESS_APPROVED:
                     logger.warning(f"Guild {guild_id} is PENDING approval")
                     self._guild_statuses[guild_id] = WorkflowStatus.PENDING
                     return False
@@ -208,9 +211,9 @@ class GuildWorkflow(BaseWorkflow):
             self._guild_statuses[guild_id] = WorkflowStatus.FAILED
             return False
 
-    def get_guild_access_status(self, guild_id: str) -> GuildAccessStatus:
+    def get_guild_access_status(self, guild_id: str) -> str:
         """Get the current access status for a guild"""
-        return self._guild_access_statuses.get(guild_id, GuildAccessStatus.PENDING)
+        return self._guild_access_statuses.get(guild_id, ACCESS_PENDING)
 
     async def approve_guild(self, guild_id: str) -> bool:
         """Approve a guild"""
@@ -224,7 +227,7 @@ class GuildWorkflow(BaseWorkflow):
                 # Update guild status
                 guild = await self.guild_repo.update_access_status(
                     guild_id=guild_id,
-                    status=GuildAccessStatus.APPROVED.value
+                    status=ACCESS_APPROVED
                 )
                 
                 if not guild:
@@ -247,7 +250,7 @@ class GuildWorkflow(BaseWorkflow):
                     )
                 
                 # Update local status
-                self._guild_access_statuses[guild_id] = GuildAccessStatus.APPROVED
+                self._guild_access_statuses[guild_id] = ACCESS_APPROVED
                 self._guild_statuses[guild_id] = WorkflowStatus.PENDING
                 
                 # Re-initialize the guild
@@ -272,17 +275,17 @@ class GuildWorkflow(BaseWorkflow):
                     return False
                 
                 # Update access status
-                guild.access_status = GuildAccessStatus.DENIED.value
+                guild.access_status = ACCESS_REJECTED
                 await guild_config_repo.update(guild)
                 
                 # Update local status
-                self._guild_access_statuses[guild_id] = GuildAccessStatus.DENIED
+                self._guild_access_statuses[guild_id] = ACCESS_REJECTED
                 self._guild_statuses[guild_id] = WorkflowStatus.UNAUTHORIZED
                 
                 # Enforce access control
                 await self.enforce_access_control(guild)
                 
-                logger.info(f"Guild {guild_id} has been DENIED")
+                logger.info(f"Guild {guild_id} has been REJECTED")
                 return True
                 
         except Exception as e:
@@ -333,7 +336,7 @@ class GuildWorkflow(BaseWorkflow):
             
     async def enforce_access_control(self, guild: GuildEntity) -> None:
         """Enforce access control based on guild status"""
-        if guild.access_status in [GuildAccessStatus.DENIED.value, GuildAccessStatus.BLOCKED.value]:
+        if guild.access_status in [ACCESS_REJECTED, ACCESS_SUSPENDED]:
             logger.info(f"Enforcing access control for guild {guild.guild_id}")
             try:
                 discord_guild = self.bot.get_guild(int(guild.guild_id))

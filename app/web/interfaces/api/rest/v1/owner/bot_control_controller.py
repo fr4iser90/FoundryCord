@@ -25,28 +25,26 @@ class BotControlController:
     
     def _register_routes(self):
         """Register all routes for this controller"""
-        # Bot Control
+        # Bot Control Functions
         self.router.post("/start")(self.start_bot)
         self.router.post("/stop")(self.stop_bot)
         self.router.post("/restart")(self.restart_bot)
         
         # Bot Configuration
         self.router.get("/config")(self.get_bot_config)
-        self.router.post("/config")(self.update_bot_config)
+        self.router.put("/config")(self.update_bot_config)
         
         # Server Management
-        self.router.get("/servers")(self.get_servers)
-        self.router.post("/servers/join/{guild_id}")(self.join_server)
-        self.router.post("/servers/leave/{guild_id}")(self.leave_server)
-        self.router.post("/servers/{guild_id}/access")(self.update_server_access)
+        self.router.post("/servers/{guild_id}/join")(self.join_server)
+        self.router.post("/servers/{guild_id}/leave")(self.leave_server)
+        
+        # Bot Status and Stats
+        self.router.get("/status")(self.get_bot_status)
+        self.router.get("/overview")(self.get_overview_stats)
         
         # Workflow Management
-        self.router.post("/workflow/{workflow_name}/enable")(self.enable_workflow)
-        self.router.post("/workflow/{workflow_name}/disable")(self.disable_workflow)
-        
-        # Statistics and Overview
-        self.router.get("/overview")(self.get_overview_stats)
-        self.router.get("/status")(self.get_bot_status)
+        self.router.post("/workflows/{workflow_name}/enable")(self.enable_workflow)
+        self.router.post("/workflows/{workflow_name}/disable")(self.disable_workflow)
     
     async def start_bot(self, current_user=Depends(get_current_user)):
         """Start the Discord bot"""
@@ -146,46 +144,6 @@ class BotControlController:
                 detail=str(e)
             )
     
-    async def update_server_access(self, guild_id: str, request: AccessUpdateRequest, current_user=Depends(get_current_user)):
-        """Update server access status (approve/deny/block)"""
-        try:
-            await require_role(current_user, Role.OWNER)
-            bot_connector = await get_bot_connector()
-            
-            # Get the bot instance
-            bot = await bot_connector.get_bot()
-            if not bot:
-                raise HTTPException(status_code=404, detail="Bot instance not found")
-            
-            # Get the guild workflow
-            guild_workflow = bot.workflow_manager.get_workflow("guild")
-            if not guild_workflow:
-                raise HTTPException(status_code=404, detail="Guild workflow not found")
-            
-            # Update access status based on request
-            if request.status == "APPROVED":
-                success = await guild_workflow.approve_guild(guild_id)
-            elif request.status == "DENIED":
-                success = await guild_workflow.deny_guild(guild_id)
-            elif request.status == "BLOCKED":
-                success = await guild_workflow.deny_guild(guild_id)  # Same as deny for now
-            else:
-                raise HTTPException(status_code=400, detail="Invalid access status")
-                
-            if not success:
-                raise HTTPException(status_code=500, detail="Failed to update guild access status")
-            
-            return {"message": f"Server {guild_id} access status updated to {request.status}"}
-            
-        except HTTPException as e:
-            raise e
-        except Exception as e:
-            logger.error(f"Error updating server access: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e)
-            )
-
     async def get_overview_stats(self, current_user=Depends(get_current_user)):
         """Get overview statistics for the bot dashboard"""
         try:

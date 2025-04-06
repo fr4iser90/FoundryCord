@@ -2,13 +2,12 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.shared.infrastructure.models import ConfigEntity
 from typing import Optional, Dict, Any
-from app.shared.interface.logging.api import get_bot_logger
-import logging
 import json
 from datetime import datetime
 from app.shared.domain.repositories.auth.key_repository import KeyRepository
+from app.shared.interface.logging.api import get_db_logger
 
-logger = logging.getLogger("homelab.bot")
+logger = get_db_logger()
 
 class KeyRepositoryImpl(KeyRepository):
     """Repository for managing security keys in the database"""

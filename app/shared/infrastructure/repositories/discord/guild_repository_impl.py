@@ -2,10 +2,15 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.shared.infrastructure.models.discord.entities.guild_entity import GuildEntity
 from app.shared.domain.repositories.discord.guild_repository import GuildRepository
-from app.shared.infrastructure.models.discord.enums.guild import GuildAccessStatus
 from typing import Optional, List, Dict, Any
 import json
 from datetime import datetime
+
+# String constants for access status
+ACCESS_PENDING = "pending"
+ACCESS_APPROVED = "approved"
+ACCESS_REJECTED = "rejected"
+ACCESS_SUSPENDED = "suspended"
 
 class GuildRepositoryImpl(GuildRepository):
     """Implementation of the Guild repository for Discord server management"""
@@ -40,7 +45,7 @@ class GuildRepositoryImpl(GuildRepository):
             owner_id=kwargs.get('owner_id'),
             icon_url=kwargs.get('icon_url'),
             member_count=kwargs.get('member_count', 0),
-            access_status=kwargs.get('access_status', 'PENDING'),
+            access_status=kwargs.get('access_status', ACCESS_PENDING),
             access_requested_at=kwargs.get('access_requested_at', datetime.utcnow()),
             settings=kwargs.get('settings')
         )
@@ -72,11 +77,18 @@ class GuildRepositoryImpl(GuildRepository):
             existing.icon_url = kwargs.get('icon_url', existing.icon_url)
             existing.member_count = kwargs.get('member_count', existing.member_count)
             existing.settings = kwargs.get('settings', existing.settings)
+            
+            # Only update access_status if explicitly provided
+            if 'access_status' in kwargs:
+                existing.access_status = kwargs['access_status']
+                
             self.session.add(existing)
             await self.session.commit()
             return existing
         else:
-            # Create new guild
+            # Create new guild with default PENDING status if not specified
+            if 'access_status' not in kwargs:
+                kwargs['access_status'] = ACCESS_PENDING
             return await self.create(guild_id, name, **kwargs)
     
     async def update_access_status(self, guild_id: str, status: str, reviewer_id: str = None) -> Optional[GuildEntity]:
@@ -110,15 +122,15 @@ class GuildRepositoryImpl(GuildRepository):
     
     async def get_active_guilds(self) -> List[GuildEntity]:
         """Get all active guilds (approved status)"""
-        return await self.get_by_access_status('APPROVED')
+        return await self.get_by_access_status(ACCESS_APPROVED)
     
     async def get_pending_guilds(self) -> List[GuildEntity]:
         """Get all pending guilds"""
-        return await self.get_by_access_status(GuildAccessStatus.PENDING)
+        return await self.get_by_access_status(ACCESS_PENDING)
     
     async def get_blocked_guilds(self) -> List[GuildEntity]:
         """Get all blocked guilds"""
-        return await self.get_by_access_status(GuildAccessStatus.BLOCKED)
+        return await self.get_by_access_status(ACCESS_SUSPENDED)
     
     async def mark_as_joined(self, guild_id: str, joined_at: datetime = None) -> Optional[GuildEntity]:
         """Mark a guild as joined"""

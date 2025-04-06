@@ -10,6 +10,7 @@ from app.bot.infrastructure.factories.component_factory import ComponentFactory
 from app.bot.interfaces.dashboards.components.common.embeds.dashboard_embed import DashboardEmbed
 from app.bot.interfaces.dashboards.components.common.embeds.error_embed import ErrorEmbed
 from app.bot.application.services.dashboard.component_loader_service import ComponentLoaderService
+from app.shared.infrastructure.integration.bot_connector import BotConnector
 
 class HomelabBot(commands.Bot):
     """Main HomeLab Discord Bot class"""
@@ -21,6 +22,11 @@ class HomelabBot(commands.Bot):
         self.component_registry = ComponentRegistry()
         self.component_factory = ComponentFactory(self.component_registry)
         self._default_components_registered = False
+        
+        # Register with BotConnector
+        logger.info("Registering bot with BotConnector")
+        connector = BotConnector()
+        connector.register_bot(self)
         
     async def setup_hook(self):
         """Setup hook called when bot is starting up"""
@@ -93,8 +99,8 @@ class HomelabBot(commands.Bot):
             # Load dashboard commands
             await self.load_extension("app.bot.commands.dashboard.dashboard_command")
             
-            self.logger.info("Dashboard system initialized successfully")
+            logger.info("Dashboard system initialized successfully")
             return True
         except Exception as e:
-            self.logger.error(f"Error setting up dashboard system: {e}")
+            logger.error(f"Error setting up dashboard system: {e}")
             return False 

@@ -130,9 +130,7 @@ class UserWorkflow(BaseWorkflow):
             error_count = 0
             
             for member in members:
-                try:
-                    # Debug log for each member being processed
-                    logger.debug(f"Processing member: {member.name}#{member.discriminator} (ID: {member.id})")
+                try:             
                     
                     user_data = {
                         'discord_id': member.id,
@@ -146,13 +144,13 @@ class UserWorkflow(BaseWorkflow):
                     }
                     
                     if member.bot:
-                        logger.debug(f"Skipping bot user: {member.name}")
+                        #logger.debug(f"Skipping bot user: {member.name}")
                         skipped_count += 1
                         continue
                         
                     await self.user_repository.create_or_update(user_data)
                     synced_count += 1
-                    logger.debug(f"Successfully synced user: {member.name} to guild {guild.id}")
+                    #logger.debug(f"Successfully synced user: {member.name} to guild {guild.id}")
                     
                 except Exception as e:
                     error_count += 1

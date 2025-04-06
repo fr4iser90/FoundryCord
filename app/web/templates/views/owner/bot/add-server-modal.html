@@ -1,0 +1,38 @@
+<!-- Add Server Modal -->
+<div class="modal fade" id="addServerModal" tabindex="-1" aria-labelledby="addServerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addServerModalLabel">Add New Server</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addServerForm">
+                    <div class="mb-3">
+                        <label for="serverName" class="form-label">Server Name</label>
+                        <input type="text" class="form-control" id="serverName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="serverId" class="form-label">Server ID</label>
+                        <input type="text" class="form-control" id="serverId" name="guild_id" required>
+                        <div class="form-text">The Discord server ID (right-click server icon → Copy ID)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="serverOwner" class="form-label">Owner ID</label>
+                        <input type="text" class="form-control" id="serverOwner" name="owner_id">
+                        <div class="form-text">Optional: The Discord ID of the server owner</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="serverIcon" class="form-label">Icon URL</label>
+                        <input type="url" class="form-control" id="serverIcon" name="icon_url">
+                        <div class="form-text">Optional: URL to the server's icon</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addServer()">Add Server</button>
+            </div>
+        </div>
+    </div>
+</div> 

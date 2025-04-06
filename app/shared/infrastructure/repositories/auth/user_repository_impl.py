@@ -4,9 +4,9 @@ from app.shared.infrastructure.models import AppUserEntity, AppRoleEntity, Disco
 from typing import Optional, List
 from datetime import datetime
 from app.shared.domain.repositories.auth.user_repository import UserRepository
-import logging
+from app.shared.interface.logging.api import get_db_logger
 
-logger = logging.getLogger(__name__)
+logger = get_db_logger()
 
 class UserRepositoryImpl(UserRepository):
     def __init__(self, session: AsyncSession):
@@ -168,7 +168,6 @@ class UserRepositoryImpl(UserRepository):
                 # Create guild user entry
                 guild_id = str(user_data.get('guild_id'))
                 if guild_id:
-                    logger.debug(f"Creating guild user entry for user {user.username} in guild {guild_id}")
                     guild_user = DiscordGuildUserEntity(
                         guild_id=guild_id,
                         user_id=user.id,

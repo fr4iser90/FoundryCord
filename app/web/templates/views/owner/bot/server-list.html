@@ -1,119 +1,142 @@
-{% extends "layouts/base_layout.html" %}
+{% from "views/owner/bot/server-actions.html" import server_status_badge, server_action_buttons, server_connection_status %}
 
-{% block title %}Server List - Bot Control{% endblock %}
-
-{% block content %}
-<div class="server-list-container">
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h2>Server Management</h2>
-            <div class="btn-group">
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addServerModal">
-                    <i class="bi bi-plus-circle"></i> Add Server
-                </button>
-                <button class="btn btn-info" onclick="refreshServerList()">
-                    <i class="bi bi-arrow-clockwise"></i> Refresh
-                </button>
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h2>Server Management</h2>
+        <div class="btn-group">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addServerModal">
+                <i class="bi bi-plus-circle"></i> Add Server
+            </button>
+            <button class="btn btn-info" onclick="refreshServerList()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        <!-- Pending Servers Section -->
+        {% if pending_servers %}
+        <div class="server-section pending-servers mb-4">
+            <div class="section-header">
+                <h3><i class="bi bi-clock-history"></i> Pending Approvals ({{ pending_servers|length }})</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Server Name</th>
+                            <th>Server ID</th>
+                            <th>Status</th>
+                            <th>Members</th>
+                            <th>Requested At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for server in pending_servers %}
+                        <tr>
+                            <td>
+                                {% if server.icon_url %}
+                                <img src="{{ server.icon_url }}" alt="{{ server.name }}" class="server-icon me-2">
+                                {% endif %}
+                                {{ server.name }}
+                            </td>
+                            <td>{{ server.guild_id }}</td>
+                            <td>{{ server_status_badge(server.access_status) }}</td>
+                            <td>{{ server.member_count or 0 }}</td>
+                            <td>{{ server.access_requested_at|datetime }}</td>
+                            <td>{{ server_action_buttons(server) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
-        
-        <div class="card-body">
-            <!-- Pending Servers Section -->
-            {% if pending_servers %}
-            <div class="server-section pending-servers mb-4">
-                <div class="section-header">
-                    <h3><i class="bi bi-clock-history"></i> Pending Approvals ({{ pending_servers|length }})</h3>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Server Name</th>
-                                <th>Server ID</th>
-                                <th>Members</th>
-                                <th>Requested At</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for server in pending_servers %}
-                            <tr>
-                                <td>{{ server.name }}</td>
-                                <td>{{ server.guild_id }}</td>
-                                <td>{{ server.member_count or 0 }}</td>
-                                <td>{{ server.access_requested_at|datetime }}</td>
-                                <td>
-                                    <div class="btn-group">
-                                        <button class="btn btn-sm btn-approve" onclick="updateAccess('{{ server.guild_id }}', 'APPROVED')" title="Approve">
-                                            <i class="bi bi-check"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-deny" onclick="updateAccess('{{ server.guild_id }}', 'DENIED')" title="Deny">
-                                            <i class="bi bi-x"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-details" onclick="showServerDetails('{{ server.guild_id }}')" title="Details">
-                                            <i class="bi bi-info-circle"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            {% endif %}
+        {% endif %}
 
-            <!-- Active Servers Section -->
-            {% if active_servers %}
-            <div class="server-section active-servers">
-                <div class="section-header">
-                    <h3><i class="bi bi-check-circle"></i> Active Servers</h3>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Server Name</th>
-                                <th>Server ID</th>
-                                <th>Status</th>
-                                <th>Members</th>
-                                <th>Joined At</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for server in active_servers %}
-                            <tr>
-                                <td>{{ server.name }}</td>
-                                <td>{{ server.guild_id }}</td>
-                                <td>
-                                    <span class="badge bg-success">Active</span>
-                                </td>
-                                <td>{{ server.member_count or 0 }}</td>
-                                <td>{{ server.joined_at|datetime }}</td>
-                                <td>
-                                    <div class="btn-group">
-                                        <button class="btn btn-sm btn-details" onclick="showServerDetails('{{ server.guild_id }}')" title="Details">
-                                            <i class="bi bi-info-circle"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-block" onclick="updateAccess('{{ server.guild_id }}', 'BLOCKED')" title="Block">
-                                            <i class="bi bi-shield-x"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+        <!-- Approved Servers Section -->
+        {% if approved_servers %}
+        <div class="server-section approved-servers mb-4">
+            <div class="section-header">
+                <h3><i class="bi bi-check-circle"></i> Approved Servers ({{ approved_servers|length }})</h3>
             </div>
-            {% endif %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Server Name</th>
+                            <th>Server ID</th>
+                            <th>Status</th>
+                            <th>Members</th>
+                            <th>Connection</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for server in approved_servers %}
+                        <tr>
+                            <td>
+                                {% if server.icon_url %}
+                                <img src="{{ server.icon_url }}" alt="{{ server.name }}" class="server-icon me-2">
+                                {% endif %}
+                                {{ server.name }}
+                            </td>
+                            <td>{{ server.guild_id }}</td>
+                            <td>{{ server_status_badge(server.access_status) }}</td>
+                            <td>{{ server.member_count or 0 }}</td>
+                            <td>{{ server_connection_status(server) }}</td>
+                            <td>{{ server_action_buttons(server) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
+        {% endif %}
+
+        <!-- Blocked Servers Section -->
+        {% if blocked_servers %}
+        <div class="server-section blocked-servers">
+            <div class="section-header">
+                <h3><i class="bi bi-shield-x"></i> Blocked Servers ({{ blocked_servers|length }})</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Server Name</th>
+                            <th>Server ID</th>
+                            <th>Status</th>
+                            <th>Members</th>
+                            <th>Blocked At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for server in blocked_servers %}
+                        <tr>
+                            <td>
+                                {% if server.icon_url %}
+                                <img src="{{ server.icon_url }}" alt="{{ server.name }}" class="server-icon me-2">
+                                {% endif %}
+                                {{ server.name }}
+                            </td>
+                            <td>{{ server.guild_id }}</td>
+                            <td>{{ server_status_badge(server.access_status) }}</td>
+                            <td>{{ server.member_count or 0 }}</td>
+                            <td>{{ server.blocked_at|datetime }}</td>
+                            <td>{{ server_action_buttons(server) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
-{% include "views/owner/bot/modals/add-server-modal.html" %}
-{% endblock %}
+{% include "views/owner/bot/add-server-modal.html" %}
 
 {% block extra_js %}
 <script src="{{ url_for('static', path='js/pages/owner/bot/server-management.js') }}"></script>

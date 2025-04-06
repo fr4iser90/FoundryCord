@@ -52,61 +52,83 @@ class BotControlView:
             session = session_extension(request)
             active_guild = session.get('active_guild')
             
-            # Get bot configuration
+            # Get bot configuration and status
             bot_connector = await get_bot_connector()
-            config = await bot_connector.get_bot_config(current_user)
-            
-            # Get bot status
             bot = await bot_connector.get_bot()
-            bot_status = "online" if bot and bot.is_ready() else "offline"
             
-            # Get bot statistics if online
+            # Default values when bot is offline
+            bot_status = "offline"
             bot_stats = None
-            if bot_status == "online":
-                bot_stats = {
-                    "uptime": bot.uptime if hasattr(bot, "uptime") else 0,
-                    "active_servers_count": len(bot.guilds) if hasattr(bot, "guilds") else 0,
-                    "total_members": sum(g.member_count for g in bot.guilds) if hasattr(bot, "guilds") else 0,
-                    "commands_today": 0  # TODO: Implement command tracking
-                }
-            
-            # Get workflows if available
             workflows = []
-            if bot and hasattr(bot, "workflow_manager"):
-                workflows = [
-                    {
-                        "id": name,
-                        "name": name.title(),
-                        "description": workflow.description if hasattr(workflow, "description") else "",
-                        "enabled": workflow.enabled if hasattr(workflow, "enabled") else False
+            config = {
+                "command_prefix": "!",
+                "auto_reconnect": True,
+                "log_level": "INFO",
+                "status_update_interval": 60,
+                "max_reconnect_attempts": 5
+            }
+            
+            if bot:
+                bot_status = "online" if bot.is_ready() else "connecting"
+                config = await bot_connector.get_bot_config(current_user)
+                
+                # Get bot statistics if online
+                if bot_status == "online":
+                    bot_stats = {
+                        "uptime": bot.uptime if hasattr(bot, "uptime") else 0,
+                        "active_servers_count": len(bot.guilds) if hasattr(bot, "guilds") else 0,
+                        "total_members": sum(g.member_count for g in bot.guilds) if hasattr(bot, "guilds") else 0,
+                        "commands_today": 0  # TODO: Implement command tracking
                     }
-                    for name, workflow in bot.workflow_manager.workflows.items()
-                ]
+                
+                # Get workflows if available
+                if hasattr(bot, "workflow_manager"):
+                    workflows = [
+                        {
+                            "id": name,
+                            "name": name.title(),
+                            "description": workflow.description if hasattr(workflow, "description") else "",
+                            "enabled": workflow.enabled if hasattr(workflow, "enabled") else False
+                        }
+                        for name, workflow in bot.workflow_manager.workflows.items()
+                    ]
             
             # Get servers from database
             async with session_context() as db_session:
                 result = await db_session.execute(select(GuildEntity))
                 guilds = result.scalars().all()
                 
-                servers = []
+                # Sort servers by status
+                pending_servers = []
+                approved_servers = []
+                blocked_servers = []
+                
                 for guild in guilds:
                     server_data = {
                         "guild_id": guild.guild_id,
                         "name": guild.name,
-                        "access_status": guild.access_status or "PENDING",
+                        "access_status": guild.access_status,
                         "member_count": guild.member_count,
                         "joined_at": guild.joined_at,
                         "access_requested_at": guild.access_requested_at,
                         "access_reviewed_at": guild.access_reviewed_at,
+                        "access_reviewed_by": guild.access_reviewed_by,
+                        "access_notes": guild.access_notes,
                         "icon_url": guild.icon_url,
-                        "is_connected": bot and guild.guild_id in [g.id for g in bot.guilds] if bot else False,
+                        "is_connected": bot and guild.guild_id in [str(g.id) for g in bot.guilds] if bot else False,
                         "enable_commands": guild.enable_commands,
                         "enable_logging": guild.enable_logging,
                         "enable_automod": guild.enable_automod,
                         "enable_welcome": guild.enable_welcome,
                         "is_active": guild.is_active
                     }
-                    servers.append(server_data)
+                    
+                    if guild.access_status == "pending":
+                        pending_servers.append(server_data)
+                    elif guild.access_status == "approved":
+                        approved_servers.append(server_data)
+                    elif guild.access_status in ["rejected", "suspended"]:
+                        blocked_servers.append(server_data)
             
             # Prepare template context
             context = {
@@ -114,7 +136,9 @@ class BotControlView:
                 "user": current_user,
                 "active_page": "bot-control",
                 "config": config,
-                "servers": servers,
+                "pending_servers": pending_servers,
+                "approved_servers": approved_servers,
+                "blocked_servers": blocked_servers,
                 "active_guild": active_guild,
                 "bot_status": bot_status,
                 "bot_latency": round(bot.latency * 1000, 2) if bot and hasattr(bot, "latency") else None,
@@ -137,14 +161,25 @@ class BotControlView:
             )
         except Exception as e:
             logger.error(f"Error in bot control view: {e}")
+            # Return a more graceful error page that still shows the UI
+            context = {
+                "request": request,
+                "user": current_user,
+                "active_page": "bot-control",
+                "config": {},
+                "pending_servers": [],
+                "approved_servers": [],
+                "blocked_servers": [],
+                "active_guild": None,
+                "bot_status": "offline",
+                "bot_latency": None,
+                "bot_stats": None,
+                "workflows": [],
+                "error": "Bot is currently offline or not properly initialized. Some features may be unavailable."
+            }
             return templates.TemplateResponse(
-                "views/errors/500.html",
-                {
-                    "request": request, 
-                    "user": current_user, 
-                    "error": "Failed to load bot control page. The bot might be offline or not properly initialized."
-                },
-                status_code=500
+                "views/owner/bot/bot.html",
+                context
             )
     
     async def start_bot(self, request: Request, current_user=Depends(get_current_user)):
