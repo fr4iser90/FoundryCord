@@ -6,7 +6,7 @@ from datetime import datetime
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
-from app.shared.domain.models import DashboardModel
+#from app.shared.domain.OLD import DashboardModel
 from app.bot.infrastructure.factories.component_registry import ComponentRegistry
 
 class DashboardBuilder:

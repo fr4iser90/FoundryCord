@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.shared.infrastructure.models import GuildConfigEntity
+from app.shared.infrastructure.models.discord.entities.guild_config_entity import GuildConfigEntity
 from app.shared.domain.repositories.discord.guild_config_repository import GuildConfigRepository
 from typing import Optional, List, Dict, Any
 import json

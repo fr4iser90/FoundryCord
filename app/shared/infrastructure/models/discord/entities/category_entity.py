@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, JSON, Enum, ForeignKey, BigInteger
 from sqlalchemy.orm import relationship
 from app.shared.infrastructure.models.base import Base
-from app.shared.domain.models.discord.category_model import CategoryPermissionLevel
+from app.shared.infrastructure.models.discord.enums.category import CategoryPermissionLevel
 
 class CategoryEntity(Base):
     """Database entity for Discord categories"""

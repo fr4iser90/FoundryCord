@@ -1,0 +1,107 @@
+<div class="card mb-4">
+    <div class="card-header">
+        <h2>Bot Configuration</h2>
+    </div>
+    <div class="card-body">
+        <form id="botConfigForm" class="needs-validation" novalidate>
+            <!-- Command Settings -->
+            <div class="config-section mb-4">
+                <h4>Command Settings</h4>
+                <div class="mb-3">
+                    <label for="commandPrefix" class="form-label">Command Prefix</label>
+                    <input type="text" class="form-control" id="commandPrefix" name="command_prefix" 
+                           value="{{ config.command_prefix }}" required>
+                    <div class="form-text">The prefix used for bot commands (e.g., !, $, >)</div>
+                </div>
+            </div>
+
+            <!-- Logging Settings -->
+            <div class="config-section mb-4">
+                <h4>Logging Settings</h4>
+                <div class="mb-3">
+                    <label for="logLevel" class="form-label">Log Level</label>
+                    <select class="form-select" id="logLevel" name="log_level">
+                        <option value="DEBUG" {% if config.log_level == 'DEBUG' %}selected{% endif %}>DEBUG</option>
+                        <option value="INFO" {% if config.log_level == 'INFO' %}selected{% endif %}>INFO</option>
+                        <option value="WARNING" {% if config.log_level == 'WARNING' %}selected{% endif %}>WARNING</option>
+                        <option value="ERROR" {% if config.log_level == 'ERROR' %}selected{% endif %}>ERROR</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Status Update Settings -->
+            <div class="config-section mb-4">
+                <h4>Status Update Settings</h4>
+                <div class="mb-3">
+                    <label for="statusInterval" class="form-label">Status Update Interval (seconds)</label>
+                    <input type="number" class="form-control" id="statusInterval" name="status_update_interval"
+                           value="{{ config.status_update_interval }}" min="30" max="3600" required>
+                    <div class="form-text">How often the bot should update its status (30-3600 seconds)</div>
+                </div>
+            </div>
+
+            <!-- Connection Settings -->
+            <div class="config-section mb-4">
+                <h4>Connection Settings</h4>
+                <div class="mb-3">
+                    <label for="maxReconnect" class="form-label">Max Reconnect Attempts</label>
+                    <input type="number" class="form-control" id="maxReconnect" name="max_reconnect_attempts"
+                           value="{{ config.max_reconnect_attempts }}" min="1" max="10" required>
+                </div>
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="autoReconnect" name="auto_reconnect"
+                           {% if config.auto_reconnect %}checked{% endif %}>
+                    <label class="form-check-label" for="autoReconnect">Auto Reconnect</label>
+                </div>
+            </div>
+
+            <!-- Feature Toggles -->
+            <div class="config-section mb-4">
+                <h4>Feature Toggles</h4>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="form-check form-switch">
+                            <input type="checkbox" class="form-check-input" id="enableLogging" name="enable_logging"
+                                   {% if config.enable_logging %}checked{% endif %}>
+                            <label class="form-check-label" for="enableLogging">Enable Logging</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check form-switch">
+                            <input type="checkbox" class="form-check-input" id="enableMetrics" name="enable_metrics"
+                                   {% if config.enable_metrics %}checked{% endif %}>
+                            <label class="form-check-label" for="enableMetrics">Enable Metrics</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check form-switch">
+                            <input type="checkbox" class="form-check-input" id="enableDebug" name="enable_debug"
+                                   {% if config.enable_debug %}checked{% endif %}>
+                            <label class="form-check-label" for="enableDebug">Enable Debug Mode</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check form-switch">
+                            <input type="checkbox" class="form-check-input" id="enableNotifications" name="enable_notifications"
+                                   {% if config.enable_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="enableNotifications">Enable Notifications</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Save Configuration
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="resetConfig()">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset to Defaults
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="{{ url_for('static', path='js/pages/owner/bot/config-management.js') }}"></script>
+{% endblock %} 

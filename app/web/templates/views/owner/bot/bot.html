@@ -1,0 +1,31 @@
+{% extends "layouts/base_layout.html" %}
+
+{% block title %}Bot Control - HomeLab Discord Bot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/views/owner/bot_control.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="bot-control-container">
+    <div class="page-header">
+        <h1>Bot Control Panel</h1>
+        <p class="text-muted">Manage bot settings and server connections</p>
+    </div>
+
+    <!-- Bot Controls Component -->
+    {% include "views/owner/bot/bot-controls.html" %}
+
+    <!-- Server List Component -->
+    {% include "views/owner/bot/server-list.html" %}
+
+    <!-- Configuration Panel Component -->
+    {% include "views/owner/bot/config-panel.html" %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="module" src="{{ url_for('static', path='js/pages/owner/bot/server-management.js') }}"></script>
+<script type="module" src="{{ url_for('static', path='js/pages/owner/bot/bot-controls.js') }}"></script>
+<script type="module" src="{{ url_for('static', path='js/pages/owner/bot/config-management.js') }}"></script>
+{% endblock %} 

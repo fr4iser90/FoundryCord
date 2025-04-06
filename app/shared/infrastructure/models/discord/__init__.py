@@ -9,6 +9,7 @@ from .entities.guild_entity import GuildEntity
 from .entities.message_entity import MessageEntity
 from .entities.guild_user_entity import DiscordGuildUserEntity
 from .entities.guild_config_entity import GuildConfigEntity
+from .entities.dashboard_entity import DashboardModelEntity
 
 # Importing mappings
 from .mappings.channel_mapping import ChannelMapping
@@ -25,5 +26,6 @@ __all__ = [
     'ChannelEntity',
     'CategoryEntity',
     'ChannelPermissionEntity',
-    'CategoryPermissionEntity'
+    'CategoryPermissionEntity',
+    'DashboardModelEntity'
 ] 

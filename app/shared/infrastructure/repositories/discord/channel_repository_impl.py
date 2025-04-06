@@ -2,11 +2,9 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from app.shared.domain.models.discord.channel_model import (
-    ChannelModel, ChannelTemplate, ChannelPermission, ThreadConfig
-)
+from app.shared.infrastructure.models.discord.entities.channel_entity import ChannelEntity, ChannelPermissionEntity
+from app.shared.infrastructure.models.discord.mappings.channel_mapping import ChannelMapping
 from app.shared.domain.repositories.discord.channel_repository import ChannelRepository
-from app.shared.infrastructure.models import ChannelEntity, ChannelPermissionEntity
 from app.shared.infrastructure.database.api import get_session
 from app.shared.infrastructure.database.session.context import session_context
 import logging
@@ -32,108 +30,28 @@ class ChannelRepositoryImpl(ChannelRepository):
             session = await anext(session_gen)
             return session
     
-    def _entity_to_model(self, entity: ChannelEntity) -> ChannelModel:
-        """Convert a database entity to a domain model"""
-        permissions = []
-        for perm_entity in entity.permissions:
-            permissions.append(
-                ChannelPermission(
-                    role_id=perm_entity.role_id,
-                    view=perm_entity.view,
-                    send_messages=perm_entity.send_messages,
-                    read_messages=perm_entity.read_messages,
-                    manage_messages=perm_entity.manage_messages,
-                    manage_channel=perm_entity.manage_channel,
-                    use_bots=perm_entity.use_bots,
-                    embed_links=perm_entity.embed_links,
-                    attach_files=perm_entity.attach_files,
-                    add_reactions=perm_entity.add_reactions
-                )
-            )
-        
-        # Convert thread_config from JSON to ThreadConfig object
-        thread_config = None
-        if entity.thread_config:
-            thread_config = ThreadConfig(
-                default_auto_archive_duration=entity.thread_config.get('default_auto_archive_duration', 1440),
-                default_thread_slowmode_delay=entity.thread_config.get('default_thread_slowmode_delay', 0),
-                default_reaction_emoji=entity.thread_config.get('default_reaction_emoji'),
-                require_tag=entity.thread_config.get('require_tag', False),
-                available_tags=entity.thread_config.get('available_tags', [])
-            )
-        
-        return ChannelModel(
-            id=entity.id,
-            discord_id=entity.discord_id,
-            name=entity.name,
-            description=entity.description,
-            category_id=entity.category_id,
-            category_discord_id=entity.category_discord_id,
-            type=entity.type,
-            position=entity.position,
-            permission_level=entity.permission_level,
-            permissions=permissions,
-            is_enabled=entity.is_enabled,
-            is_created=entity.is_created,
-            nsfw=entity.nsfw,
-            slowmode_delay=entity.slowmode_delay,
-            topic=entity.topic,
-            thread_config=thread_config,
-            metadata=entity.metadata_json or {}  # Use metadata_json here
+    def _entity_to_mapping(self, entity: ChannelEntity) -> ChannelMapping:
+        """Convert a database entity to a mapping"""
+        return ChannelMapping(
+            guild_id=str(entity.guild_id) if entity.guild_id else None,
+            channel_id=str(entity.discord_id) if entity.discord_id else None,
+            channel_name=entity.name,
+            channel_type=entity.type.value,
+            parent_channel_id=str(entity.category_discord_id) if entity.category_discord_id else None,
+            enabled=entity.is_enabled
         )
     
-    def _model_to_entity(self, model: ChannelModel) -> ChannelEntity:
-        """Convert domain model to database entity"""
-        thread_config_dict = None
-        if model.thread_config:
-            thread_config_dict = {
-                'default_auto_archive_duration': model.thread_config.default_auto_archive_duration,
-                'default_thread_slowmode_delay': model.thread_config.default_thread_slowmode_delay,
-                'default_reaction_emoji': model.thread_config.default_reaction_emoji,
-                'require_tag': model.thread_config.require_tag,
-                'available_tags': model.thread_config.available_tags
-            }
-        
-        entity = ChannelEntity(
-            name=model.name,
-            discord_id=model.discord_id,
-            description=model.description,
-            category_id=model.category_id,
-            category_discord_id=model.category_discord_id,
-            type=model.type,
-            position=model.position,
-            permission_level=model.permission_level,
-            is_enabled=model.is_enabled,
-            is_created=model.is_created,
-            nsfw=model.nsfw,
-            slowmode_delay=model.slowmode_delay,
-            topic=model.topic,
-            thread_config=thread_config_dict,
-            metadata_json=model.metadata
+    def _mapping_to_entity(self, mapping: ChannelMapping) -> ChannelEntity:
+        """Convert a mapping to a database entity"""
+        return ChannelEntity(
+            name=mapping.channel_name,
+            discord_id=int(mapping.channel_id) if mapping.channel_id else None,
+            type=mapping.channel_type,
+            is_enabled=mapping.enabled,
+            category_discord_id=int(mapping.parent_channel_id) if mapping.parent_channel_id else None
         )
-        
-        if model.id:
-            entity.id = model.id
-            
-        entity.permissions = [
-            ChannelPermissionEntity(
-                role_id=perm.role_id,
-                view=perm.view,
-                send_messages=perm.send_messages,
-                read_messages=perm.read_messages,
-                manage_messages=perm.manage_messages,
-                manage_channel=perm.manage_channel,
-                use_bots=perm.use_bots,
-                embed_links=perm.embed_links,
-                attach_files=perm.attach_files,
-                add_reactions=perm.add_reactions
-            )
-            for perm in model.permissions
-        ]
-        
-        return entity
     
-    async def get_all_channels(self) -> List[ChannelModel]:
+    async def get_all_channels(self) -> List[ChannelEntity]:
         """Get all channels from the database"""
         session = await self._get_session()
         try:
@@ -156,7 +74,7 @@ class ChannelRepositoryImpl(ChannelRepository):
             if session != self.session_or_service:
                 await session.close()
     
-    async def get_channel_by_id(self, channel_id: int) -> Optional[ChannelModel]:
+    async def get_channel_by_id(self, channel_id: int) -> Optional[ChannelEntity]:
         """Get a channel by its database ID"""
         session = await self._get_session()
         try:
@@ -166,7 +84,7 @@ class ChannelRepositoryImpl(ChannelRepository):
             if session != self.session_or_service:
                 await session.close()
     
-    async def get_channel_by_discord_id(self, discord_id: int) -> Optional[ChannelModel]:
+    async def get_channel_by_discord_id(self, discord_id: int) -> Optional[ChannelEntity]:
         """Get a channel by its Discord ID"""
         session = await self._get_session()
         try:
@@ -179,7 +97,7 @@ class ChannelRepositoryImpl(ChannelRepository):
             if session != self.session_or_service:
                 await session.close()
     
-    async def get_channel_by_name_and_category(self, name: str, category_id: int) -> Optional[ChannelModel]:
+    async def get_channel_by_name_and_category(self, name: str, category_id: int) -> Optional[ChannelEntity]:
         """Get a channel by its name and category ID"""
         session = await self._get_session()
         try:
@@ -196,7 +114,7 @@ class ChannelRepositoryImpl(ChannelRepository):
             if session != self.session_or_service:
                 await session.close()
     
-    async def get_channels_by_category_id(self, category_id: int) -> List[ChannelModel]:
+    async def get_channels_by_category_id(self, category_id: int) -> List[ChannelEntity]:
         """Get all channels in a specific category"""
         session = await self._get_session()
         try:
@@ -210,7 +128,7 @@ class ChannelRepositoryImpl(ChannelRepository):
             if session != self.session_or_service:
                 await session.close()
     
-    async def get_channels_by_category_discord_id(self, category_discord_id: int) -> List[ChannelModel]:
+    async def get_channels_by_category_discord_id(self, category_discord_id: int) -> List[ChannelEntity]:
         """Get all channels in a specific Discord category"""
         session = await self._get_session()
         try:
@@ -224,7 +142,7 @@ class ChannelRepositoryImpl(ChannelRepository):
             if session != self.session_or_service:
                 await session.close()
     
-    async def save_channel(self, channel: ChannelModel) -> ChannelModel:
+    async def save_channel(self, channel: ChannelEntity) -> ChannelEntity:
         """Save a channel to the database (create or update)"""
         session = await self._get_session()
         try:
@@ -281,41 +199,35 @@ class ChannelRepositoryImpl(ChannelRepository):
             if session != self.session_or_service:
                 await session.close()
     
-    async def create_from_template(self, template: ChannelTemplate, category_id: int) -> ChannelModel:
+    async def create_from_template(self, template: ChannelEntity, category_id: Optional[int] = None, 
+                                 category_discord_id: Optional[int] = None) -> ChannelEntity:
         """Create a new channel from a template"""
-        session = await self._get_session()
-        close_session = session != self.session_or_service
-        
+        session = self.session_or_service
         try:
-            # Convert template to model
-            model = template.to_channel_model(category_id)
-            
-            # Convert model to entity
-            entity = self._model_to_entity(model)
-            
-            # Check if we need to manage the transaction or not
-            if session.in_transaction():
-                # A transaction is already active, just add the entity
-                session.add(entity)
-                await session.flush()
-            else:
-                # No active transaction, start one
-                async with session.begin():
-                    session.add(entity)
-                    await session.flush()
-            
-            # Update the ID
-            model.id = entity.id
-            
-            return model
+            new_channel = ChannelEntity(
+                name=template.name,
+                type=template.type,
+                description=template.description,
+                category_id=category_id,
+                category_discord_id=category_discord_id,
+                position=template.position,
+                permission_level=template.permission_level,
+                is_enabled=True,
+                is_created=False,
+                nsfw=template.nsfw,
+                slowmode_delay=template.slowmode_delay,
+                topic=template.topic,
+                thread_config=template.thread_config,
+                metadata_json=template.metadata_json
+            )
+            session.add(new_channel)
+            await session.commit()
+            return new_channel
         except Exception as e:
             logger.error(f"Error creating channel from template: {e}")
             raise
-        finally:
-            if close_session:
-                await session.close()
     
-    async def get_enabled_channels(self) -> List[ChannelModel]:
+    async def get_enabled_channels(self) -> List[ChannelEntity]:
         """Get all enabled channels"""
         session = await self._get_session()
         try:
@@ -329,7 +241,7 @@ class ChannelRepositoryImpl(ChannelRepository):
             if session != self.session_or_service:
                 await session.close()
     
-    async def get_channels_by_type(self, channel_type: str) -> List[ChannelModel]:
+    async def get_channels_by_type(self, channel_type: str) -> List[ChannelEntity]:
         """Get all channels of a specific type"""
         session = await self._get_session()
         try:
@@ -343,7 +255,7 @@ class ChannelRepositoryImpl(ChannelRepository):
             if session != self.session_or_service:
                 await session.close()
     
-    async def get_channel_mapping(self) -> Dict[str, ChannelModel]:
+    async def get_channel_mapping(self) -> Dict[str, ChannelEntity]:
         """Get a mapping of channel names to channel models"""
         session = await self._get_session()
         try:
@@ -353,7 +265,7 @@ class ChannelRepositoryImpl(ChannelRepository):
             if session != self.session_or_service:
                 await session.close()
 
-    async def create_channel(self, channel: ChannelModel) -> ChannelModel:
+    async def create_channel(self, channel: ChannelEntity) -> ChannelEntity:
         """Create a new channel"""
         session = await self._get_session()
         try:

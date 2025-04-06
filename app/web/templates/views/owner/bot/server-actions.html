@@ -1,0 +1,61 @@
+{% macro server_action_buttons(server) %}
+<div class="btn-group">
+    {% if server.access_status == 'PENDING' %}
+        <button class="btn btn-sm btn-approve" onclick="updateAccess('{{ server.guild_id }}', 'APPROVED')" title="Approve">
+            <i class="bi bi-check"></i>
+        </button>
+        <button class="btn btn-sm btn-deny" onclick="updateAccess('{{ server.guild_id }}', 'DENIED')" title="Deny">
+            <i class="bi bi-x"></i>
+        </button>
+    {% elif server.access_status == 'APPROVED' %}
+        <button class="btn btn-sm btn-block" onclick="updateAccess('{{ server.guild_id }}', 'BLOCKED')" title="Block">
+            <i class="bi bi-shield-x"></i>
+        </button>
+    {% elif server.access_status == 'BLOCKED' %}
+        <button class="btn btn-sm btn-approve" onclick="updateAccess('{{ server.guild_id }}', 'APPROVED')" title="Unblock">
+            <i class="bi bi-shield-check"></i>
+        </button>
+    {% endif %}
+    
+    <button class="btn btn-sm btn-details" onclick="showServerDetails('{{ server.guild_id }}')" title="Details">
+        <i class="bi bi-info-circle"></i>
+    </button>
+    
+    {% if server.access_status != 'PENDING' %}
+        {% if server.is_joined %}
+            <button class="btn btn-sm btn-deny" onclick="leaveServer('{{ server.guild_id }}')" title="Leave Server">
+                <i class="bi bi-box-arrow-left"></i>
+            </button>
+        {% else %}
+            <button class="btn btn-sm btn-approve" onclick="joinServer('{{ server.guild_id }}')" title="Join Server">
+                <i class="bi bi-box-arrow-in-right"></i>
+            </button>
+        {% endif %}
+    {% endif %}
+</div>
+{% endmacro %}
+
+{% macro server_status_badge(status) %}
+    {% if status == 'PENDING' %}
+        <span class="badge bg-warning">Pending</span>
+    {% elif status == 'APPROVED' %}
+        <span class="badge bg-success">Approved</span>
+    {% elif status == 'DENIED' %}
+        <span class="badge bg-danger">Denied</span>
+    {% elif status == 'BLOCKED' %}
+        <span class="badge bg-dark">Blocked</span>
+    {% else %}
+        <span class="badge bg-secondary">Unknown</span>
+    {% endif %}
+{% endmacro %}
+
+{% macro server_connection_status(server) %}
+<div class="connection-status">
+    {% if server.is_connected %}
+        <span class="status-indicator online" title="Connected"></span>
+    {% else %}
+        <span class="status-indicator offline" title="Disconnected"></span>
+    {% endif %}
+    {{ server.connection_status or 'Unknown' }}
+</div>
+{% endmacro %} 

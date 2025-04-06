@@ -45,6 +45,78 @@
     gap: var(--spacing-sm);
 }
 
+/* Server List Table */
+.server-list-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.server-list-table th {
+    background-color: var(--bg-tertiary);
+    padding: var(--spacing-md);
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.server-list-table td {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.server-list-table tr:hover {
+    background-color: var(--bg-tertiary);
+}
+
+/* Server Actions */
+.server-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+/* Server Details Modal */
+.server-details-modal .modal-content {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.server-details-modal .modal-header {
+    background-color: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.server-details-modal .modal-body {
+    padding: var(--spacing-lg);
+}
+
+/* Server Info Grid */
+.server-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.server-info-item {
+    background-color: var(--bg-tertiary);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.server-info-label {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: var(--spacing-xs);
+}
+
+.server-info-value {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
 /* Bot Configuration Layout */
 .bot-config-section {
     margin-bottom: var(--spacing-xl);
@@ -94,5 +166,13 @@
     
     .server-section {
         margin-bottom: var(--spacing-md);
+    }
+
+    .server-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .server-actions {
+        flex-direction: column;
     }
 }

@@ -3,8 +3,7 @@ from app.web.application.services.auth.dependencies import get_current_user
 from app.web.domain.auth.permissions import Role, require_role
 from app.shared.interface.logging.api import get_web_logger
 from app.shared.infrastructure.database.session import session_context
-from app.shared.infrastructure.models import GuildEntity
-from app.shared.domain.models.discord.guild_model import GuildAccessStatus
+from app.shared.infrastructure.models.discord.entities.guild_entity import GuildEntity
 from app.shared.infrastructure.integration.bot_connector import get_bot_connector
 from typing import Dict, Optional
 from sqlalchemy import select
@@ -346,7 +345,12 @@ class BotControlController:
                         "access_reviewed_at": guild.access_reviewed_at,
                         "access_reviewed_by": guild.access_reviewed_by,
                         "access_notes": guild.access_notes,
-                        "icon_url": guild.icon_url
+                        "icon_url": guild.icon_url,
+                        "enable_commands": guild.enable_commands,
+                        "enable_logging": guild.enable_logging,
+                        "enable_automod": guild.enable_automod,
+                        "enable_welcome": guild.enable_welcome,
+                        "is_active": guild.is_active
                     })
                 
                 logger.debug(f"Current user: {current_user}")

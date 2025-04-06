@@ -7,7 +7,7 @@ import asyncio
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
-from app.shared.domain.models import DashboardModel
+from app.shared.infrastructure.models.dashboard.entities.dashboard_entity import DashboardEntity
 from app.shared.domain.repositories import DashboardRepository
 from app.bot.infrastructure.factories.component_registry import ComponentRegistry
 from app.bot.infrastructure.factories.data_source_registry import DataSourceRegistry
@@ -26,18 +26,18 @@ class DashboardService:
         self.component_registry = component_registry
         self.data_source_registry = data_source_registry
         
-    async def get_dashboard(self, dashboard_id: str) -> Optional[DashboardModel]:
+    async def get_dashboard(self, dashboard_id: str) -> Optional[DashboardEntity]:
         """Get a dashboard by ID."""
         return await self.repository.get_by_id(dashboard_id)
     
-    async def get_dashboard_by_channel(self, channel_id: int) -> Optional[DashboardModel]:
+    async def get_dashboard_by_channel(self, channel_id: int) -> Optional[DashboardEntity]:
         """Get a dashboard for a channel."""
         return await self.repository.get_by_channel_id(channel_id)
     
-    async def create_dashboard(self, dashboard_data: Dict[str, Any]) -> DashboardModel:
+    async def create_dashboard(self, dashboard_data: Dict[str, Any]) -> DashboardEntity:
         """Create a new dashboard from configuration."""
         # Convert raw data to domain model
-        dashboard = self._create_dashboard_model(dashboard_data)
+        dashboard = self._create_dashboard_entity(dashboard_data)
         
         # Save to repository
         saved_dashboard = await self.repository.save(dashboard)
@@ -45,7 +45,7 @@ class DashboardService:
         logger.info(f"Created new dashboard: {saved_dashboard.id} ({saved_dashboard.title})")
         return saved_dashboard
     
-    async def update_dashboard(self, dashboard_id: str, dashboard_data: Dict[str, Any]) -> Optional[DashboardModel]:
+    async def update_dashboard(self, dashboard_id: str, dashboard_data: Dict[str, Any]) -> Optional[DashboardEntity]:
         """Update an existing dashboard."""
         dashboard = await self.repository.get_by_id(dashboard_id)
         if not dashboard:
@@ -73,7 +73,7 @@ class DashboardService:
             logger.info(f"Deleted dashboard: {dashboard_id}")
         return result
     
-    async def get_all_dashboards(self) -> List[DashboardModel]:
+    async def get_all_dashboards(self) -> List[DashboardEntity]:
         """Get all dashboards."""
         try:
             return await self.repository.get_all_dashboards()
@@ -103,14 +103,14 @@ class DashboardService:
                 
         return data
     
-    def _create_dashboard_model(self, data: Dict[str, Any]) -> DashboardModel:
-        """Convert dictionary data to a DashboardModel."""
-        from app.shared.domain.models import (
-            DashboardModel, ComponentConfig, DataSourceConfig, LayoutItem, ComponentType
+    def _create_dashboard_entity(self, data: Dict[str, Any]) -> DashboardEntity:
+        """Convert dictionary data to a DashboardEntity."""
+        from app.shared.infrastructure.models.dashboard.entities import (
+            DashboardEntity, ComponentConfig, DataSourceConfig, LayoutItem, ComponentType
         )
         
         # Create base dashboard
-        dashboard = DashboardModel(
+        dashboard = DashboardEntity(
             id=data.get('id'),
             type=data.get('type'),
             title=data.get('title'),

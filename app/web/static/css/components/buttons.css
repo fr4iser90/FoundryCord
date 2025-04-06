@@ -22,6 +22,7 @@
 .btn-primary:hover {
     background-color: #5c6fb1;
     color: white;
+    transform: translateY(-1px);
 }
 
 .btn-secondary {
@@ -32,6 +33,7 @@
 .btn-secondary:hover {
     background-color: #43464d;
     color: white;
+    transform: translateY(-1px);
 }
 
 .btn-success {
@@ -42,6 +44,7 @@
 .btn-success:hover {
     background-color: #3ca374;
     color: white;
+    transform: translateY(-1px);
 }
 
 .btn-danger {
@@ -52,6 +55,7 @@
 .btn-danger:hover {
     background-color: #d84040;
     color: white;
+    transform: translateY(-1px);
 }
 
 .btn-warning {
@@ -62,6 +66,52 @@
 .btn-warning:hover {
     background-color: #e19517;
     color: var(--bg-tertiary);
+    transform: translateY(-1px);
+}
+
+/* Action Button Variants */
+.btn-approve {
+    background-color: var(--success);
+    color: white;
+    border-color: var(--success);
+}
+
+.btn-approve:hover {
+    background-color: #3ca374;
+    transform: translateY(-1px);
+}
+
+.btn-deny {
+    background-color: var(--warning);
+    color: var(--warning-text);
+    border-color: var(--warning);
+}
+
+.btn-deny:hover {
+    background-color: #e19517;
+    transform: translateY(-1px);
+}
+
+.btn-block {
+    background-color: var(--danger);
+    color: white;
+    border-color: var(--danger);
+}
+
+.btn-block:hover {
+    background-color: #d84040;
+    transform: translateY(-1px);
+}
+
+.btn-details {
+    background-color: var(--info);
+    color: white;
+    border-color: var(--info);
+}
+
+.btn-details:hover {
+    background-color: #4752c4;
+    transform: translateY(-1px);
 }
 
 /* Button Sizes */
@@ -81,6 +131,33 @@
     opacity: 0.65;
     pointer-events: none;
     cursor: not-allowed;
+}
+
+/* Loading State */
+.btn.loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: button-loading-spinner 0.6s linear infinite;
+}
+
+@keyframes button-loading-spinner {
+    from {
+        transform: rotate(0turn);
+    }
+    to {
+        transform: rotate(1turn);
+    }
 }
 
 /* Button Groups */
@@ -170,4 +247,24 @@
 .btn-link:hover {
     color: #5c6fb1;
     text-decoration: underline;
+}
+
+/* Status Indicators */
+.btn .status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+
+.btn .status-indicator.online {
+    background-color: var(--success);
+}
+
+.btn .status-indicator.offline {
+    background-color: var(--danger);
+}
+
+.btn .status-indicator.pending {
+    background-color: var(--warning);
 } 

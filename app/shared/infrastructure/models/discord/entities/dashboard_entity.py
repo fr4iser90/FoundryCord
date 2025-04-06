@@ -1,12 +1,13 @@
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any
 from datetime import datetime
+from app.shared.infrastructure.models.discord.enums.dashboard import DashboardType, ComponentType
 
 @dataclass
-class DashboardComponentModel:
+class DashboardComponentModelEntity:
     """Domain model for dashboard components"""
     id: Optional[int] = None
-    component_type: str = ""
+    component_type: ComponentType = ComponentType.CUSTOM
     component_name: str = ""
     custom_id: Optional[str] = None
     position: int = 0
@@ -15,10 +16,10 @@ class DashboardComponentModel:
     data_source_id: Optional[str] = None
 
 @dataclass
-class DashboardModel:
+class DashboardModelEntity:
     """Domain model for dashboards"""
     # Required parameters first (no defaults)
-    dashboard_type: str
+    dashboard_type: DashboardType
     name: str
     # Optional parameters next (with defaults)
     id: Optional[int] = None
@@ -28,7 +29,7 @@ class DashboardModel:
     is_active: bool = True
     update_frequency: int = 300  # In seconds
     config: Dict[str, Any] = None
-    components: List[DashboardComponentModel] = None
+    components: List[DashboardComponentModelEntity] = None
     
     def __post_init__(self):
         if self.components is None:

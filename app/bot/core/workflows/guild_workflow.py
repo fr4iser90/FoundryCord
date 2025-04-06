@@ -8,7 +8,7 @@ from app.shared.infrastructure.models.discord import GuildEntity
 from app.shared.infrastructure.models.discord import DiscordGuildUserEntity
 from app.shared.domain.repositories.discord import GuildConfigRepository
 from app.shared.infrastructure.repositories.discord import GuildConfigRepositoryImpl
-from app.shared.domain.models.discord.guild_model import GuildAccessStatus
+from app.shared.domain.models.discord.enums import GuildAccessStatus
 from sqlalchemy import select
 from datetime import datetime
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow

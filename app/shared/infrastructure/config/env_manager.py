@@ -80,11 +80,11 @@ class EnvManager:
             
         try:
             # Import here to avoid circular imports
-            from app.shared.infrastructure.models import Config
+            from app.shared.infrastructure.models.config.entities.config_entity import ConfigEntity
             
             async with self._db_session() as session:
                 # Get all configuration entries
-                result = await session.execute(select(Config))
+                result = await session.execute(select(ConfigEntity))
                 configs = result.scalars().all()
                 
                 if not configs:
@@ -216,12 +216,12 @@ class EnvManager:
         if self._db_session:
             try:
                 # Import here to avoid circular imports
-                from app.shared.infrastructure.models import Config
+                from app.shared.infrastructure.models.config.entities.config_entity import ConfigEntity
                 
                 async with self._db_session() as session:
                     # Check if the key already exists
                     result = await session.execute(
-                        select(Config).where(Config.key == key)
+                        select(ConfigEntity).where(ConfigEntity.key == key)
                     )
                     config = result.scalars().first()
                     
@@ -233,7 +233,7 @@ class EnvManager:
                         config.value = str_value
                     else:
                         # Create new entry
-                        config = Config(key=key, value=str_value)
+                        config = ConfigEntity(key=key, value=str_value)
                         session.add(config)
                     
                     await session.commit()
@@ -270,7 +270,7 @@ async def configure_database_async():
             )
             
             # Register Session for app-wide use
-            from app.shared.domain.models import Base
+            from app.shared.infrastructure.models.base import Base
             Base.metadata.bind = engine
             
             return engine, async_session_factory

@@ -5,7 +5,7 @@ from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
 # Import domain models
-from app.shared.domain.models import DashboardModel, ComponentConfig
+from app.shared.infrastructure.models.dashboard.entities.dashboard_entity import DashboardEntity
 from app.shared.domain.repositories import DashboardRepository
 
 # Import debug components
@@ -87,7 +87,7 @@ class WorkflowFactory:
                 except Exception as e:
                     logger.error(f"Error loading dashboards: {e}")
                     
-            async def create_dashboard_controller(self, dashboard: DashboardModel):
+            async def create_dashboard_controller(self, dashboard: DashboardEntity):
                 """Create a controller for a dashboard model"""
                 try:
                     # Debug logging
