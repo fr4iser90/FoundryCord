@@ -25,7 +25,7 @@ class BotControlView:
             await require_role(current_user, Role.OWNER)
             
             return templates.TemplateResponse(
-                "pages/bot/control.html",
+                "views/bot/control.html",
                 {
                     "request": request, 
                     "user": current_user,
@@ -34,7 +34,7 @@ class BotControlView:
             )
         except Exception as e:
             return templates.TemplateResponse(
-                "pages/errors/403.html",
+                "views/errors/403.html",
                 {"request": request, "user": current_user, "error": str(e)}
             )
 

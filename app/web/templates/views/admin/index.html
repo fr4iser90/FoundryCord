@@ -1,6 +1,10 @@
-{% extends "layouts/admin_layout.html" %}
+{% extends "layouts/base_layout.html" %}
 
 {% block title %}Admin Dashboard - HomeLab Discord Bot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/views/admin/dashboard.css') }}">
+{% endblock %}
 
 {% block content %}
 <div class="admin-overview">
@@ -83,7 +87,4 @@
         </div>
     </div>
 </div>
-
-{% block extra_css %}
-{% endblock %}
 {% endblock %}

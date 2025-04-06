@@ -12,12 +12,21 @@
             <span>Guild Users</span>
         </a>
     </li>
-    {% if request.session.user.role == "OWNER" %}
+    {% if request.session.user.role == "ADMIN" or request.session.user.role == "OWNER" %}
     <li class="nav-item">
         <a class="nav-link {% if request.url.path.startswith('/admin') %}active{% endif %}" href="/admin/users">
             <i class="bi bi-shield-lock"></i>
             <span>Admin</span>
         </a>
+    </li>
+    {% endif %}
+    {% if request.session.user.role == "OWNER" %}
+    <li class="nav-item">
+        <a class="nav-link {% if request.url.path.startswith('/owner') %}active{% endif %}" href="/owner/bot">
+            <i class="bi bi-robot"></i>
+            <span>Bot Control</span>
+        </a>
+    </li>
     </li>
     {% endif %}
 </ul> 

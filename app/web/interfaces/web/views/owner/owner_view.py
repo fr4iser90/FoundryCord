@@ -41,7 +41,7 @@ class OwnerView:
             servers = await list_servers(current_user)
             
             return templates.TemplateResponse(
-                "pages/owner/bot_control.html",
+                "views/owner/bot_control.html",
                 {
                     "request": request,
                     "user": current_user,
@@ -54,7 +54,7 @@ class OwnerView:
         except HTTPException as e:
             logger.error(f"Access denied to bot control: {e}")
             return templates.TemplateResponse(
-                "pages/errors/403.html",
+                "views/errors/403.html",
                 {
                     "request": request,
                     "user": current_user,
@@ -65,7 +65,7 @@ class OwnerView:
         except Exception as e:
             logger.error(f"Error in bot control view: {e}")
             return templates.TemplateResponse(
-                "pages/errors/500.html",
+                "views/errors/500.html",
                 {
                     "request": request,
                     "user": current_user,
@@ -87,7 +87,7 @@ class OwnerView:
             servers = await list_servers(current_user)
             
             return templates.TemplateResponse(
-                "pages/owner/permissions.html",
+                "views/owner/permissions.html",
                 {
                     "request": request,
                     "user": current_user,
@@ -99,7 +99,7 @@ class OwnerView:
         except HTTPException as e:
             logger.error(f"Access denied to permissions: {e}")
             return templates.TemplateResponse(
-                "pages/errors/403.html",
+                "views/errors/403.html",
                 {
                     "request": request,
                     "user": current_user,
@@ -110,7 +110,7 @@ class OwnerView:
         except Exception as e:
             logger.error(f"Error in permissions view: {e}")
             return templates.TemplateResponse(
-                "pages/errors/500.html",
+                "views/errors/500.html",
                 {
                     "request": request,
                     "user": current_user,
@@ -132,7 +132,7 @@ class OwnerView:
             logs = await get_system_logs(current_user)
             
             return templates.TemplateResponse(
-                "pages/owner/logs.html",
+                "views/owner/logs.html",
                 {
                     "request": request,
                     "user": current_user,
@@ -144,7 +144,7 @@ class OwnerView:
         except HTTPException as e:
             logger.error(f"Access denied to logs: {e}")
             return templates.TemplateResponse(
-                "pages/errors/403.html",
+                "views/errors/403.html",
                 {
                     "request": request,
                     "user": current_user,
@@ -155,7 +155,7 @@ class OwnerView:
         except Exception as e:
             logger.error(f"Error in logs view: {e}")
             return templates.TemplateResponse(
-                "pages/errors/500.html",
+                "views/errors/500.html",
                 {
                     "request": request,
                     "user": current_user,

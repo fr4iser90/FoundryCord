@@ -44,7 +44,7 @@ class AdminView:
             user = request.session.get("user")
             if not user or user.get("role") not in ["OWNER", "ADMIN"]:
                 return templates.TemplateResponse(
-                    "pages/errors/403.html",
+                    "views/errors/403.html",
                     {"request": request, "user": user, "error": "Insufficient permissions"}
                 )
             
@@ -74,7 +74,7 @@ class AdminView:
                 logger.warning(f"Could not establish database connection: {session_err}")
             
             return templates.TemplateResponse(
-                "pages/admin/index.html",
+                "views/admin/index.html",
                 {
                     "request": request, 
                     "user": user,
@@ -85,7 +85,7 @@ class AdminView:
         except Exception as e:
             logger.error(f"Error in admin dashboard: {e}")
             return templates.TemplateResponse(
-                "pages/errors/403.html",
+                "views/errors/403.html",
                 {"request": request, "user": user, "error": str(e)}
             )
     
@@ -95,7 +95,7 @@ class AdminView:
             user = request.session.get("user")
             if not user or user.get("role") not in ["OWNER"]:
                 return templates.TemplateResponse(
-                    "pages/errors/403.html",
+                    "views/errors/403.html",
                     {"request": request, "user": user, "error": "Insufficient permissions"}
                 )
             
@@ -120,7 +120,7 @@ class AdminView:
             }
             
             return templates.TemplateResponse(
-                "pages/admin/system_status.html",
+                "views/admin/system_status.html",
                 {
                     "request": request, 
                     "user": user,
@@ -131,7 +131,7 @@ class AdminView:
         except Exception as e:
             logger.error(f"Error in system status: {e}")
             return templates.TemplateResponse(
-                "pages/errors/403.html",
+                "views/errors/403.html",
                 {"request": request, "user": user, "error": str(e)}
             )
 
@@ -141,7 +141,7 @@ class AdminView:
             user = request.session.get("user")
             if not user or user.get("role") not in ["OWNER", "ADMIN"]:
                 return templates.TemplateResponse(
-                    "pages/errors/403.html",
+                    "views/errors/403.html",
                     {"request": request, "user": user, "error": "Insufficient permissions"}
                 )
             
@@ -174,7 +174,7 @@ class AdminView:
             ]
             
             return templates.TemplateResponse(
-                "pages/admin/logs.html",
+                "views/admin/logs.html",
                 {
                     "request": request,
                     "user": user,
@@ -185,7 +185,7 @@ class AdminView:
         except Exception as e:
             logger.error(f"Error in logs view: {e}")
             return templates.TemplateResponse(
-                "pages/errors/403.html",
+                "views/errors/403.html",
                 {"request": request, "user": user, "error": str(e)}
             )
 

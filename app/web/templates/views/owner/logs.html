@@ -1,0 +1,109 @@
+{% extends "layouts/base_layout.html" %}
+
+{% block title %}System Logs - HomeLab Discord Bot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/pages/owner/logs.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="logs-container">
+    <div class="page-header">
+        <h1>System Logs</h1>
+        <p class="text-muted">View and analyze system logs</p>
+    </div>
+
+    <!-- Log Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>Log Filters</h2>
+        </div>
+        <div class="card-body">
+            <form id="logFilterForm" class="row g-3">
+                <div class="col-md-3">
+                    <label for="logLevel" class="form-label">Log Level</label>
+                    <select class="form-select" id="logLevel" name="level">
+                        <option value="all">All Levels</option>
+                        <option value="debug">Debug</option>
+                        <option value="info">Info</option>
+                        <option value="warning">Warning</option>
+                        <option value="error">Error</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="component" class="form-label">Component</label>
+                    <select class="form-select" id="component" name="component">
+                        <option value="all">All Components</option>
+                        <option value="bot">Bot</option>
+                        <option value="web">Web</option>
+                        <option value="database">Database</option>
+                        <option value="discord">Discord</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="startDate" class="form-label">Start Date</label>
+                    <input type="datetime-local" class="form-control" id="startDate" name="start_date">
+                </div>
+                <div class="col-md-3">
+                    <label for="endDate" class="form-label">End Date</label>
+                    <input type="datetime-local" class="form-control" id="endDate" name="end_date">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    <button type="button" class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+                    <button type="button" class="btn btn-success" onclick="downloadLogs()">
+                        <i class="bi bi-download"></i> Download Logs
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Log Display -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2>Log Entries</h2>
+            <div class="btn-group">
+                <button class="btn btn-outline-secondary" onclick="clearLogs()">
+                    <i class="bi bi-trash"></i> Clear Display
+                </button>
+                <button class="btn btn-outline-primary" onclick="toggleAutoScroll()">
+                    <i class="bi bi-arrow-down-circle"></i> Auto-scroll
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="log-container" id="logContainer">
+                {% for log in logs %}
+                <div class="log-entry {{ log.level.lower() }}">
+                    <span class="timestamp">{{ log.timestamp }}</span>
+                    <span class="level">{{ log.level }}</span>
+                    <span class="component">[{{ log.component }}]</span>
+                    <span class="message">{{ log.message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Entry Modal -->
+<div class="modal fade" id="logDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Log Entry Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="logDetail"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', path='js/pages/owner/logs.js') }}"></script>
+{% endblock %}

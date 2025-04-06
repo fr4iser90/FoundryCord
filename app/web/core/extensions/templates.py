@@ -63,7 +63,7 @@ class TemplatesExtension:
         
     def _verify_error_templates(self):
         """Verify that all required error templates exist"""
-        error_dir = self._templates_dir / "pages" / "errors"
+        error_dir = self._templates_dir / "views" / "errors"
         if not error_dir.exists():
             logger.error(f"Error templates directory not found: {error_dir}")
             raise FileNotFoundError(f"Error templates directory not found: {error_dir}")

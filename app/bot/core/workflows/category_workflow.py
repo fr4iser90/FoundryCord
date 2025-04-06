@@ -5,7 +5,7 @@ from typing import Dict, Optional, List
 from sqlalchemy import text
 import traceback
 
-from app.bot.core.workflows.base_workflow import BaseWorkflow
+from app.bot.core.workflows.base_workflow import BaseWorkflow, WorkflowStatus
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.shared.interface.logging.api import get_bot_logger
 from app.shared.infrastructure.database.session.context import session_context
@@ -20,8 +20,7 @@ class CategoryWorkflow(BaseWorkflow):
     """Workflow for category setup and management"""
     
     def __init__(self, database_workflow: DatabaseWorkflow):
-        super().__init__()
-        self.name = "category"
+        super().__init__("category")
         self.database_workflow = database_workflow
         self.category_repository = None
         self.category_service = None
@@ -29,9 +28,12 @@ class CategoryWorkflow(BaseWorkflow):
         
         # Define dependencies
         self.add_dependency("database")
+        
+        # Categories require guild approval
+        self.requires_guild_approval = True
     
-    async def initialize(self):
-        """Initialize the category workflow"""
+    async def initialize(self) -> bool:
+        """Initialize the category workflow globally"""
         try:
             # Verify categories exist using direct SQL instead of ORM to avoid mapping issues
             async with session_context() as session:
@@ -98,6 +100,43 @@ class CategoryWorkflow(BaseWorkflow):
             logger.error(f"Error initializing category workflow: {e}")
             traceback.print_exc()
             return False
+            
+    async def initialize_for_guild(self, guild_id: str) -> bool:
+        """Initialize workflow for a specific guild"""
+        try:
+            # Update status to initializing
+            self.guild_status[guild_id] = WorkflowStatus.INITIALIZING
+            
+            # Get the guild
+            if not hasattr(self, 'bot') or not self.bot:
+                logger.error("Bot instance not available")
+                self.guild_status[guild_id] = WorkflowStatus.FAILED
+                return False
+                
+            guild = self.bot.get_guild(int(guild_id))
+            if not guild:
+                logger.error(f"Could not find guild {guild_id}")
+                self.guild_status[guild_id] = WorkflowStatus.FAILED
+                return False
+            
+            # Set up categories
+            categories = await self.setup_categories(guild)
+            if not categories:
+                logger.error(f"Failed to set up categories for guild {guild_id}")
+                self.guild_status[guild_id] = WorkflowStatus.FAILED
+                return False
+                
+            # Sync with Discord
+            await self.sync_with_discord(guild)
+            
+            # Mark as active
+            self.guild_status[guild_id] = WorkflowStatus.ACTIVE
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error initializing category workflow for guild {guild_id}: {e}")
+            self.guild_status[guild_id] = WorkflowStatus.FAILED
+            return False
     
     def get_category_repository(self):
         """Get the category repository"""
@@ -128,3 +167,25 @@ class CategoryWorkflow(BaseWorkflow):
             
         logger.info(f"Syncing categories with Discord for guild: {guild.name}")
         await self.category_setup_service.sync_with_discord(guild)
+        
+    async def cleanup_guild(self, guild_id: str) -> None:
+        """Cleanup resources for a specific guild"""
+        logger.info(f"Cleaning up category workflow for guild {guild_id}")
+        await super().cleanup_guild(guild_id)
+        
+        # Clear any cached data for this guild
+        if self.category_setup_service and hasattr(self.category_setup_service, 'categories_cache'):
+            # Remove any guild-specific categories from cache
+            self.category_setup_service.categories_cache = {
+                name: data for name, data in self.category_setup_service.categories_cache.items()
+                if not data.get('guild_id') or data.get('guild_id') != guild_id
+            }
+            
+    async def cleanup(self) -> None:
+        """Cleanup all resources"""
+        logger.info("Cleaning up category workflow")
+        await super().cleanup()
+        
+        # Clear all caches
+        if self.category_setup_service:
+            self.category_setup_service.categories_cache.clear()

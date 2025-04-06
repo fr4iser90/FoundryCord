@@ -26,7 +26,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     # Handle web requests
     try:
         templates = templates_extension()
-        template_path = f"pages/errors/{exc.status_code}.html"
+        template_path = f"views/errors/{exc.status_code}.html"
         
         context = {
             "request": request,
@@ -65,7 +65,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
     try:
         templates = templates_extension()
         return templates.TemplateResponse(
-            "pages/errors/500.html",
+            "views/errors/500.html",
             {
                 "request": request,
                 "error": str(exc),

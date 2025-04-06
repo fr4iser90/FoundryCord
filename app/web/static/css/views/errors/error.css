@@ -1,3 +1,73 @@
+/* Error Pages Layout */
+.error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: var(--spacing-lg);
+    text-align: center;
+}
+
+/* Error-specific colors */
+.error-400 .error-title { color: var(--warning); }
+.error-401 .error-title { color: var(--warning); }
+.error-403 .error-title { color: var(--danger); }
+.error-404 .error-title { color: var(--warning); }
+.error-500 .error-title { color: var(--danger); }
+.error-503 .error-title { color: var(--danger); }
+
+/* Error Icon Layout */
+.error-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin: 0 auto var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+}
+
+/* Error Content */
+.error-title {
+    font-size: 2.8rem;
+    margin-bottom: var(--spacing-md);
+    font-weight: 700;
+}
+
+.error-code {
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
+    opacity: 0.8;
+}
+
+.error-message {
+    font-size: 1.2rem;
+    margin-bottom: var(--spacing-lg);
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.error-details {
+    margin: var(--spacing-lg) 0;
+    padding: var(--spacing-md);
+    font-family: monospace;
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* Error Pages Styling */
 .login-container {
     display: flex;
@@ -25,36 +95,6 @@
     transform: translateY(-5px);
 }
 
-.error-title {
-    font-size: 2.8rem;
-    margin-bottom: var(--spacing-md);
-    font-weight: 700;
-    text-shadow: 0 2px 4px var(--bg-overlay);
-}
-
-.error-code {
-    font-size: 1.3rem;
-    color: var(--text-secondary);
-    margin-bottom: var(--spacing-lg);
-    opacity: 0.8;
-}
-
-.error-message {
-    font-size: 1.2rem;
-    margin-bottom: var(--spacing-lg);
-    color: var(--text-secondary);
-    line-height: 1.6;
-}
-
-.error-details {
-    margin: var(--spacing-lg) 0;
-    padding: var(--spacing-md);
-    background-color: var(--bg-tertiary);
-    border-radius: var(--border-radius);
-    color: var(--text-secondary);
-    font-family: monospace;
-}
-
 /* Error-specific colors with gradients */
 .error-400 .error-icon { background: linear-gradient(135deg, var(--warning), var(--btn-primary-hover)); }
 .error-401 .error-icon { background: linear-gradient(135deg, var(--warning), var(--btn-primary-hover)); }
@@ -62,19 +102,6 @@
 .error-404 .error-icon { background: linear-gradient(135deg, var(--warning), var(--btn-primary-hover)); }
 .error-500 .error-icon { background: linear-gradient(135deg, var(--danger), var(--btn-danger-hover)); }
 .error-503 .error-icon { background: linear-gradient(135deg, var(--danger), var(--btn-danger-hover)); }
-
-/* Error Icon Styling */
-.error-icon {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    margin: 0 auto var(--spacing-lg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2.5rem;
-    color: var(--text-primary);
-}
 
 /* Action Button Styling */
 .error-action {
@@ -96,26 +123,6 @@
     transform: translateY(-2px);
     box-shadow: 0 6px 12px var(--bg-overlay);
 }
-
-/* Animation */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Error-specific colors */
-.error-400 .error-title { color: var(--warning); }
-.error-401 .error-title { color: var(--warning); }
-.error-403 .error-title { color: var(--danger); }
-.error-404 .error-title { color: var(--warning); }
-.error-500 .error-title { color: var(--danger); }
-.error-503 .error-title { color: var(--danger); }
 
 /* btn-discord */
 .btn-discord {

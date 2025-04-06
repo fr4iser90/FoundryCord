@@ -5,7 +5,7 @@ from typing import Dict, Optional, List
 from sqlalchemy import text
 import traceback
 
-from app.bot.core.workflows.base_workflow import BaseWorkflow
+from app.bot.core.workflows.base_workflow import BaseWorkflow, WorkflowStatus
 from app.bot.core.workflows.category_workflow import CategoryWorkflow
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.shared.interface.logging.api import get_bot_logger
@@ -23,8 +23,7 @@ class ChannelWorkflow(BaseWorkflow):
     """Workflow for channel setup and management"""
     
     def __init__(self, category_workflow: CategoryWorkflow, database_workflow: DatabaseWorkflow):
-        super().__init__()
-        self.name = "channel"
+        super().__init__("channel")
         self.category_workflow = category_workflow
         self.database_workflow = database_workflow
         self.channel_repository = None
@@ -33,9 +32,12 @@ class ChannelWorkflow(BaseWorkflow):
         # Define dependencies
         self.add_dependency("category")
         self.add_dependency("database")
+        
+        # Channels require guild approval
+        self.requires_guild_approval = True
     
-    async def initialize(self):
-        """Initialize the channel workflow"""
+    async def initialize(self) -> bool:
+        """Initialize the channel workflow globally"""
         try:
             logger.info("Initializing channel workflow")
             
@@ -129,11 +131,62 @@ class ChannelWorkflow(BaseWorkflow):
             logger.error(f"Channel workflow initialization failed: {e}")
             traceback.print_exc()
             return False
+            
+    async def initialize_for_guild(self, guild_id: str) -> bool:
+        """Initialize workflow for a specific guild"""
+        try:
+            # Update status to initializing
+            self.guild_status[guild_id] = WorkflowStatus.INITIALIZING
+            
+            # Get the guild
+            if not hasattr(self, 'bot') or not self.bot:
+                logger.error("Bot instance not available")
+                self.guild_status[guild_id] = WorkflowStatus.FAILED
+                return False
+                
+            guild = self.bot.get_guild(int(guild_id))
+            if not guild:
+                logger.error(f"Could not find guild {guild_id}")
+                self.guild_status[guild_id] = WorkflowStatus.FAILED
+                return False
+                
+            # Check if channels are enabled for this guild
+            async with session_context() as session:
+                guild_config_repo = GuildConfigRepository(session)
+                config = await guild_config_repo.get_by_guild_id(str(guild.id))
+                
+                if not config or not config.enable_channels:
+                    logger.info(f"Channels are disabled for guild {guild_id}")
+                    self.guild_status[guild_id] = WorkflowStatus.DISABLED
+                    return True
+            
+            # Set up channels
+            channels = await self.setup_channels(guild)
+            if not channels:
+                logger.error(f"Failed to set up channels for guild {guild_id}")
+                self.guild_status[guild_id] = WorkflowStatus.FAILED
+                return False
+                
+            # Sync with Discord
+            await self.sync_with_discord(guild)
+            
+            # Mark as active
+            self.guild_status[guild_id] = WorkflowStatus.ACTIVE
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error initializing channel workflow for guild {guild_id}: {e}")
+            self.guild_status[guild_id] = WorkflowStatus.FAILED
+            return False
     
-    async def cleanup(self):
-        """Cleanup resources used by the channel workflow"""
-        logger.info("Cleaning up channel workflow resources")
-        # Nothing to clean up for now
+    async def cleanup(self) -> None:
+        """Cleanup all resources"""
+        logger.info("Cleaning up channel workflow")
+        await super().cleanup()
+        
+        # Clear channel cache
+        if self.channel_setup_service:
+            self.channel_setup_service.channels_cache.clear()
         
     async def setup_channels(self, guild: nextcord.Guild) -> Dict[str, nextcord.TextChannel]:
         """Set up all channels for the guild"""
@@ -171,3 +224,16 @@ class ChannelWorkflow(BaseWorkflow):
     def get_channel_setup_service(self):
         """Get the channel setup service"""
         return self.channel_setup_service
+        
+    async def cleanup_guild(self, guild_id: str) -> None:
+        """Cleanup resources for a specific guild"""
+        logger.info(f"Cleaning up channel workflow for guild {guild_id}")
+        await super().cleanup_guild(guild_id)
+        
+        # Clear any cached data for this guild
+        if self.channel_setup_service and hasattr(self.channel_setup_service, 'channels_cache'):
+            # Remove any guild-specific channels from cache
+            self.channel_setup_service.channels_cache = {
+                name: data for name, data in self.channel_setup_service.channels_cache.items()
+                if not data.get('guild_id') or data.get('guild_id') != guild_id
+            }

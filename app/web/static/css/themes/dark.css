@@ -1,11 +1,37 @@
 .dark-theme {
     /* Core Colors */
     --primary: #5865F2;
+    --primary-rgb: 88, 101, 242;
     --secondary: #4F545C;
+    --secondary-rgb: 79, 84, 92;
     --success: #57F287;
+    --success-rgb: 87, 242, 135;
     --danger: #ED4245;
+    --danger-rgb: 237, 66, 69;
     --warning: #FEE75C;
+    --warning-rgb: 254, 231, 92;
     --info: #5865F2;
+    --info-rgb: 88, 101, 242;
+
+    /* Card Enhancement Variables */
+    --card-depth-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    --card-depth-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.4);
+    --card-highlight-border: rgba(88, 101, 242, 0.5);
+    --card-highlight-glow: 0 0 8px rgba(88, 101, 242, 0.2);
+    --card-active-bg: #2F3136;
+    --card-active-border: #5865F2;
+    --card-inactive-bg: #202225;
+    --card-inactive-border: #40444B;
+    --card-warning-bg: rgba(254, 231, 92, 0.1);
+    --card-warning-border: #FEE75C;
+    --card-danger-bg: rgba(237, 66, 69, 0.1);
+    --card-danger-border: #ED4245;
+    --card-success-bg: rgba(87, 242, 135, 0.1);
+    --card-success-border: #57F287;
+    --card-info-bg: rgba(88, 101, 242, 0.1);
+    --card-info-border: #5865F2;
+    --card-premium-gradient: linear-gradient(45deg, #FF73FA 0%, #73A9FF 50%, #73FFE6 100%);
+    --card-premium-border: rgba(255, 115, 250, 0.5);
 
     /* Background Colors */
     --bg-primary: #36393F;
@@ -14,6 +40,13 @@
     --bg-accent: #4F545C;
     --bg-floating: #18191C;
     --bg-overlay: rgba(0, 0, 0, 0.3);
+
+    /* Card Specific Colors */
+    --card-bg: #424650;
+    --card-header-bg: #383B42;
+    --card-border: #4C505C;
+    --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    --card-hover-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 
     /* Text Colors */
     --text-normal: #DCDDDE;
@@ -60,12 +93,7 @@
     --footer-link-hover: #5c6fb1;
 
     /* Card Styles */
-    --card-bg: var(--bg-secondary);
-    --card-border: var(--border-color);
-    --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    --card-header-bg: var(--bg-tertiary);
     --card-hover-transform: translateY(-2px);
-    --card-hover-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 
     /* Stats Card */
     --stat-card-bg: var(--bg-secondary);
@@ -83,7 +111,6 @@
     /* Table Styles */
     --table-bg: var(--bg-secondary);
     --table-header-bg: var(--bg-tertiary);
-    --table-border: var(--border-color);
     --table-hover-bg: var(--bg-tertiary);
     --table-stripe-bg: var(--bg-tertiary);
 
@@ -140,6 +167,34 @@
     --scrollbar-bg: var(--bg-tertiary);
     --scrollbar-thumb: var(--text-muted);
     --scrollbar-thumb-hover: var(--text-secondary);
+
+    /* Warning Colors */
+    --warning-bg: rgba(254, 231, 92, 0.1);
+    --warning-text: #fee75c;
+    --warning-border: #ffd700;
+
+    /* Alert Colors */
+    --alert-warning-bg: #2c2a1c;
+    --alert-warning-text: #fee75c;
+    --alert-warning-border: #ffd700;
+    
+    --alert-success-bg: #1e3a28;
+    --alert-success-text: #57F287;
+    --alert-success-border: #3ba55c;
+    
+    --alert-danger-bg: #3a1e1e;
+    --alert-danger-text: #ED4245;
+    --alert-danger-border: #a12d2f;
+    
+    --alert-info-bg: #1e2a3a;
+    --alert-info-text: #5865F2;
+    --alert-info-border: #3c45a5;
+
+    /* Status Colors */
+    --status-active: var(--success);
+    --status-inactive: var(--danger);
+    --status-pending: var(--warning);
+    --status-blocked: var(--bg-tertiary);
 }
 
 /* Theme-specific component styling */
@@ -204,9 +259,8 @@
 
 /* Card styling for dark theme */
 .dark-theme .card {
-    background-color: var(--card-bg);
-    border: 1px solid var(--card-border);
-    box-shadow: var(--card-shadow);
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
 }
 
 .dark-theme .card:hover {
@@ -215,8 +269,13 @@
 }
 
 .dark-theme .card-header {
-    background-color: var(--card-header-bg);
-    border-bottom: 1px solid var(--card-border);
+    background-color: var(--bg-tertiary);
+    border-bottom-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.dark-theme .card-body {
+    background-color: var(--bg-secondary);
 }
 
 .dark-theme .card-title, .dark-theme .card-text {
@@ -247,9 +306,10 @@
 }
 
 /* Form control styling */
-.dark-theme .form-control {
+.dark-theme .form-control,
+.dark-theme .form-select {
     background-color: var(--input-bg);
-    border: 1px solid var(--input-border);
+    border-color: var(--input-border);
     color: var(--input-text);
 }
 
@@ -313,18 +373,67 @@
     background-color: #4e5d94;
 }
 
-/* Tables */
+/* Tables - Stronger selectors for Bootstrap tables */
+.dark-theme table.table,
 .dark-theme .table {
-    background-color: var(--table-bg);
+    color: var(--text-primary) !important;
+    background-color: var(--bg-secondary) !important;
 }
 
+.dark-theme table.table thead th,
 .dark-theme .table thead th {
-    background-color: var(--table-header-bg);
-    border-bottom: 2px solid var(--table-border);
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
 }
 
-.dark-theme .table td {
-    border-color: var(--border-color);
+.dark-theme table.table tbody tr,
+.dark-theme .table tbody tr {
+    background-color: var(--bg-secondary) !important;
+}
+
+.dark-theme table.table-hover tbody tr:hover,
+.dark-theme .table-hover tbody tr:hover {
+    background-color: var(--bg-hover) !important;
+    color: var(--text-primary) !important;
+}
+
+.dark-theme table.table td, 
+.dark-theme table.table th,
+.dark-theme .table td, 
+.dark-theme .table th {
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.dark-theme .table-responsive {
+    background-color: var(--bg-secondary) !important;
+}
+
+/* Bootstrap Overrides for Dark Theme */
+.dark-theme .card {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.dark-theme .card-header {
+    background-color: var(--bg-tertiary) !important;
+    border-bottom-color: var(--border-color) !important;
+}
+
+.dark-theme .card-body {
+    background-color: var(--bg-secondary) !important;
+}
+
+.dark-theme .modal-content {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.dark-theme .form-control {
+    background-color: var(--input-bg) !important;
+    border-color: var(--input-border) !important;
+    color: var(--input-text) !important;
 }
 
 /* Dropdowns */
@@ -398,11 +507,6 @@
     border-bottom: 1px solid var(--widget-border);
 }
 
-/* Table Styles */
-.dark-theme .table tbody tr:hover {
-    background-color: var(--table-hover-bg);
-}
-
 /* Server Selector */
 .dark-theme .server-selector .btn {
     background-color: var(--server-selector-bg);
@@ -442,4 +546,53 @@
 .dark-theme .badge.bg-danger {
     background-color: var(--badge-danger) !important;
     color: white;
+}
+
+/* Critical Bootstrap Overrides */
+.dark-theme .card,
+.dark-theme .card-header,
+.dark-theme .card-body,
+.dark-theme .card-footer,
+.dark-theme .modal-content,
+.dark-theme .modal-header,
+.dark-theme .modal-body,
+.dark-theme .modal-footer,
+.dark-theme .list-group,
+.dark-theme .list-group-item {
+    background-color: var(--card-bg) !important;
+    border-color: var(--card-border) !important;
+    color: var(--text-primary) !important;
+}
+
+.dark-theme .card-header,
+.dark-theme .modal-header {
+    background-color: var(--card-header-bg) !important;
+}
+
+/* Bootstrap Table Overrides */
+.dark-theme .table,
+.dark-theme .table thead th,
+.dark-theme .table tbody tr,
+.dark-theme .table td,
+.dark-theme .table th {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.dark-theme .table thead th {
+    background-color: var(--bg-tertiary) !important;
+}
+
+.dark-theme .table-hover tbody tr:hover {
+    background-color: var(--bg-hover) !important;
+}
+
+/* Form Control Overrides */
+.dark-theme .form-control,
+.dark-theme .form-select,
+.dark-theme .input-group-text {
+    background-color: var(--bg-tertiary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
 }

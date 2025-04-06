@@ -20,6 +20,13 @@ class BotConnector:
         """Register the bot instance with the connector"""
         self.bot_instance = bot
         
+    async def get_bot(self):
+        """Get the registered bot instance"""
+        if not self.bot_instance:
+            logger.error("No bot instance registered with connector")
+            return None
+        return self.bot_instance
+
     async def execute(self, service_name: str, method_name: str, *args, **kwargs) -> Any:
         """Execute a method on a bot service"""
         if not self.bot_instance:
@@ -143,8 +150,62 @@ class BotConnector:
                 "memory": 0,
                 "error": str(e)
             }
+            
+    async def get_bot_config(self, current_user=None):
+        """Get bot configuration"""
+        try:
+            return await self.execute('control', 'get_config')
+        except Exception as e:
+            logger.error(f"Error getting bot config: {e}")
+            # Return default config if service call fails
+            return {
+                "command_prefix": "!",
+                "auto_reconnect": True,
+                "log_level": "INFO",
+                "status_update_interval": 60,
+                "max_reconnect_attempts": 5
+            }
 
-# Add this dependency function for FastAPI
-def get_bot_connector():
-    """Dependency function to get the bot connector instance"""
+    async def start_bot(self, current_user=None):
+        """Start the bot"""
+        try:
+            return await self.execute('control', 'start')
+        except Exception as e:
+            logger.error(f"Error starting bot: {e}")
+            raise
+
+    async def stop_bot(self, current_user=None):
+        """Stop the bot"""
+        try:
+            return await self.execute('control', 'stop')
+        except Exception as e:
+            logger.error(f"Error stopping bot: {e}")
+            raise
+
+    async def restart_bot(self, current_user=None):
+        """Restart the bot"""
+        try:
+            return await self.execute('control', 'restart')
+        except Exception as e:
+            logger.error(f"Error restarting bot: {e}")
+            raise
+
+    async def join_server(self, guild_id: str, current_user=None):
+        """Make bot join a server"""
+        try:
+            return await self.execute('control', 'join_server', guild_id)
+        except Exception as e:
+            logger.error(f"Error joining server: {e}")
+            raise
+
+    async def leave_server(self, guild_id: str, current_user=None):
+        """Make bot leave a server"""
+        try:
+            return await self.execute('control', 'leave_server', guild_id)
+        except Exception as e:
+            logger.error(f"Error leaving server: {e}")
+            raise
+
+async def get_bot_connector():
+    """Async dependency function to get the bot connector instance"""
     return BotConnector()

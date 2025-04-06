@@ -1,5 +1,5 @@
 # app/bot/core/workflows/slash_commands_workflow.py
-from .base_workflow import BaseWorkflow
+from .base_workflow import BaseWorkflow, WorkflowStatus
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 from app.bot.infrastructure.discord.command_sync_service import CommandSyncService
@@ -8,7 +8,14 @@ import inspect
 class SlashCommandsWorkflow(BaseWorkflow):
     """Workflow for registering and syncing slash commands"""
     
-    async def initialize(self):
+    def __init__(self, bot):
+        super().__init__("slash_commands")
+        self.bot = bot
+        
+        # Slash commands don't require guild approval
+        self.requires_guild_approval = False
+    
+    async def initialize(self) -> bool:
         """Initialize slash command registration and syncing"""
         try:
             logger.debug("Starting slash commands workflow initialization")
@@ -34,6 +41,11 @@ class SlashCommandsWorkflow(BaseWorkflow):
             # Start background sync for continuous updates if in development
             if self.bot.env_config.is_development:
                 await self.bot.lifecycle.sync_commands_background()
+                
+            # Mark as active for all guilds since commands are global
+            if hasattr(self, 'bot') and self.bot:
+                for guild in self.bot.guilds:
+                    self.guild_status[str(guild.id)] = WorkflowStatus.ACTIVE
             
             return True
             
@@ -74,16 +86,25 @@ class SlashCommandsWorkflow(BaseWorkflow):
         except Exception as e:
             logger.error(f"Command registration failed: {e}")
             raise
+            
+    async def initialize_for_guild(self, guild_id: str) -> bool:
+        """Initialize workflow for a specific guild"""
+        # Commands are global, so just mark as active
+        self.guild_status[guild_id] = WorkflowStatus.ACTIVE
+        return True
     
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Cleanup command resources"""
         try:
             logger.debug("Starting slash commands cleanup")
-            # No specific cleanup needed for commands usually,
-            # as they are cleaned up when the bot disconnects
-            pass
+            await super().cleanup()
         except Exception as e:
             logger.error(f"Slash commands cleanup failed: {e}")
+            
+    async def cleanup_guild(self, guild_id: str) -> None:
+        """Cleanup resources for a specific guild"""
+        # Commands are global, so just remove status
+        await super().cleanup_guild(guild_id)
 
     async def setup(self, bot):
         """Setup function for the command module"""

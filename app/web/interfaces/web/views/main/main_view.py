@@ -30,7 +30,7 @@ class MainView:
     async def about(self, request: Request):
         """About page"""
         return templates.TemplateResponse(
-            "pages/about.html",
+            "views/about.html",
             {
                 "request": request, 
                 "user": request.session.get("user"),
@@ -41,7 +41,7 @@ class MainView:
     async def help_page(self, request: Request):
         """Help page"""
         return templates.TemplateResponse(
-            "pages/help.html",
+            "views/help.html",
             {
                 "request": request, 
                 "user": request.session.get("user"),

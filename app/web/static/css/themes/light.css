@@ -1,11 +1,37 @@
 .light-theme {
     /* Core Colors */
     --primary: #5865F2;
+    --primary-rgb: 88, 101, 242;
     --secondary: #747F8D;
+    --secondary-rgb: 116, 127, 141;
     --success: #3BA55C;
+    --success-rgb: 59, 165, 92;
     --danger: #ED4245;
+    --danger-rgb: 237, 66, 69;
     --warning: #FAA61A;
+    --warning-rgb: 250, 166, 26;
     --info: #5865F2;
+    --info-rgb: 88, 101, 242;
+
+    /* Card Enhancement Variables */
+    --card-depth-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --card-depth-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --card-highlight-border: rgba(88, 101, 242, 0.5);
+    --card-highlight-glow: 0 0 12px rgba(88, 101, 242, 0.15);
+    --card-active-bg: #FFFFFF;
+    --card-active-border: #5865F2;
+    --card-inactive-bg: #F2F3F5;
+    --card-inactive-border: #E3E5E8;
+    --card-warning-bg: rgba(250, 166, 26, 0.1);
+    --card-warning-border: #FAA61A;
+    --card-danger-bg: rgba(237, 66, 69, 0.1);
+    --card-danger-border: #ED4245;
+    --card-success-bg: rgba(59, 165, 92, 0.1);
+    --card-success-border: #3BA55C;
+    --card-info-bg: rgba(88, 101, 242, 0.1);
+    --card-info-border: #5865F2;
+    --card-premium-gradient: linear-gradient(45deg, #FF73FA 0%, #73A9FF 50%, #73FFE6 100%);
+    --card-premium-border: rgba(255, 115, 250, 0.5);
 
     /* Background Colors */
     --bg-primary: #FFFFFF;
@@ -140,6 +166,34 @@
     --scrollbar-bg: var(--bg-tertiary);
     --scrollbar-thumb: var(--text-muted);
     --scrollbar-thumb-hover: var(--text-secondary);
+
+    /* Warning Colors */
+    --warning-bg: rgba(250, 166, 26, 0.1);
+    --warning-text: #856404;
+    --warning-border: #ffd700;
+
+    /* Alert Colors */
+    --alert-warning-bg: #fff3cd;
+    --alert-warning-text: #856404;
+    --alert-warning-border: #ffeeba;
+    
+    --alert-success-bg: #d4edda;
+    --alert-success-text: #155724;
+    --alert-success-border: #c3e6cb;
+    
+    --alert-danger-bg: #f8d7da;
+    --alert-danger-text: #721c24;
+    --alert-danger-border: #f5c6cb;
+    
+    --alert-info-bg: #d1ecf1;
+    --alert-info-text: #0c5460;
+    --alert-info-border: #bee5eb;
+
+    /* Status Colors */
+    --status-active: var(--success);
+    --status-inactive: var(--danger);
+    --status-pending: var(--warning);
+    --status-blocked: var(--bg-tertiary);
 }
 
 /* Theme-specific component styling */

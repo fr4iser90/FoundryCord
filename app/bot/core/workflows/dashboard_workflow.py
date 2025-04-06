@@ -8,7 +8,7 @@ from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOARD_MAPPINGS
 from app.bot.infrastructure.factories.service.service_resolver import ServiceResolver
-from .base_workflow import BaseWorkflow
+from .base_workflow import BaseWorkflow, WorkflowStatus
 from app.bot.application.services.dashboard.dashboard_service import DashboardService
 from app.shared.domain.repositories import DashboardRepository
 from app.shared.infrastructure.database.core.config import get_session
@@ -21,8 +21,7 @@ class DashboardWorkflow(BaseWorkflow):
     """Workflow for managing dashboard components and integration"""
     
     def __init__(self, database_workflow: DatabaseWorkflow, bot=None):
-        super().__init__(bot)
-        self.name = "dashboard"
+        super().__init__("dashboard")
         self.database_workflow = database_workflow
         self.dashboard_service = None
         self.dashboard_repository = None
@@ -33,8 +32,11 @@ class DashboardWorkflow(BaseWorkflow):
         # Add dependencies
         self.add_dependency("database")
         
-    async def initialize(self):
-        """Initialize dashboard workflow"""
+        # Dashboards require guild approval
+        self.requires_guild_approval = True
+        
+    async def initialize(self) -> bool:
+        """Initialize dashboard workflow globally"""
         try:
             logger.info("Initializing dashboard workflow")
             
@@ -64,8 +66,51 @@ class DashboardWorkflow(BaseWorkflow):
         except Exception as e:
             logger.error(f"Dashboard workflow initialization failed: {e}")
             return False
+            
+    async def initialize_for_guild(self, guild_id: str) -> bool:
+        """Initialize workflow for a specific guild"""
+        try:
+            # Update status to initializing
+            self.guild_status[guild_id] = WorkflowStatus.INITIALIZING
+            
+            # Get the guild
+            if not self.bot:
+                logger.error("Bot instance not available")
+                self.guild_status[guild_id] = WorkflowStatus.FAILED
+                return False
+                
+            guild = self.bot.get_guild(int(guild_id))
+            if not guild:
+                logger.error(f"Could not find guild {guild_id}")
+                self.guild_status[guild_id] = WorkflowStatus.FAILED
+                return False
+            
+            # Load existing dashboards for this guild
+            dashboards = await self.load_dashboards()
+            guild_dashboards = [d for d in dashboards if d.guild_id == guild_id]
+            
+            # Initialize each dashboard
+            for dashboard in guild_dashboards:
+                try:
+                    channel = guild.get_channel(int(dashboard.channel_id))
+                    if channel:
+                        message = await channel.fetch_message(int(dashboard.message_id))
+                        if message:
+                            config = await self.get_dashboard_config(dashboard.dashboard_type)
+                            await self.update_dashboard_message(message, config)
+                except Exception as e:
+                    logger.error(f"Error initializing dashboard {dashboard.id} for guild {guild_id}: {e}")
+            
+            # Mark as active
+            self.guild_status[guild_id] = WorkflowStatus.ACTIVE
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error initializing dashboard workflow for guild {guild_id}: {e}")
+            self.guild_status[guild_id] = WorkflowStatus.FAILED
+            return False
     
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Cleanup resources used by the dashboard workflow"""
         logger.info("Cleaning up dashboard workflow resources")
         
@@ -74,6 +119,7 @@ class DashboardWorkflow(BaseWorkflow):
             if self.dashboard_service and hasattr(self.dashboard_service, 'cleanup'):
                 await self.dashboard_service.cleanup()
             
+            await super().cleanup()
             logger.info("Dashboard workflow resources cleaned up")
             
         except Exception as e:
@@ -157,6 +203,28 @@ class DashboardWorkflow(BaseWorkflow):
         logger.info("Starting dashboard background tasks")
         # We'll implement dashboard update tasks here
         
+    async def cleanup_guild(self, guild_id: str) -> None:
+        """Cleanup resources for a specific guild"""
+        logger.info(f"Cleaning up dashboard workflow for guild {guild_id}")
+        await super().cleanup_guild(guild_id)
+        
+        # Remove any dashboards for this guild
+        if self.dashboard_repository:
+            try:
+                dashboards = await self.dashboard_repository.get_dashboards_by_guild(guild_id)
+                for dashboard in dashboards:
+                    await self.dashboard_repository.delete_dashboard(dashboard.id)
+            except Exception as e:
+                logger.error(f"Error cleaning up dashboards for guild {guild_id}: {e}")
+                
+    async def update_dashboard_message(self, message: nextcord.Message, config: Dict[str, Any]) -> None:
+        """Update a dashboard message with new content based on config"""
+        try:
+            # This is a placeholder - implement actual message update logic
+            await message.edit(content="Dashboard updated")
+        except Exception as e:
+            logger.error(f"Error updating dashboard message: {e}")
+            
     async def shutdown(self):
         """Clean up resources before shutdown."""
-        pass
+        await self.cleanup()

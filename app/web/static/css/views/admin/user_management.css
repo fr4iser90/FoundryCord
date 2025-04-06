@@ -1,0 +1,116 @@
+/* 
+ * User Management Page Specific Styles
+ * Layout-only styles for the user management page
+ */
+
+/* Page Layout */
+.user-management-container {
+    padding: var(--spacing-lg);
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+}
+
+/* Header Layout */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+/* Search and Filter Layout */
+.controls-container {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.search-container {
+    flex: 1;
+    max-width: 400px;
+}
+
+.filter-container {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+/* User List Layout */
+.users-table-container {
+    margin-bottom: var(--spacing-xl);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.user-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+/* Role Selection Layout */
+.role-select-container {
+    min-width: 150px;
+}
+
+/* Status Toggle Layout */
+.status-toggle {
+    min-width: 100px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 992px) {
+    .controls-container {
+        flex-direction: column;
+    }
+
+    .search-container {
+        max-width: 100%;
+    }
+
+    .filter-container {
+        flex-wrap: wrap;
+    }
+
+    .role-select-container {
+        flex: 1;
+        min-width: 200px;
+    }
+}
+
+@media (max-width: 768px) {
+    .user-management-container {
+        padding: var(--spacing-md);
+    }
+
+    .page-header {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .user-info {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: center;
+    }
+
+    .user-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+} 

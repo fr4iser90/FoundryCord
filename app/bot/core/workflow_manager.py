@@ -1,7 +1,7 @@
 import logging
 import asyncio
 from typing import Dict, List, Type, Optional
-from app.bot.core.workflows.base_workflow import BaseWorkflow
+from app.bot.core.workflows.base_workflow import BaseWorkflow, WorkflowStatus
 from app.shared.interface.logging.api import get_bot_logger
 
 logger = get_bot_logger()
@@ -44,7 +44,7 @@ class BotWorkflowManager:
         logger.info(f"Set initialization order: {self.initialization_order}")
     
     async def initialize_workflow(self, name: str) -> bool:
-        """Initialize a single workflow and its dependencies"""
+        """Initialize a single workflow globally"""
         if name not in self.workflows:
             logger.error(f"Workflow {name} not found")
             return False
@@ -82,7 +82,7 @@ class BotWorkflowManager:
             return False
     
     async def initialize_all(self) -> bool:
-        """Initialize all workflows in the correct order"""
+        """Initialize all workflows globally"""
         logger.info("Initializing all bot workflows")
         
         all_initialized = True
@@ -101,64 +101,82 @@ class BotWorkflowManager:
             logger.error(f"Some workflows failed to initialize: {failed}")
             
         return all_initialized
-    
-    async def cleanup_all(self):
-        """Cleanup all workflows in reverse initialization order"""
-        logger.info("Cleaning up all workflows")
+
+    async def initialize_guild(self, guild_id: str, workflow_names: Optional[List[str]] = None) -> Dict[str, bool]:
+        """Initialize specific or all workflows for a guild"""
+        results = {}
         
-        # Reverse the order for proper teardown
-        for name in reversed(self.initialization_order):
+        # If no specific workflows specified, use all
+        if workflow_names is None:
+            workflow_names = self.initialization_order
+        
+        for name in workflow_names:
             if name not in self.workflows:
+                logger.error(f"Workflow {name} not found")
+                results[name] = False
                 continue
                 
-            workflow_data = self.workflows[name]
-            if not workflow_data['initialized']:
+            workflow = self.workflows[name]['instance']
+            
+            # Skip if workflow doesn't require guild initialization
+            if not workflow.requires_guild_approval:
+                results[name] = True
                 continue
                 
-            # Cleanup the workflow
-            logger.info(f"Cleaning up workflow: {name}")
+            # Initialize workflow for guild
             try:
-                await workflow_data['instance'].cleanup()
-                workflow_data['initialized'] = False
-                logger.info(f"Workflow {name} cleaned up successfully")
+                success = await workflow.initialize_for_guild(guild_id)
+                results[name] = success
+                if not success:
+                    logger.error(f"Failed to initialize workflow {name} for guild {guild_id}")
             except Exception as e:
-                logger.error(f"Error cleaning up workflow {name}: {e}")
-        
-        self.initialized = False
-        logger.info("All workflows cleaned up")
-    
+                logger.error(f"Error initializing workflow {name} for guild {guild_id}: {e}")
+                results[name] = False
+                
+        return results
+
+    async def disable_guild(self, guild_id: str, workflow_names: Optional[List[str]] = None) -> None:
+        """Disable specific or all workflows for a guild"""
+        if workflow_names is None:
+            workflow_names = self.initialization_order
+            
+        for name in workflow_names:
+            if name in self.workflows:
+                workflow = self.workflows[name]['instance']
+                await workflow.disable_for_guild(guild_id)
+
     def get_workflow(self, name: str) -> Optional[BaseWorkflow]:
         """Get a workflow by name"""
         if name not in self.workflows:
             return None
         return self.workflows[name]['instance']
     
-    def get_initialization_status(self) -> Dict[str, bool]:
-        """Get initialization status of all workflows"""
-        return {name: data['initialized'] for name, data in self.workflows.items()}
+    def get_guild_workflow_status(self, guild_id: str) -> Dict[str, WorkflowStatus]:
+        """Get status of all workflows for a specific guild"""
+        return {
+            name: self.workflows[name]['instance'].get_guild_status(guild_id)
+            for name in self.workflows
+        }
     
-    def is_initialized(self) -> bool:
-        """Check if all workflows are initialized"""
-        return self.initialized 
+    async def cleanup_guild(self, guild_id: str) -> None:
+        """Cleanup all workflows for a specific guild"""
+        for name in reversed(self.initialization_order):
+            if name in self.workflows:
+                workflow = self.workflows[name]['instance']
+                await workflow.cleanup_guild(guild_id)
     
-    async def initialize_workflow_for_guild(self, workflow_name: str, guild_id: str) -> bool:
-        """Initialize a specific workflow for a specific guild"""
-        if workflow_name not in self.workflows:
-            logger.error(f"Workflow {workflow_name} not registered")
-            return False
+    async def cleanup_all(self):
+        """Cleanup all workflows"""
+        logger.info("Cleaning up all workflows")
         
-        workflow_data = self.workflows[workflow_name]
-        workflow = workflow_data['instance']
+        # Cleanup in reverse order
+        for name in reversed(self.initialization_order):
+            if name in self.workflows:
+                workflow = self.workflows[name]['instance']
+                try:
+                    await workflow.cleanup()
+                    logger.info(f"Cleaned up workflow: {name}")
+                except Exception as e:
+                    logger.error(f"Error cleaning up workflow {name}: {e}")
         
-        # Check if the workflow has a guild-specific initialization method
-        if hasattr(workflow, 'initialize_for_guild'):
-            logger.info(f"Initializing workflow {workflow_name} for guild {guild_id}")
-            try:
-                success = await workflow.initialize_for_guild(guild_id)
-                return success
-            except Exception as e:
-                logger.error(f"Error initializing workflow {workflow_name} for guild {guild_id}: {e}")
-                return False
-        else:
-            # If no guild-specific method, use the standard initialization
-            return workflow_data['initialized'] 
+        self.initialized = False 

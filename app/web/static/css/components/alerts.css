@@ -1,0 +1,84 @@
+/* Alert Component */
+.alert {
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid transparent;
+    border-radius: var(--border-radius);
+}
+
+/* Alert Variants */
+.alert-warning {
+    background-color: var(--alert-warning-bg);
+    color: var(--alert-warning-text);
+    border-color: var(--alert-warning-border);
+}
+
+.alert-success {
+    background-color: var(--alert-success-bg);
+    color: var(--alert-success-text);
+    border-color: var(--alert-success-border);
+}
+
+.alert-danger {
+    background-color: var(--alert-danger-bg);
+    color: var(--alert-danger-text);
+    border-color: var(--alert-danger-border);
+}
+
+.alert-info {
+    background-color: var(--alert-info-bg);
+    color: var(--alert-info-text);
+    border-color: var(--alert-info-border);
+}
+
+/* Alert Content */
+.alert-heading {
+    color: inherit;
+    margin-bottom: var(--spacing-sm);
+}
+
+.alert-icon {
+    margin-right: var(--spacing-sm);
+}
+
+.alert-content {
+    display: flex;
+    align-items: flex-start;
+}
+
+.alert-message {
+    flex: 1;
+}
+
+/* Dismissible Alerts */
+.alert-dismissible {
+    padding-right: var(--spacing-xl);
+    position: relative;
+}
+
+.alert-dismiss {
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    padding: var(--spacing-xs);
+    background: none;
+    border: none;
+    color: inherit;
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+.alert-dismiss:hover {
+    opacity: 1;
+}
+
+/* Alert Sizes */
+.alert-sm {
+    padding: var(--spacing-sm);
+    font-size: 0.875rem;
+}
+
+.alert-lg {
+    padding: var(--spacing-lg);
+    font-size: 1.125rem;
+} 

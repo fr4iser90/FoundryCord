@@ -30,7 +30,7 @@ class BotStatsView:
         system_resources = await get_system_resources()
         
         return templates.TemplateResponse(
-            "pages/bot/stats.html",
+            "views/bot/stats.html",
             {
                 "request": request, 
                 "user": current_user,
@@ -45,7 +45,7 @@ class BotStatsView:
         activities = await get_recent_activities()
         
         return templates.TemplateResponse(
-            "pages/bot/activity.html",
+            "views/bot/activity.html",
             {
                 "request": request, 
                 "user": current_user,
@@ -60,7 +60,7 @@ class BotStatsView:
         commands = await get_popular_commands()
         
         return templates.TemplateResponse(
-            "pages/bot/commands.html",
+            "views/bot/commands.html",
             {
                 "request": request, 
                 "user": current_user,

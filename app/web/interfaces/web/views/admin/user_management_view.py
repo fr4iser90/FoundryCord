@@ -66,7 +66,7 @@ class UserManagementView:
             
             if not user or user.get("role") not in ["OWNER", "ADMIN", "MODERATOR"]:
                 return templates.TemplateResponse(
-                    "pages/errors/403.html",
+                    "views/errors/403.html",
                     {"request": request, "user": user, "error": "Insufficient permissions"}
                 )
 
@@ -76,7 +76,7 @@ class UserManagementView:
             
             if not current_guild:
                 return templates.TemplateResponse(
-                    "pages/errors/400.html",
+                    "views/errors/400.html",
                     {"request": request, "error": "No guild selected"}
                 )
 
@@ -96,7 +96,7 @@ class UserManagementView:
                 ]
                 
                 return templates.TemplateResponse(
-                    "pages/admin/users.html",
+                    "views/admin/users.html",
                     {
                         "request": request,
                         "user": user,
@@ -116,7 +116,7 @@ class UserManagementView:
             logger.error(f"Error in user management: {e}")
             logger.exception("Full traceback:")
             return templates.TemplateResponse(
-                "pages/errors/500.html",
+                "views/errors/500.html",
                 {"request": request, "error": str(e)}
             )
 

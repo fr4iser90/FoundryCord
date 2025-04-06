@@ -1,4 +1,4 @@
-/* Bot Overview Styling */
+/* Bot Overview Layout */
 .overview-container {
     display: flex;
     min-height: calc(100vh - var(--navbar-height) - var(--footer-height));
@@ -6,20 +6,19 @@
 
 .overview-content {
     flex: 1;
-    padding: 2rem;
-    background: var(--bg-primary);
+    padding: var(--spacing-xl);
 }
 
 .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2rem;
+    margin-bottom: var(--spacing-lg);
 }
 
 .page-header h1 {
     font-size: 1.75rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--spacing-sm);
 }
 
 .page-header p {
@@ -27,12 +26,12 @@
     margin: 0;
 }
 
-/* Stats Grid */
+/* Stats Layout */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
 }
 
 .stat-card {
@@ -83,42 +82,17 @@
     font-size: 0.75rem;
 }
 
-/* Widget Grid */
+/* Widget Layout */
 .grid-stack {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 1rem;
     min-height: 400px;
-}
-
-/* Reset Layout Button */
-#reset-layout {
-    padding: 0.5rem 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-#reset-layout:hover {
-    background: var(--bg-tertiary);
-}
-
-#reset-layout i {
-    font-size: 1rem;
+    padding: var(--spacing-lg);
 }
 
 .widget-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: var(--spacing-md);
 }
 
 .widget-content {
@@ -172,10 +146,11 @@
     font-weight: 600;
 }
 
+/* Server List Layout */
 .server-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 15px;
+    gap: var(--spacing-md);
 }
 
 .server-card {
@@ -204,6 +179,7 @@
     margin: 0;
 }
 
+/* Resource Layout */
 .resource-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -237,6 +213,7 @@
     color: var(--primary);
 }
 
+/* Activity List Layout */
 .activity-list {
     display: flex;
     flex-direction: column;
@@ -281,6 +258,7 @@
     font-size: 0.85rem;
 }
 
+/* Quick Actions Layout */
 .quick-actions {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -329,8 +307,8 @@
 }
 
 .badge-permission {
-    background: var(--discord-accent);
-    color: white;
+    background: var(--primary);
+    color: var(--text-primary);
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
     border-radius: 12px;
@@ -338,17 +316,9 @@
 }
 
 .badge-permission.admin {
-    background: var(--discord-success);
+    background: var(--success);
 }
 
 .badge-permission.no-access {
-    background: var(--discord-danger);
-}
-
-/* Ergänzung zur base.css */
-:root {
-    --discord-success: #43b581;
-    --discord-danger: #f04747;
-    --discord-warning: #faa61a;
-    --discord-channel: #4f545c;
+    background: var(--danger);
 }

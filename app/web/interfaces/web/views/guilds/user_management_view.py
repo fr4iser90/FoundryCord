@@ -38,27 +38,27 @@ class GuildUserManagementView:
             user = request.session.get("user")
             if not user:
                 return templates.TemplateResponse(
-                    "pages/errors/403.html",
+                    "views/errors/403.html",
                     {"request": request, "error": "Please log in to access this page"}
                 )
 
             active_guild = request.session.get("active_guild")
             if not active_guild:
                 return templates.TemplateResponse(
-                    "pages/errors/404.html",
+                    "views/errors/404.html",
                     {"request": request, "user": user, "error": "No active guild selected"}
                 )
             
             guild_id = active_guild.get("id")
             if not guild_id:
                 return templates.TemplateResponse(
-                    "pages/errors/404.html",
+                    "views/errors/404.html",
                     {"request": request, "user": user, "error": "Invalid guild selection"}
                 )
             
             if not await self._can_manage_guild(user.get("id"), guild_id):
                 return templates.TemplateResponse(
-                    "pages/errors/403.html",
+                    "views/errors/403.html",
                     {"request": request, "user": user, "error": "Insufficient permissions"}
                 )
 
@@ -66,7 +66,7 @@ class GuildUserManagementView:
                 guild = await self._get_guild(session, guild_id)
                 if not guild:
                     return templates.TemplateResponse(
-                        "pages/errors/404.html",
+                        "views/errors/404.html",
                         {"request": request, "user": user, "error": "Guild not found"}
                     )
                     
@@ -78,7 +78,7 @@ class GuildUserManagementView:
                 }
                 
                 return templates.TemplateResponse(
-                    "pages/guilds/user_management.html",
+                    "views/guilds/user_management.html",
                     {
                         "request": request,
                         "user": user,
@@ -95,7 +95,7 @@ class GuildUserManagementView:
         except Exception as e:
             logger.error(f"Error in guild user management: {e}")
             return templates.TemplateResponse(
-                "pages/errors/500.html",
+                "views/errors/500.html",
                 {"request": request, "error": str(e)}
             )
 

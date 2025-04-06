@@ -1,0 +1,98 @@
+/* 
+ * Bot Control Page Specific Styles
+ * Layout-only styles for the bot control page
+ */
+
+/* Page Layout */
+.bot-control-container {
+    padding: var(--spacing-lg);
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+}
+
+/* Server Lists Layout */
+.server-lists-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+/* Server Management Layout */
+.server-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.section-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+/* Server Status Layout */
+.server-status {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+/* Bot Configuration Layout */
+.bot-config-section {
+    margin-bottom: var(--spacing-xl);
+}
+
+.config-content {
+    padding: var(--spacing-lg);
+}
+
+/* Bot Invite Layout */
+.bot-invite {
+    margin-bottom: var(--spacing-xl);
+}
+
+.bot-invite-description {
+    margin-bottom: var(--spacing-md);
+}
+
+.permissions-list {
+    margin-bottom: var(--spacing-md);
+}
+
+.invite-link-container {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+    padding: var(--spacing-md);
+}
+
+/* Bot Controls Layout */
+.bot-controls {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .bot-control-container {
+        padding: var(--spacing-md);
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .server-section {
+        margin-bottom: var(--spacing-md);
+    }
+}

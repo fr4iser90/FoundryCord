@@ -10,16 +10,18 @@ from app.shared.interface.logging.api import get_bot_logger
 from app.bot.core.lifecycle_manager import BotLifecycleManager
 from app.bot.core.shutdown_handler import ShutdownHandler
 from app.bot.core.workflow_manager import BotWorkflowManager
-from app.bot.core.workflows.database_workflow import DatabaseWorkflow
-from app.bot.core.workflows.category_workflow import CategoryWorkflow
-from app.bot.core.workflows.channel_workflow import ChannelWorkflow
-from app.bot.core.workflows.dashboard_workflow import DashboardWorkflow
-from app.bot.core.workflows.task_workflow import TaskWorkflow
-from app.bot.core.workflows.user_workflow import UserWorkflow
+from app.bot.core.workflows import (
+    DatabaseWorkflow,
+    GuildWorkflow,
+    CategoryWorkflow,
+    ChannelWorkflow,
+    DashboardWorkflow,
+    TaskWorkflow,
+    UserWorkflow
+)
 from app.shared.infrastructure.config.env_config import EnvConfig
 from app.shared.domain.repositories.discord import GuildConfigRepository
 from app.shared.infrastructure.database.session import session_context
-from app.bot.core.workflows.guild_workflow import GuildWorkflow
 
 logger = get_bot_logger()
 
@@ -53,8 +55,8 @@ class HomelabBot(commands.Bot):
         self.category_workflow = CategoryWorkflow(self.database_workflow)
         self.channel_workflow = ChannelWorkflow(self.database_workflow, self.category_workflow)
         self.dashboard_workflow = DashboardWorkflow(self.database_workflow, bot=self)
-        self.task_workflow = TaskWorkflow(self)
-        self.user_workflow = UserWorkflow(self.database_workflow)
+        self.task_workflow = TaskWorkflow(self.database_workflow, self.bot)
+        self.user_workflow = UserWorkflow(self.database_workflow, self.bot)
         self.user_workflow.bot = self
         self.guild_workflow = GuildWorkflow(self.database_workflow, bot=self)
         
@@ -245,10 +247,10 @@ async def main():
         dashboard_workflow = DashboardWorkflow(database_workflow, bot=bot)
         workflow_manager.register_workflow(dashboard_workflow)
         
-        task_workflow = TaskWorkflow(bot)
+        task_workflow = TaskWorkflow(database_workflow, bot)
         workflow_manager.register_workflow(task_workflow)
         
-        user_workflow = UserWorkflow(database_workflow)
+        user_workflow = UserWorkflow(database_workflow, bot)
         user_workflow.bot = bot
         workflow_manager.register_workflow(user_workflow)
         

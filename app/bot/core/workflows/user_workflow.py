@@ -3,7 +3,7 @@ import logging
 from nextcord import Guild, Member
 from app.shared.infrastructure.models.discord.entities.guild_user_entity import DiscordGuildUserEntity
 from app.shared.domain.repositories.auth.user_repository import UserRepository
-from .base_workflow import BaseWorkflow
+from .base_workflow import BaseWorkflow, WorkflowStatus
 from app.shared.interface.logging.api import get_bot_logger
 from sqlalchemy import select
 
@@ -13,17 +13,19 @@ class UserWorkflow(BaseWorkflow):
     """Workflow for managing Discord users"""
     
     def __init__(self, database_workflow, bot=None):
-        super().__init__()
-        self.name = "user"
+        super().__init__("user")
         self.database_workflow = database_workflow
         self.user_repository = None
         self.bot = bot
         
         # Add dependencies
         self.add_dependency("database")
+        
+        # This workflow doesn't require guild approval to sync members
+        self.requires_guild_approval = False
     
     async def initialize(self) -> bool:
-        """Initialize the user workflow"""
+        """Initialize the user workflow globally"""
         logger.info("Initializing user workflow")
         
         try:
@@ -34,9 +36,11 @@ class UserWorkflow(BaseWorkflow):
             async with session_context() as session:
                 self.user_repository = UserRepositoryImpl(session)
             
-            # Start syncing for all guilds
+            # Mark all guilds as pending initially
             if hasattr(self, 'bot') and self.bot:
                 for guild in self.bot.guilds:
+                    self.guild_status[str(guild.id)] = WorkflowStatus.PENDING
+                    # Sync users immediately for all guilds
                     await self.sync_guild_members(guild)
             
             logger.info("User workflow initialized successfully")
@@ -44,6 +48,36 @@ class UserWorkflow(BaseWorkflow):
             
         except Exception as e:
             logger.error(f"Failed to initialize user workflow: {str(e)}")
+            return False
+
+    async def initialize_for_guild(self, guild_id: str) -> bool:
+        """Initialize workflow for a specific guild"""
+        try:
+            # Update status to initializing
+            self.guild_status[guild_id] = WorkflowStatus.INITIALIZING
+            
+            # Get the guild
+            if not self.bot:
+                logger.error("Bot instance not available")
+                self.guild_status[guild_id] = WorkflowStatus.FAILED
+                return False
+                
+            guild = self.bot.get_guild(int(guild_id))
+            if not guild:
+                logger.error(f"Could not find guild {guild_id}")
+                self.guild_status[guild_id] = WorkflowStatus.FAILED
+                return False
+            
+            # Sync guild members regardless of approval status
+            await self.sync_guild_members(guild)
+            
+            # Mark as active
+            self.guild_status[guild_id] = WorkflowStatus.ACTIVE
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error initializing user workflow for guild {guild_id}: {e}")
+            self.guild_status[guild_id] = WorkflowStatus.FAILED
             return False
 
     async def sync_guild_to_database(self, guild):
@@ -137,7 +171,12 @@ class UserWorkflow(BaseWorkflow):
             logger.error(f"Failed to sync guild members: {str(e)}")
             logger.exception("Full traceback:")
 
+    async def cleanup_guild(self, guild_id: str) -> None:
+        """Cleanup resources for a specific guild"""
+        logger.info(f"Cleaning up user workflow for guild {guild_id}")
+        await super().cleanup_guild(guild_id)
+
     async def cleanup(self) -> None:
-        """Cleanup user workflow resources"""
+        """Cleanup all resources"""
         logger.info("Cleaning up user workflow")
-        # No specific cleanup needed for now 
+        await super().cleanup() 
