@@ -6,7 +6,7 @@ from datetime import datetime
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
-#from app.shared.domain.OLD import DashboardModel
+from app.shared.infrastructure.models.dashboards.dashboard_entity import DashboardEntity
 from app.bot.infrastructure.factories.component_registry import ComponentRegistry
 
 class DashboardBuilder:
@@ -16,7 +16,7 @@ class DashboardBuilder:
         self.bot = bot
         self.component_registry = component_registry
         
-    async def build_dashboard(self, dashboard: DashboardModel, data: Dict[str, Any]) -> Dict[str, Any]:
+    async def build_dashboard(self, dashboard: DashboardEntity, data: Dict[str, Any]) -> Dict[str, Any]:
         """Build a complete dashboard from a model and data."""
         try:
             # Create the embed
@@ -34,13 +34,13 @@ class DashboardBuilder:
             logger.error(f"Error building dashboard {dashboard.id}: {e}")
             raise
             
-    async def build_embed(self, dashboard: DashboardModel, data: Dict[str, Any]) -> nextcord.Embed:
+    async def build_embed(self, dashboard: DashboardEntity, data: Dict[str, Any]) -> nextcord.Embed:
         """Build a Discord embed from dashboard configuration."""
         try:
             # Create base embed
-            embed_config = dashboard.embed
+            embed_config = dashboard.config.get('embed', {})
             embed = nextcord.Embed(
-                title=embed_config.get('title', dashboard.title),
+                title=embed_config.get('title', dashboard.name),
                 description=embed_config.get('description', dashboard.description),
                 color=int(embed_config.get('color', '0x3498db'), 16)
             )
@@ -49,24 +49,24 @@ class DashboardBuilder:
             embed.timestamp = datetime.now()
             
             # Process each component to add fields to the embed
-            for component_config in dashboard.components:
+            for component in dashboard.components:
                 # Skip components that don't go in the embed (e.g., buttons)
-                if component_config.id in dashboard.interactive_components:
+                if component.component_type in ['button', 'selector']:
                     continue
                     
                 # Get the component implementation
-                component_impl = self.component_registry.get_component(component_config.type.value)
+                component_impl = self.component_registry.get_component(component.component_type)
                 if not component_impl:
-                    logger.warning(f"Component type not found: {component_config.type}")
+                    logger.warning(f"Component type not found: {component.component_type}")
                     continue
                     
                 # Get data for this component
                 component_data = None
-                if component_config.data_source_id:
-                    component_data = data.get(component_config.data_source_id)
+                if component.config and 'data_source_id' in component.config:
+                    component_data = data.get(component.config['data_source_id'])
                     
                 # Render the component to the embed
-                await component_impl.render_to_embed(embed, component_data, component_config.config)
+                await component_impl.render_to_embed(embed, component_data, component.config)
                 
             # Add footer
             if 'footer' in embed_config:
@@ -80,33 +80,30 @@ class DashboardBuilder:
             logger.error(f"Error building embed for dashboard {dashboard.id}: {e}")
             raise
             
-    async def build_view(self, dashboard: DashboardModel, data: Dict[str, Any]) -> nextcord.ui.View:
+    async def build_view(self, dashboard: DashboardEntity, data: Dict[str, Any]) -> nextcord.ui.View:
         """Build a Discord view with interactive components."""
         try:
             view = nextcord.ui.View(timeout=None)
             
             # Process interactive components
-            for component_id in dashboard.interactive_components:
-                # Find component config
-                component_config = next((c for c in dashboard.components if c.id == component_id), None)
-                if not component_config:
-                    logger.warning(f"Interactive component not found: {component_id}")
+            for component in dashboard.components:
+                if component.component_type not in ['button', 'selector']:
                     continue
                     
                 # Get component implementation
-                component_impl = self.component_registry.get_component(component_config.type.value)
+                component_impl = self.component_registry.get_component(component.component_type)
                 if not component_impl:
-                    logger.warning(f"Component type not found: {component_config.type}")
+                    logger.warning(f"Component type not found: {component.component_type}")
                     continue
                     
                 # Get data for this component
                 component_data = None
-                if component_config.data_source_id:
-                    component_data = data.get(component_config.data_source_id)
+                if component.config and 'data_source_id' in component.config:
+                    component_data = data.get(component.config['data_source_id'])
                     
                 # Create UI component
                 ui_component = await component_impl.create_ui_component(
-                    view, component_data, component_config.config, dashboard.id
+                    view, component_data, component.config, dashboard.id
                 )
                 
                 # Add to view if not None

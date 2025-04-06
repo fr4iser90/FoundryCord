@@ -1,9 +1,9 @@
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.shared.infrastructure.models.discord.entities.dashboard_entity import DashboardModelEntity, DashboardComponentModelEntity
-from app.shared.infrastructure.models.dashboard.entities.dashboard_component_entity import DashboardComponentEntity
-from app.shared.infrastructure.models.dashboard.entities.component_layout_entity import ComponentLayoutEntity
-from app.shared.infrastructure.models.dashboard.entities.content_template_entity import ContentTemplateEntity
+from app.shared.infrastructure.models.dashboards.dashboard_entity import DashboardEntity
+from app.shared.infrastructure.models.dashboards.dashboard_component_entity import DashboardComponentEntity
+from app.shared.infrastructure.models.dashboards.component_layout_entity import ComponentLayoutEntity
+from app.shared.infrastructure.models.dashboards.content_template_entity import ContentTemplateEntity
 from typing import Optional, List, Dict, Any
 from app.shared.domain.repositories.discord.dashboard_repository import DashboardRepository
 
@@ -11,31 +11,29 @@ class DashboardRepositoryImpl(DashboardRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
     
-    # === DashboardEntity Methods ===
-    
-    async def get_dashboard_by_id(self, dashboard_id: int) -> Optional[DashboardModelEntity]:
+    async def get_dashboard_by_id(self, dashboard_id: int) -> Optional[DashboardEntity]:
         """Get a dashboard by its ID"""
-        result = await self.session.execute(select(DashboardModelEntity).where(DashboardModelEntity.id == dashboard_id))
+        result = await self.session.execute(select(DashboardEntity).where(DashboardEntity.id == dashboard_id))
         return result.scalar_one_or_none()
     
-    async def get_dashboard_by_type(self, dashboard_type: str, guild_id: str = None) -> Optional[DashboardModelEntity]:
+    async def get_dashboard_by_type(self, dashboard_type: str, guild_id: str = None) -> Optional[DashboardEntity]:
         """Get a dashboard by its type and optionally guild ID"""
-        query = select(DashboardModelEntity).where(DashboardModelEntity.dashboard_type == dashboard_type)
+        query = select(DashboardEntity).where(DashboardEntity.dashboard_type == dashboard_type)
         if guild_id:
-            query = query.where(DashboardModelEntity.guild_id == guild_id)
+            query = query.where(DashboardEntity.guild_id == guild_id)
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
     
-    async def get_dashboards_by_channel(self, channel_id: int) -> List[DashboardModelEntity]:
+    async def get_dashboards_by_channel(self, channel_id: int) -> List[DashboardEntity]:
         """Get all dashboards for a specific channel"""
-        result = await self.session.execute(select(DashboardModelEntity).where(DashboardModelEntity.channel_id == channel_id))
+        result = await self.session.execute(select(DashboardEntity).where(DashboardEntity.channel_id == channel_id))
         return result.scalars().all()
     
-    async def create_dashboard(self, title: str, dashboard_type: str, guild_id: str, 
-                               channel_id: int, **kwargs) -> DashboardModelEntity:
+    async def create_dashboard(self, name: str, dashboard_type: str, guild_id: str, 
+                               channel_id: int, **kwargs) -> DashboardEntity:
         """Create a new dashboard"""
-        dashboard = DashboardModelEntity(
-            title=title,
+        dashboard = DashboardEntity(
+            name=name,
             dashboard_type=dashboard_type,
             guild_id=guild_id,
             channel_id=channel_id,
@@ -49,67 +47,49 @@ class DashboardRepositoryImpl(DashboardRepository):
         await self.session.commit()
         return dashboard
     
-    async def update_dashboard(self, dashboard: DashboardModelEntity) -> DashboardModelEntity:
+    async def update_dashboard(self, dashboard: DashboardEntity) -> DashboardEntity:
         """Update an existing dashboard"""
         self.session.add(dashboard)
         await self.session.commit()
         return dashboard
     
-    async def delete_dashboard(self, dashboard: DashboardModelEntity) -> None:
+    async def delete_dashboard(self, dashboard: DashboardEntity) -> None:
         """Delete a dashboard and all its components"""
         await self.session.delete(dashboard)
         await self.session.commit()
     
-    async def create_or_update_dashboard(self, dashboard_type: str, title: str, description: str, guild_id: str) -> DashboardModelEntity:
-        """Create a new dashboard or update if it already exists"""
-        # Check if dashboard already exists for this type and guild
-        existing = await self.get_dashboard_by_type(dashboard_type, guild_id)
-        
-        if existing:
-            # Update existing dashboard
-            existing.title = title
-            # Use config to store description since there's no description field directly
-            if not existing.config:
-                existing.config = {}
-            existing.config['description'] = description
-            self.session.add(existing)
-            await self.session.commit()
-            return existing
-        else:
-            # Create new dashboard - we need a channel_id which we don't have yet
-            # Using a placeholder value that will be updated when dashboard is deployed
-            channel_id = int(guild_id)  # Temporary placeholder
-            
-            dashboard = DashboardModelEntity(
-                title=title,
-                dashboard_type=dashboard_type,
-                guild_id=guild_id,
-                channel_id=channel_id,  # Will be updated when dashboard is deployed
-                config={'description': description}
-            )
-            self.session.add(dashboard)
-            await self.session.commit()
-            return dashboard
+    async def get_all_dashboards(self) -> List[DashboardEntity]:
+        """Get all dashboards"""
+        result = await self.session.execute(select(DashboardEntity))
+        return result.scalars().all()
     
-    # === Component Methods ===
+    async def get_dashboards_by_guild(self, guild_id: str) -> List[DashboardEntity]:
+        """Get all dashboards for a guild"""
+        result = await self.session.execute(select(DashboardEntity).where(DashboardEntity.guild_id == guild_id))
+        return result.scalars().all()
     
-    async def get_component_by_id(self, component_id: int) -> Optional[DashboardComponentModelEntity]:
+    async def get_active_dashboards(self) -> List[DashboardEntity]:
+        """Get all active dashboards"""
+        result = await self.session.execute(select(DashboardEntity).where(DashboardEntity.is_active == True))
+        return result.scalars().all()
+    
+    async def get_component_by_id(self, component_id: int) -> Optional[DashboardComponentEntity]:
         """Get a component by its ID"""
-        result = await self.session.execute(select(DashboardComponentModelEntity).where(DashboardComponentModelEntity.id == component_id))
+        result = await self.session.execute(select(DashboardComponentEntity).where(DashboardComponentEntity.id == component_id))
         return result.scalar_one_or_none()
     
-    async def get_components_by_dashboard(self, dashboard_id: int) -> List[DashboardComponentModelEntity]:
+    async def get_components_by_dashboard(self, dashboard_id: int) -> List[DashboardComponentEntity]:
         """Get all components for a dashboard"""
         result = await self.session.execute(
-            select(DashboardComponentModelEntity)
-            .where(DashboardComponentModelEntity.dashboard_id == dashboard_id)
-            .order_by(DashboardComponentModelEntity.position)
+            select(DashboardComponentEntity)
+            .where(DashboardComponentEntity.dashboard_id == dashboard_id)
+            .order_by(DashboardComponentEntity.position)
         )
         return result.scalars().all()
     
-    async def create_component(self, dashboard_id: int, component_type: str, component_name: str, **kwargs) -> DashboardComponentModelEntity:
+    async def create_component(self, dashboard_id: int, component_type: str, component_name: str, **kwargs) -> DashboardComponentEntity:
         """Create a new dashboard component"""
-        component = DashboardComponentModelEntity(
+        component = DashboardComponentEntity(
             dashboard_id=dashboard_id,
             component_type=component_type,
             component_name=component_name,
@@ -122,18 +102,16 @@ class DashboardRepositoryImpl(DashboardRepository):
         await self.session.commit()
         return component
     
-    async def update_component(self, component: DashboardComponentModelEntity) -> DashboardComponentModelEntity:
+    async def update_component(self, component: DashboardComponentEntity) -> DashboardComponentEntity:
         """Update an existing component"""
         self.session.add(component)
         await self.session.commit()
         return component
     
-    async def delete_component(self, component: DashboardComponentModelEntity) -> None:
+    async def delete_component(self, component: DashboardComponentEntity) -> None:
         """Delete a component"""
         await self.session.delete(component)
         await self.session.commit()
-    
-    # === Layout Methods ===
     
     async def get_layout_by_component(self, component_id: int) -> Optional[ComponentLayoutEntity]:
         """Get layout for a specific component"""
@@ -147,8 +125,8 @@ class DashboardRepositoryImpl(DashboardRepository):
         layout = await self.get_layout_by_component(component_id)
         
         if layout:
-            layout.row = row
-            layout.column = column
+            layout.row_position = row
+            layout.col_position = column
             layout.width = kwargs.get('width', layout.width)
             layout.height = kwargs.get('height', layout.height)
             layout.style = kwargs.get('style', layout.style)
@@ -156,8 +134,8 @@ class DashboardRepositoryImpl(DashboardRepository):
         else:
             layout = ComponentLayoutEntity(
                 component_id=component_id,
-                row=row,
-                column=column,
+                row_position=row,
+                col_position=column,
                 width=kwargs.get('width', 1),
                 height=kwargs.get('height', 1),
                 style=kwargs.get('style'),
@@ -167,8 +145,6 @@ class DashboardRepositoryImpl(DashboardRepository):
         self.session.add(layout)
         await self.session.commit()
         return layout
-    
-    # === Content Template Methods ===
     
     async def get_templates_by_component(self, component_id: int, locale: str = None) -> List[ContentTemplateEntity]:
         """Get content templates for a component"""
@@ -207,7 +183,7 @@ class DashboardRepositoryImpl(DashboardRepository):
     
     async def get_all_dashboard_types(self) -> List[str]:
         """Get all available dashboard types"""
-        query = select(DashboardModelEntity.dashboard_type.distinct())
+        query = select(DashboardEntity.dashboard_type.distinct())
         result = await self.session.execute(query)
         return [row[0] for row in result.fetchall()]
     
@@ -220,7 +196,7 @@ class DashboardRepositoryImpl(DashboardRepository):
         # Build complete configuration
         config = {
             "id": dashboard.id,
-            "title": dashboard.title,
+            "name": dashboard.name,
             "type": dashboard.dashboard_type,
             "components": {}
         }
@@ -235,7 +211,7 @@ class DashboardRepositoryImpl(DashboardRepository):
             config["components"][component_type] = [
                 {
                     "id": comp.id,
-                    "title": comp.title,
+                    "name": comp.component_name,
                     "custom_id": comp.custom_id,
                 }
                 for comp in components

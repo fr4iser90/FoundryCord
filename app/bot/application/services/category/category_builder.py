@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict
 import discord
-from app.shared.domain.models import CategoryModel
+from app.shared.infrastructure.models.discord.entities.category_entity import CategoryEntity
 from app.bot.domain.categories.repositories.category_repository import CategoryRepository
 import logging
 

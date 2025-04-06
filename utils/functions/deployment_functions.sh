@@ -334,14 +334,42 @@ run_full_reset_deploy() {
     fi
     
     # Full deployment with optional -v flag to remove volumes (DESTROYS DATABASE)
-    run_remote_command "cd ${DOCKER_DIR} && docker compose down ${volume_flag}"
-    run_remote_command "cd ${DOCKER_DIR} && cd ../.. && rm -rf ./app"
+    if [ "$RUN_LOCALLY" = true ]; then
+        print_info "Running in local mode..."
+        
+        # Only remove the development directory, not the Git repository
+        if [ -d "${LOCAL_PROJECT_DIR}" ]; then
+            print_info "Removing development directory: ${LOCAL_PROJECT_DIR}"
+            sudo rm -rf "${LOCAL_PROJECT_DIR}"
+        fi
+        
+        # Create fresh development directory
+        mkdir -p "${LOCAL_PROJECT_DIR}"
+        
+        # Copy files from Git repository to development directory
+        if [ -d "${LOCAL_GIT_DIR}" ]; then
+            print_info "Copying files from Git repository..."
+            cp -r "${LOCAL_GIT_DIR}/"* "${LOCAL_PROJECT_DIR}/"
+        else
+            print_error "Git repository not found at ${LOCAL_GIT_DIR}!"
+            return 1
+        fi
+    else
+        run_remote_command "cd ${EFFECTIVE_PROJECT_DIR} && cd docker && docker compose down ${volume_flag} && cd ../.. && sudo rm -rf ${PROJECT_NAME}"
+    fi
+    
     # First make sure .env files are in place
     print_info "Checking and copying environment files..."
     deploy_docker
     
-    run_remote_command "cd ${DOCKER_DIR} && docker compose build --no-cache"
-    run_remote_command "cd ${DOCKER_DIR} && docker compose up -d"
+    if [ "$RUN_LOCALLY" = true ]; then
+        cd "${LOCAL_DOCKER_DIR}" && docker compose build --no-cache
+        cd "${LOCAL_DOCKER_DIR}" && docker compose up -d
+    else
+        run_remote_command "cd ${DOCKER_DIR} && docker compose build --no-cache"
+        run_remote_command "cd ${DOCKER_DIR} && docker compose up -d"
+    fi
+    
     print_success "Full reset deployment completed."
     if [ "${REMOVE_VOLUMES}" = "true" ]; then
         print_warning "Your database has been completely removed."

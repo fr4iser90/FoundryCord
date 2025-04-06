@@ -1,32 +1,33 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from app.shared.domain.models.discord.category_model import CategoryModel, CategoryTemplate
+from app.shared.infrastructure.models.discord.entities.category_entity import CategoryEntity
+from app.shared.infrastructure.models.discord.enums.category import CategoryPermissionLevel
 
 class CategoryRepository(ABC):
     """Interface for Category repository operations"""
     
     @abstractmethod
-    def get_all_categories(self) -> List[CategoryModel]:
+    def get_all_categories(self) -> List[CategoryEntity]:
         """Get all categories from the database"""
         pass
     
     @abstractmethod
-    def get_category_by_id(self, category_id: int) -> Optional[CategoryModel]:
+    def get_category_by_id(self, category_id: int) -> Optional[CategoryEntity]:
         """Get a category by its database ID"""
         pass
     
     @abstractmethod
-    def get_category_by_discord_id(self, discord_id: int) -> Optional[CategoryModel]:
+    def get_category_by_discord_id(self, discord_id: int) -> Optional[CategoryEntity]:
         """Get a category by its Discord ID"""
         pass
     
     @abstractmethod
-    def get_category_by_name(self, name: str) -> Optional[CategoryModel]:
+    def get_category_by_name(self, name: str) -> Optional[CategoryEntity]:
         """Get a category by its name"""
         pass
     
     @abstractmethod
-    def save_category(self, category: CategoryModel) -> CategoryModel:
+    def save_category(self, category: CategoryEntity) -> CategoryEntity:
         """Save a category to the database (create or update)"""
         pass
     
@@ -46,11 +47,11 @@ class CategoryRepository(ABC):
         pass
     
     @abstractmethod
-    def create_from_template(self, template: CategoryTemplate) -> CategoryModel:
+    def create_from_template(self, template: CategoryPermissionLevel) -> CategoryEntity:
         """Create a new category from a template"""
         pass
     
     @abstractmethod
-    def get_enabled_categories(self) -> List[CategoryModel]:
+    def get_enabled_categories(self) -> List[CategoryEntity]:
         """Get all enabled categories"""
         pass 

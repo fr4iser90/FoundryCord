@@ -1,9 +1,8 @@
 import discord
 import logging
 from typing import Optional, Dict, Any, List
-from app.shared.domain.models import (
-    ChannelModel, ChannelType, ChannelPermissionLevel, ChannelPermission, ThreadConfig
-)
+from app.shared.infrastructure.models.discord.entities.channel_entity import ChannelEntity, ChannelPermissionEntity
+from app.shared.infrastructure.models.discord.enums.channels import ChannelType, ChannelPermissionLevel
 from app.shared.domain.repositories.discord.channel_repository import ChannelRepository
 from app.bot.domain.categories.repositories.category_repository import CategoryRepository
 from app.bot.application.services.channel.channel_builder import ChannelBuilder
@@ -25,7 +24,7 @@ class ChannelFactory:
         guild: discord.Guild, 
         game_name: str,
         category_name: str = "GAME SERVERS",
-        permissions: List[ChannelPermission] = None,
+        permissions: List[ChannelPermissionEntity] = None,
         metadata: Dict[str, Any] = None
     ) -> Optional[discord.TextChannel]:
         """Create a channel for a specific game server"""
@@ -52,7 +51,7 @@ class ChannelFactory:
             position = max(ch.position for ch in existing_channels) + 1
         
         # Create a game server channel model
-        channel_model = ChannelModel(
+        channel = ChannelEntity(
             name=game_name.lower(),
             description=f"{game_name} server channel",
             category_id=category.id,
@@ -62,18 +61,18 @@ class ChannelFactory:
             permission_level=ChannelPermissionLevel.MEMBER,
             permissions=permissions,
             topic=f"{game_name} server discussion and status updates",
-            metadata=metadata
+            metadata_json=metadata
         )
         
         # First check if this is an update or a new channel
         existing = self.channel_repository.get_channel_by_name_and_category(
-            channel_model.name, 
-            channel_model.category_id
+            channel.name, 
+            channel.category_id
         )
         if existing:
             # Update existing channel
-            channel_model.id = existing.id
-        saved_channel = self.channel_repository.save_channel(channel_model)
+            channel.id = existing.id
+        saved_channel = self.channel_repository.save_channel(channel)
         
         # Create in Discord
         discord_channel = await self.channel_builder.create_channel(guild, saved_channel)
@@ -85,7 +84,7 @@ class ChannelFactory:
         project_name: str,
         description: str = None,
         category_name: str = "PROJECTS",
-        permissions: List[ChannelPermission] = None,
+        permissions: List[ChannelPermissionEntity] = None,
         metadata: Dict[str, Any] = None
     ) -> Optional[discord.TextChannel]:
         """Create a channel for a specific project"""
@@ -112,7 +111,7 @@ class ChannelFactory:
             position = max(ch.position for ch in existing_channels) + 1
         
         # Create a project channel model
-        channel_model = ChannelModel(
+        channel = ChannelEntity(
             name=f"project-{project_name.lower().replace(' ', '-')}",
             description=description or f"Discussion for {project_name} project",
             category_id=category.id,
@@ -122,18 +121,18 @@ class ChannelFactory:
             permission_level=ChannelPermissionLevel.MEMBER,
             permissions=permissions,
             topic=description or f"Discussion for {project_name} project",
-            metadata=metadata
+            metadata_json=metadata
         )
         
         # First check if this is an update or a new channel
         existing = self.channel_repository.get_channel_by_name_and_category(
-            channel_model.name, 
-            channel_model.category_id
+            channel.name, 
+            channel.category_id
         )
         if existing:
             # Update existing channel
-            channel_model.id = existing.id
-        saved_channel = self.channel_repository.save_channel(channel_model)
+            channel.id = existing.id
+        saved_channel = self.channel_repository.save_channel(channel)
         
         # Create in Discord
         discord_channel = await self.channel_builder.create_channel(guild, saved_channel)
@@ -147,7 +146,7 @@ class ChannelFactory:
         category_name: str,
         available_tags: List[Dict[str, Any]] = None,
         require_tag: bool = True,
-        permissions: List[ChannelPermission] = None,
+        permissions: List[ChannelPermissionEntity] = None,
         metadata: Dict[str, Any] = None
     ) -> Optional[discord.ForumChannel]:
         """Create a forum channel with tags"""
@@ -178,15 +177,15 @@ class ChannelFactory:
             position = max(ch.position for ch in existing_channels) + 1
         
         # Create thread config
-        thread_config = ThreadConfig(
-            default_auto_archive_duration=10080,  # 7 days
-            default_thread_slowmode_delay=0,
-            require_tag=require_tag,
-            available_tags=available_tags
-        )
+        thread_config = {
+            "default_auto_archive_duration": 10080,  # 7 days
+            "default_thread_slowmode_delay": 0,
+            "require_tag": require_tag,
+            "available_tags": available_tags
+        }
         
         # Create a forum channel model
-        channel_model = ChannelModel(
+        channel = ChannelEntity(
             name=name.lower().replace(' ', '-'),
             description=description,
             category_id=category.id,
@@ -197,18 +196,18 @@ class ChannelFactory:
             permissions=permissions,
             topic=description,
             thread_config=thread_config,
-            metadata=metadata
+            metadata_json=metadata
         )
         
         # First check if this is an update or a new channel
         existing = self.channel_repository.get_channel_by_name_and_category(
-            channel_model.name, 
-            channel_model.category_id
+            channel.name, 
+            channel.category_id
         )
         if existing:
             # Update existing channel
-            channel_model.id = existing.id
-        saved_channel = self.channel_repository.save_channel(channel_model)
+            channel.id = existing.id
+        saved_channel = self.channel_repository.save_channel(channel)
         
         # Create in Discord
         discord_channel = await self.channel_builder.create_channel(guild, saved_channel)

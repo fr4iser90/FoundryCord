@@ -4,7 +4,8 @@ from typing import Dict, List, Optional
 import asyncio
 from app.bot.domain.categories.repositories.category_repository import CategoryRepository
 from app.bot.application.services.category.category_builder import CategoryBuilder
-from app.shared.domain.models.discord.category_model import CategoryModel, CategoryTemplate
+from app.shared.infrastructure.models.discord.entities.category_entity import CategoryEntity
+from app.shared.infrastructure.models.discord.enums.category import CategoryPermissionLevel
 from app.shared.interface.logging.api import get_bot_logger
 
 logger = get_bot_logger()
@@ -42,7 +43,7 @@ class CategorySetupService:
         
         return result
     
-    async def setup_category(self, guild: discord.Guild, category_model: CategoryModel) -> Optional[discord.CategoryChannel]:
+    async def setup_category(self, guild: discord.Guild, category_model: CategoryEntity) -> Optional[discord.CategoryChannel]:
         """Set up a single category in the guild"""
         logger.info(f"Setting up category: {category_model.name}")
         
@@ -117,7 +118,7 @@ class CategorySetupService:
                     logger.info(f"Updating position for category {category.name} from {category.position} to {discord_category.position}")
                     await self.category_repository.update_position(category.id, discord_category.position)
     
-    async def get_category_by_name(self, name: str) -> Optional[CategoryModel]:
+    async def get_category_by_name(self, name: str) -> Optional[CategoryEntity]:
         """
         Get a category model by name from cache or database
         """

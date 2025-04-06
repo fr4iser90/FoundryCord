@@ -4,7 +4,8 @@ from typing import Dict, List, Optional, Any
 from app.shared.domain.repositories.discord.channel_repository import ChannelRepository
 from app.bot.domain.categories.repositories.category_repository import CategoryRepository
 from app.bot.application.services.channel.channel_builder import ChannelBuilder
-from app.shared.domain.models.discord.channel_model import ChannelModel, ChannelType, ChannelTemplate
+from app.shared.infrastructure.models.discord.entities.channel_entity import ChannelEntity
+from app.shared.infrastructure.models.discord.enums.channels import ChannelType
 from app.bot.application.services.category.category_setup_service import CategorySetupService
 from app.shared.interface.logging.api import get_bot_logger
 
@@ -18,7 +19,7 @@ class ChannelSetupService:
         self.channel_repository = channel_repository
         self.channel_builder = channel_builder
         self.category_service = category_service
-        self.channels_cache: Dict[str, ChannelModel] = {}
+        self.channels_cache: Dict[str, ChannelEntity] = {}
     
     async def initialize(self):
         """Initialize the channel setup service."""
@@ -55,7 +56,7 @@ class ChannelSetupService:
         await self.channel_builder.sync_channels(guild)
         logger.info("Channel synchronization completed")
     
-    def get_channel_by_name(self, name: str) -> Optional[ChannelModel]:
+    def get_channel_by_name(self, name: str) -> Optional[ChannelEntity]:
         """
         Get a channel model by name from cache or database
         """
@@ -74,13 +75,13 @@ class ChannelSetupService:
         
         return None
     
-    def get_channels_by_type(self, channel_type: ChannelType) -> List[ChannelModel]:
+    def get_channels_by_type(self, channel_type: ChannelType) -> List[ChannelEntity]:
         """
         Get all channels of a specific type
         """
         return self.channel_repository.get_channels_by_type(channel_type.value)
     
-    def get_channels_by_category(self, category_name: str) -> List[ChannelModel]:
+    def get_channels_by_category(self, category_name: str) -> List[ChannelEntity]:
         """
         Get all channels in a specific category
         """
@@ -110,7 +111,7 @@ class ChannelSetupService:
             return None
         
         # Create a simple channel model
-        channel_model = ChannelModel(
+        channel_model = ChannelEntity(
             name=name,
             category_id=category.id,
             category_discord_id=category.discord_id,
@@ -137,7 +138,7 @@ class ChannelSetupService:
             return None
         
         # Create a simple channel model
-        channel_model = ChannelModel(
+        channel_model = ChannelEntity(
             name=name,
             category_id=category.id,
             category_discord_id=category.discord_id,

@@ -4,11 +4,11 @@ from typing import Dict, Optional, List
 from app.bot.core.workflows.base_workflow import BaseWorkflow, WorkflowStatus
 from app.shared.interface.logging.api import get_bot_logger
 from app.shared.infrastructure.database.session import session_context
-from app.shared.infrastructure.models.discord import GuildEntity
-from app.shared.infrastructure.models.discord import DiscordGuildUserEntity
-from app.shared.domain.repositories.discord import GuildConfigRepository
-from app.shared.infrastructure.repositories.discord import GuildConfigRepositoryImpl
-from app.shared.domain.models.discord.enums import GuildAccessStatus
+from app.shared.infrastructure.models.discord.entities.guild_entity import GuildEntity
+from app.shared.infrastructure.models.discord.entities.guild_user_entity import DiscordGuildUserEntity
+from app.shared.domain.repositories.discord.guild_config_repository import GuildConfigRepository
+from app.shared.infrastructure.repositories.discord.guild_config_repository_impl import GuildConfigRepositoryImpl
+from app.shared.infrastructure.models.discord.enums.guild import GuildAccessStatus
 from sqlalchemy import select
 from datetime import datetime
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow

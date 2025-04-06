@@ -5,7 +5,6 @@ from .guild_entity import GuildEntity
 from .guild_config_entity import GuildConfigEntity
 from .guild_user_entity import DiscordGuildUserEntity
 from .message_entity import MessageEntity
-from .dashboard_entity import DashboardModelEntity
 
 __all__ = [
     'ChannelEntity',
@@ -16,6 +15,5 @@ __all__ = [
     'GuildEntity',
     'GuildConfigEntity',
     'DiscordGuildUserEntity',
-    'MessageEntity',
-    'DashboardModelEntity'
+    'MessageEntity'
 ] 

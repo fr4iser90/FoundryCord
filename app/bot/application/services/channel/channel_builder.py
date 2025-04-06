@@ -1,7 +1,8 @@
 from typing import Optional, List, Dict, Any
 import discord
 import logging
-from app.shared.domain.models.discord.channel_model import ChannelModel, ChannelType, ChannelTemplate
+from app.shared.infrastructure.models.discord.entities.channel_entity import ChannelEntity
+from app.shared.infrastructure.models.discord.enums.channels import ChannelType
 from app.shared.domain.repositories.discord.channel_repository import ChannelRepository
 from app.bot.domain.categories.repositories.category_repository import CategoryRepository
 from app.shared.infrastructure.database.session.context import session_context
@@ -15,7 +16,7 @@ class ChannelBuilder:
         self.channel_repository = channel_repository
         self.category_repository = category_repository
     
-    async def create_channel(self, guild: discord.Guild, channel: ChannelModel) -> Optional[discord.abc.GuildChannel]:
+    async def create_channel(self, guild: discord.Guild, channel: ChannelEntity) -> Optional[discord.abc.GuildChannel]:
         """Create a Discord channel from a channel model"""
         if not channel.is_valid:
             logger.warning(f"Invalid channel configuration: {channel.name}")

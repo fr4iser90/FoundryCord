@@ -61,6 +61,24 @@ class GuildRepositoryImpl(GuildRepository):
             await self.session.delete(guild)
             await self.session.commit()
     
+    async def create_or_update(self, guild_id: str, name: str, **kwargs) -> GuildEntity:
+        """Create a new guild or update if it already exists"""
+        existing = await self.get_by_id(guild_id)
+        
+        if existing:
+            # Update existing guild
+            existing.name = name
+            existing.owner_id = kwargs.get('owner_id', existing.owner_id)
+            existing.icon_url = kwargs.get('icon_url', existing.icon_url)
+            existing.member_count = kwargs.get('member_count', existing.member_count)
+            existing.settings = kwargs.get('settings', existing.settings)
+            self.session.add(existing)
+            await self.session.commit()
+            return existing
+        else:
+            # Create new guild
+            return await self.create(guild_id, name, **kwargs)
+    
     async def update_access_status(self, guild_id: str, status: str, reviewer_id: str = None) -> Optional[GuildEntity]:
         """Update guild access status"""
         guild = await self.get_by_id(guild_id)
@@ -94,28 +112,29 @@ class GuildRepositoryImpl(GuildRepository):
         """Get all active guilds (approved status)"""
         return await self.get_by_access_status('APPROVED')
     
-    async def get_pending_guilds(self) -> List[GuildModel]:
+    async def get_pending_guilds(self) -> List[GuildEntity]:
         """Get all pending guilds"""
         return await self.get_by_access_status(GuildAccessStatus.PENDING)
     
-    async def get_blocked_guilds(self) -> List[GuildModel]:
+    async def get_blocked_guilds(self) -> List[GuildEntity]:
         """Get all blocked guilds"""
         return await self.get_by_access_status(GuildAccessStatus.BLOCKED)
     
-    async def mark_as_joined(self, guild_id: str, joined_at: datetime = None) -> Optional[GuildModel]:
-        """Mark a guild as joined by the bot"""
+    async def mark_as_joined(self, guild_id: str, joined_at: datetime = None) -> Optional[GuildEntity]:
+        """Mark a guild as joined"""
         guild = await self.get_by_id(guild_id)
         if guild:
             guild.joined_at = joined_at or datetime.utcnow()
             guild.is_active = True
-            return await self.update(guild)
+            await self.session.commit()
+            return guild
         return None
     
-    async def mark_as_left(self, guild_id: str, left_at: datetime = None) -> Optional[GuildModel]:
-        """Mark a guild as left by the bot"""
+    async def mark_as_left(self, guild_id: str, left_at: datetime = None) -> Optional[GuildEntity]:
+        """Mark a guild as left"""
         guild = await self.get_by_id(guild_id)
         if guild:
-            guild.joined_at = None
             guild.is_active = False
-            return await self.update(guild)
+            await self.session.commit()
+            return guild
         return None 

@@ -5,7 +5,7 @@ from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
 # Import domain models
-from app.shared.infrastructure.models.dashboard.entities.dashboard_entity import DashboardEntity
+from app.shared.infrastructure.models.dashboards.dashboard_entity import DashboardEntity
 from app.shared.domain.repositories import DashboardRepository
 
 # Import debug components
@@ -91,12 +91,12 @@ class WorkflowFactory:
                 """Create a controller for a dashboard model"""
                 try:
                     # Debug logging
-                    logger.info(f"Creating dashboard controller for dashboard: {dashboard.id}, type: {getattr(dashboard, 'type', 'unknown')}")
+                    logger.info(f"Creating dashboard controller for dashboard: {dashboard.id}, type: {dashboard.dashboard_type}")
                     
                     # Make sure dashboard has all required attributes
-                    if not hasattr(dashboard, 'type') or not dashboard.type:
+                    if not hasattr(dashboard, 'dashboard_type') or not dashboard.dashboard_type:
                         logger.warning(f"Dashboard {dashboard.id} missing type, setting default")
-                        dashboard.type = "default"
+                        dashboard.dashboard_type = "default"
                         
                     # Use component factory to create dashboard controller
                     if not hasattr(self.bot, 'component_factory'):
@@ -107,7 +107,7 @@ class WorkflowFactory:
                     controller = await self.bot.component_factory.create(
                         'dashboard', 
                         dashboard_id=dashboard.id,
-                        dashboard_type=dashboard.type,
+                        dashboard_type=dashboard.dashboard_type,
                         channel_id=dashboard.channel_id
                     )
                     

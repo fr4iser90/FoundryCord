@@ -7,7 +7,7 @@ import asyncio
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
-from app.shared.infrastructure.models.dashboard.entities.dashboard_entity import DashboardEntity
+from app.shared.infrastructure.models.dashboards.dashboard_entity import DashboardEntity
 from app.shared.domain.repositories import DashboardRepository
 from app.bot.infrastructure.factories.component_registry import ComponentRegistry
 from app.bot.infrastructure.factories.data_source_registry import DataSourceRegistry
@@ -42,7 +42,7 @@ class DashboardService:
         # Save to repository
         saved_dashboard = await self.repository.save(dashboard)
         
-        logger.info(f"Created new dashboard: {saved_dashboard.id} ({saved_dashboard.title})")
+        logger.info(f"Created new dashboard: {saved_dashboard.id} ({saved_dashboard.name})")
         return saved_dashboard
     
     async def update_dashboard(self, dashboard_id: str, dashboard_data: Dict[str, Any]) -> Optional[DashboardEntity]:
@@ -90,75 +90,67 @@ class DashboardService:
             
         # Collect data from all data sources
         data = {}
-        for source_id, source_config in dashboard.data_sources.items():
-            try:
-                data_source = self.data_source_registry.get_data_source(source_config.type)
-                if data_source:
-                    result = await data_source.fetch_data(source_config.params)
-                    data[source_id] = result.data
-                else:
-                    logger.warning(f"Data source type not found: {source_config.type}")
-            except Exception as e:
-                logger.error(f"Error fetching data from source {source_id}: {e}")
+        for component in dashboard.components:
+            if component.config and 'data_source_id' in component.config:
+                try:
+                    data_source = self.data_source_registry.get_data_source(component.config['data_source_id'])
+                    if data_source:
+                        result = await data_source.fetch_data(component.config.get('params', {}))
+                        data[component.config['data_source_id']] = result
+                    else:
+                        logger.warning(f"Data source not found: {component.config['data_source_id']}")
+                except Exception as e:
+                    logger.error(f"Error fetching data from source {component.config['data_source_id']}: {e}")
                 
         return data
     
     def _create_dashboard_entity(self, data: Dict[str, Any]) -> DashboardEntity:
         """Convert dictionary data to a DashboardEntity."""
-        from app.shared.infrastructure.models.dashboard.entities import (
-            DashboardEntity, ComponentConfig, DataSourceConfig, LayoutItem, ComponentType
-        )
+        from app.shared.infrastructure.models.dashboards.dashboard_entity import DashboardEntity
+        from app.shared.infrastructure.models.dashboards.dashboard_component_entity import DashboardComponentEntity
+        from app.shared.infrastructure.models.dashboards.component_layout_entity import ComponentLayoutEntity
         
         # Create base dashboard
         dashboard = DashboardEntity(
             id=data.get('id'),
-            type=data.get('type'),
-            title=data.get('title'),
+            dashboard_type=data.get('dashboard_type'),
+            name=data.get('name'),
             description=data.get('description'),
             channel_id=data.get('channel_id'),
             guild_id=data.get('guild_id'),
-            channel_name=data.get('channel_name'),
-            category_name=data.get('category_name'),
-            message_id=data.get('message_id'),
-            embed=data.get('embed', {})
+            is_active=data.get('is_active', True),
+            update_frequency=data.get('update_frequency', 300),
+            config=data.get('config', {})
         )
         
         # Add components
         for comp_data in data.get('components', []):
-            component = ComponentConfig(
+            component = DashboardComponentEntity(
                 id=comp_data.get('id'),
-                type=ComponentType(comp_data.get('type')),
-                title=comp_data.get('title'),
-                data_source_id=comp_data.get('data_source_id'),
+                dashboard_id=dashboard.id,
+                component_type=comp_data.get('component_type'),
+                component_name=comp_data.get('component_name'),
+                custom_id=comp_data.get('custom_id'),
+                position=comp_data.get('position', 0),
+                is_active=comp_data.get('is_active', True),
                 config=comp_data.get('config', {})
             )
-            dashboard.add_component(component)
+            dashboard.components.append(component)
             
-        # Add data sources
-        for source_id, source_data in data.get('data_sources', {}).items():
-            data_source = DataSourceConfig(
-                id=source_id,
-                type=source_data.get('type'),
-                refresh_interval=source_data.get('refresh_interval', 60),
-                params=source_data.get('params', {})
-            )
-            dashboard.add_data_source(data_source)
+            # Add layout if specified
+            if 'layout' in comp_data:
+                layout = ComponentLayoutEntity(
+                    component_id=component.id,
+                    row_position=comp_data['layout'].get('row', 0),
+                    col_position=comp_data['layout'].get('col', 0),
+                    width=comp_data['layout'].get('width', 1),
+                    height=comp_data['layout'].get('height', 1),
+                    style=comp_data['layout'].get('style'),
+                    additional_props=comp_data['layout'].get('additional_props')
+                )
+                component.layout = layout
             
-        # Add layout
-        for layout_data in data.get('layout', []):
-            layout_item = LayoutItem(
-                component_id=layout_data.get('component_id'),
-                row=layout_data.get('row', 0),
-                col=layout_data.get('col', 0),
-                width=layout_data.get('width', 1),
-                height=layout_data.get('height', 1)
-            )
-            dashboard.add_layout_item(layout_item)
-            
-        # Add interactive components
-        dashboard.interactive_components = data.get('interactive_components', [])
-        
-        return dashboard 
+        return dashboard
 
     async def ensure_dashboard_tables_exist(self):
         """Ensure all required dashboard tables exist in the database."""
@@ -197,7 +189,10 @@ class DashboardService:
                     id SERIAL PRIMARY KEY,
                     dashboard_id INTEGER REFERENCES dashboards(id) ON DELETE CASCADE,
                     component_type VARCHAR(50) NOT NULL,
-                    title VARCHAR(100),
+                    component_name VARCHAR(100),
+                    custom_id VARCHAR(100),
+                    position INTEGER DEFAULT 0,
+                    is_active BOOLEAN DEFAULT TRUE,
                     config JSONB,
                     created_at TIMESTAMP DEFAULT NOW(),
                     updated_at TIMESTAMP DEFAULT NOW()
