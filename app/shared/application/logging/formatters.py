@@ -48,5 +48,11 @@ class CompactFormatter(logging.Formatter):
     Format logs with minimal information for cleaner output
     """
     def __init__(self, datefmt=None):
-        fmt = "%(asctime)s [%(levelname).1s] %(message)s"
+        fmt = "%(asctime)s [%(levelname).1s] %(message)s"  # Kürzeres Format mit nur einem Buchstaben für Level
         super().__init__(fmt=fmt, datefmt=datefmt)
+        
+    def formatTime(self, record, datefmt=None):
+        """Override to use shorter time format"""
+        if datefmt is None:
+            datefmt = "%H:%M:%S"  # Nur Zeit, kein Datum
+        return super().formatTime(record, datefmt)

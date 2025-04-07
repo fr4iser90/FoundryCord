@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Optional, Dict, Any, Type
+from typing import Optional, Dict, Any
 from app.shared.infrastructure.logging.services.logging_service import LoggingService
 from app.shared.infrastructure.logging.models import LogEntry
 from app.shared.application.logging.log_config import get_config
@@ -10,19 +10,9 @@ class BaseLoggingService(LoggingService):
     
     def __init__(self, logger_name: str):
         self.logger = logging.getLogger(logger_name)
-        self._configure_logger()
-    
-    def _configure_logger(self) -> None:
-        """Configure the logger with handlers based on current config"""
-        # Set debug level based on environment
-        is_development = os.getenv('ENVIRONMENT', '').lower() == 'development'
-        default_level = logging.DEBUG if is_development else logging.INFO
-        
+        # Configure logging if not already done
         if not logging.getLogger().handlers:
-            logging.basicConfig(
-                level=default_level,
-                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
+            get_config().configure_logging()
     
     def log(self, message: str, level: str, **context) -> None:
         """Log a message with the specified level and context"""
@@ -40,6 +30,10 @@ class BaseLoggingService(LoggingService):
             self.logger.exception(message, exc_info=exception)
         else:
             self.log(message, "ERROR", **context)
+    
+    def exception(self, message: str, exception: Optional[Exception] = None, **context) -> None:
+        """Log an exception message"""
+        self.logger.exception(message, exc_info=exception, extra=context)
     
     def debug(self, message: str, **context) -> None:
         """Log a debug message"""
