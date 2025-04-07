@@ -63,12 +63,12 @@
                         </select>
                     </td>
                     <td>
-                        <button class="btn btn-sm {% if user.is_active %}btn-success{% else %}btn-danger{% endif %} toggle-status"
+                        <button class="btn btn-sm {% if user.is_verified %}btn-success{% else %}btn-danger{% endif %} toggle-status"
                                 data-user-id="{{ user.id }}"
-                                data-status="{{ user.is_active }}"
+                                data-status="{{ user.is_verified }}"
                                 {% if not can_manage_status(user, current_user) %}disabled{% endif %}>
-                            <i class="bi {% if user.is_active %}bi-check-circle{% else %}bi-x-circle{% endif %}"></i>
-                            {{ 'Active' if user.is_active else 'Inactive' }}
+                            <i class="bi {% if user.is_verified %}bi-check-circle{% else %}bi-x-circle{% endif %}"></i>
+                            {{ 'Verified' if user.is_verified else 'Unverified' }}
                         </button>
                     </td>
                     <td>

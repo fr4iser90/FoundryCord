@@ -143,23 +143,9 @@ class UserRepositoryImpl(UserRepository):
                     user.avatar = user_data.get('avatar')
             else:
                 # Neuen Benutzer erstellen
-                # Standardrolle (USER) abrufen
-                role_result = await self.session.execute(
-                    select(AppRoleEntity).where(AppRoleEntity.name == 'USER')
-                )
-                role = role_result.scalars().first()
-                
-                if not role:
-                    # Rolle erstellen, wenn sie nicht existiert
-                    role = AppRoleEntity(name='USER', description='Standard user role')
-                    self.session.add(role)
-                    await self.session.flush()
-                
-                # Neuen Benutzer erstellen
                 user = AppUserEntity(
                     username=user_data.get('username'),
                     discord_id=discord_id,
-                    role_id=role.id,
                     avatar=user_data.get('avatar')
                 )
                 self.session.add(user)
@@ -168,6 +154,18 @@ class UserRepositoryImpl(UserRepository):
                 # Create guild user entry
                 guild_id = str(user_data.get('guild_id'))
                 if guild_id:
+                    # Get default role (USER)
+                    role_result = await self.session.execute(
+                        select(AppRoleEntity).where(AppRoleEntity.name == 'USER')
+                    )
+                    role = role_result.scalars().first()
+                    
+                    if not role:
+                        # Create role if it doesn't exist
+                        role = AppRoleEntity(name='USER', description='Standard user role')
+                        self.session.add(role)
+                        await self.session.flush()
+                    
                     guild_user = DiscordGuildUserEntity(
                         guild_id=guild_id,
                         user_id=user.id,

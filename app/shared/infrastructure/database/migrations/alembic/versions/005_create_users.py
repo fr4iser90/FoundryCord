@@ -22,17 +22,18 @@ depends_on = None
 def upgrade():
     connection = op.get_bind()
     
-    # Insert app_roles
+    # Insert app_roles with permissions
     for role in UserRole:
         connection.execute(
             text("""
-                INSERT INTO app_roles (name, description)
-                VALUES (CAST(:name AS VARCHAR), CAST(:description AS VARCHAR))
+                INSERT INTO app_roles (name, description, permissions)
+                VALUES (CAST(:name AS VARCHAR), CAST(:description AS VARCHAR), CAST(:permissions AS VARCHAR))
                 ON CONFLICT (name) DO NOTHING
             """),
             {
                 'name': role.value,
-                'description': ROLE_DESCRIPTIONS[role.value]
+                'description': ROLE_DESCRIPTIONS[role.value],
+                'permissions': 'default'  # You might want to adjust this based on your permission system
             }
         )
 
@@ -42,23 +43,19 @@ def upgrade():
         username, discord_id = owner_str.split('|')
         connection.execute(
             text("""
-                INSERT INTO app_users (username, discord_id, role_id, is_active)
-                SELECT 
+                INSERT INTO app_users (username, discord_id, is_owner, is_active)
+                VALUES (
                     CAST(:username AS VARCHAR),
                     CAST(:discord_id AS VARCHAR),
-                    r.id,
+                    TRUE,
                     TRUE
-                FROM app_roles r
-                WHERE r.name = CAST(:role_name AS VARCHAR)
-                AND NOT EXISTS (
-                    SELECT 1 FROM app_users u
-                    WHERE u.discord_id = CAST(:discord_id AS VARCHAR)
                 )
+                ON CONFLICT (discord_id) DO UPDATE 
+                SET is_owner = TRUE
             """),
             {
                 'username': username.strip(),
-                'discord_id': discord_id.strip(),
-                'role_name': UserRole.OWNER.value
+                'discord_id': discord_id.strip()
             }
         )
 
@@ -70,12 +67,8 @@ def downgrade():
     connection.execute(
         text("""
             DELETE FROM app_users 
-            WHERE role_id IN (
-                SELECT id FROM app_roles 
-                WHERE name = :role_name::varchar
-            )
-        """),
-        {'role_name': UserRole.OWNER.value}
+            WHERE is_owner = TRUE
+        """)
     )
     
     # Remove all seeded app_roles using constants

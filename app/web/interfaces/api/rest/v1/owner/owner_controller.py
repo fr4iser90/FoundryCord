@@ -48,7 +48,7 @@ class OwnerController:
                         "id": guild.id,
                         "guild_id": guild.guild_id,
                         "name": guild.name,
-                        "is_active": guild.is_active,
+                        "is_verified": guild.is_verified,
                         "member_count": guild.member_count,
                         "joined_at": guild.joined_at.isoformat() if guild.joined_at else None
                     }
@@ -88,7 +88,7 @@ class OwnerController:
                 new_guild = GuildEntity(
                     guild_id=guild_id,
                     name=server_data.get("name", "Unknown Server"),
-                    is_active=True
+                    is_verified=True
                 )
                 session.add(new_guild)
                 await session.commit()

@@ -78,7 +78,7 @@ class ServerSelectorController:
                 return {
                     "guild_id": guild.guild_id,
                     "name": guild.name,
-                    "is_active": guild.is_active
+                    "is_verified": guild.is_verified
                 }
                 
         except Exception as e:

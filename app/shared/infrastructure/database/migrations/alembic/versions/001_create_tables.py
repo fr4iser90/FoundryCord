@@ -29,23 +29,49 @@ def upgrade() -> None:
     )
     
     # ==========================================================================
+    # DISCORD Tables - Discord-specific Entities
+    # ==========================================================================
+    op.create_table(
+        'discord_guilds',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('guild_id', sa.String(length=20), nullable=False),
+        sa.Column('name', sa.String(length=100), nullable=False),
+        sa.Column('icon_url', sa.String(length=255), nullable=True),
+        sa.Column('owner_id', sa.String(length=20), nullable=True),
+        sa.Column('member_count', sa.Integer(), server_default='0', nullable=False),
+        sa.Column('joined_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+        sa.Column('settings', sa.JSON(), nullable=True),
+        sa.Column('is_verified', sa.Boolean(), server_default='true', nullable=False),
+        sa.Column('access_status', sa.String(length=20), server_default='pending', nullable=False),
+        sa.Column('access_requested_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+        sa.Column('access_reviewed_at', sa.DateTime(), nullable=True),
+        sa.Column('access_reviewed_by', sa.String(length=32), nullable=True),
+        sa.Column('access_notes', sa.Text(), nullable=True),
+        sa.Column('enable_commands', sa.Boolean(), server_default='false', nullable=False),
+        sa.Column('enable_logging', sa.Boolean(), server_default='true', nullable=False),
+        sa.Column('enable_automod', sa.Boolean(), server_default='false', nullable=False),
+        sa.Column('enable_welcome', sa.Boolean(), server_default='false', nullable=False),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('guild_id')
+    )
+    
+    # ==========================================================================
     # Discord Guild Configuration Table
     # ==========================================================================
     op.create_table(
         'guild_configs',
         sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('guild_id', sa.String(length=255), nullable=False, unique=True),
-        sa.Column('guild_name', sa.String(length=255), nullable=False),
-        sa.Column('enable_categories', sa.Boolean(), nullable=False, server_default=sa.text('true')),
-        sa.Column('enable_channels', sa.Boolean(), nullable=False, server_default=sa.text('true')),
-        sa.Column('enable_dashboard', sa.Boolean(), nullable=False, server_default=sa.text('true')),
-        sa.Column('enable_tasks', sa.Boolean(), nullable=False, server_default=sa.text('true')),
-        sa.Column('enable_services', sa.Boolean(), nullable=False, server_default=sa.text('true')),
-        sa.Column('settings', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), 
-                  onupdate=sa.text('now()'), nullable=False),
-        sa.PrimaryKeyConstraint('id')
+        sa.Column('guild_id', sa.String(20), nullable=False),
+        sa.Column('guild_name', sa.String(255), nullable=False),
+        sa.Column('enable_categories', sa.Boolean(), nullable=False, server_default='true'),
+        sa.Column('enable_channels', sa.Boolean(), nullable=False, server_default='true'),
+        sa.Column('enable_dashboard', sa.Boolean(), nullable=False, server_default='false'),
+        sa.Column('enable_tasks', sa.Boolean(), nullable=False, server_default='false'),
+        sa.Column('enable_services', sa.Boolean(), nullable=False, server_default='false'),
+        sa.Column('settings', sa.String(), nullable=True),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('guild_id', name='uq_guild_config'),
+        sa.ForeignKeyConstraint(['guild_id'], ['discord_guilds.guild_id'], name='fk_guild_config_guild', ondelete='CASCADE')
     )
     
     # ==========================================================================
@@ -56,6 +82,7 @@ def upgrade() -> None:
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('name', sa.String(length=255), nullable=False),
         sa.Column('description', sa.String(length=1024), nullable=True),
+        sa.Column('permissions', sa.String(length=255), nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('name')
@@ -66,15 +93,34 @@ def upgrade() -> None:
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('username', sa.String(length=255), nullable=False),
         sa.Column('discord_id', sa.String(length=255), nullable=False),
-        sa.Column('role_id', sa.Integer(), nullable=False),
+        sa.Column('is_owner', sa.Boolean(), nullable=False, server_default='false'),
         sa.Column('is_active', sa.Boolean(), nullable=False, default=True),
         sa.Column('avatar', sa.String(255), nullable=True),
         sa.Column('last_login', sa.DateTime(), nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
         sa.PrimaryKeyConstraint('id'),
-        sa.UniqueConstraint('discord_id'),
-        sa.ForeignKeyConstraint(['role_id'], ['app_roles.id'])  # Foreign key referencing app_roles
+        sa.UniqueConstraint('discord_id')
     )
+    
+    # ==========================================================================
+    # Session Table
+    # ==========================================================================
+    op.create_table(
+        'sessions',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('user_id', sa.Integer(), sa.ForeignKey('app_users.id', ondelete='CASCADE'), nullable=False),
+        sa.Column('token', sa.String(255), unique=True, nullable=False),
+        sa.Column('ip_address', sa.String(50), nullable=True),
+        sa.Column('user_agent', sa.String(255), nullable=True),
+        sa.Column('expires_at', sa.DateTime(), nullable=False),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+        sa.Column('device_info', sa.JSON(), nullable=True),
+        sa.PrimaryKeyConstraint('id')
+    )
+
+    # Create index for faster session lookups
+    op.create_index('idx_sessions_token', 'sessions', ['token'])
+    op.create_index('idx_sessions_user_id', 'sessions', ['user_id'])
     
     # ==========================================================================
     # DISCORD Tables - Discord-specific Entities
@@ -89,32 +135,6 @@ def upgrade() -> None:
         sa.UniqueConstraint('name')
     )
 
-    op.create_table(
-        'discord_guilds',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('guild_id', sa.String(20), unique=True, nullable=False),
-        sa.Column('name', sa.String(100), nullable=False),
-        sa.Column('icon_url', sa.String(255), nullable=True),
-        sa.Column('owner_id', sa.String(20), nullable=True),
-        sa.Column('member_count', sa.Integer(), default=0),
-        sa.Column('joined_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('settings', sa.JSON(), nullable=True),
-        sa.Column('is_active', sa.Boolean(), default=True),
-        # Access Control Fields
-        sa.Column('access_status', sa.String(20), nullable=False, server_default='pending'),
-        sa.Column('access_requested_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-        sa.Column('access_reviewed_at', sa.DateTime(), nullable=True),
-        sa.Column('access_reviewed_by', sa.String(32), nullable=True),
-        sa.Column('access_notes', sa.Text(), nullable=True),
-        # Bot Integration Settings
-        sa.Column('enable_commands', sa.Boolean(), nullable=False, server_default='false'),
-        sa.Column('enable_logging', sa.Boolean(), nullable=False, server_default='true'),
-        sa.Column('enable_automod', sa.Boolean(), nullable=False, server_default='false'),
-        sa.Column('enable_welcome', sa.Boolean(), nullable=False, server_default='false'),
-        sa.PrimaryKeyConstraint('id'),
-        sa.CheckConstraint("access_status IN ('pending', 'approved', 'rejected', 'suspended')", name='valid_access_status')
-    )
-    
     op.create_table(
         'discord_categories',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -202,15 +222,16 @@ def upgrade() -> None:
     op.create_table(
         'discord_guild_users',
         sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('guild_id', sa.String(255), nullable=False),
+        sa.Column('guild_id', sa.String(20), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('role_id', sa.Integer(), nullable=False),
+        sa.Column('is_admin', sa.Boolean(), nullable=False, server_default='false'),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
         sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
         sa.PrimaryKeyConstraint('id'),
-        sa.UniqueConstraint('guild_id', 'user_id', name='uq_guild_user'),  # Unique constraint for guild and user
-        sa.ForeignKeyConstraint(['user_id'], ['app_users.id']),  # Foreign key referencing app_users
-        sa.ForeignKeyConstraint(['role_id'], ['app_roles.id'])  # Foreign key referencing app_roles
+        sa.UniqueConstraint('guild_id', 'user_id', name='uq_guild_user'),
+        sa.ForeignKeyConstraint(['user_id'], ['app_users.id']),
+        sa.ForeignKeyConstraint(['role_id'], ['app_roles.id'])
     )
     
     # Channel Permissions Table
@@ -376,3 +397,6 @@ def downgrade() -> None:
     # CORE Tables
     op.drop_table('security_keys')
     op.drop_table('guild_configs')
+
+    # Session Table
+    op.drop_table('sessions')

@@ -13,13 +13,15 @@ class AppUserEntity(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(255), nullable=False)
     discord_id = Column(String(255), unique=True, nullable=False)
-    role_id = Column(Integer, ForeignKey('app_roles.id'), nullable=False)
+    is_owner = Column(Boolean, default=False)  # Global OWNER flag
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     last_login = Column(DateTime, nullable=True)
     avatar = Column(String(255), nullable=True)  # URL zum Avatar-Bild
     
+    # Relationships
     sessions = relationship("SessionEntity", back_populates="user", cascade="all, delete")
+    guild_roles = relationship("DiscordGuildUserEntity", back_populates="user", cascade="all, delete")
     
     def __repr__(self):
-        return f"<AppUserEntity(id={self.id}, username='{self.username}', discord_id='{self.discord_id}')>" 
+        return f"<AppUserEntity(id={self.id}, username='{self.username}', is_owner={self.is_owner})>" 

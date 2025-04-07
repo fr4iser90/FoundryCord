@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ active: newStatus })
+                    body: JSON.stringify({ verified: newStatus })
                 });
                 
                 if (!response.ok) throw new Error('Failed to update status');
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.classList.toggle('btn-danger');
                 this.querySelector('i').classList.toggle('bi-check-circle');
                 this.querySelector('i').classList.toggle('bi-x-circle');
-                this.textContent = newStatus ? 'Active' : 'Inactive';
+                this.textContent = newStatus ? 'Verified' : 'Unverified';
                 
                 showToast('Status updated successfully', 'success');
             } catch (error) {

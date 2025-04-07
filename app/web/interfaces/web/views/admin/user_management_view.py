@@ -160,7 +160,7 @@ class UserManagementView:
                     "discord_id": user.discord_id,
                     "app_role": self._map_role_id_to_name(user.role_id),
                     "guild_role": guild_user.role_id,
-                    "is_active": user.is_active,
+                    "is_verified": user.is_verified,
                     "avatar": user.avatar or "https://cdn.discordapp.com/embed/avatars/0.png",
                     "last_active": self._format_datetime(user.last_login),
                     "joined_at": self._format_datetime(guild_user.created_at)
@@ -215,7 +215,7 @@ class UserManagementView:
             "discord_id": user.discord_id,
             "app_role": self._map_role_id_to_name(user.role_id),
             "guild_role": guild_user.role_id,
-            "is_active": user.is_active,
+            "is_verified": user.is_verified,
             "avatar": user.avatar,
             "created_at": self._format_datetime(user.created_at),
             "last_login": self._format_datetime(user.last_login),

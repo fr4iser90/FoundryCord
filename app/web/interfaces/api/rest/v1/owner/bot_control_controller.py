@@ -156,7 +156,7 @@ class BotControlController:
                         select(
                             func.count(GuildEntity.id).label('total_guilds'),
                             func.sum(GuildEntity.member_count).label('total_members'),
-                            func.count(GuildEntity.id).filter(GuildEntity.is_active == True).label('active_guilds')
+                            func.count(GuildEntity.id).filter(GuildEntity.is_verified == True).label('active_guilds')
                         )
                     )
                     
@@ -308,7 +308,7 @@ class BotControlController:
                         "enable_logging": guild.enable_logging,
                         "enable_automod": guild.enable_automod,
                         "enable_welcome": guild.enable_welcome,
-                        "is_active": guild.is_active
+                        "is_verified": guild.is_verified
                     })
                 
                 logger.debug(f"Current user: {current_user}")

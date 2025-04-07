@@ -107,8 +107,8 @@ WidgetUI.registerWidget('serversWidget', {
                         <h6 class="mb-0">${server.name}</h6>
                         <small class="text-muted">${memberText}</small>
                     </div>
-                    <span class="badge ${server.is_active ? 'bg-success' : 'bg-secondary'} rounded-pill">
-                        ${server.is_active ? 'Online' : 'Offline'}
+                    <span class="badge ${server.is_verified ? 'bg-success' : 'bg-secondary'} rounded-pill">
+                        ${server.is_verified ? 'Verified' : 'Unverified'}
                     </span>
                 </div>
             `;

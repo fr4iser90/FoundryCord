@@ -3,6 +3,7 @@ Guild model for Discord servers.
 """
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, JSON
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from app.shared.infrastructure.models.base import Base
 from datetime import datetime
 
@@ -18,7 +19,7 @@ class GuildEntity(Base):
     member_count = Column(Integer, default=0)
     joined_at = Column(DateTime, nullable=False, server_default='now()')
     settings = Column(JSON, nullable=True)
-    is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=True)
     
     # Access Control Fields
     access_status = Column(String(20), nullable=False, server_default='pending')
@@ -33,5 +34,9 @@ class GuildEntity(Base):
     enable_automod = Column(Boolean, nullable=False, server_default='false')
     enable_welcome = Column(Boolean, nullable=False, server_default='false')
 
+    # Relationships
+    user_roles = relationship("DiscordGuildUserEntity", back_populates="guild", cascade="all, delete")
+    config = relationship("GuildConfigEntity", back_populates="guild", uselist=False, cascade="all, delete")
+
     def __repr__(self):
-        return f"<GuildEntity(id={self.id}, name='{self.name}', status='{self.access_status}')>"
+        return f"<GuildEntity(id={self.id}, name='{self.name}', status='{self.access_status}', verified={self.is_verified})>"

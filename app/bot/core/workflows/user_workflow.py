@@ -131,7 +131,6 @@ class UserWorkflow(BaseWorkflow):
             
             for member in members:
                 try:             
-                    
                     user_data = {
                         'discord_id': member.id,
                         'username': member.name,
@@ -144,18 +143,15 @@ class UserWorkflow(BaseWorkflow):
                     }
                     
                     if member.bot:
-                        #logger.debug(f"Skipping bot user: {member.name}")
                         skipped_count += 1
                         continue
                         
                     await self.user_repository.create_or_update(user_data)
                     synced_count += 1
-                    #logger.debug(f"Successfully synced user: {member.name} to guild {guild.id}")
                     
                 except Exception as e:
                     error_count += 1
                     logger.error(f"Failed to sync member {member.name}: {str(e)}")
-                    logger.exception("Full traceback:")
                     continue
             
             # Log final statistics
@@ -167,7 +163,7 @@ class UserWorkflow(BaseWorkflow):
             
         except Exception as e:
             logger.error(f"Failed to sync guild members: {str(e)}")
-            logger.exception("Full traceback:")
+            logger.error("Full traceback:", exc_info=True)
 
     async def cleanup_guild(self, guild_id: str) -> None:
         """Cleanup resources for a specific guild"""

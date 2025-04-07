@@ -7,8 +7,8 @@ class GuildConfigEntity(Base):
     __tablename__ = "guild_configs"
     
     id = Column(Integer, primary_key=True)
-    guild_id = Column(String, unique=True, nullable=False)
-    guild_name = Column(String, nullable=False)
+    guild_id = Column(String(20), ForeignKey('discord_guilds.guild_id', ondelete='CASCADE'), unique=True, nullable=False)
+    guild_name = Column(String(255), nullable=False)
     
     # Feature flags
     enable_categories = Column(Boolean, default=True)
@@ -19,3 +19,9 @@ class GuildConfigEntity(Base):
     
     # Settings
     settings = Column(String)  # JSON formatted string for additional settings
+    
+    # Relationship back to guild
+    guild = relationship("GuildEntity", back_populates="config", uselist=False)
+    
+    def __repr__(self):
+        return f"<GuildConfigEntity(guild_id='{self.guild_id}', name='{self.guild_name}')>"

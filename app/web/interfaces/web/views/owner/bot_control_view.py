@@ -120,7 +120,7 @@ class BotControlView:
                         "enable_logging": guild.enable_logging,
                         "enable_automod": guild.enable_automod,
                         "enable_welcome": guild.enable_welcome,
-                        "is_active": guild.is_active
+                        "is_verified": guild.is_verified
                     }
                     
                     if guild.access_status == "pending":
