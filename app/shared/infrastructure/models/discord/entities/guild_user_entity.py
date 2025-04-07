@@ -10,7 +10,6 @@ class DiscordGuildUserEntity(Base):
     guild_id = Column(String(20), ForeignKey('discord_guilds.guild_id'), nullable=False)
     user_id = Column(Integer, ForeignKey('app_users.id'), nullable=False)
     role_id = Column(Integer, ForeignKey('app_roles.id'), nullable=False)
-    is_admin = Column(Boolean, default=False)  # Server-specific admin flag
     created_at = Column(DateTime, server_default=text('now()'), nullable=False)
     updated_at = Column(DateTime, server_default=text('now()'), nullable=False)
     

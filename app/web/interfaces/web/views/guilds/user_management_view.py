@@ -88,7 +88,6 @@ class GuildUserManagementView:
                         "active_section": "users",
                         "can_manage_roles": True,
                         "can_manage_app_roles": user.get("role") in ["OWNER", "ADMIN"],
-                        "is_admin": user.get("role") in ["OWNER", "ADMIN"],
                         "can_kick_users": True
                     }
                 )

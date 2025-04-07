@@ -16,69 +16,8 @@ erDiagram
 
 ## 2. Table Schemas
 
-### 2.1 Authentication & Users
-```sql
-CREATE TABLE users (
-    id INTEGER PRIMARY KEY,
-    username VARCHAR(100) NOT NULL UNIQUE,
-    discord_id VARCHAR(20) UNIQUE,
-    email VARCHAR(255) UNIQUE,
-    password_hash VARCHAR(255),
-    is_active BOOLEAN DEFAULT TRUE,
-    is_admin BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP
-);
-
-CREATE TABLE sessions (
-    id INTEGER PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token VARCHAR(255) NOT NULL UNIQUE,
-    expires_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 ```
 
-### 2.2 Discord Integration
-```sql
-CREATE TABLE guilds (
-    id VARCHAR(20) PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    owner_id VARCHAR(20) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE channels (
-    id VARCHAR(20) PRIMARY KEY,
-    guild_id VARCHAR(20) NOT NULL REFERENCES guilds(id),
-    name VARCHAR(100) NOT NULL,
-    type VARCHAR(20) NOT NULL,
-    position INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### 2.3 Dashboard System
-```sql
-CREATE TABLE dashboards (
-    id INTEGER PRIMARY KEY,
-    dashboard_type VARCHAR(50) NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    guild_id VARCHAR(20),
-    is_active BOOLEAN DEFAULT TRUE,
-    config JSONB,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE dashboard_components (
-    id INTEGER PRIMARY KEY,
-    dashboard_id INTEGER NOT NULL REFERENCES dashboards(id),
-    component_type VARCHAR(50) NOT NULL,
-    component_name VARCHAR(100) NOT NULL,
-    position INTEGER DEFAULT 0,
-    config JSONB,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 ```
 
 ## 3. Indexing Strategy

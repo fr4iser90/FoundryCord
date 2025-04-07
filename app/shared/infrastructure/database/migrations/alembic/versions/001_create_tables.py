@@ -225,7 +225,6 @@ def upgrade() -> None:
         sa.Column('guild_id', sa.String(20), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('role_id', sa.Integer(), nullable=False),
-        sa.Column('is_admin', sa.Boolean(), nullable=False, server_default='false'),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
         sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
         sa.PrimaryKeyConstraint('id'),
