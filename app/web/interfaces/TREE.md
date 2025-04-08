@@ -80,7 +80,7 @@ app/web/interfaces/
         ├── auth/         # Auth pages
         ├── bot/          # Bot pages
         ├── debug/        # Debug pages
-        ├── guilds/       # Guild pages
+        ├── guild/       # Guild pages
         ├── home/         # Home pages
         ├── main/         # Main pages
         ├── navbar/       # Navigation components

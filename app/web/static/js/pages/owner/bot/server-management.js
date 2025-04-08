@@ -1,165 +1,190 @@
-import { showToast, apiRequest } from '/static/js/components/common/notifications.js';
-
 // Server Management Functions
-const refreshServerList = async () => {
+function showToast(type, message) {
+    // Basic toast implementation
+    console.log(`${type}: ${message}`);
+}
+
+async function apiRequest(url, options = {}) {
+    const response = await fetch(url, {
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+        }
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return response.json();
+}
+
+async function refreshServerList() {
     try {
         showToast('info', 'Refreshing server list...');
-        await apiRequest('/api/v1/owner/bot/servers');
-        location.reload();
+        const response = await fetch('/api/v1/owner/servers');
+        const servers = await response.json();
+        
+        // Update UI with server lists
+        const pendingServers = servers.filter(s => s.access_status.toLowerCase() === 'pending');
+        const approvedServers = servers.filter(s => s.access_status.toLowerCase() === 'approved');
+        const blockedServers = servers.filter(s => s.access_status.toLowerCase() === 'blocked' || s.access_status.toLowerCase() === 'rejected');
+        
+        updateServerList('pending-servers', pendingServers);
+        updateServerList('approved-servers', approvedServers);
+        updateServerList('blocked-servers', blockedServers);
+        
+        showToast('success', 'Server list updated');
     } catch (error) {
-        showToast('error', 'Could not refresh servers');
+        console.error('Server refresh error:', error);
+        showToast('error', 'Could not refresh servers: ' + error.message);
     }
-};
+}
 
-const updateAccess = async (guildId, status) => {
-    let message = '';
-    let banReason = '';
+function updateServerList(containerId, servers) {
+    const container = document.getElementById(containerId);
+    if (!container) {
+        console.warn(`Container ${containerId} not found`);
+        return;
+    }
+
+    if (servers.length === 0) {
+        container.innerHTML = '<tr><td colspan="5" class="text-center">No servers found</td></tr>';
+        return;
+    }
+
+    container.innerHTML = servers.map(server => `
+        <tr>
+            <td class="d-flex align-items-center">
+                <div class="me-2">
+                    ${server.icon_url 
+                        ? `<img src="${server.icon_url}" alt="" class="server-icon rounded" width="32" height="32">`
+                        : `<div class="server-icon-placeholder rounded"></div>`
+                    }
+                </div>
+                <div>
+                    <div class="server-name">${server.name}</div>
+                    <small class="text-muted">${server.guild_id}</small>
+                </div>
+            </td>
+            <td>${getStatusBadge(server.access_status)}</td>
+            <td>${server.member_count || 0}</td>
+            <td>${new Date(server.access_requested_at).toLocaleDateString()}</td>
+            <td>${getActionButtons(server)}</td>
+        </tr>
+    `).join('');
+}
+
+function getStatusBadge(status) {
+    const statusMap = {
+        'pending': '<span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> Pending</span>',
+        'approved': '<span class="badge bg-success"><i class="bi bi-check-circle"></i> Approved</span>',
+        'rejected': '<span class="badge bg-danger"><i class="bi bi-x-circle"></i> Rejected</span>',
+        'blocked': '<span class="badge bg-danger"><i class="bi bi-ban"></i> Blocked</span>'
+    };
+    return statusMap[status.toLowerCase()] || '<span class="badge bg-secondary"><i class="bi bi-question-circle"></i> Unknown</span>';
+}
+
+function getActionButtons(server) {
+    const status = server.access_status.toLowerCase();
     
-    if (status === 'banned') {
-        if (!confirm('⚠️ Are you sure you want to BAN this server?')) return;
-        banReason = prompt('Enter ban reason:');
-        if (!banReason) return;
-        message = '🚫 Server banned';
-    } else if (status === 'approved') {
-        if (!confirm('Approve this server?')) return;
-        message = '✅ Server approved';
-    } else if (status === 'rejected') {
-        if (!confirm('Reject this server?')) return;
-        message = '❌ Server rejected';
-    } else if (status === 'suspended') {
-        if (!confirm('Suspend this server?')) return;
-        message = '⏸️ Server suspended';
+    if (status === 'pending') {
+        return `
+            <div class="btn-group">
+                <button onclick="updateAccess('${server.guild_id}', 'approved')" class="btn btn-success btn-sm">
+                    <i class="bi bi-check-lg"></i>
+                </button>
+                <button onclick="updateAccess('${server.guild_id}', 'rejected')" class="btn btn-danger btn-sm">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+                <button onclick="showServerDetails('${server.guild_id}')" class="btn btn-info btn-sm">
+                    <i class="bi bi-info-circle"></i>
+                </button>
+            </div>
+        `;
     }
+    
+    if (status === 'approved') {
+        return `
+            <div class="btn-group">
+                <button onclick="showServerDetails('${server.guild_id}')" class="btn btn-info btn-sm">
+                    <i class="bi bi-info-circle"></i>
+                </button>
+                <button onclick="updateAccess('${server.guild_id}', 'blocked')" class="btn btn-warning btn-sm">
+                    <i class="bi bi-pause-circle"></i>
+                </button>
+            </div>
+        `;
+    }
+    
+    return `
+        <div class="btn-group">
+            <button onclick="showServerDetails('${server.guild_id}')" class="btn btn-info btn-sm">
+                <i class="bi bi-info-circle"></i>
+            </button>
+            <button onclick="updateAccess('${server.guild_id}', 'approved')" class="btn btn-success btn-sm">
+                <i class="bi bi-check-lg"></i>
+            </button>
+        </div>
+    `;
+}
 
+async function updateAccess(guildId, status) {
     try {
         showToast('info', 'Updating server status...');
-        await apiRequest(`/api/v1/owner/bot/servers/${guildId}/access`, {
+        await fetch(`/api/v1/owner/servers/${guildId}/access`, {
             method: 'POST',
-            body: JSON.stringify({ 
-                status,
-                notes: banReason || undefined
-            })
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: status.toLowerCase() })
         });
         
-        showToast('success', message);
-        setTimeout(() => location.reload(), 1000);
+        showToast('success', `Server ${status} successfully`);
+        await refreshServerList();
     } catch (error) {
-        showToast('error', 'Failed to update server');
+        console.error('Update access error:', error);
+        showToast('error', 'Failed to update server access');
     }
-};
+}
 
-const showServerDetails = async (guildId) => {
+async function showServerDetails(guildId) {
     try {
-        showToast('info', 'Loading server details...');
-        const data = await apiRequest(`/api/v1/owner/bot/servers/${guildId}/details`);
+        const response = await fetch(`/api/v1/owner/servers/${guildId}/details`);
+        const data = await response.json();
         
         const modal = document.getElementById('serverDetailsModal');
         if (!modal) return;
         
-        // Update basic info
+        // Update modal content
         modal.querySelector('.server-name').textContent = data.name;
         modal.querySelector('.server-id').textContent = data.guild_id;
         modal.querySelector('.member-count').textContent = data.member_count || 0;
         modal.querySelector('.status').textContent = data.access_status;
-        modal.querySelector('.join-date').textContent = data.joined_at || 'Not joined';
         
-        // Show ban info if present
-        const banInfo = modal.querySelector('.ban-info');
-        if (banInfo) {
-            if (data.access_status === 'banned') {
-                banInfo.style.display = 'block';
-                banInfo.querySelector('.ban-reason').textContent = data.notes || 'No reason provided';
-                banInfo.querySelector('.banned-by').textContent = data.reviewed_by || 'Unknown';
-                banInfo.querySelector('.banned-at').textContent = data.reviewed_at || 'Unknown';
-            } else {
-                banInfo.style.display = 'none';
-            }
-        }
-        
-        // Update permissions
-        const permissionsList = modal.querySelector('.permissions-list');
-        if (permissionsList) {
-            permissionsList.innerHTML = data.bot_permissions?.length 
-                ? data.bot_permissions.map(perm => `<span class="badge bg-secondary me-1">${perm}</span>`).join('')
-                : '<span class="text-muted">No permissions data</span>';
-        }
-        
-        // Update features
-        const featuresList = modal.querySelector('.features-list');
-        if (featuresList) {
-            featuresList.innerHTML = data.features?.length
-                ? data.features.map(feature => `<li class="list-group-item">${feature}</li>`).join('')
-                : '<li class="list-group-item text-muted">No special features</li>';
-        }
-        
+        // Show modal
         const modalInstance = new bootstrap.Modal(modal);
         modalInstance.show();
     } catch (error) {
+        console.error('Server details error:', error);
         showToast('error', 'Could not load server details');
     }
-};
+}
 
-const addServer = async (formData) => {
-    try {
-        showToast('info', 'Adding server...');
-        await apiRequest('/api/v1/owner/bot/servers/add', {
-            method: 'POST',
-            body: JSON.stringify(Object.fromEntries(formData))
-        });
-        
-        showToast('success', '✅ Server added successfully');
-        const modal = bootstrap.Modal.getInstance(document.getElementById('addServerModal'));
-        modal.hide();
-        setTimeout(() => location.reload(), 1000);
-    } catch (error) {
-        showToast('error', 'Failed to add server');
-    }
-};
-
-// Initialize server management functionality
+// Initialize when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Add event listeners for server management buttons
-    document.querySelectorAll('[onclick^="updateAccess"]').forEach(button => {
-        const onclick = button.getAttribute('onclick');
-        const match = onclick.match(/updateAccess\('([^']+)',\s*'([^']+)'\)/);
-        if (match) {
-            const [_, guildId, status] = match;
-            button.onclick = (e) => {
-                e.preventDefault();
-                updateAccess(guildId, status);
-            };
-        }
-    });
-
-    // Add event listeners for server details buttons
-    document.querySelectorAll('[onclick^="showServerDetails"]').forEach(button => {
-        const onclick = button.getAttribute('onclick');
-        const match = onclick.match(/showServerDetails\('([^']+)'\)/);
-        if (match) {
-            const [_, guildId] = match;
-            button.onclick = (e) => {
-                e.preventDefault();
-                showServerDetails(guildId);
-            };
-        }
-    });
-
-    // Add event listener for refresh button
-    const refreshBtn = document.querySelector('button[onclick="refreshServerList()"]');
-    if (refreshBtn) {
-        refreshBtn.onclick = (e) => {
-            e.preventDefault();
-            refreshServerList();
-        };
+    // Initial server list load
+    refreshServerList();
+    
+    // Add refresh button handler
+    const refreshButton = document.querySelector('button[onclick="refreshServerList()"]');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', refreshServerList);
     }
-
-    // Add event listener for add server form
-    const addServerForm = document.getElementById('addServerForm');
-    if (addServerForm) {
-        addServerForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const formData = new FormData(addServerForm);
-            await addServer(formData);
-        };
-    }
+    
+    // Make functions globally available
+    window.refreshServerList = refreshServerList;
+    window.updateAccess = updateAccess;
+    window.showServerDetails = showServerDetails;
 }); 

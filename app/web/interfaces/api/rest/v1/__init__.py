@@ -1,20 +1,35 @@
-from .system.health_controller import router as health_router
-from .dashboard.dashboard_controller import router as dashboard_router
-from .guild.guild_config_controller import router as guild_config_router
-from .bot.bot_public_controller import router as bot_public_router
-from .auth.auth_controller import router as auth_router
-from .server.server_selector_controller import router as server_selector_router
-from .owner.owner_controller import router as owner_router
-from .owner.bot_control_controller import router as owner_bot_control_router
+from fastapi import APIRouter
+from app.web.interfaces.api.rest.v1.auth import auth_router
+from app.web.interfaces.api.rest.v1.bot import bot_public_router
+from app.web.interfaces.api.rest.v1.dashboard import dashboard_router
+from app.web.interfaces.api.rest.v1.guild import guild_config_router
+from app.web.interfaces.api.rest.v1.owner import (
+    owner_router, 
+    bot_control_router,
+    server_management_router
+)
+from app.web.interfaces.api.rest.v1.server import server_selector_router
+from app.web.interfaces.api.rest.v1.system import health_router
+from app.web.interfaces.api.rest.v1.debug import debug_controller
+from app.web.interfaces.api.rest.v1.guild.users import guild_user_management_controller
 
-# Liste aller Router in der API v1
-routers = [
-    auth_router,
-    dashboard_router,
-    health_router,
-    bot_public_router,
-    guild_config_router,
-    server_selector_router,
-    owner_router,
-    owner_bot_control_router,
-]
+# Create main API router
+router = APIRouter(prefix="/api/v1")
+
+# Include all sub-routers
+router.include_router(auth_router)
+router.include_router(bot_public_router)
+router.include_router(dashboard_router)
+router.include_router(guild_config_router)
+router.include_router(owner_router)
+router.include_router(bot_control_router)
+router.include_router(server_management_router)
+router.include_router(server_selector_router)
+router.include_router(health_router)
+router.include_router(debug_controller.router)
+router.include_router(guild_user_management_controller.router)
+
+# Export routers for easy access
+routers = [router]
+
+__all__ = ['router', 'routers']

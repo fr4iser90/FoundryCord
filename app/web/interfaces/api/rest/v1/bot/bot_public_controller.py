@@ -2,17 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.shared.infrastructure.integration.bot_connector import BotConnector, get_bot_connector
 from app.web.infrastructure.security.auth import get_current_user
 
-router = APIRouter(prefix="/v1/bot-public-info", tags=["Bot Public Information API"])
+router = router = APIRouter(prefix="/bot-public-info", tags=["Bot Public Information API"])
 
 class BotPublicController:
-    """Controller für öffentliche Bot-Informationen"""
+    """Controller for public bot information"""
     
     def __init__(self):
         self.router = router
         self._register_routes()
     
     def _register_routes(self):
-        """Registriert alle Routes für diesen Controller"""
+        """Register all routes for this controller"""
         self.router.get("/status")(self.get_bot_status)
         self.router.get("/servers")(self.get_servers_info)
         self.router.get("/system-resources")(self.get_system_resources)
@@ -73,7 +73,7 @@ class BotPublicController:
             {"name": "/config", "count": 67}
         ]
 
-# Für API-Kompatibilität: Exportiere die einzelnen Funktionen auch direkt
+# Create controller instance
 bot_public_controller = BotPublicController()
 get_bot_status = bot_public_controller.get_bot_status
 get_servers_info = bot_public_controller.get_servers_info

@@ -8,9 +8,11 @@ from typing import Optional, List, Dict
 from sqlalchemy import select
 
 logger = get_web_logger()
-router = APIRouter(prefix="/v1/servers", tags=["Server Selection"])
+router = router = APIRouter(prefix="/servers", tags=["Server Selection"])
 
 class ServerSelectorController:
+    """Controller for server selection functionality"""
+    
     def __init__(self):
         self.router = router
         self._register_routes()

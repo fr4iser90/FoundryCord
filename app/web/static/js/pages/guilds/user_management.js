@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const guildId = document.body.dataset.guildId;
         
         try {
-            const response = await fetch(`/api/v1/guilds/${guildId}/users/${userId}/role`, {
+            const response = await fetch(`/api/v1/guild/users/${userId}/role`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const guildId = document.body.dataset.guildId;
         
         try {
-            const response = await fetch(`/api/v1/guilds/${guildId}/users/${userId}/app-role`, {
+            const response = await fetch(`/api/v1/guild/users/${userId}/app-role`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const guildId = document.body.dataset.guildId;
         
         try {
-            const response = await fetch(`/api/v1/guilds/${guildId}/users/${userId}`);
+            const response = await fetch(`/api/v1/guild/users/${userId}`);
             if (!response.ok) throw new Error('Failed to fetch user details');
             
             const user = await response.json();
@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const guildId = document.body.dataset.guildId;
         
         try {
-            const response = await fetch(`/api/v1/guilds/${guildId}/users/${userId}/kick`, {
+            const response = await fetch(`/api/v1/guild/users/${userId}/kick`, {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': getCSRFToken()

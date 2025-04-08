@@ -15,11 +15,10 @@
     
     <div class="card-body">
         <!-- Pending Servers Section -->
-        {% if pending_servers %}
         <div class="server-section pending-servers mb-4">
             <div class="section-header d-flex justify-content-between align-items-center mb-3">
                 <h3><i class="bi bi-clock-history"></i> Pending Approvals</h3>
-                <span class="badge bg-warning text-dark">{{ pending_servers|length }}</span>
+                <span class="badge bg-warning text-dark">{{ pending_servers|length if pending_servers else 0 }}</span>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
@@ -32,38 +31,38 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for server in pending_servers %}
-                        <tr>
-                            <td class="d-flex align-items-center">
-                                {% if server.icon_url %}
-                                <img src="{{ server.icon_url }}" alt="" class="server-icon rounded me-2" width="32" height="32">
-                                {% else %}
-                                <div class="server-icon-placeholder rounded me-2"></div>
-                                {% endif %}
-                                <div>
-                                    <div class="server-name">{{ server.name }}</div>
-                                    <small class="text-muted">{{ server.guild_id }}</small>
-                                </div>
-                            </td>
-                            <td>{{ server_status_badge(server.access_status) }}</td>
-                            <td>{{ server.member_count or 0 }}</td>
-                            <td>{{ server.access_requested_at|datetime }}</td>
-                            <td>{{ server_action_buttons(server) }}</td>
-                        </tr>
-                        {% endfor %}
+                    <tbody id="pending-servers">
+                        {% if pending_servers %}
+                            {% for server in pending_servers %}
+                            <tr>
+                                <td class="d-flex align-items-center">
+                                    {% if server.icon_url %}
+                                    <img src="{{ server.icon_url }}" alt="" class="server-icon rounded me-2" width="32" height="32">
+                                    {% else %}
+                                    <div class="server-icon-placeholder rounded me-2"></div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="server-name">{{ server.name }}</div>
+                                        <small class="text-muted">{{ server.guild_id }}</small>
+                                    </div>
+                                </td>
+                                <td>{{ server_status_badge(server.access_status) }}</td>
+                                <td>{{ server.member_count or 0 }}</td>
+                                <td>{{ server.access_requested_at|datetime }}</td>
+                                <td>{{ server_action_buttons(server) }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
         </div>
-        {% endif %}
 
         <!-- Active Servers Section -->
-        {% if approved_servers %}
         <div class="server-section approved-servers mb-4">
             <div class="section-header d-flex justify-content-between align-items-center mb-3">
                 <h3><i class="bi bi-check-circle"></i> Active Servers</h3>
-                <span class="badge bg-success">{{ approved_servers|length }}</span>
+                <span class="badge bg-success">{{ approved_servers|length if approved_servers else 0 }}</span>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
@@ -76,38 +75,38 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for server in approved_servers %}
-                        <tr>
-                            <td class="d-flex align-items-center">
-                                {% if server.icon_url %}
-                                <img src="{{ server.icon_url }}" alt="" class="server-icon rounded me-2" width="32" height="32">
-                                {% else %}
-                                <div class="server-icon-placeholder rounded me-2"></div>
-                                {% endif %}
-                                <div>
-                                    <div class="server-name">{{ server.name }}</div>
-                                    <small class="text-muted">{{ server.guild_id }}</small>
-                                </div>
-                            </td>
-                            <td>{{ server_status_badge(server.access_status) }}</td>
-                            <td>{{ server.member_count or 0 }}</td>
-                            <td>{{ server_connection_status(server) }}</td>
-                            <td>{{ server_action_buttons(server) }}</td>
-                        </tr>
-                        {% endfor %}
+                    <tbody id="approved-servers">
+                        {% if approved_servers %}
+                            {% for server in approved_servers %}
+                            <tr>
+                                <td class="d-flex align-items-center">
+                                    {% if server.icon_url %}
+                                    <img src="{{ server.icon_url }}" alt="" class="server-icon rounded me-2" width="32" height="32">
+                                    {% else %}
+                                    <div class="server-icon-placeholder rounded me-2"></div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="server-name">{{ server.name }}</div>
+                                        <small class="text-muted">{{ server.guild_id }}</small>
+                                    </div>
+                                </td>
+                                <td>{{ server_status_badge(server.access_status) }}</td>
+                                <td>{{ server.member_count or 0 }}</td>
+                                <td>{{ server_connection_status(server) }}</td>
+                                <td>{{ server_action_buttons(server) }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
         </div>
-        {% endif %}
 
         <!-- Blocked Servers Section -->
-        {% if blocked_servers %}
         <div class="server-section blocked-servers">
             <div class="section-header d-flex justify-content-between align-items-center mb-3">
                 <h3><i class="bi bi-shield-x"></i> Blocked Servers</h3>
-                <span class="badge bg-danger">{{ blocked_servers|length }}</span>
+                <span class="badge bg-danger">{{ blocked_servers|length if blocked_servers else 0 }}</span>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
@@ -120,31 +119,32 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for server in blocked_servers %}
-                        <tr>
-                            <td class="d-flex align-items-center">
-                                {% if server.icon_url %}
-                                <img src="{{ server.icon_url }}" alt="" class="server-icon rounded me-2" width="32" height="32">
-                                {% else %}
-                                <div class="server-icon-placeholder rounded me-2"></div>
-                                {% endif %}
-                                <div>
-                                    <div class="server-name">{{ server.name }}</div>
-                                    <small class="text-muted">{{ server.guild_id }}</small>
-                                </div>
-                            </td>
-                            <td>{{ server_status_badge(server.access_status) }}</td>
-                            <td>{{ server.member_count or 0 }}</td>
-                            <td>{{ server.access_reviewed_at|datetime }}</td>
-                            <td>{{ server_action_buttons(server) }}</td>
-                        </tr>
-                        {% endfor %}
+                    <tbody id="blocked-servers">
+                        {% if blocked_servers %}
+                            {% for server in blocked_servers %}
+                            <tr>
+                                <td class="d-flex align-items-center">
+                                    {% if server.icon_url %}
+                                    <img src="{{ server.icon_url }}" alt="" class="server-icon rounded me-2" width="32" height="32">
+                                    {% else %}
+                                    <div class="server-icon-placeholder rounded me-2"></div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="server-name">{{ server.name }}</div>
+                                        <small class="text-muted">{{ server.guild_id }}</small>
+                                    </div>
+                                </td>
+                                <td>{{ server_status_badge(server.access_status) }}</td>
+                                <td>{{ server.member_count or 0 }}</td>
+                                <td>{{ server.access_reviewed_at|datetime }}</td>
+                                <td>{{ server_action_buttons(server) }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
         </div>
-        {% endif %}
     </div>
 </div>
 

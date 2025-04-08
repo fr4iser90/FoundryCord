@@ -4,7 +4,7 @@ from app.web.domain.auth.services.web_authentication_service import WebAuthentic
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
 from fastapi.responses import RedirectResponse
 
-router = APIRouter(prefix="/auth", tags=["Authentication API"])
+router = router = APIRouter(prefix="/auth", tags=["Authentication API"])
 
 class AuthController:
     """Controller for pure API endpoints"""

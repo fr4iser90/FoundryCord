@@ -25,8 +25,9 @@
 {% endblock %}
 
 {% block extra_js %}
-<script type="module" src="{{ url_for('static', path='js/pages/owner/bot/server-management.js') }}"></script>
-<script type="module" src="{{ url_for('static', path='js/pages/owner/bot/bot-controls.js') }}"></script>
-<script type="module" src="{{ url_for('static', path='js/pages/owner/bot/config-management.js') }}"></script>
-<script type="module" src="{{ url_for('static', path='js/components/server_selector.js') }}"></script>
+<script src="{{ url_for('static', path='js/components/common/notifications.js') }}"></script>
+<script src="{{ url_for('static', path='js/pages/owner/bot/server-management.js') }}"></script>
+<script src="{{ url_for('static', path='js/pages/owner/bot/bot-controls.js') }}"></script>
+<script src="{{ url_for('static', path='js/pages/owner/bot/config-management.js') }}"></script>
+<script src="{{ url_for('static', path='js/components/server_selector.js') }}"></script>
 {% endblock %} 

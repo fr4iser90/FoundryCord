@@ -1,19 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from app.web.application.services.auth.dependencies import get_current_user
 from app.web.domain.auth.permissions import Role, require_role
 from app.shared.interface.logging.api import get_web_logger
-from app.shared.infrastructure.database.session import session_context
-from app.shared.infrastructure.models.discord.entities.guild_entity import GuildEntity
 from app.shared.infrastructure.integration.bot_connector import get_bot_connector
-from typing import Dict, Optional
-from sqlalchemy import select
-from pydantic import BaseModel
-from sqlalchemy.sql import func
+from typing import Dict
 
 logger = get_web_logger()
-router = APIRouter(prefix="/v1/owner/bot", tags=["Owner Bot Control"])
+router = APIRouter(prefix="/owner/bot", tags=["Bot Control"])
+
 class BotControlController:
-    """Controller for owner bot control functionality"""
+    """Controller for bot control functionality"""
     
     def __init__(self):
         self.router = router
@@ -25,22 +21,11 @@ class BotControlController:
         self.router.post("/start")(self.start_bot)
         self.router.post("/stop")(self.stop_bot)
         self.router.post("/restart")(self.restart_bot)
+        self.router.get("/status")(self.get_bot_status)
         
         # Bot Configuration
         self.router.get("/config")(self.get_bot_config)
         self.router.put("/config")(self.update_bot_config)
-        
-        # Server Management
-        self.router.post("/servers/{guild_id}/join")(self.join_server)
-        self.router.post("/servers/{guild_id}/leave")(self.leave_server)
-        
-        # Bot Status and Stats
-        self.router.get("/status")(self.get_bot_status)
-        self.router.get("/overview")(self.get_overview_stats)
-        
-        # Workflow Management
-        self.router.post("/workflows/{workflow_name}/enable")(self.enable_workflow)
-        self.router.post("/workflows/{workflow_name}/disable")(self.disable_workflow)
     
     async def start_bot(self, current_user=Depends(get_current_user)):
         """Start the Discord bot"""
@@ -84,6 +69,35 @@ class BotControlController:
                 detail=str(e)
             )
     
+    async def get_bot_status(self, current_user=Depends(get_current_user)):
+        """Get current bot status"""
+        try:
+            await require_role(current_user, Role.OWNER)
+            bot_connector = await get_bot_connector()
+            bot = await bot_connector.get_bot()
+            
+            if not bot:
+                return {
+                    "status": "offline",
+                    "uptime": 0,
+                    "latency": 0,
+                    "guilds": 0
+                }
+            
+            return {
+                "status": "online" if bot.is_ready() else "connecting",
+                "uptime": bot.uptime if hasattr(bot, "uptime") else 0,
+                "latency": round(bot.latency * 1000, 2) if hasattr(bot, "latency") else 0,
+                "guilds": len(bot.guilds) if hasattr(bot, "guilds") else 0
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting bot status: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
+            )
+
     async def get_bot_config(self, current_user=Depends(get_current_user)):
         """Get current bot configuration"""
         try:
@@ -111,226 +125,12 @@ class BotControlController:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=str(e)
             )
-    
-    async def join_server(self, guild_id: str, current_user=Depends(get_current_user)):
-        """Make bot join a specific server"""
-        try:
-            await require_role(current_user, Role.OWNER)
-            bot_connector = await get_bot_connector()
-            await bot_connector.join_guild(guild_id)
-            return {"message": f"Bot joined server {guild_id} successfully"}
-        except Exception as e:
-            logger.error(f"Error joining server: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e)
-            )
-    
-    async def leave_server(self, guild_id: str, current_user=Depends(get_current_user)):
-        """Make bot leave a specific server"""
-        try:
-            await require_role(current_user, Role.OWNER)
-            bot_connector = await get_bot_connector()
-            await bot_connector.leave_guild(guild_id)
-            return {"message": f"Bot left server {guild_id} successfully"}
-        except Exception as e:
-            logger.error(f"Error leaving server: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e)
-            )
-    
-    async def get_overview_stats(self, current_user=Depends(get_current_user)):
-        """Get overview statistics for the bot dashboard"""
-        try:
-            await require_role(current_user, Role.OWNER)
-            
-            async with session_context() as session:
-                try:
-                    # Get statistics from database
-                    guilds_query = await session.execute(
-                        select(
-                            func.count(GuildEntity.id).label('total_guilds'),
-                            func.sum(GuildEntity.member_count).label('total_members'),
-                            func.count(GuildEntity.id).filter(GuildEntity.is_verified == True).label('active_guilds')
-                        )
-                    )
-                    
-                    guild_stats = guilds_query.one()
-                    
-                    stats = {
-                        "total_guilds": guild_stats.total_guilds or 0,
-                        "total_members": guild_stats.total_members or 0,
-                        "active_guilds": guild_stats.active_guilds or 0,
-                        "command_count": 0,  # Will be implemented later
-                        "recent_commands": 0  # Will be implemented later
-                    }
-                    
-                    return stats
-                except Exception as e:
-                    logger.error(f"Database error getting statistics: {e}")
-                    return {
-                        "total_guilds": 0,
-                        "total_members": 0,
-                        "active_guilds": 0,
-                        "command_count": 0,
-                        "recent_commands": 0
-                    }
-        except Exception as e:
-            logger.error(f"Error getting overview stats: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e)
-            )
 
-    async def get_bot_status(self, current_user=Depends(get_current_user)):
-        """Get current bot status"""
-        try:
-            await require_role(current_user, Role.OWNER)
-            bot_connector = await get_bot_connector()
-            
-            # Get bot instance
-            bot = await bot_connector.get_bot()
-            if not bot:
-                return {
-                    "status": "offline",
-                    "uptime": 0,
-                    "active_workflows": [],
-                    "available_workflows": []
-                }
-            
-            # Get workflow information
-            workflow_manager = bot.workflow_manager
-            active_workflows = workflow_manager.get_active_workflows() if workflow_manager else []
-            available_workflows = workflow_manager.get_available_workflows() if workflow_manager else []
-            
-            return {
-                "status": "online" if bot.is_ready() else "connecting",
-                "uptime": bot.uptime if hasattr(bot, "uptime") else 0,
-                "active_workflows": active_workflows,
-                "available_workflows": available_workflows,
-                "latency": round(bot.latency * 1000, 2) if hasattr(bot, "latency") else 0,
-                "guilds": len(bot.guilds) if hasattr(bot, "guilds") else 0
-            }
-            
-        except Exception as e:
-            logger.error(f"Error getting bot status: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e)
-            )
-
-    async def enable_workflow(self, workflow_name: str, current_user=Depends(get_current_user)):
-        """Enable a specific bot workflow"""
-        try:
-            await require_role(current_user, Role.OWNER)
-            bot_connector = await get_bot_connector()
-            bot = await bot_connector.get_bot()
-            
-            if not bot:
-                raise HTTPException(status_code=404, detail="Bot instance not found")
-            
-            if not bot.workflow_manager.has_workflow(workflow_name):
-                raise HTTPException(status_code=404, detail=f"Workflow {workflow_name} not found")
-            
-            success = await bot.workflow_manager.enable_workflow(workflow_name)
-            if not success:
-                raise HTTPException(status_code=500, detail=f"Failed to enable workflow {workflow_name}")
-            
-            return {"message": f"Workflow {workflow_name} enabled successfully"}
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Error enabling workflow {workflow_name}: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e)
-            )
-
-    async def disable_workflow(self, workflow_name: str, current_user=Depends(get_current_user)):
-        """Disable a specific bot workflow"""
-        try:
-            await require_role(current_user, Role.OWNER)
-            bot_connector = await get_bot_connector()
-            bot = await bot_connector.get_bot()
-            
-            if not bot:
-                raise HTTPException(status_code=404, detail="Bot instance not found")
-            
-            if not bot.workflow_manager.has_workflow(workflow_name):
-                raise HTTPException(status_code=404, detail=f"Workflow {workflow_name} not found")
-            
-            success = await bot.workflow_manager.disable_workflow(workflow_name)
-            if not success:
-                raise HTTPException(status_code=500, detail=f"Failed to disable workflow {workflow_name}")
-            
-            return {"message": f"Workflow {workflow_name} disabled successfully"}
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Error disabling workflow {workflow_name}: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e)
-            )
-
-    async def get_servers(self, current_user=Depends(get_current_user)):
-        """Get all servers with their access status"""
-        try:
-            await require_role(current_user, Role.OWNER)
-            
-            async with session_context() as session:
-                # Get all guilds from database
-                result = await session.execute(
-                    select(GuildEntity)
-                )
-                guilds = result.scalars().all()
-                
-                # Convert to list of dicts
-                guild_list = []
-                for guild in guilds:
-                    guild_list.append({
-                        "guild_id": guild.guild_id,
-                        "name": guild.name,
-                        "access_status": guild.access_status,
-                        "member_count": guild.member_count,
-                        "joined_at": guild.joined_at,
-                        "access_requested_at": guild.access_requested_at,
-                        "access_reviewed_at": guild.access_reviewed_at,
-                        "access_reviewed_by": guild.access_reviewed_by,
-                        "access_notes": guild.access_notes,
-                        "icon_url": guild.icon_url,
-                        "enable_commands": guild.enable_commands,
-                        "enable_logging": guild.enable_logging,
-                        "enable_automod": guild.enable_automod,
-                        "enable_welcome": guild.enable_welcome,
-                        "is_verified": guild.is_verified
-                    })
-                
-                logger.debug(f"Current user: {current_user}")
-                logger.debug(f"Found {len(guild_list)} servers")
-                for guild in guild_list:
-                    logger.debug(f"Server: {guild['name']} (ID: {guild['guild_id']})")
-                
-                return guild_list
-                
-        except Exception as e:
-            logger.error(f"Error getting servers: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e)
-            )
-
-# Create controller instance and export routes
+# Create controller instance
 bot_control_controller = BotControlController()
 start_bot = bot_control_controller.start_bot
 stop_bot = bot_control_controller.stop_bot
 restart_bot = bot_control_controller.restart_bot
 get_bot_config = bot_control_controller.get_bot_config
 update_bot_config = bot_control_controller.update_bot_config
-join_server = bot_control_controller.join_server
-leave_server = bot_control_controller.leave_server
-get_overview_stats = bot_control_controller.get_overview_stats
-get_bot_status = bot_control_controller.get_bot_status
-enable_workflow = bot_control_controller.enable_workflow
-disable_workflow = bot_control_controller.disable_workflow 
+get_bot_status = bot_control_controller.get_bot_status 
