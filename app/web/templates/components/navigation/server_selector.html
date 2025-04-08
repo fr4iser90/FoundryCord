@@ -1,66 +1,18 @@
 {# app/web/templates/components/navigation/server_selector.html #}
 <div class="navbar-item has-dropdown">
-    <button class="navbar-link server-selector" id="server-selector-button">
-        {% if request.session.get('selected_guild') %}
-        <img src="{{ request.session.selected_guild.icon_url }}" alt="{{ request.session.selected_guild.name }}" class="server-icon">
-        <span>{{ request.session.selected_guild.name }}</span>
+    <button class="navbar-link server-selector" id="server-selector-button" aria-haspopup="true" aria-expanded="false">
+        {% if request.session.get('active_guild') and request.session.active_guild.status == 'APPROVED' %}
+            <img src="{{ request.session.active_guild.icon_url }}" alt="{{ request.session.active_guild.name }}" class="server-icon">
+            <span class="server-name">{{ request.session.active_guild.name }}</span>
         {% else %}
-        <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Select Server" class="server-icon">
-        <span>Select Approved Server</span>
+            <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Select Server" class="server-icon">
+            <span class="server-name">Select Approved Server</span>
         {% endif %}
     </button>
-    <div class="navbar-dropdown" id="server-dropdown">
-        <div class="server-list">
+    
+    <div class="navbar-dropdown" id="server-dropdown" aria-labelledby="server-selector-button">
+        <div class="server-list loading">
             <!-- Server list will be populated by JavaScript (only approved servers) -->
-            <div class="navbar-item">Loading servers...</div>
         </div>
     </div>
-</div>
-
-<style>
-.server-selector {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px;
-    border: none;
-    background: none;
-    cursor: pointer;
-}
-
-.server-icon {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-}
-
-.navbar-dropdown {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    min-width: 200px;
-    z-index: 1000;
-}
-
-.navbar-dropdown.show {
-    display: block;
-}
-
-.server-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    text-decoration: none;
-    color: inherit;
-}
-
-.server-item:hover {
-    background-color: #f5f5f5;
-}
-</style> 
+</div> 

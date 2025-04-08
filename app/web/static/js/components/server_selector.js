@@ -38,6 +38,8 @@ class ServerSelector {
     async loadServers() {
         try {
             console.log('Loading servers...');
+            this.serverList.classList.add('loading');
+            
             const response = await fetch('/api/v1/owner/servers', {
                 method: 'GET',
                 headers: {
@@ -54,10 +56,17 @@ class ServerSelector {
             const approvedServers = servers.filter(server => 
                 server.access_status.toLowerCase() === 'approved'
             );
+            
+            this.serverList.classList.remove('loading');
+            if (approvedServers.length === 0) {
+                this.serverList.classList.add('empty');
+            }
+            
             this.updateServerList(approvedServers);
         } catch (error) {
             console.error('Error loading servers:', error);
-            this.serverList.innerHTML = '<div class="navbar-item">Error loading servers</div>';
+            this.serverList.classList.remove('loading');
+            this.serverList.innerHTML = '<div class="server-list-item">Error loading servers</div>';
         }
     }
 
@@ -66,18 +75,22 @@ class ServerSelector {
         this.serverList.innerHTML = '';
         
         if (!Array.isArray(servers) || servers.length === 0) {
-            this.serverList.innerHTML = '<div class="navbar-item">No approved servers available</div>';
+            this.serverList.classList.add('empty');
             return;
         }
 
+        this.serverList.classList.remove('empty');
         servers.forEach(server => {
-            const serverItem = document.createElement('a');
-            serverItem.className = 'navbar-item server-item';
+            const serverItem = document.createElement('div');
+            serverItem.className = 'server-list-item';
             serverItem.innerHTML = `
                 <img src="${server.icon_url || 'https://cdn.discordapp.com/embed/avatars/0.png'}" 
                      alt="${server.name}" 
                      class="server-icon">
-                <span>${server.name}</span>
+                <div class="server-info">
+                    <div class="server-name">${server.name}</div>
+                    <div class="server-id">${server.guild_id}</div>
+                </div>
             `;
             serverItem.addEventListener('click', (e) => {
                 e.preventDefault();
