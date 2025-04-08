@@ -52,8 +52,7 @@ class ServerManagementController:
                         "enable_commands": guild.enable_commands,
                         "enable_logging": guild.enable_logging,
                         "enable_automod": guild.enable_automod,
-                        "enable_welcome": guild.enable_welcome,
-                        "is_verified": guild.is_verified
+                        "enable_welcome": guild.enable_welcome
                     })
                 
                 logger.info(f"Returning {len(guild_list)} guilds")
@@ -135,6 +134,7 @@ class ServerManagementController:
                 return {
                     "guild_id": guild.guild_id,
                     "name": guild.name,
+                    "icon_url": guild.icon_url,
                     "access_status": guild.access_status,
                     "member_count": guild.member_count,
                     "joined_at": guild.joined_at,
@@ -142,12 +142,10 @@ class ServerManagementController:
                     "access_reviewed_at": guild.access_reviewed_at,
                     "access_reviewed_by": guild.access_reviewed_by,
                     "access_notes": guild.access_notes,
-                    "icon_url": guild.icon_url,
                     "enable_commands": guild.enable_commands,
                     "enable_logging": guild.enable_logging,
                     "enable_automod": guild.enable_automod,
-                    "enable_welcome": guild.enable_welcome,
-                    "is_verified": guild.is_verified
+                    "enable_welcome": guild.enable_welcome
                 }
                 
         except HTTPException:

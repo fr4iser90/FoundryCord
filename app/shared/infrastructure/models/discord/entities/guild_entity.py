@@ -19,7 +19,6 @@ class GuildEntity(Base):
     member_count = Column(Integer, default=0)
     joined_at = Column(DateTime, nullable=False, server_default='now()')
     settings = Column(JSON, nullable=True)
-    is_verified = Column(Boolean, default=True)
     
     # Access Control Fields
     access_status = Column(String(20), nullable=False, server_default='pending')
@@ -39,4 +38,4 @@ class GuildEntity(Base):
     config = relationship("GuildConfigEntity", back_populates="guild", uselist=False, cascade="all, delete")
 
     def __repr__(self):
-        return f"<GuildEntity(id={self.id}, name='{self.name}', status='{self.access_status}', verified={self.is_verified})>"
+        return f"<GuildEntity(id={self.id}, name='{self.name}', status='{self.access_status}')>"

@@ -21,7 +21,7 @@ class ServerSelectorController:
         """Register all routes for server selection"""
         self.router.get("")(self.get_servers)  # List all servers
         self.router.get("/current")(self.get_current_server)  # Get current selection
-        self.router.post("/select")(self.select_server)  # Select a server
+        self.router.post("/select/{guild_id}")(self.select_server)  # Select a server
     
     async def get_servers(self, current_user=Depends(get_current_user)) -> List[Dict]:
         """Get list of available servers for the current user"""
@@ -40,12 +40,11 @@ class ServerSelectorController:
                 for server in servers:
                     logger.debug(f"Server: {server.name} (ID: {server.guild_id})")
                     server_list.append({
-                        "id": server.guild_id,
+                        "guild_id": server.guild_id,
                         "name": server.name,
                         "icon_url": server.icon_url or "https://cdn.discordapp.com/embed/avatars/0.png",
                         "member_count": server.member_count,
-                        "status": server.access_status,
-                        "is_verified": server.is_verified
+                        "access_status": server.access_status,
                     })
                 
                 return server_list
@@ -80,8 +79,7 @@ class ServerSelectorController:
                     "guild_id": guild.guild_id,
                     "name": guild.name,
                     "icon_url": guild.icon_url or "https://cdn.discordapp.com/embed/avatars/0.png",
-                    "status": guild.access_status,
-                    "is_verified": guild.is_verified
+                    "access_status": guild.access_status,
                 }
                 
         except Exception as e:
@@ -94,6 +92,7 @@ class ServerSelectorController:
     async def select_server(self, request: Request, guild_id: str, current_user=Depends(get_current_user)):
         """Select a server and store it in session"""
         try:
+            logger.info(f"Selecting server with guild_id: {guild_id}")
             session = session_extension(request)
             
             async with session_context() as db_session:
@@ -103,12 +102,14 @@ class ServerSelectorController:
                 guild = result.scalar_one_or_none()
                 
                 if not guild:
+                    logger.warning(f"Server not found with guild_id: {guild_id}")
                     raise HTTPException(
                         status_code=status.HTTP_404_NOT_FOUND,
                         detail="Server not found"
                     )
                 
-                if guild.access_status != "APPROVED":
+                if guild.access_status != "approved":
+                    logger.warning(f"Server {guild_id} is not approved (status: {guild.access_status})")
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="Server is not approved for access"
@@ -116,13 +117,14 @@ class ServerSelectorController:
                 
                 # Store in session
                 session['selected_guild'] = guild_id
+                logger.info(f"Selected server {guild_id} stored in session")
+                
                 return {
                     "message": f"Selected server {guild_id}",
-                    "guild_id": guild_id,
+                    "guild_id": guild.guild_id,
                     "name": guild.name,
                     "icon_url": guild.icon_url or "https://cdn.discordapp.com/embed/avatars/0.png",
-                    "status": guild.access_status,
-                    "is_verified": guild.is_verified
+                    "access_status": guild.access_status,
                 }
                 
         except HTTPException:

@@ -41,7 +41,6 @@ def upgrade() -> None:
         sa.Column('member_count', sa.Integer(), server_default='0', nullable=False),
         sa.Column('joined_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
         sa.Column('settings', sa.JSON(), nullable=True),
-        sa.Column('is_verified', sa.Boolean(), server_default='true', nullable=False),
         sa.Column('access_status', sa.String(length=20), server_default='pending', nullable=False),
         sa.Column('access_requested_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
         sa.Column('access_reviewed_at', sa.DateTime(), nullable=True),

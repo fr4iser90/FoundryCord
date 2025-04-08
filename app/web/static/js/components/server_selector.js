@@ -2,6 +2,12 @@
 class ServerSelector {
     constructor() {
         console.log('Initializing ServerSelector');
+        // Bind methods to this instance
+        this.loadServers = this.loadServers.bind(this);
+        this.updateServerList = this.updateServerList.bind(this);
+        this.switchServer = this.switchServer.bind(this);
+        this.setupEventListeners = this.setupEventListeners.bind(this);
+        
         this.button = document.getElementById('server-selector-button');
         this.dropdown = document.getElementById('server-dropdown');
         this.serverList = this.dropdown?.querySelector('.server-list');
@@ -23,6 +29,7 @@ class ServerSelector {
         // Toggle dropdown on button click
         this.button.addEventListener('click', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             console.log('Toggle dropdown');
             this.dropdown.classList.toggle('show');
         });
@@ -40,7 +47,7 @@ class ServerSelector {
             console.log('Loading servers...');
             this.serverList.classList.add('loading');
             
-            const response = await fetch('/api/v1/owner/servers', {
+            const response = await fetch('/api/v1/servers', {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json'
@@ -53,13 +60,19 @@ class ServerSelector {
             
             const servers = await response.json();
             console.log('Servers loaded:', servers);
-            const approvedServers = servers.filter(server => 
-                server.access_status.toLowerCase() === 'approved'
-            );
+            
+            // Filter for approved servers only
+            const approvedServers = servers.filter(server => {
+                console.log('Checking server:', server);
+                return server && server.access_status && 
+                       server.access_status.toLowerCase() === 'approved';
+            });
             
             this.serverList.classList.remove('loading');
             if (approvedServers.length === 0) {
                 this.serverList.classList.add('empty');
+                this.serverList.innerHTML = '<div class="server-list-item">No approved servers available</div>';
+                return;
             }
             
             this.updateServerList(approvedServers);
@@ -76,6 +89,7 @@ class ServerSelector {
         
         if (!Array.isArray(servers) || servers.length === 0) {
             this.serverList.classList.add('empty');
+            this.serverList.innerHTML = '<div class="server-list-item">No servers available</div>';
             return;
         }
 
@@ -92,18 +106,22 @@ class ServerSelector {
                     <div class="server-id">${server.guild_id}</div>
                 </div>
             `;
-            serverItem.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.switchServer(server);
-            });
+            
+            // Use bound method for click handler
+            serverItem.addEventListener('click', this.switchServer.bind(this, server));
             this.serverList.appendChild(serverItem);
         });
     }
 
-    async switchServer(server) {
+    async switchServer(server, event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
         try {
             console.log('Switching to server:', server);
-            const response = await fetch(`/api/v1/owner/servers/${server.guild_id}/select`, {
+            const response = await fetch(`/api/v1/servers/select/${server.guild_id}`, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -114,6 +132,9 @@ class ServerSelector {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
+
+            const result = await response.json();
+            console.log('Switch server response:', result);
 
             // Update UI
             if (this.button.querySelector('img')) {
@@ -128,13 +149,15 @@ class ServerSelector {
             window.location.reload();
         } catch (error) {
             console.error('Error switching server:', error);
-            alert('Failed to switch server');
+            alert('Failed to switch server. Please try again.');
         }
     }
 }
 
 // Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing ServerSelector');
-    new ServerSelector();
-}); 
+if (!window.serverSelector) {
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM loaded, initializing ServerSelector');
+        window.serverSelector = new ServerSelector();
+    });
+} 

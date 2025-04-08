@@ -347,7 +347,6 @@ class GuildWorkflow(BaseWorkflow):
                 # Update guild status
                 async with session_context() as session:
                     guild_config_repo = GuildConfigRepositoryImpl(session)
-                    guild.is_verified = False
                     await guild_config_repo.update(guild)
                     
             except Exception as e:
@@ -367,7 +366,6 @@ class GuildWorkflow(BaseWorkflow):
             guild_config_repo = GuildConfigRepositoryImpl(session)
             guild = await guild_config_repo.get_by_guild_id(guild_id)
             if guild:
-                guild.is_verified = False
                 await guild_config_repo.update(guild)
                 
     async def cleanup_guild(self, guild_id: str) -> None:

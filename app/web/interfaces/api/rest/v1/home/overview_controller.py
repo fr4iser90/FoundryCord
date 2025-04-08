@@ -28,7 +28,7 @@ class HomeOverviewController:
                     select(
                         func.count(GuildEntity.id).label('total_guilds'),
                         func.sum(GuildEntity.member_count).label('total_members'),
-                        func.count(GuildEntity.id).filter(GuildEntity.is_verified == True).label('active_guilds')
+                        func.count(GuildEntity.id).filter(GuildEntity.access_status == 'approved').label('active_guilds')
                     )
                 )
                 
