@@ -146,7 +146,7 @@ run_initial_setup() {
         else
             return 1
         fi
-    }
+    fi
     
     # Check if Docker is installed on remote server
     print_info "Checking for Docker installation..."
