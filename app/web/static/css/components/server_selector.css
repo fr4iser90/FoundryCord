@@ -84,8 +84,9 @@
 }
 
 .server-list-item.active {
-    background: var(--primary);
-    color: white;
+    background: var(--primary-light);
+    color: var(--text-primary);
+    border-left: 3px solid var(--primary);
 }
 
 .server-list-item .server-icon {
@@ -110,6 +111,17 @@
 .server-list-item .server-id {
     font-size: 0.75rem;
     color: var(--text-muted);
+}
+
+.server-list-item .active-indicator {
+    margin-left: auto;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+}
+
+.server-list-item .active-indicator i {
+    font-size: 1.2rem;
 }
 
 /* Loading State */

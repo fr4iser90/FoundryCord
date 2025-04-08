@@ -47,6 +47,37 @@ class ServerSelector {
             console.log('Loading servers...');
             this.serverList.classList.add('loading');
             
+            // Get current server first
+            const currentResponse = await fetch('/api/v1/servers/current', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!currentResponse.ok) {
+                throw new Error(`HTTP error! status: ${currentResponse.status}`);
+            }
+            
+            const currentServer = await currentResponse.json();
+            this.currentGuildId = currentServer.guild_id;
+            
+            // Update button if we have a current server
+            if (currentServer && currentServer.guild_id) {
+                const button = document.getElementById('server-selector-button');
+                if (button) {
+                    const img = button.querySelector('img');
+                    const span = button.querySelector('span');
+                    if (img) {
+                        img.src = currentServer.icon_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
+                        img.alt = currentServer.name;
+                    }
+                    if (span) {
+                        span.textContent = currentServer.name;
+                    }
+                }
+            }
+            
             const response = await fetch('/api/v1/servers', {
                 method: 'GET',
                 headers: {
@@ -64,8 +95,7 @@ class ServerSelector {
             // Filter for approved servers only
             const approvedServers = servers.filter(server => {
                 console.log('Checking server:', server);
-                return server && server.access_status && 
-                       server.access_status.toLowerCase() === 'approved';
+                return server && server.access_status === 'approved';
             });
             
             this.serverList.classList.remove('loading');
@@ -93,10 +123,20 @@ class ServerSelector {
             return;
         }
 
+        // Sort servers to put current server first
+        const sortedServers = [...servers].sort((a, b) => {
+            if (a.guild_id === this.currentGuildId) return -1;
+            if (b.guild_id === this.currentGuildId) return 1;
+            return 0;
+        });
+
         this.serverList.classList.remove('empty');
-        servers.forEach(server => {
+        sortedServers.forEach(server => {
             const serverItem = document.createElement('div');
             serverItem.className = 'server-list-item';
+            if (server.guild_id === this.currentGuildId) {
+                serverItem.classList.add('active');
+            }
             serverItem.innerHTML = `
                 <img src="${server.icon_url || 'https://cdn.discordapp.com/embed/avatars/0.png'}" 
                      alt="${server.name}" 
@@ -105,6 +145,7 @@ class ServerSelector {
                     <div class="server-name">${server.name}</div>
                     <div class="server-id">${server.guild_id}</div>
                 </div>
+                ${server.guild_id === this.currentGuildId ? '<div class="active-indicator"><i class="bi bi-check2"></i></div>' : ''}
             `;
             
             // Use bound method for click handler
@@ -136,13 +177,21 @@ class ServerSelector {
             const result = await response.json();
             console.log('Switch server response:', result);
 
-            // Update UI
-            if (this.button.querySelector('img')) {
-                this.button.querySelector('img').src = server.icon_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
+            // Update UI immediately
+            const button = document.getElementById('server-selector-button');
+            if (button) {
+                const img = button.querySelector('img');
+                const span = button.querySelector('span');
+                if (img) {
+                    img.src = server.icon_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
+                    img.alt = server.name;
+                }
+                if (span) {
+                    span.textContent = server.name;
+                }
             }
-            if (this.button.querySelector('span')) {
-                this.button.querySelector('span').textContent = server.name;
-            }
+            
+            this.currentGuildId = server.guild_id;
             this.dropdown.classList.remove('show');
 
             // Reload page to update content

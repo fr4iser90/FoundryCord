@@ -1,12 +1,12 @@
 {# app/web/templates/components/navigation/server_selector.html #}
 <div class="navbar-item has-dropdown">
     <button class="navbar-link server-selector" id="server-selector-button" aria-haspopup="true" aria-expanded="false">
-        {% if request.session.get('active_guild') and request.session.active_guild.status == 'APPROVED' %}
-            <img src="{{ request.session.active_guild.icon_url }}" alt="{{ request.session.active_guild.name }}" class="server-icon">
-            <span class="server-name">{{ request.session.active_guild.name }}</span>
+        {% if request.session.get('selected_guild') %}
+            <img src="{{ request.session.selected_guild.icon_url }}" alt="{{ request.session.selected_guild.name }}" class="server-icon">
+            <span class="server-name">{{ request.session.selected_guild.name }}</span>
         {% else %}
             <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Select Server" class="server-icon">
-            <span class="server-name">Select Approved Server</span>
+            <span class="server-name">Select Server</span>
         {% endif %}
     </button>
     
