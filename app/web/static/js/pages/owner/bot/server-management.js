@@ -4,7 +4,7 @@ import { showToast, apiRequest } from '/static/js/components/common/notification
 const refreshServerList = async () => {
     try {
         showToast('info', 'Refreshing server list...');
-        await apiRequest('/api/v1/owner/bot/servers/list');
+        await apiRequest('/api/v1/owner/bot/servers');
         location.reload();
     } catch (error) {
         showToast('error', 'Could not refresh servers');
@@ -34,7 +34,7 @@ const updateAccess = async (guildId, status) => {
     try {
         showToast('info', 'Updating server status...');
         await apiRequest(`/api/v1/owner/bot/servers/${guildId}/access`, {
-            method: 'PUT',
+            method: 'POST',
             body: JSON.stringify({ 
                 status,
                 notes: banReason || undefined
@@ -99,8 +99,52 @@ const showServerDetails = async (guildId) => {
     }
 };
 
-// Event Listeners
+const addServer = async (formData) => {
+    try {
+        showToast('info', 'Adding server...');
+        await apiRequest('/api/v1/owner/bot/servers/add', {
+            method: 'POST',
+            body: JSON.stringify(Object.fromEntries(formData))
+        });
+        
+        showToast('success', '✅ Server added successfully');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addServerModal'));
+        modal.hide();
+        setTimeout(() => location.reload(), 1000);
+    } catch (error) {
+        showToast('error', 'Failed to add server');
+    }
+};
+
+// Initialize server management functionality
 document.addEventListener('DOMContentLoaded', () => {
+    // Add event listeners for server management buttons
+    document.querySelectorAll('[onclick^="updateAccess"]').forEach(button => {
+        const onclick = button.getAttribute('onclick');
+        const match = onclick.match(/updateAccess\('([^']+)',\s*'([^']+)'\)/);
+        if (match) {
+            const [_, guildId, status] = match;
+            button.onclick = (e) => {
+                e.preventDefault();
+                updateAccess(guildId, status);
+            };
+        }
+    });
+
+    // Add event listeners for server details buttons
+    document.querySelectorAll('[onclick^="showServerDetails"]').forEach(button => {
+        const onclick = button.getAttribute('onclick');
+        const match = onclick.match(/showServerDetails\('([^']+)'\)/);
+        if (match) {
+            const [_, guildId] = match;
+            button.onclick = (e) => {
+                e.preventDefault();
+                showServerDetails(guildId);
+            };
+        }
+    });
+
+    // Add event listener for refresh button
     const refreshBtn = document.querySelector('button[onclick="refreshServerList()"]');
     if (refreshBtn) {
         refreshBtn.onclick = (e) => {
@@ -108,26 +152,14 @@ document.addEventListener('DOMContentLoaded', () => {
             refreshServerList();
         };
     }
-    
+
+    // Add event listener for add server form
     const addServerForm = document.getElementById('addServerForm');
     if (addServerForm) {
         addServerForm.onsubmit = async (e) => {
             e.preventDefault();
             const formData = new FormData(addServerForm);
-            try {
-                showToast('info', 'Adding server...');
-                await apiRequest('/api/v1/owner/bot/servers/add', {
-                    method: 'POST',
-                    body: JSON.stringify(Object.fromEntries(formData))
-                });
-                
-                showToast('success', '✅ Server added successfully');
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addServerModal'));
-                modal.hide();
-                setTimeout(() => location.reload(), 1000);
-            } catch (error) {
-                showToast('error', 'Failed to add server');
-            }
+            await addServer(formData);
         };
     }
 }); 

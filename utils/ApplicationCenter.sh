@@ -124,124 +124,81 @@ main() {
 
 # Parse command line arguments
 parse_cli_args() {
-    for arg in "$@"; do
-        case $arg in
-            --auto-start)
-                export AUTO_START=true
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            # Development hot-reload options
+            --local-web-replace)
+                RUN_LOCALLY=true
+                hot_reload_web
+                exit $?
                 ;;
-            --no-auto-start)
-                export AUTO_START=false
+            --local-bot-replace)
+                RUN_LOCALLY=true
+                hot_reload_bot
+                exit $?
                 ;;
-            --watch-console)
-                export WATCH_CONSOLE=true
+            --local-shared-replace)
+                RUN_LOCALLY=true
+                hot_reload_shared
+                exit $?
                 ;;
-            --watch=*)
-                export WATCH_SERVICES="${arg#*=}"
-                export WATCH_CONSOLE=true
+            --local-all-replace)
+                RUN_LOCALLY=true
+                hot_reload_web
+                hot_reload_bot
+                hot_reload_shared
+                exit $?
                 ;;
-            --feedback=*)
-                export AUTO_START_FEEDBACK="${arg#*=}"
+            
+            # Existing options...
+            --init-only) INIT_ONLY=true ;;
+            --skip-confirmation) SKIP_CONFIRMATION=true ;;
+            --remove-volumes) REMOVE_VOLUMES=true ;;
+            --env-file=*) 
+                ENV_FILE="${1#*=}"
+                [ -f "$ENV_FILE" ] && source_env_file "$ENV_FILE"
                 ;;
-            --init-only)
-                export INIT_ONLY=true
-                ;;
-            --env-file=*)
-                export ENV_FILE="${arg#*=}"
-                if [ -f "$ENV_FILE" ]; then
-                    echo "Loading environment variables from $ENV_FILE..."
-                    # Only export valid VAR=VALUE lines, properly handling comments
-                    set -a
-                    source <(grep -E '^[A-Za-z0-9_]+=.+' "$ENV_FILE" | sed '/^#/d')
-                    set +a
-                else
-                    echo "Warning: Environment file $ENV_FILE not found"
-                fi
-                ;;
-            --quick-deploy)
-                export DIRECT_DEPLOY=true
-                run_quick_deploy
-                ;;
-            --quick-deploy-attach)
-                export DIRECT_DEPLOY=true
-                run_quick_deploy_attach
-                ;;
-            --partial-deploy)
-                export DIRECT_DEPLOY=true
-                run_partial_deploy
-                ;;
+            
+            # Deployment modes
+            --quick-deploy) DIRECT_DEPLOY=true; run_quick_deploy ;;
+            --quick-deploy-attach) DIRECT_DEPLOY=true; run_quick_deploy_attach ;;
+            --partial-deploy) DIRECT_DEPLOY=true; run_partial_deploy ;;
+            --deploy-with-auto-start) DIRECT_DEPLOY=true; run_quick_deploy_with_auto_start ;;
             --full-reset)
-                export DIRECT_DEPLOY=true
+                DIRECT_DEPLOY=true
                 if [ "$SKIP_CONFIRMATION" != "true" ]; then
-                    print_error "⚠️ WARNING: This will COMPLETELY ERASE your database and all data! ⚠️"
-                    if ! get_confirmed_input "Are you absolutely sure you want to DELETE ALL DATA?" "DELETE"; then
-                        print_info "Full reset deployment cancelled"
+                    print_error "⚠️ WARNING: This will COMPLETELY ERASE your database!"
+                    if ! get_confirmed_input "Are you ABSOLUTELY sure?" "DELETE"; then
+                        print_info "Cancelled."
                         exit 1
                     fi
                 fi
                 run_full_reset_deploy
                 ;;
-            --remove-volumes)
-                export REMOVE_VOLUMES=true
-                ;;
-            --skip-confirmation)
-                export SKIP_CONFIRMATION=true
-                ;;
             --deploy-with-monitoring)
-                export DIRECT_DEPLOY=true
+                DIRECT_DEPLOY=true
                 run_deployment_with_monitoring "all"
                 ;;
-            --deploy-with-auto-start)
-                export DIRECT_DEPLOY=true
-                run_quick_deploy_with_auto_start
-                ;;
-            --test-ALL)
-                export DIRECT_ACTION=true
-                run_tests_with_docker_container "all"
-                exit $?
-                ;;
-            --test-unit)
-                export DIRECT_ACTION=true
-                run_unit_tests
-                exit $?
-                ;;
-            --test-integration)
-                export DIRECT_ACTION=true
-                run_integration_tests
-                exit $?
-                ;;
-            --test-system)
-                export DIRECT_ACTION=true
-                run_system_tests
-                exit $?
-                ;;
-            --test-dashboard)
-                run_dashboard_tests
-                exit 0
-                ;;
-            --test-simple)
-                run_simple_test
-                exit 0
-                ;;
-            --test-ordered)
-                export DIRECT_ACTION=true
-                run_ordered_tests
-                exit $?
-                ;;
-            --sync-results)
-                export DIRECT_ACTION=true
-                log_info "Synchronizing test results between directories..."
-                sync_test_results
-                exit 0
-                ;;
-            --sequential-tests)
-                export DIRECT_ACTION=true
-                run_sequential_tests
-                exit $?
-                ;;
+            --watch-console) WATCH_CONSOLE=true ;;
+            --watch=*) WATCH_SERVICES="${1#*=}"; WATCH_CONSOLE=true ;;
+
+            # Testing
+            --test-ALL) DIRECT_ACTION=true; run_tests_with_docker_container "all"; exit $? ;;
+            --test-unit) DIRECT_ACTION=true; run_unit_tests; exit $? ;;
+            --test-integration) DIRECT_ACTION=true; run_integration_tests; exit $? ;;
+            --test-system) DIRECT_ACTION=true; run_system_tests; exit $? ;;
+            --test-ordered) DIRECT_ACTION=true; run_ordered_tests; exit $? ;;
+            --test-simple) run_simple_test; exit 0 ;;
+            --test-dashboard) run_dashboard_tests; exit 0 ;;
+            --sequential-tests) DIRECT_ACTION=true; run_sequential_tests; exit $? ;;
+            --sync-results) DIRECT_ACTION=true; sync_test_results; exit 0 ;;
+
+            # Unknown argument
             *)
-                # Pass other arguments to the common parser
+                echo "⚠️ Unknown argument: $1"
                 ;;
         esac
+        shift
     done
 }
 

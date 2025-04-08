@@ -1,70 +1,77 @@
-from fastapi import APIRouter, Request, Depends, Response, HTTPException, status
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from app.web.core.extensions import templates_extension
 from app.web.domain.auth.services.web_authentication_service import WebAuthenticationService
-from app.web.infrastructure.config.env_loader import get_discord_oauth_config
-from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
-from app.shared.infrastructure.constants import OWNER, ADMINS, MODERATORS, USERS
-from app.shared.domain.auth.models import Role
-from app.web.domain.auth.permissions import get_user_role
 from app.shared.interface.logging.api import get_web_logger
-import httpx
-from sqlalchemy import select
-from app.shared.infrastructure.models.discord import GuildEntity
+from app.web.infrastructure.config.env_loader import get_discord_oauth_config
+from app.shared.infrastructure.constants import OWNER, ADMINS, MODERATORS, USERS
 from app.shared.infrastructure.database.session import session_context
+from app.shared.infrastructure.models.discord import GuildEntity
+from sqlalchemy import select
+import httpx
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(prefix="/auth", tags=["Authentication Views"])
+templates = templates_extension()
 logger = get_web_logger()
 discord_config = get_discord_oauth_config()
-templates = templates_extension()
 
 class AuthView:
-    """View für Authentifizierung über Discord OAuth"""
+    """View for authentication pages and OAuth flow"""
     
     def __init__(self):
         self.router = router
         self._register_routes()
     
     def _register_routes(self):
-        """Registriert alle Routes für diese View"""
-        self.router.get("/login")(self.login)
+        """Register web routes"""
+        self.router.get("/login", response_class=HTMLResponse)(self.login_page)
         self.router.get("/callback")(self.oauth_callback)
-        self.router.get("/logout")(self.logout)
-        self.router.get("/debug-session")(self.debug_session)
+        self.router.get("/logout", response_class=HTMLResponse)(self.logout_page)
+        self.router.get("/discord-login")(self.discord_login)  # New route for Discord redirect
     
-    def get_auth_service(self):
-        """Dependency für den Auth-Service"""
-        key_service = KeyManagementService()
-        return WebAuthenticationService(key_service=key_service)
-    
-    async def login(self, request: Request):
-        """Redirect to Discord OAuth directly"""
+    async def login_page(self, request: Request):
+        """Render login page"""
         if "user" in request.session:
-            return RedirectResponse(url="/bot/overview")
+            return RedirectResponse(url="/home")
             
+        return templates.TemplateResponse(
+            "index.html",
+            {
+                "request": request,
+                "page_title": "Login - HomeLab Discord Bot"
+            }
+        )
+
+    async def discord_login(self, request: Request):
+        """Generate Discord OAuth URL and redirect"""
+        logger.debug(f"Using OAuth config: {discord_config}")  # Log config for debugging
         auth_url = (
-            f"https://discord.com/api/oauth2/authorize"
+            f"https://discord.com/oauth2/authorize"
             f"?client_id={discord_config['client_id']}"
             f"&redirect_uri={discord_config['redirect_uri']}"
             f"&response_type=code"
             f"&scope=identify"
         )
+        logger.debug(f"Generated auth URL: {auth_url}")  # Log URL for debugging
         return RedirectResponse(url=auth_url)
-    
+
     async def oauth_callback(self, code: str, request: Request):
         """Handle OAuth callback from Discord"""
         try:
+            logger.debug(f"Received callback with code: {code}")  # Log callback
             async with httpx.AsyncClient() as client:
+                token_data = {
+                    "client_id": discord_config["client_id"],
+                    "client_secret": discord_config["client_secret"],
+                    "grant_type": "authorization_code",
+                    "code": code,
+                    "redirect_uri": discord_config["redirect_uri"]
+                }
+                logger.debug(f"Token exchange data: {token_data}")  # Log exchange data
                 # Exchange code for token
                 token_response = await client.post(
                     "https://discord.com/api/oauth2/token",
-                    data={
-                        "client_id": discord_config["client_id"],
-                        "client_secret": discord_config["client_secret"],
-                        "grant_type": "authorization_code",
-                        "code": code,
-                        "redirect_uri": discord_config["redirect_uri"],
-                    }
+                    data=token_data
                 )
                 
                 if token_response.status_code != 200:
@@ -111,49 +118,29 @@ class AuthView:
                     first_guild = result.scalars().first()
                     
                     if first_guild:
-                        # Update session directly
                         request.session["active_guild"] = {
                             "id": first_guild.guild_id,
                             "name": first_guild.name,
                             "icon_url": first_guild.icon_url or "https://cdn.discordapp.com/embed/avatars/0.png"
                         }
-                        logger.debug(f"Set initial active_guild in session: {request.session['active_guild']}")
                 
-                # Update session directly
                 request.session["user"] = user
                 request.session["token"] = token["access_token"]
                 
-                logger.info(f"User {user['username']} logged in successfully with role {user_role}")
-                
-                # Redirect based on role
-                return RedirectResponse(
-                    url="/home",
-                    status_code=status.HTTP_303_SEE_OTHER
-                )
+                return RedirectResponse(url="/home", status_code=303)
                 
         except Exception as e:
             logger.error(f"OAuth callback failed: {e}")
-            raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+            return RedirectResponse(url="/auth/login", status_code=303)
     
-    async def logout(self, request: Request):
-        """Clear session and redirect to home"""
+    async def logout_page(self, request: Request):
+        """Handle web logout and render logout page"""
         request.session.clear()
-        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-    
-    async def debug_session(self, request: Request):
-        """Debug endpoint to see session contents"""
-        if not request.session.get("user", {}).get("role") == "OWNER":
-            raise HTTPException(status_code=403, detail="Only OWNER can access debug information")
-            
-        return {
-            "session": request.session,
-            "user": request.session.get("user", "No user in session"),
-            "token": "Present" if "token" in request.session else "Not present"
-        }
+        return RedirectResponse(url="/", status_code=303)
 
-# View-Instanz erzeugen
+# Create view instance
 auth_view = AuthView()
-login = auth_view.login
+login_page = auth_view.login_page
 oauth_callback = auth_view.oauth_callback
-logout = auth_view.logout
-debug_session = auth_view.debug_session 
+logout_page = auth_view.logout_page
+discord_login = auth_view.discord_login 

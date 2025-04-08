@@ -651,3 +651,133 @@ run_quick_deploy_attach() {
     print_success "Quick deployment completed successfully!"
     return 0
 }
+
+# Hot-reload functions for development
+hot_reload_web() {
+    print_section_header "Hot-Reloading Web Files"
+    
+    if [ "$RUN_LOCALLY" = true ]; then
+        print_info "Updating web files in local development environment..."
+        
+        # Copy only web-related files
+        if [ -d "${LOCAL_GIT_DIR}/app/web" ]; then
+            # Backup current requirements.txt if it exists
+            local old_reqs=""
+            if [ -f "${LOCAL_APP_DIR}/web/requirements.txt" ]; then
+                old_reqs=$(cat "${LOCAL_APP_DIR}/web/requirements.txt")
+            fi
+            
+            # Copy new files
+            cp -r "${LOCAL_GIT_DIR}/app/web/"* "${LOCAL_APP_DIR}/web/"
+            
+            # Check if requirements changed
+            local restart_needed=false
+            if [ -f "${LOCAL_APP_DIR}/web/requirements.txt" ]; then
+                local new_reqs=$(cat "${LOCAL_APP_DIR}/web/requirements.txt")
+                if [ "$old_reqs" != "$new_reqs" ]; then
+                    print_warning "Requirements changed - container restart needed!"
+                    restart_needed=true
+                fi
+            fi
+            
+            if [ "$restart_needed" = true ]; then
+                print_info "Restarting web container due to requirement changes..."
+                docker compose restart web
+            else
+                print_success "Web files updated without container restart!"
+            fi
+        else
+            print_error "Source directory ${LOCAL_GIT_DIR}/app/web not found!"
+            return 1
+        fi
+    else
+        print_error "Hot-reload only available in local mode!"
+        return 1
+    fi
+}
+
+hot_reload_bot() {
+    print_section_header "Hot-Reloading Bot Files"
+    
+    if [ "$RUN_LOCALLY" = true ]; then
+        print_info "Updating bot files in local development environment..."
+        
+        # Copy only bot-related files
+        if [ -d "${LOCAL_GIT_DIR}/app/bot" ]; then
+            # Backup current requirements.txt if it exists
+            local old_reqs=""
+            if [ -f "${LOCAL_APP_DIR}/bot/requirements.txt" ]; then
+                old_reqs=$(cat "${LOCAL_APP_DIR}/bot/requirements.txt")
+            fi
+            
+            # Copy new files
+            cp -r "${LOCAL_GIT_DIR}/app/bot/"* "${LOCAL_APP_DIR}/bot/"
+            
+            # Check if requirements changed
+            local restart_needed=false
+            if [ -f "${LOCAL_APP_DIR}/bot/requirements.txt" ]; then
+                local new_reqs=$(cat "${LOCAL_APP_DIR}/bot/requirements.txt")
+                if [ "$old_reqs" != "$new_reqs" ]; then
+                    print_warning "Requirements changed - container restart needed!"
+                    restart_needed=true
+                fi
+            fi
+            
+            if [ "$restart_needed" = true ]; then
+                print_info "Restarting bot container due to requirement changes..."
+                docker compose restart bot
+            else
+                print_success "Bot files updated without container restart!"
+            fi
+        else
+            print_error "Source directory ${LOCAL_GIT_DIR}/app/bot not found!"
+            return 1
+        fi
+    else
+        print_error "Hot-reload only available in local mode!"
+        return 1
+    fi
+}
+
+hot_reload_shared() {
+    print_section_header "Hot-Reloading Shared Files"
+    
+    if [ "$RUN_LOCALLY" = true ]; then
+        print_info "Updating shared files in local development environment..."
+        
+        # Copy shared files
+        if [ -d "${LOCAL_GIT_DIR}/app/shared" ]; then
+            # Backup current requirements.txt if it exists
+            local old_reqs=""
+            if [ -f "${LOCAL_APP_DIR}/shared/requirements.txt" ]; then
+                old_reqs=$(cat "${LOCAL_APP_DIR}/shared/requirements.txt")
+            fi
+            
+            # Copy new files
+            cp -r "${LOCAL_GIT_DIR}/app/shared/"* "${LOCAL_APP_DIR}/shared/"
+            
+            # Check if requirements changed
+            local restart_needed=false
+            if [ -f "${LOCAL_APP_DIR}/shared/requirements.txt" ]; then
+                local new_reqs=$(cat "${LOCAL_APP_DIR}/shared/requirements.txt")
+                if [ "$old_reqs" != "$new_reqs" ]; then
+                    print_warning "Requirements changed - containers restart needed!"
+                    restart_needed=true
+                fi
+            fi
+            
+            if [ "$restart_needed" = true ]; then
+                print_info "Restarting containers due to shared requirement changes..."
+                docker compose restart web bot
+            else
+                print_success "Shared files updated without container restart!"
+            fi
+        else
+            print_error "Source directory ${LOCAL_GIT_DIR}/app/shared not found!"
+            return 1
+        fi
+    else
+        print_error "Hot-reload only available in local mode!"
+        return 1
+    fi
+}

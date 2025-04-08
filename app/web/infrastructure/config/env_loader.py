@@ -41,7 +41,7 @@ def get_discord_oauth_config() -> dict:
 def get_jwt_config() -> dict:
     """Get JWT configuration"""
     return {
-        "secret_key": load_env_var("JWT_SECRET_KEY", "development_jwt_secret"),
+        "secret_key": load_env_var("JWT_SECRET_KEY"),
         "algorithm": "HS256",
         "access_token_expire_minutes": load_int_env_var("ACCESS_TOKEN_EXPIRE_MINUTES", 60)
     } 

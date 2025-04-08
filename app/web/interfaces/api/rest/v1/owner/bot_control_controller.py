@@ -12,10 +12,6 @@ from sqlalchemy.sql import func
 
 logger = get_web_logger()
 router = APIRouter(prefix="/v1/owner/bot", tags=["Owner Bot Control"])
-
-class AccessUpdateRequest(BaseModel):
-    status: str
-
 class BotControlController:
     """Controller for owner bot control functionality"""
     

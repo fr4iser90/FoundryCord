@@ -1,84 +1,94 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const serverSelector = document.querySelector('.server-selector');
-    if (!serverSelector) return;
+import { showToast, apiRequest } from '/static/js/components/common/notifications.js';
 
-    // Get server list and populate dropdown
-    async function loadServers() {
+// Server Selector Component
+class ServerSelector {
+    constructor() {
+        this.button = document.getElementById('server-selector-button');
+        this.dropdown = document.getElementById('server-dropdown');
+        this.serverList = this.dropdown?.querySelector('.server-list');
+        
+        if (this.button && this.dropdown && this.serverList) {
+            this.setupEventListeners();
+            this.loadServers();
+        }
+    }
+
+    setupEventListeners() {
+        // Toggle dropdown on button click
+        this.button.addEventListener('click', () => {
+            this.dropdown.classList.toggle('is-active');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (event) => {
+            if (!this.button.contains(event.target) && !this.dropdown.contains(event.target)) {
+                this.dropdown.classList.remove('is-active');
+            }
+        });
+    }
+
+    async loadServers() {
         try {
-            const response = await fetch('/api/servers/list');
-            if (!response.ok) throw new Error('Failed to load servers');
-            
-            const servers = await response.json();
-            updateServerList(servers);
+            const response = await apiRequest('/api/servers/list');
+            const servers = response.filter(server => server.status === 'APPROVED');
+            this.updateServerList(servers);
         } catch (error) {
             console.error('Error loading servers:', error);
+            this.serverList.innerHTML = '<div class="navbar-item">Error loading servers</div>';
         }
     }
 
-    // Update server list in dropdown
-    function updateServerList(servers) {
-        const serverList = document.querySelector('.server-list');
-        if (!serverList) return;
+    updateServerList(servers) {
+        this.serverList.innerHTML = '';
+        if (servers.length === 0) {
+            this.serverList.innerHTML = '<div class="navbar-item">No approved servers available</div>';
+            return;
+        }
 
-        serverList.innerHTML = servers.map(server => `
-            <div class="server-item" data-server-id="${server.id}">
-                <img src="${server.icon_url || 'https://cdn.discordapp.com/embed/avatars/0.png'}" alt="${server.name}" class="server-icon">
-                <span class="server-name">${server.name}</span>
-                <span class="member-count">${server.member_count || 0} members</span>
-            </div>
-        `).join('');
-
-        // Add click handlers
-        document.querySelectorAll('.server-item').forEach(item => {
-            item.addEventListener('click', () => switchServer(item.dataset.serverId));
+        servers.forEach(server => {
+            const serverItem = document.createElement('a');
+            serverItem.className = 'navbar-item server-item';
+            serverItem.innerHTML = `
+                <img src="${server.icon_url || 'https://cdn.discordapp.com/embed/avatars/0.png'}" 
+                     alt="${server.name}" 
+                     class="server-icon">
+                <span>${server.name}</span>
+            `;
+            serverItem.addEventListener('click', () => this.switchServer(server));
+            this.serverList.appendChild(serverItem);
         });
     }
 
-    // Switch active server
-    async function switchServer(serverId) {
+    async switchServer(server) {
+        if (server.status !== 'APPROVED') {
+            console.error('Cannot switch to non-approved server');
+            return;
+        }
+
         try {
-            const response = await fetch(`/api/servers/switch/${serverId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+            await apiRequest(`/api/servers/switch/${server.id}`, {
+                method: 'POST'
             });
 
-            if (!response.ok) throw new Error('Failed to switch server');
-            
-            const result = await response.json();
-            if (result.success) {
-                // Update UI to reflect active_guild change
-                const serverButton = document.querySelector('#server-selector-button');
-                if (serverButton) {
-                    serverButton.innerHTML = `
-                        <img src="${result.server.icon_url}" alt="${result.server.name}" class="server-icon">
-                        <span>${result.server.name}</span>
-                    `;
-                }
-                // Reload page to update context
-                window.location.reload();
+            // Update UI
+            if (this.button.querySelector('img')) {
+                this.button.querySelector('img').src = server.icon_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
             }
+            if (this.button.querySelector('span')) {
+                this.button.querySelector('span').textContent = server.name;
+            }
+            this.dropdown.classList.remove('is-active');
+
+            // Reload page to update content
+            window.location.reload();
         } catch (error) {
             console.error('Error switching server:', error);
+            showToast('error', 'Failed to switch server');
         }
     }
+}
 
-    // Initial load
-    loadServers();
-
-    // Toggle dropdown
-    const currentServer = document.querySelector('.current-server');
-    if (currentServer) {
-        currentServer.addEventListener('click', function() {
-            serverSelector.classList.toggle('active');
-        });
-    }
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', function(event) {
-        if (!serverSelector.contains(event.target)) {
-            serverSelector.classList.remove('active');
-        }
-    });
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    new ServerSelector();
 }); 

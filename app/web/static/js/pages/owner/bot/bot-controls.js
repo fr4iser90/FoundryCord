@@ -1,4 +1,4 @@
-import { showToast, apiRequest, formatDuration } from '../../../components/common/notifications.js';
+import { showToast, apiRequest, formatDuration } from '/static/js/components/common/notifications.js';
 
 // Bot Control Functions
 const startBot = async () => {
@@ -37,7 +37,6 @@ const updateBotStatus = async () => {
         updateStatusUI(data);
     } catch (error) {
         console.error('Failed to update bot status:', error);
-        // Don't show toast for status updates to avoid spam
         updateStatusUI({ status: 'offline', latency: 0 });
     }
 };
@@ -105,11 +104,30 @@ const toggleWorkflow = async (workflowId) => {
     }
 };
 
-// Set up periodic status updates
+// Initialize bot controls
 document.addEventListener('DOMContentLoaded', () => {
-    updateBotStatus(); // Initial status update
-    setInterval(updateBotStatus, 30000); // Update every 30 seconds
-    
+    // Add event listeners for bot control buttons
+    document.querySelectorAll('[onclick^="startBot"]').forEach(button => {
+        button.onclick = (e) => {
+            e.preventDefault();
+            startBot();
+        };
+    });
+
+    document.querySelectorAll('[onclick^="stopBot"]').forEach(button => {
+        button.onclick = (e) => {
+            e.preventDefault();
+            stopBot();
+        };
+    });
+
+    document.querySelectorAll('[onclick^="restartBot"]').forEach(button => {
+        button.onclick = (e) => {
+            e.preventDefault();
+            restartBot();
+        };
+    });
+
     // Add event listeners for workflow toggles
     document.querySelectorAll('[id^="workflow-"]').forEach(checkbox => {
         checkbox.addEventListener('change', (e) => {
@@ -117,4 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleWorkflow(workflowId);
         });
     });
+
+    // Initial status update
+    updateBotStatus();
+    // Set up periodic status updates
+    setInterval(updateBotStatus, 30000); // Update every 30 seconds
 }); 

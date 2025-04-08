@@ -1,13 +1,6 @@
-import { showToast, apiRequest } from '../../../components/common/notifications.js';
+import { showToast, apiRequest } from '/static/js/components/common/notifications.js';
 
 // Configuration Management Functions
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('botConfigForm');
-    if (form) {
-        form.addEventListener('submit', handleConfigSubmit);
-    }
-});
-
 const handleConfigSubmit = async (event) => {
     event.preventDefault();
     
@@ -32,14 +25,14 @@ const handleConfigSubmit = async (event) => {
     };
     
     try {
-        await apiRequest('/api/owner/bot/config', {
+        await apiRequest('/api/v1/owner/bot/config', {
             method: 'PUT',
             body: JSON.stringify(config),
         });
         
         showToast('success', 'Configuration updated successfully');
     } catch (error) {
-        // Error already handled by apiRequest
+        showToast('error', 'Failed to update configuration');
     }
 };
 
@@ -49,7 +42,7 @@ const resetConfig = async () => {
     }
     
     try {
-        const data = await apiRequest('/api/owner/bot/config/reset', {
+        const data = await apiRequest('/api/v1/owner/bot/config/reset', {
             method: 'POST'
         });
         
@@ -67,7 +60,7 @@ const resetConfig = async () => {
             }
         });
     } catch (error) {
-        // Error already handled by apiRequest
+        showToast('error', 'Failed to reset configuration');
     }
 };
 
@@ -84,8 +77,22 @@ const validateNumberInput = (input) => {
     }
 };
 
-// Set up input validation listeners
+// Initialize config management
 document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('botConfigForm');
+    if (form) {
+        form.addEventListener('submit', handleConfigSubmit);
+    }
+
+    const resetButton = document.querySelector('button[onclick="resetConfig()"]');
+    if (resetButton) {
+        resetButton.onclick = (e) => {
+            e.preventDefault();
+            resetConfig();
+        };
+    }
+
+    // Set up input validation listeners
     const numberInputs = document.querySelectorAll('input[type="number"]');
     numberInputs.forEach(input => {
         input.addEventListener('input', () => validateNumberInput(input));
