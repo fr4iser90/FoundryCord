@@ -1,7 +1,7 @@
 import { showToast, apiRequest } from '/static/js/components/common/notifications.js';
 
 // Configuration Management Functions
-const handleConfigSubmit = async (event) => {
+export async function handleConfigSubmit(event) {
     event.preventDefault();
     
     const form = event.target;
@@ -34,9 +34,9 @@ const handleConfigSubmit = async (event) => {
     } catch (error) {
         showToast('error', 'Failed to update configuration');
     }
-};
+}
 
-const resetConfig = async () => {
+export async function resetConfig() {
     if (!confirm('Are you sure you want to reset all settings to default values?')) {
         return;
     }
@@ -62,10 +62,10 @@ const resetConfig = async () => {
     } catch (error) {
         showToast('error', 'Failed to reset configuration');
     }
-};
+}
 
 // Validation Functions
-const validateNumberInput = (input) => {
+export function validateNumberInput(input) {
     const value = parseInt(input.value);
     const min = parseInt(input.min);
     const max = parseInt(input.max);
@@ -75,7 +75,7 @@ const validateNumberInput = (input) => {
     } else {
         input.setCustomValidity('');
     }
-};
+}
 
 // Initialize config management
 document.addEventListener('DOMContentLoaded', () => {
@@ -84,12 +84,12 @@ document.addEventListener('DOMContentLoaded', () => {
         form.addEventListener('submit', handleConfigSubmit);
     }
 
-    const resetButton = document.querySelector('button[onclick="resetConfig()"]');
+    const resetButton = document.querySelector('button[data-action="reset-config"]');
     if (resetButton) {
-        resetButton.onclick = (e) => {
+        resetButton.addEventListener('click', (e) => {
             e.preventDefault();
             resetConfig();
-        };
+        });
     }
 
     // Set up input validation listeners

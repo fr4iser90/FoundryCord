@@ -1,13 +1,19 @@
+import { showToast, apiRequest } from '/static/js/components/common/notifications.js';
+
 // Server Selector Component
-class ServerSelector {
+export class ServerSelector {
     constructor() {
         console.log('Initializing ServerSelector');
-        // Bind methods to this instance
-        this.loadServers = this.loadServers.bind(this);
-        this.updateServerList = this.updateServerList.bind(this);
-        this.switchServer = this.switchServer.bind(this);
-        this.setupEventListeners = this.setupEventListeners.bind(this);
-        
+        // Initialize when DOM is loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.init());
+        } else {
+            this.init();
+        }
+    }
+
+    init() {
+        // Find required elements
         this.button = document.getElementById('server-selector-button');
         this.dropdown = document.getElementById('server-dropdown');
         this.serverList = this.dropdown?.querySelector('.server-list');
@@ -48,18 +54,7 @@ class ServerSelector {
             this.serverList.classList.add('loading');
             
             // Get current server first
-            const currentResponse = await fetch('/api/v1/servers/current', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-            
-            if (!currentResponse.ok) {
-                throw new Error(`HTTP error! status: ${currentResponse.status}`);
-            }
-            
-            const currentServer = await currentResponse.json();
+            const currentServer = await apiRequest('/api/v1/servers/current');
             this.currentGuildId = currentServer.guild_id;
             
             // Update button if we have a current server
@@ -78,18 +73,7 @@ class ServerSelector {
                 }
             }
             
-            const response = await fetch('/api/v1/servers', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const servers = await response.json();
+            const servers = await apiRequest('/api/v1/servers');
             console.log('Servers loaded:', servers);
             
             // Filter for approved servers only
@@ -110,6 +94,7 @@ class ServerSelector {
             console.error('Error loading servers:', error);
             this.serverList.classList.remove('loading');
             this.serverList.innerHTML = '<div class="server-list-item">Error loading servers</div>';
+            showToast('error', 'Failed to load servers');
         }
     }
 
@@ -148,34 +133,17 @@ class ServerSelector {
                 ${server.guild_id === this.currentGuildId ? '<div class="active-indicator"><i class="bi bi-check2"></i></div>' : ''}
             `;
             
-            // Use bound method for click handler
-            serverItem.addEventListener('click', this.switchServer.bind(this, server));
+            serverItem.addEventListener('click', () => this.switchServer(server));
             this.serverList.appendChild(serverItem);
         });
     }
 
-    async switchServer(server, event) {
-        if (event) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-        
+    async switchServer(server) {
         try {
             console.log('Switching to server:', server);
-            const response = await fetch(`/api/v1/servers/select/${server.guild_id}`, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                }
+            await apiRequest(`/api/v1/servers/select/${server.guild_id}`, {
+                method: 'POST'
             });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            console.log('Switch server response:', result);
 
             // Update UI immediately
             const button = document.getElementById('server-selector-button');
@@ -193,12 +161,14 @@ class ServerSelector {
             
             this.currentGuildId = server.guild_id;
             this.dropdown.classList.remove('show');
+            
+            showToast('success', `Switched to server: ${server.name}`);
 
             // Reload page to update content
             window.location.reload();
         } catch (error) {
             console.error('Error switching server:', error);
-            alert('Failed to switch server. Please try again.');
+            showToast('error', 'Failed to switch server. Please try again.');
         }
     }
 }

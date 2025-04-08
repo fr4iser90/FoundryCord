@@ -32,8 +32,8 @@ class BotControlController:
         try:
             await require_role(current_user, Role.OWNER)
             bot_connector = await get_bot_connector()
-            await bot_connector.start()
-            return {"message": "Bot started successfully"}
+            await bot_connector.start_bot(current_user)
+            return {"status": "success", "message": "Bot started successfully"}
         except Exception as e:
             logger.error(f"Error starting bot: {e}")
             raise HTTPException(
@@ -46,8 +46,8 @@ class BotControlController:
         try:
             await require_role(current_user, Role.OWNER)
             bot_connector = await get_bot_connector()
-            await bot_connector.stop()
-            return {"message": "Bot stopped successfully"}
+            await bot_connector.stop_bot(current_user)
+            return {"status": "success", "message": "Bot stopped successfully"}
         except Exception as e:
             logger.error(f"Error stopping bot: {e}")
             raise HTTPException(
@@ -60,8 +60,8 @@ class BotControlController:
         try:
             await require_role(current_user, Role.OWNER)
             bot_connector = await get_bot_connector()
-            await bot_connector.restart()
-            return {"message": "Bot restarted successfully"}
+            await bot_connector.restart_bot(current_user)
+            return {"status": "success", "message": "Bot restarted successfully"}
         except Exception as e:
             logger.error(f"Error restarting bot: {e}")
             raise HTTPException(
@@ -74,22 +74,25 @@ class BotControlController:
         try:
             await require_role(current_user, Role.OWNER)
             bot_connector = await get_bot_connector()
-            bot = await bot_connector.get_bot()
+            status_data = await bot_connector.get_status()
             
-            if not bot:
+            if not status_data:
                 return {
                     "status": "offline",
                     "uptime": 0,
                     "latency": 0,
-                    "guilds": 0
+                    "guilds": 0,
+                    "total_members": 0,
+                    "commands_today": 0
                 }
             
-            return {
-                "status": "online" if bot.is_ready() else "connecting",
-                "uptime": bot.uptime if hasattr(bot, "uptime") else 0,
-                "latency": round(bot.latency * 1000, 2) if hasattr(bot, "latency") else 0,
-                "guilds": len(bot.guilds) if hasattr(bot, "guilds") else 0
-            }
+            # Add total members and commands today if not present
+            if "total_members" not in status_data:
+                status_data["total_members"] = sum(g.member_count for g in status_data.get("guilds", []))
+            if "commands_today" not in status_data:
+                status_data["commands_today"] = 0
+                
+            return status_data
             
         except Exception as e:
             logger.error(f"Error getting bot status: {e}")
@@ -103,8 +106,8 @@ class BotControlController:
         try:
             await require_role(current_user, Role.OWNER)
             bot_connector = await get_bot_connector()
-            config = await bot_connector.get_config()
-            return config
+            config = await bot_connector.get_bot_config(current_user)
+            return {"status": "success", "config": config}
         except Exception as e:
             logger.error(f"Error getting bot config: {e}")
             raise HTTPException(
@@ -117,8 +120,8 @@ class BotControlController:
         try:
             await require_role(current_user, Role.OWNER)
             bot_connector = await get_bot_connector()
-            await bot_connector.update_config(config)
-            return {"message": "Bot configuration updated successfully"}
+            await bot_connector.get_bot_config(current_user)
+            return {"status": "success", "message": "Bot configuration updated successfully"}
         except Exception as e:
             logger.error(f"Error updating bot config: {e}")
             raise HTTPException(

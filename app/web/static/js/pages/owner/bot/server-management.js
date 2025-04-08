@@ -1,30 +1,10 @@
+import { showToast, apiRequest } from '/static/js/components/common/notifications.js';
+
 // Server Management Functions
-function showToast(type, message) {
-    // Basic toast implementation
-    console.log(`${type}: ${message}`);
-}
-
-async function apiRequest(url, options = {}) {
-    const response = await fetch(url, {
-        ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            ...options.headers
-        }
-    });
-    
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return response.json();
-}
-
 async function refreshServerList() {
     try {
         showToast('info', 'Refreshing server list...');
-        const response = await fetch('/api/v1/owner/servers');
-        const servers = await response.json();
+        const servers = await apiRequest('/api/v1/owner/servers');
         
         // Update UI with server lists
         const pendingServers = servers.filter(s => s.access_status.toLowerCase() === 'pending');
@@ -92,13 +72,13 @@ function getActionButtons(server) {
     if (status === 'pending') {
         return `
             <div class="btn-group">
-                <button onclick="updateAccess('${server.guild_id}', 'approved')" class="btn btn-success btn-sm">
+                <button data-action="approve" data-guild-id="${server.guild_id}" class="btn btn-success btn-sm">
                     <i class="bi bi-check-lg"></i>
                 </button>
-                <button onclick="updateAccess('${server.guild_id}', 'rejected')" class="btn btn-danger btn-sm">
+                <button data-action="reject" data-guild-id="${server.guild_id}" class="btn btn-danger btn-sm">
                     <i class="bi bi-x-lg"></i>
                 </button>
-                <button onclick="showServerDetails('${server.guild_id}')" class="btn btn-info btn-sm">
+                <button data-action="details" data-guild-id="${server.guild_id}" class="btn btn-info btn-sm">
                     <i class="bi bi-info-circle"></i>
                 </button>
             </div>
@@ -108,10 +88,10 @@ function getActionButtons(server) {
     if (status === 'approved') {
         return `
             <div class="btn-group">
-                <button onclick="showServerDetails('${server.guild_id}')" class="btn btn-info btn-sm">
+                <button data-action="details" data-guild-id="${server.guild_id}" class="btn btn-info btn-sm">
                     <i class="bi bi-info-circle"></i>
                 </button>
-                <button onclick="updateAccess('${server.guild_id}', 'blocked')" class="btn btn-warning btn-sm">
+                <button data-action="block" data-guild-id="${server.guild_id}" class="btn btn-warning btn-sm">
                     <i class="bi bi-pause-circle"></i>
                 </button>
             </div>
@@ -120,10 +100,10 @@ function getActionButtons(server) {
     
     return `
         <div class="btn-group">
-            <button onclick="showServerDetails('${server.guild_id}')" class="btn btn-info btn-sm">
+            <button data-action="details" data-guild-id="${server.guild_id}" class="btn btn-info btn-sm">
                 <i class="bi bi-info-circle"></i>
             </button>
-            <button onclick="updateAccess('${server.guild_id}', 'approved')" class="btn btn-success btn-sm">
+            <button data-action="approve" data-guild-id="${server.guild_id}" class="btn btn-success btn-sm">
                 <i class="bi bi-check-lg"></i>
             </button>
         </div>
@@ -133,11 +113,8 @@ function getActionButtons(server) {
 async function updateAccess(guildId, status) {
     try {
         showToast('info', 'Updating server status...');
-        await fetch(`/api/v1/owner/servers/${guildId}/access`, {
+        await apiRequest(`/api/v1/owner/servers/${guildId}/access`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify({ status: status.toLowerCase() })
         });
         
@@ -151,8 +128,7 @@ async function updateAccess(guildId, status) {
 
 async function showServerDetails(guildId) {
     try {
-        const response = await fetch(`/api/v1/owner/servers/${guildId}/details`);
-        const data = await response.json();
+        const data = await apiRequest(`/api/v1/owner/servers/${guildId}/details`);
         
         const modal = document.getElementById('serverDetailsModal');
         if (!modal) return;
@@ -177,14 +153,35 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial server list load
     refreshServerList();
     
+    // Add click handlers for server actions
+    document.addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+        
+        const action = button.dataset.action;
+        const guildId = button.dataset.guildId;
+        
+        if (!guildId) return;
+        
+        switch(action) {
+            case 'approve':
+                await updateAccess(guildId, 'approved');
+                break;
+            case 'reject':
+                await updateAccess(guildId, 'rejected');
+                break;
+            case 'block':
+                await updateAccess(guildId, 'blocked');
+                break;
+            case 'details':
+                await showServerDetails(guildId);
+                break;
+        }
+    });
+    
     // Add refresh button handler
-    const refreshButton = document.querySelector('button[onclick="refreshServerList()"]');
+    const refreshButton = document.querySelector('button[data-action="refresh"]');
     if (refreshButton) {
         refreshButton.addEventListener('click', refreshServerList);
     }
-    
-    // Make functions globally available
-    window.refreshServerList = refreshServerList;
-    window.updateAccess = updateAccess;
-    window.showServerDetails = showServerDetails;
 }); 

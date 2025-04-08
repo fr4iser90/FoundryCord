@@ -25,9 +25,8 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', path='js/components/common/notifications.js') }}"></script>
-<script src="{{ url_for('static', path='js/pages/owner/bot/server-management.js') }}"></script>
-<script src="{{ url_for('static', path='js/pages/owner/bot/bot-controls.js') }}"></script>
-<script src="{{ url_for('static', path='js/pages/owner/bot/config-management.js') }}"></script>
-<script src="{{ url_for('static', path='js/components/server_selector.js') }}"></script>
+<!-- Load modules with type="module" and defer -->
+<script type="module" defer src="{{ url_for('static', path='js/pages/owner/bot/server-management.js') }}"></script>
+<script type="module" defer src="{{ url_for('static', path='js/pages/owner/bot/bot-controls.js') }}"></script>
+<script type="module" defer src="{{ url_for('static', path='js/pages/owner/bot/config-management.js') }}"></script>
 {% endblock %} 

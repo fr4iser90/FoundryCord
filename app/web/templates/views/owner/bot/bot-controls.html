@@ -1,57 +1,72 @@
+{% from "views/owner/bot/server-actions.html" import server_status_badge %}
+
 <div class="card mb-4">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <h2>Bot Controls</h2>
+        <div class="status-badge">
+            {{ server_status_badge(bot_status if bot_status else 'offline') }}
+        </div>
     </div>
     <div class="card-body">
         <div class="bot-status mb-4">
             <h4>Current Status</h4>
-            <div class="d-flex align-items-center gap-3">
-                <div class="status-indicator {{ 'online' if bot_status == 'online' else 'offline' }}"></div>
-                <span class="status-text">{{ bot_status|title }}</span>
-                {% if bot_status == 'online' %}
-                    <span class="text-muted">Latency: {{ bot_latency }}ms</span>
+            <div class="d-flex align-items-center gap-2">
+                <div class="status-indicator {{ bot_status }}"></div>
+                <span class="status-text fw-bold">{{ bot_status|title }}</span>
+                {% if bot_status == 'online' and bot_latency is not none %}
+                    <span class="text-muted ms-2">({{ bot_latency }}ms)</span>
                 {% endif %}
             </div>
         </div>
 
-        <div class="bot-actions d-flex gap-2">
-            <button class="btn btn-success" onclick="startBot()" {{ 'disabled' if bot_status == 'online' }}>
-                <i class="bi bi-play-circle"></i> Start Bot
-            </button>
-            <button class="btn btn-danger" onclick="stopBot()" {{ 'disabled' if bot_status == 'offline' }}>
-                <i class="bi bi-stop-circle"></i> Stop Bot
-            </button>
-            <button class="btn btn-warning" onclick="restartBot()" {{ 'disabled' if bot_status == 'offline' }}>
-                <i class="bi bi-arrow-clockwise"></i> Restart Bot
-            </button>
+        <div class="bot-actions mb-4">
+            <div class="btn-group" role="group" aria-label="Bot Controls">
+                <button type="button" class="btn btn-success" data-action="start" {{ 'disabled' if bot_status == 'online' }}>
+                    <i class="bi bi-play-fill me-1"></i>Start Bot
+                </button>
+                <button type="button" class="btn btn-danger" data-action="stop" {{ 'disabled' if bot_status == 'offline' }}>
+                    <i class="bi bi-stop-fill me-1"></i>Stop Bot
+                </button>
+                <button type="button" class="btn btn-warning" data-action="restart" {{ 'disabled' if bot_status == 'offline' }}>
+                    <i class="bi bi-arrow-clockwise me-1"></i>Restart Bot
+                </button>
+            </div>
         </div>
 
-        {% if bot_status == 'online' %}
-        <div class="bot-stats mt-4">
+        {% if bot_status == 'online' and bot_stats %}
+        <div class="bot-stats">
             <h4>Statistics</h4>
             <div class="row g-3">
                 <div class="col-md-3">
                     <div class="stat-card">
-                        <div class="stat-title">Uptime</div>
-                        <div class="stat-value">{{ bot_uptime }}</div>
+                        <div class="stat-label">
+                            <i class="bi bi-clock"></i> Uptime
+                        </div>
+                        <div class="stat-value" data-stat="uptime">{{ bot_stats.uptime }}</div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="stat-card">
-                        <div class="stat-title">Active Servers</div>
-                        <div class="stat-value">{{ active_servers_count }}</div>
+                        <div class="stat-label">
+                            <i class="bi bi-hdd-network"></i> Active Servers
+                        </div>
+                        <div class="stat-value" data-stat="servers">{{ bot_stats.active_servers_count }}</div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="stat-card">
-                        <div class="stat-title">Total Members</div>
-                        <div class="stat-value">{{ total_members }}</div>
+                        <div class="stat-label">
+                            <i class="bi bi-people"></i> Total Members
+                        </div>
+                        <div class="stat-value" data-stat="members">{{ bot_stats.total_members }}</div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="stat-card">
-                        <div class="stat-title">Commands Today</div>
-                        <div class="stat-value">{{ commands_today }}</div>
+                        <div class="stat-label">
+                            <i class="bi bi-terminal"></i> Commands Today
+                        </div>
+                        <div class="stat-value" data-stat="commands">{{ bot_stats.commands_today }}</div>
                     </div>
                 </div>
             </div>
@@ -76,7 +91,7 @@
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" 
                                id="workflow-{{ workflow.id }}"
-                               onchange="toggleWorkflow('{{ workflow.id }}')"
+                               data-workflow-id="{{ workflow.id }}"
                                {{ 'checked' if workflow.enabled }}>
                     </div>
                 </div>
