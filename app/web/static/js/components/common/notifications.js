@@ -36,18 +36,6 @@ const showToast = (type, message) => {
 };
 
 // API Request Utilities
-const handleApiError = async (response) => {
-    if (!response.ok) {
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-            const error = await response.json();
-            throw new Error(error.message || 'API request failed');
-        }
-        throw new Error('API request failed');
-    }
-    return response;
-};
-
 const apiRequest = async (endpoint, options = {}) => {
     try {
         const response = await fetch(endpoint, {
@@ -56,13 +44,22 @@ const apiRequest = async (endpoint, options = {}) => {
                 'Content-Type': 'application/json',
                 ...options.headers,
             },
+            credentials: 'same-origin'
         });
+
+        const data = await response.json();
         
-        await handleApiError(response);
-        return await response.json();
+        if (!response.ok) {
+            if (response.status === 401) {
+                window.location.href = '/auth/login';
+                return;
+            }
+            throw new Error(data.detail || data.message || 'API request failed');
+        }
+        
+        return data;
     } catch (error) {
-        console.error(`API Request Error (${endpoint}):`, error);
-        showToast('error', error.message || 'An error occurred');
+        showToast('error', error.message);
         throw error;
     }
 };

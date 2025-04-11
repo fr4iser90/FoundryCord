@@ -1,7 +1,3 @@
-from .rest.routes import router as api_router
+from app.web.interfaces.api.rest.routes import router as api_router
 
-routers = [
-    api_router
-]
-
-__all__ = ['routers']
+__all__ = ['api_router']

@@ -92,10 +92,21 @@ class SecurityBootstrapper:
     
     def get_key(self, key_type):
         """Get a security key by type."""
+        # --- DEBUG LOGGING --- 
+        logger.debug(f"[SecurityBootstrapper] Attempting to get key: {key_type}")
+        logger.debug(f"[SecurityBootstrapper] Current keys in memory: {list(self.keys.keys())}") # Log only keys for brevity
+        logger.debug(f"[SecurityBootstrapper] Is initialized: {self.initialized}")
+        # --- END DEBUG LOGGING ---
+        
         if key_type not in self.KEY_TYPES:
+            logger.error(f"[SecurityBootstrapper] Unknown key type requested: {key_type}")
             raise ValueError(f"Unknown key type: {key_type}")
         
-        return self.keys.get(key_type)
+        key_value = self.keys.get(key_type)
+        if not key_value:
+             logger.warning(f"[SecurityBootstrapper] Key '{key_type}' not found in memory cache (self.keys).")
+        
+        return key_value
 
 # Global instance
 _security_bootstrapper = SecurityBootstrapper()

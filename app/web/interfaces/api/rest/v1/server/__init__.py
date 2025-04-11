@@ -1,3 +1,5 @@
-from .server_selector_controller import ServerSelectorController, router as server_selector_router
+from .server_selector_controller import ServerSelectorController, server_selector_controller
 
-__all__ = ['ServerSelectorController', 'server_selector_router'] 
+router = server_selector_controller.router
+
+__all__ = ['ServerSelectorController', 'router'] 

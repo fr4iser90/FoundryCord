@@ -7,7 +7,7 @@ from app.shared.interface.logging.api import get_web_logger
 from fastapi.responses import HTMLResponse
 
 router = APIRouter(prefix="/guilds/users", tags=["Guild User Management"])
-templates = templates_extension()
+
 logger = get_web_logger()
 
 class GuildUserManagementView:

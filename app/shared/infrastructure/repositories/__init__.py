@@ -1,29 +1,63 @@
 # app/shared/infrastructure/repositories/__init__.py
-from .audit import AuditLogRepositoryImpl
-from .auth import UserRepositoryImpl, SessionRepositoryImpl, KeyRepositoryImpl
+"""
+Central Repository Implementation Module
+All repository implementations are exported from here to provide a single import point
+"""
+
+# Auth implementations
+from .auth import (
+    UserRepositoryImpl,
+    SessionRepositoryImpl,
+    KeyRepositoryImpl
+)
+
+# Discord implementations
 from .discord import (
-    ChannelRepositoryImpl, 
-    CategoryRepositoryImpl, 
-    GuildConfigRepositoryImpl, 
+    ChannelRepositoryImpl,
+    CategoryRepositoryImpl,
+    GuildConfigRepositoryImpl,
     DashboardRepositoryImpl,
     GuildRepositoryImpl
 )
+
+# Monitoring implementations
 from .monitoring import MonitoringRepositoryImpl
-from .projects import ProjectRepositoryImpl, TaskRepositoryImpl
+
+# Project implementations
+from .projects import (
+    ProjectRepositoryImpl,
+    TaskRepositoryImpl
+)
+
+# Utility implementations
 from .utils import RateLimitRepositoryImpl
 
+# Audit implementations
+from .audit import AuditLogRepositoryImpl
+
 __all__ = [
-    'AuditLogRepositoryImpl',
+    # Auth
     'UserRepositoryImpl',
     'SessionRepositoryImpl',
     'KeyRepositoryImpl',
+    
+    # Discord
     'ChannelRepositoryImpl',
     'CategoryRepositoryImpl',
     'GuildConfigRepositoryImpl',
+    'DashboardRepositoryImpl',
     'GuildRepositoryImpl',
+    
+    # Monitoring
     'MonitoringRepositoryImpl',
+    
+    # Projects
     'ProjectRepositoryImpl',
     'TaskRepositoryImpl',
-    'DashboardRepositoryImpl',
-    'RateLimitRepositoryImpl'
+    
+    # Utils
+    'RateLimitRepositoryImpl',
+    
+    # Audit
+    'AuditLogRepositoryImpl'
 ]

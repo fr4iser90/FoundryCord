@@ -1,3 +1,4 @@
+"""Auth repository implementations"""
 from .user_repository_impl import UserRepositoryImpl
 from .session_repository_impl import SessionRepositoryImpl
 from .key_repository_impl import KeyRepositoryImpl

@@ -1,3 +1,4 @@
+"""Discord repository implementations"""
 from .channel_repository_impl import ChannelRepositoryImpl
 from .category_repository_impl import CategoryRepositoryImpl
 from .guild_config_repository_impl import GuildConfigRepositoryImpl

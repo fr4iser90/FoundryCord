@@ -1,143 +1,53 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from app.web.application.services.auth.dependencies import get_current_user
-from app.web.core.extensions import session_extension
-from app.shared.interface.logging.api import get_web_logger
-from app.shared.infrastructure.database.session import session_context
-from app.shared.infrastructure.models.discord.entities.guild_entity import GuildEntity
-from typing import Optional, List, Dict
-from sqlalchemy import select
+from fastapi import Depends, Request
+from typing import List, Optional
+from app.web.interfaces.api.rest.v1.base_controller import BaseController
+from app.shared.infrastructure.models.auth import AppUserEntity, AppRoleEntity
+from app.web.infrastructure.factories.service.web_service_factory import WebServiceFactory
+from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
+from app.web.interfaces.api.rest.v1.schemas.server_schemas import ServerInfo
 
-logger = get_web_logger()
-router = router = APIRouter(prefix="/servers", tags=["Server Selection"])
-
-class ServerSelectorController:
+class ServerSelectorController(BaseController):
     """Controller for server selection functionality"""
     
     def __init__(self):
-        self.router = router
+        super().__init__(prefix="/servers", tags=["Server Selection"])
+        # Get ServerService from the factory
+        services = WebServiceFactory.get_instance().get_services()
+        self.server_service = services.get('server_service') 
+        if not self.server_service:
+            self.logger.error("ServerService could not be initialized.")
+            raise RuntimeError("ServerService is unavailable")
         self._register_routes()
     
     def _register_routes(self):
         """Register all routes for server selection"""
-        self.router.get("")(self.get_servers)  # List all servers
-        self.router.get("/current")(self.get_current_server)  # Get current selection
+        self.router.get("/", response_model=List[ServerInfo])(self.get_servers)  # List all servers
+        self.router.get("/current", response_model=Optional[ServerInfo])(self.get_current_server)  # Get current selection
         self.router.post("/select/{guild_id}")(self.select_server)  # Select a server
     
-    async def get_servers(self, current_user=Depends(get_current_user)) -> List[Dict]:
+    async def get_servers(self, current_user: AppUserEntity = Depends(get_current_user)) -> List[ServerInfo]:
         """Get list of available servers for the current user"""
         try:
-            logger.debug(f"Current user: {current_user}")
-            
-            async with session_context() as session:
-                result = await session.execute(
-                    select(GuildEntity)
-                )
-                servers = result.scalars().all()
-                
-                logger.debug(f"Found {len(servers)} servers")
-                server_list = []
-                
-                for server in servers:
-                    logger.debug(f"Server: {server.name} (ID: {server.guild_id})")
-                    server_list.append({
-                        "guild_id": server.guild_id,
-                        "name": server.name,
-                        "icon_url": server.icon_url or "https://cdn.discordapp.com/embed/avatars/0.png",
-                        "member_count": server.member_count,
-                        "access_status": server.access_status,
-                    })
-                
-                return server_list
-                
+            servers = await self.server_service.get_available_servers(current_user)
+            return servers
         except Exception as e:
-            logger.error(f"Error getting available servers: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e)
-            )
+            raise e
     
-    async def get_current_server(self, request: Request, current_user=Depends(get_current_user)):
+    async def get_current_server(self, request: Request, current_user: AppUserEntity = Depends(get_current_user)) -> Optional[ServerInfo]:
         """Get currently selected server from session"""
         try:
-            session = session_extension(request)
-            guild_id = session.get('selected_guild')
-            
-            if not guild_id:
-                return {"guild_id": None}
-            
-            async with session_context() as db_session:
-                result = await db_session.execute(
-                    select(GuildEntity).where(GuildEntity.guild_id == guild_id)
-                )
-                guild = result.scalar_one_or_none()
-                
-                if not guild:
-                    session['selected_guild'] = None
-                    return {"guild_id": None}
-                
-                return {
-                    "guild_id": guild.guild_id,
-                    "name": guild.name,
-                    "icon_url": guild.icon_url or "https://cdn.discordapp.com/embed/avatars/0.png",
-                    "access_status": guild.access_status,
-                }
-                
+            server = await self.server_service.get_current_server(request, current_user)
+            return server
         except Exception as e:
-            logger.error(f"Error getting current server: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e)
-            )
+            raise e
     
-    async def select_server(self, request: Request, guild_id: str, current_user=Depends(get_current_user)):
+    async def select_server(self, request: Request, guild_id: str, current_user: AppUserEntity = Depends(get_current_user)):
         """Select a server and store it in session"""
         try:
-            logger.info(f"Selecting server with guild_id: {guild_id}")
-            session = session_extension(request)
-            
-            async with session_context() as db_session:
-                result = await db_session.execute(
-                    select(GuildEntity).where(GuildEntity.guild_id == guild_id)
-                )
-                guild = result.scalar_one_or_none()
-                
-                if not guild:
-                    logger.warning(f"Server not found with guild_id: {guild_id}")
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Server not found"
-                    )
-                
-                if guild.access_status != "approved":
-                    logger.warning(f"Server {guild_id} is not approved (status: {guild.access_status})")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Server is not approved for access"
-                    )
-                
-                # Store in session
-                session['selected_guild'] = guild_id
-                logger.info(f"Selected server {guild_id} stored in session")
-                
-                return {
-                    "message": f"Selected server {guild_id}",
-                    "guild_id": guild.guild_id,
-                    "name": guild.name,
-                    "icon_url": guild.icon_url or "https://cdn.discordapp.com/embed/avatars/0.png",
-                    "access_status": guild.access_status,
-                }
-                
-        except HTTPException:
-            raise
+            result = await self.server_service.select_server(request, guild_id, current_user)
+            return {"message": "Server selected successfully"}
         except Exception as e:
-            logger.error(f"Error selecting server: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e)
-            )
+            raise e
 
-# Create controller instance
-server_selector_controller = ServerSelectorController()
-get_servers = server_selector_controller.get_servers
-get_current_server = server_selector_controller.get_current_server
-select_server = server_selector_controller.select_server 
+# Controller instance
+server_selector_controller = ServerSelectorController() 

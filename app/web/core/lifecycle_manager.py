@@ -1,7 +1,7 @@
 from typing import Dict, List, Any, Optional, Callable
 import asyncio
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
-from app.web.domain.auth.services.web_authentication_service import WebAuthenticationService
+from app.shared.domain.auth.services import AuthenticationService, AuthorizationService
 from app.shared.interface.logging.api import get_web_logger
 from fastapi import FastAPI
 from app.web.infrastructure.factories.service.web_service_factory import WebServiceFactory
@@ -32,8 +32,12 @@ class WebLifecycleManager:
             self.register_component('key_service', key_service)
 
             # Create and register auth service
-            auth_service = WebAuthenticationService(key_service)
+            auth_service = AuthenticationService(key_service)
             self.register_component('auth_service', auth_service)
+
+            # Create and register authz service
+            authz_service = AuthorizationService(auth_service)
+            self.register_component('authz_service', authz_service)
 
             logger.info("Core services registered successfully")
         except Exception as e:

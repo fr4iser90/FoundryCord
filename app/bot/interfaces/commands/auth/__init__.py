@@ -1,11 +1,19 @@
-from app.shared.domain.auth import AuthenticationService , AuthorizationService
+from app.shared.domain.auth.services import AuthenticationService
+from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
 from .auth_commands import AuthCommands
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
 __all__ = ['AuthCommands', 'setup']
 
-async def setup(bot):
+def setup(bot):
+    """Initialize auth commands"""
+    key_service = KeyManagementService()
+    auth_service = AuthenticationService(key_service)
+    auth_service.initialize()
+    bot.add_cog(AuthCommands(bot, auth_service))
+
+async def setup_async(bot):
     """Central initialization of the Auth commands"""
     try:
         # Check if authentication and authorization services are already initialized

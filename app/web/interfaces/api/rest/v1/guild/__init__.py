@@ -1,3 +1,5 @@
-from .guild_config_controller import router as guild_config_router, GuildConfigController
+from .guild_config_controller import GuildConfigController, guild_config_controller
 
-__all__ = ['GuildConfigController', 'guild_config_router'] 
+router = guild_config_controller.router
+
+__all__ = ['GuildConfigController', 'router'] 

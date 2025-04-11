@@ -58,13 +58,13 @@ WidgetUI.registerWidget('serversWidget', {
     
     refresh: async function() {
         try {
-            const response = await fetch('/api/v1/bot-public-info/servers');
+            const response = await fetch('/api/v1/servers');
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
             
             const data = await response.json();
-            this.servers = data.servers || [];
+            this.servers = data || [];
             this.renderServers();
         } catch (error) {
             console.error('Error fetching server data:', error);

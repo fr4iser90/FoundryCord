@@ -1,13 +1,17 @@
 from nextcord.ext import commands
 import nextcord
 from app.shared.interface.logging.api import get_bot_logger
+from app.shared.domain.auth.services import AuthenticationService
+from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
+
 logger = get_bot_logger()
 
 class AuthCommands(commands.Cog):
-    def __init__(self, bot, auth_service, authorization_service=None):
+    def __init__(self, bot):
         self.bot = bot
-        self.auth = auth_service  # AuthenticationService
-        self.authorization = authorization_service  # AuthorizationService
+        key_service = KeyManagementService()
+        self.auth = AuthenticationService(key_service)
+        self.auth.initialize()
 
     @nextcord.slash_command(
         name="login_ip",
@@ -102,7 +106,7 @@ class AuthCommands(commands.Cog):
                 return
 
             # Use authorization service for permission checks
-            if self.authorization and not await self.authorization.check_authorization(ctx.author):
+            if not await self.auth.check_authorization(ctx.author):
                 sanitized_author = f"User_{hash(str(message.author.id))}"
                 logger.warning(f"Unauthorized access attempt by {sanitized_author}")
                 await ctx.send("You are not authorized to use this command.")

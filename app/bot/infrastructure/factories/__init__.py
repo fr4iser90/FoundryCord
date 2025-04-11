@@ -9,7 +9,8 @@ from .service.task_factory import TaskFactory
 # You may want to export the base factory as well
 from .base.base_factory import BaseFactory
 
-from app.bot.domain.monitoring.factories.collector_factory import CollectorFactory
+from app.shared.domain.monitoring.factories.collector_factory import CollectorFactory
+
 
 __all__ = [
     'BotComponentFactory',

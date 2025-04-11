@@ -5,7 +5,7 @@ logger = get_bot_logger()
 from app.shared.infrastructure.models.config import get_session
 from app.shared.infrastructure.repositories import ProjectRepositoryImpl
 from app.shared.infrastructure.repositories.task_repository import TaskRepository
-from app.bot.domain.tracker.services.project_service import get_projects_data
+from app.shared.domain.services.tracker.project_service import get_projects_data
 from app.bot.interfaces.dashboards.controller.project_dashboard import create_task_embed
 
 async def check_tracker_thread(interaction):

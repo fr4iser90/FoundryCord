@@ -2,7 +2,7 @@ import discord
 import logging
 from typing import Dict, List, Optional, Any
 from app.shared.domain.repositories.discord.channel_repository import ChannelRepository
-from app.bot.domain.categories.repositories.category_repository import CategoryRepository
+from app.shared.domain.repositories.discord.category_repository import CategoryRepository
 from app.bot.application.services.channel.channel_builder import ChannelBuilder
 from app.shared.infrastructure.models.discord.entities.channel_entity import ChannelEntity
 from app.shared.infrastructure.models.discord.enums.channels import ChannelType

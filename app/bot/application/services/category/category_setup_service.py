@@ -2,7 +2,7 @@ import discord
 import logging
 from typing import Dict, List, Optional
 import asyncio
-from app.bot.domain.categories.repositories.category_repository import CategoryRepository
+from app.shared.domain.repositories.discord.category_repository import CategoryRepository
 from app.bot.application.services.category.category_builder import CategoryBuilder
 from app.shared.infrastructure.models.discord.entities.category_entity import CategoryEntity
 from app.shared.infrastructure.models.discord.enums.category import CategoryPermissionLevel

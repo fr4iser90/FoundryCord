@@ -1,105 +1,129 @@
-# Bot Control Panel Enhancement Tracker
+Ah, jetzt verstehe ich besser! Ja, lass uns die Struktur basierend auf den existierenden Verzeichnissen und der tatsächlichen Nutzung neu ausrichten:
 
-## Current State Analysis
-- [x] Identified current button types for Server Management:
-  - [x] Approve/Accept (Success actions)
-  - [x] Deny/Ignore (Warning actions)
-  - [x] Block/Ban (Danger actions)
-  - [x] Details (Info actions)
-  - [x] General actions (Start, Stop, Restart bot)
+1. **Shared Layer** (Gemeinsame Infrastruktur & Modelle):
+```
+shared/
+├── domain/          # Gemeinsame Domain-Logik
+│   ├── core/       # Kern-Domain-Konzepte
+│   │   ├── entities/
+│   │   ├── repositories/
+│   │   └── services/
+│   ├── auth/       # Auth Bounded Context
+│   ├── discord/    # Discord Bounded Context
+│   └── monitoring/ # Monitoring Bounded Context
+│
+├── application/    # Gemeinsame Anwendungslogik
+│   ├── services/
+│   ├── dtos/
+│   └── workflows/
+│
+└── infrastructure/ # Gemeinsame Infrastruktur
+    ├── persistence/
+    ├── security/
+    ├── logging/
+    └── config/
+```
 
-## Phase 1: Button System Enhancement
-- [x] Consolidate and enhance button system in buttons.css:
-  - [x] Primary Actions (Accept/Approve)
-  - [x] Secondary Actions (Details/Info)
-  - [x] Warning Actions (Deny/Ignore)
-  - [x] Danger Actions (Block/Ban)
-  - [x] Status Indicators
-  - [x] Loading States
-  - [x] Disabled States
-  - [x] Icon + Text combinations
-  - [x] Size variations
-  - [x] Group layouts
-  - [x] Hover effects with transform
-  - [x] Loading animation
+2. **Bot Layer** (Discord Bot Funktionalität):
+```
+bot/
+├── domain/         # Bot-spezifische Domain-Logik
+│   ├── core/      # Kern-Domain-Konzepte
+│   │   ├── entities/
+│   │   ├── repositories/
+│   │   └── services/
+│   ├── commands/  # Command Bounded Context
+│   ├── events/    # Event Bounded Context
+│   └── workflows/ # Workflow Bounded Context
+│
+├── application/    # Bot-spezifische Anwendungslogik
+│   ├── services/
+│   ├── dtos/
+│   └── workflows/
+│
+├── infrastructure/ # Bot-spezifische Infrastruktur
+│   ├── discord/
+│   ├── persistence/
+│   └── logging/
+│
+└── interfaces/     # Bot-Schnittstellen
+    ├── commands/
+    ├── events/
+    └── dashboards/
+```
 
-- [x] Implement button CSS classes:
-  - [x] .btn-approve
-  - [x] .btn-deny
-  - [x] .btn-block
-  - [x] .btn-details
-  - [x] .btn-group
-  - [x] .btn-icon
-  - [x] .btn.loading
+3. **Web Layer** (Web Interface):
+```
+web/
+├── domain/         # Web-spezifische Domain-Logik
+│   ├── core/      # Kern-Domain-Konzepte
+│   │   ├── entities/
+│   │   ├── repositories/
+│   │   └── services/
+│   ├── auth/      # Web Auth Bounded Context
+│   ├── dashboard/ # Dashboard Bounded Context
+│   └── admin/     # Admin Bounded Context
+│
+├── application/    # Web-spezifische Anwendungslogik
+│   ├── services/
+│   ├── dtos/
+│   └── workflows/
+│
+├── infrastructure/ # Web-spezifische Infrastruktur
+│   ├── fastapi/
+│   ├── persistence/
+│   └── security/
+│
+└── interfaces/     # Web-Schnittstellen
+    ├── api/
+    │   └── v1/
+    ├── web/
+    │   ├── views/
+    │   ├── templates/
+    │   └── static/
+    └── admin/
+```
 
-## Phase 2: Component Restructuring
-- [x] Break down bot.html into components:
-  - [x] /owner/bot/server-list.html
-  - [x] /owner/bot/server-actions.html
-  - [x] /owner/bot/bot-controls.html
-  - [x] /owner/bot/config-panel.html
+Die wichtigsten Prinzipien:
 
-- [x] Reorganize JavaScript:
-  - [x] /js/pages/owner/bot/server-management.js
-  - [x] /js/pages/owner/bot/bot-controls.js
-  - [x] /js/pages/owner/bot/config-management.js
-  - [x] /js/pages/owner/bot/server-actions.js
+1. **Shared Layer**:
+- Enthält alle gemeinsamen Komponenten
+- PostgreSQL-Modelle und -Migrations
+- Gemeinsame Repository-Interfaces
+- Basis-Infrastruktur (Logging, Security, etc.)
 
-- [x] Create dedicated CSS modules:
-  - [x] Integrated all styles into bot_control.css following component patterns
-  - [x] Server management styles
-  - [x] Bot controls styles
-  - [x] Configuration panel styles
-  - [x] Server actions styles
+2. **Bot Layer**:
+- Fokussiert auf Discord-Bot-Funktionalität
+- Nutzt Shared-Layer für Datenzugriff
+- Eigene Domain-Logik für Bot-spezifische Features
+- Workflows für Bot-Prozesse
 
-## Phase 3: Backend Optimization
-- [ ] Refactor Controllers:
-  - [ ] Split BotControlController into:
-    - [ ] ServerManagementController
-    - [ ] BotConfigurationController
-    - [ ] WorkflowManagementController
+3. **Web Layer**:
+- Fokussiert auf Web-Interface
+- Nutzt Shared-Layer für Datenzugriff
+- Eigene Domain-Logik für Web-spezifische Features
+- REST API und Web-Views
 
-- [ ] Create dedicated service layer:
-  - [ ] /services/owner/bot/server-management.service.py
-  - [ ] /services/owner/bot/bot-control.service.py
-  - [ ] /services/owner/bot/workflow-management.service.py
+Die Vorteile dieser Struktur:
 
-## Phase 4: UI/UX Improvements
-- [ ] Add interactive feedback:
-  - [ ] Loading spinners
-  - [ ] Success/error toasts
-  - [ ] Confirmation dialogs
-  - [ ] Progress indicators
+1. **Klarere Trennung**:
+- Bot und Web sind klar getrennt
+- Shared-Komponenten sind zentralisiert
+- Jeder Layer hat klare Verantwortlichkeiten
 
-- [ ] Enhance accessibility:
-  - [ ] ARIA labels
-  - [ ] Keyboard navigation
-  - [ ] Focus management
-  - [ ] Screen reader support
+2. **Bessere Wartbarkeit**:
+- Weniger Duplikation durch Shared-Layer
+- Klare Abhängigkeiten
+- Einfacher zu erweitern
 
-## Progress Tracking
-- [x] Phase 1 Complete
-- [x] Phase 2 Complete
-- [ ] Phase 3 Complete
-- [ ] Phase 4 Complete
+3. **DDD-Konform**:
+- Klare Domain-Grenzen
+- Repository-Pattern
+- Service-Layer für Business-Logik
 
-## Notes
-- Use checkboxes to track progress: [x] for completed items, [ ] for pending items
-- Each phase can be worked on independently but should be completed in sequence
-- Test thoroughly after completing each phase
-- Document any issues or blockers in this tracker
+4. **Flexibilität**:
+- Bot und Web können unabhängig entwickelt werden
+- Shared-Layer kann von beiden genutzt werden
+- Einfach neue Features hinzuzufügen
 
-## Dependencies
-- Phase 1 must be completed before finalizing Phase 2 ✓
-- Phase 2 should be completed before Phase 3 ✓
-- Phase 4 can be worked on in parallel with Phase 3
-
-## Review Points
-- [x] Code Review for Phase 1
-- [x] Code Review for Phase 2
-- [ ] Code Review for Phase 3
-- [ ] Code Review for Phase 4
-- [x] UI/UX Review for Phase 1
-- [x] UI/UX Review for Phase 2
-- [ ] Performance Review for Phase 3
-- [ ] Accessibility Review for Phase 4
+Möchtest du, dass ich mit der Umstrukturierung eines bestimmten Bereichs beginne? Zum Beispiel könnten wir mit der Migration der Shared-Komponenten anfangen.

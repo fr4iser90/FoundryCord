@@ -12,6 +12,7 @@ import logging
 from app.shared.interface.logging.api import get_db_logger
 from app.shared.infrastructure.database.session.factory import get_session, initialize_session
 from app.shared.infrastructure.database.core.config import get_database_url
+from app.shared.infrastructure.database.migrations.wait_for_postgres import wait_for_postgres
 
 logger = get_db_logger()
 
@@ -29,6 +30,12 @@ class DatabaseService:
         try:
             if self._initialized:
                 return True
+
+            # First wait for PostgreSQL to be available
+            logger.info("Waiting for PostgreSQL to be available...")
+            if not await wait_for_postgres():
+                logger.error("PostgreSQL is not available after maximum retries")
+                return False
 
             # Create engine
             database_url = get_database_url()

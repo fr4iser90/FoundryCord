@@ -6,11 +6,9 @@ import os
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from starlette.middleware.sessions import SessionMiddleware
 from app.shared.interface.logging.api import get_web_logger
-from app.web.core.middleware import setup_middleware
+from app.web.core.middleware_registry import register_core_middleware
 from app.web.core.extensions import init_extensions
 from app.web.core.router_registry import register_routers
 from app.web.core.lifecycle_manager import WebLifecycleManager
@@ -32,7 +30,7 @@ async def lifespan(app: FastAPI):
     
     # Initialize the application
     try:
-        # Setup the application
+        # Setup the application (includes router registration)
         await web_app.setup()
         
         # Initialize workflows
@@ -59,36 +57,9 @@ class WebApplication:
             version="1.0.0",
             lifespan=lifespan
         )
-        self._setup_middleware()
+        # Centralized middleware registration
+        register_core_middleware(self.app)
         self._setup_exception_handlers()
-
-    def _setup_middleware(self):
-        """Setup middleware during initialization"""
-        # Setup Session FIRST
-        session_secret = os.environ.get("JWT_SECRET_KEY", os.urandom(32).hex())
-
-        from app.web.core.middleware import auth_middleware
-        self.app.middleware("http")(auth_middleware)
-        logger.info("Auth middleware registered successfully")        
-        
-        from starlette.middleware.sessions import SessionMiddleware
-        self.app.add_middleware(
-            SessionMiddleware,
-            secret_key=session_secret,
-            session_cookie="homelab_session",
-            max_age=7 * 24 * 60 * 60,  # 1 week
-            same_site="lax",
-            https_only=True
-        )
-        
-        # Setup CORS
-        self.app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
 
     def _setup_exception_handlers(self):
         """Register exception handlers"""
@@ -154,6 +125,28 @@ class WebApplication:
 web_app = WebApplication()
 app = web_app.app
 
-# This is the entry point for Uvicorn
-if __name__ == "__main__":
-    uvicorn.run("app.web.core.main:app", host="0.0.0.0", port=8000)
+async def main():
+    """Main entry point for web application"""
+    try:
+        # Setup is now primarily handled by the lifespan context manager
+        # await web_app.setup() # This is called within lifespan now
+        
+        # Start uvicorn server
+        # Pass log_config=None to disable default Uvicorn logging
+        config = uvicorn.Config(
+            "app.web.core.main:app", 
+            host="0.0.0.0", 
+            port=8000, 
+            reload=True, # Ensure reload is as desired
+            log_config=None 
+        )
+        server = uvicorn.Server(config)
+        await server.serve()
+        
+    except Exception as e:
+        logger.error(f"Error starting web application: {e}", exc_info=True)
+        # Consider sys.exit(1) here if startup fails critically
+        raise
+
+# Export both app for direct uvicorn and main for entrypoint
+__all__ = ['app', 'main']

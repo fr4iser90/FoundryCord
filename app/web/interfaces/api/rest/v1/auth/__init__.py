@@ -1,3 +1,8 @@
-from .auth_controller import AuthController, router as auth_router
+from .auth_controller import auth_controller
 
-__all__ = ['AuthController', 'auth_router'] 
+router = auth_controller.router
+
+__all__ = [
+    'auth_controller',
+    'router'
+] 

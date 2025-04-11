@@ -1,3 +1,5 @@
-from .dashboard_controller import router as dashboard_router, DashboardController
+from .dashboard_controller import DashboardController, dashboard_controller
 
-__all__ = ['DashboardController', 'dashboard_router'] 
+router = dashboard_controller.router
+
+__all__ = ['DashboardController', 'router'] 

@@ -1,46 +1,83 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from app.web.infrastructure.security.auth import get_current_user
-from app.web.domain.auth.services.web_authentication_service import WebAuthenticationService
-from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
+from fastapi import Request, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
+from app.web.interfaces.api.rest.v1.base_controller import BaseController
+from app.shared.infrastructure.models.auth import AppUserEntity, AppRoleEntity
+from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
 
-router = router = APIRouter(prefix="/auth", tags=["Authentication API"])
-
-class AuthController:
-    """Controller for pure API endpoints"""
+class AuthController(BaseController):
+    """Controller for authentication functionality"""
     
     def __init__(self):
-        self.router = router
-        self.key_service = KeyManagementService()
-        self.auth_service = WebAuthenticationService(self.key_service)
+        super().__init__(prefix="/auth", tags=["Authentication"])
         self._register_routes()
-    
-    def _register_routes(self):
-        """Register API routes"""
-        self.router.get("/me")(self.get_current_user_info)
-        self.router.post("/logout")(self.logout)
-    
-    async def get_current_user_info(self, user=Depends(get_current_user)):
-        """Get current user information"""
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated"
-            )
-        return {
-            "id": user["id"],
-            "username": user["username"],
-            "avatar": user.get("avatar"),
-            "role": user.get("role"),
-            "authenticated": True
-        }
-    
-    async def logout(self, request: Request):
-        """Handle API logout"""
-        request.session.clear()
-        return {"status": "success"}
 
-# Create controller instance
-auth_controller = AuthController()
-get_current_user_info = auth_controller.get_current_user_info
-logout = auth_controller.logout 
+    def _register_routes(self):
+        """Register all authentication routes"""
+        self.router.post("/login")(self.login)
+        self.router.post("/logout")(self.logout)
+        self.router.get("/me")(self.get_current_user_info)
+        self.router.post("/refresh")(self.refresh_token)
+        self.router.get("/login")(self.login)
+        self.router.get("/callback")(self.auth_callback)
+        self.router.get("/logout")(self.logout)
+        self.router.get("/me")(self.get_current_user_info)
+
+    async def login(self, request: Request):
+        """Redirects the user to Discord for authentication."""
+        # Build the Discord authorization URL
+        auth_url = await self.auth_service.get_authorization_url()
+        return RedirectResponse(url=auth_url)
+
+    async def auth_callback(self, request: Request, code: str):
+        """Handles the callback from Discord after authentication."""
+        try:
+            # Exchange code for token and get user info
+            user_info = await self.auth_service.handle_callback(code)
+            
+            # Store user info in session
+            request.session["user"] = user_info
+            self.logger.info(f"User {user_info.get('username')} logged in.")
+            
+            # Redirect to home page or intended destination
+            return RedirectResponse(url="/home", status_code=status.HTTP_303_SEE_OTHER)
+            
+        except Exception as e:
+            self.logger.error(f"Authentication callback failed: {e}")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Authentication failed")
+
+    async def get_current_user_info(self, current_user: AppUserEntity = Depends(get_current_user)):
+        """Get current user information"""
+        try:
+            # Get user info through service
+            user_info = await self.user_service.get_user_info(current_user.id)
+            return self.success_response(user_info)
+        except Exception as e:
+            return self.handle_exception(e)
+
+    async def logout(self, request: Request):
+        """Logout endpoint"""
+        user = request.session.get("user")
+        if user:
+            self.logger.info(f"User {user.get('username')} logged out.")
+            request.session.clear()
+        # Redirect to home page or login page
+        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
+    async def refresh_token(self, request: Request, refresh_token: str):
+        """Refresh access token"""
+        try:
+            # Refresh token through service
+            new_token = await self.auth_service.refresh_token(refresh_token)
+            if not new_token:
+                return self.error_response("Ungültiger Refresh Token", 401)
+            
+            return self.success_response({
+                "access_token": new_token,
+                "token_type": "bearer",
+                "expires_in": 3600
+            })
+        except Exception as e:
+            return self.handle_exception(e)
+
+# Controller instance
+auth_controller = AuthController() 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter
-from app.web.interfaces.api.rest.v1 import routers as v1_routers
+from app.web.interfaces.api.rest.v1 import router as v1_router
 
 router = APIRouter()
-# Include all web view routers
-for api_router in v1_routers:
-    router.include_router(api_router)
+router.include_router(v1_router)
+
+__all__ = ['router']

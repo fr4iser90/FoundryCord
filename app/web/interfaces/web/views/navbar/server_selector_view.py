@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Depends, HTTPException
-from app.web.application.services.auth.dependencies import get_current_user
+from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from app.shared.infrastructure.database.session import session_context

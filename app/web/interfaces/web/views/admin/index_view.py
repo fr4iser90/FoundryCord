@@ -1,36 +1,41 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from app.web.core.extensions import templates_extension
-from app.web.application.services.auth.dependencies import get_current_user
-from app.web.domain.auth.permissions import Role, require_role
+from app.shared.infrastructure.models.auth import AppUserEntity, AppRoleEntity
+from app.shared.domain.auth.services import AuthenticationService, AuthorizationService
+from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
 from app.shared.infrastructure.database.session import session_context
 from app.shared.infrastructure.models import GuildEntity, AppUserEntity
 from sqlalchemy import select, func
 from app.shared.interface.logging.api import get_web_logger
+from app.web.infrastructure.factories.service.web_service_factory import WebServiceFactory
 from datetime import datetime
+from app.web.interfaces.web.views.base_view import BaseView
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
-templates = templates_extension()
+
 logger = get_web_logger()
 
-def datetime_filter(value):
-    """Convert datetime object to string format"""
-    if value is None:
-        return "Never"
-    if isinstance(value, str):
-        try:
-            value = datetime.fromisoformat(value.replace('Z', '+00:00'))
-        except ValueError:
-            return value
-    return value.strftime("%Y-%m-%d %H:%M:%S")
-
-class AdminView:
+class AdminView(BaseView):
     """View für Admin-Bereich"""
     
     def __init__(self):
-        self.router = router
+        super().__init__(APIRouter(prefix="/admin", tags=["Admin"]))
+        # Jetzt haben wir Zugriff auf self.templates
+        self.templates.env.filters["datetime"] = self.datetime_filter
         self._register_routes()
-        templates.env.filters["datetime"] = datetime_filter
+    
+    @staticmethod
+    def datetime_filter(value):
+        """Convert datetime object to string format"""
+        if value is None:
+            return "Never"
+        if isinstance(value, str):
+            try:
+                value = datetime.fromisoformat(value.replace('Z', '+00:00'))
+            except ValueError:
+                return value
+        return value.strftime("%Y-%m-%d %H:%M:%S")
     
     def _register_routes(self):
         """Register all routes for admin section"""
@@ -38,14 +43,13 @@ class AdminView:
         self.router.get("/system", response_class=HTMLResponse)(self.system_status)
         self.router.get("/logs", response_class=HTMLResponse)(self.logs)
 
-    async def index(self, request: Request):
+    async def index(self, request: Request, current_user: AppUserEntity = Depends(get_current_user)):
         """Admin dashboard overview"""
         try:
-            user = request.session.get("user")
-            if not user or user.get("role") not in ["OWNER", "ADMIN"]:
-                return templates.TemplateResponse(
-                    "views/errors/403.html",
-                    {"request": request, "user": user, "error": "Insufficient permissions"}
+            if not await self.authz_service.check_permission(current_user, "VIEW_ADMIN_DASHBOARD"):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Insufficient permissions"
                 )
             
             admin_stats = {
@@ -73,28 +77,28 @@ class AdminView:
             except Exception as session_err:
                 logger.warning(f"Could not establish database connection: {session_err}")
             
-            return templates.TemplateResponse(
+            return self.templates.TemplateResponse(
                 "views/admin/index.html",
                 {
                     "request": request, 
-                    "user": user,
+                    "user": current_user,
                     "stats": admin_stats,
                     "active_page": "admin-dashboard"
                 }
             )
         except Exception as e:
             logger.error(f"Error in admin dashboard: {e}")
-            return templates.TemplateResponse(
+            return self.templates.TemplateResponse(
                 "views/errors/403.html",
-                {"request": request, "user": user, "error": str(e)}
+                {"request": request, "user": current_user, "error": str(e)}
             )
     
     async def system_status(self, request: Request):
         """System status and control panel"""
         try:
             user = request.session.get("user")
-            if not user or user.get("role") not in ["OWNER"]:
-                return templates.TemplateResponse(
+            if not user or not user.is_owner:
+                return self.templates.TemplateResponse(
                     "views/errors/403.html",
                     {"request": request, "user": user, "error": "Insufficient permissions"}
                 )
@@ -119,7 +123,7 @@ class AdminView:
                 "disk_total": f"{disk.total / (1024 * 1024 * 1024):.1f} GB",
             }
             
-            return templates.TemplateResponse(
+            return self.templates.TemplateResponse(
                 "views/admin/system_status.html",
                 {
                     "request": request, 
@@ -130,7 +134,7 @@ class AdminView:
             )
         except Exception as e:
             logger.error(f"Error in system status: {e}")
-            return templates.TemplateResponse(
+            return self.templates.TemplateResponse(
                 "views/errors/403.html",
                 {"request": request, "user": user, "error": str(e)}
             )
@@ -139,8 +143,8 @@ class AdminView:
         """System and application logs"""
         try:
             user = request.session.get("user")
-            if not user or user.get("role") not in ["OWNER", "ADMIN"]:
-                return templates.TemplateResponse(
+            if not user or not any(role.name in ["OWNER", "ADMIN"] for role in user.guild_roles):
+                return self.templates.TemplateResponse(
                     "views/errors/403.html",
                     {"request": request, "user": user, "error": "Insufficient permissions"}
                 )
@@ -173,7 +177,7 @@ class AdminView:
                 }
             ]
             
-            return templates.TemplateResponse(
+            return self.templates.TemplateResponse(
                 "views/admin/logs.html",
                 {
                     "request": request,
@@ -184,13 +188,16 @@ class AdminView:
             )
         except Exception as e:
             logger.error(f"Error in logs view: {e}")
-            return templates.TemplateResponse(
+            return self.templates.TemplateResponse(
                 "views/errors/403.html",
                 {"request": request, "user": user, "error": str(e)}
             )
 
-# View instance
+# Create services using factory
+services = WebServiceFactory().create()
 admin_view = AdminView()
+
+# Export routes
 index = admin_view.index
 system_status = admin_view.system_status
 logs = admin_view.logs 

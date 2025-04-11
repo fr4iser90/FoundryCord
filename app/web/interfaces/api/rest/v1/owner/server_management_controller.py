@@ -1,195 +1,170 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-from app.web.application.services.auth.dependencies import get_current_user
-from app.web.domain.auth.permissions import Role, require_role
+from app.shared.infrastructure.models.auth import AppUserEntity, AppRoleEntity
+from app.shared.domain.auth.services import AuthenticationService, AuthorizationService
 from app.shared.interface.logging.api import get_web_logger
 from app.shared.infrastructure.database.session import session_context
 from app.shared.infrastructure.models.discord.entities import GuildEntity
 from sqlalchemy import select
 from sqlalchemy.sql import func
+from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
+from app.web.interfaces.api.rest.v1.base_controller import BaseController
+from app.web.infrastructure.factories.service.web_service_factory import WebServiceFactory
+from typing import List
+from app.web.interfaces.api.rest.v1.schemas.server_schemas import ServerInfo, ServerAccessUpdateResponse
 
 logger = get_web_logger()
 router = APIRouter(prefix="/owner/servers", tags=["Server Management"])
 
-class ServerManagementController:
+class ServerManagementController(BaseController):
     """Controller for server management functionality"""
     
     def __init__(self):
-        self.router = router
+        super().__init__(prefix="/owner/servers", tags=["Server Management"])
+        # Get ServerService from the factory
+        services = WebServiceFactory.get_instance().get_services()
+        self.server_service = services.get('server_service')
+        if not self.server_service:
+            self.logger.error("ServerService could not be initialized.")
+            raise RuntimeError("ServerService is unavailable")
         self._register_routes()
     
     def _register_routes(self):
         """Register all routes for this controller"""
-        self.router.get("")(self.get_servers)
-        self.router.post("/add")(self.add_server)
-        self.router.get("/{guild_id}/details")(self.get_server_details)
-        self.router.post("/{guild_id}/access")(self.update_server_access)
+        # Keep the old route for now, maybe deprecate later?
+        self.router.get("/")(self.get_servers_legacy) 
+        # Add the new route specifically for the management UI
+        self.router.get("/manageable", response_model=List[ServerInfo])(self.get_manageable_servers) 
+        
+        self.router.get("/{server_id}")(self.get_server)
+        # Add the access status update endpoint with the response model
+        self.router.post("/{server_id}/access", response_model=ServerAccessUpdateResponse)(self.update_server_access) 
+        self.router.post("/{server_id}/restart")(self.restart_server)
+        self.router.post("/{server_id}/stop")(self.stop_server)
+        self.router.post("/{server_id}/start")(self.start_server)
+        self.router.get("/{server_id}/status")(self.get_server_status)
     
-    async def get_servers(self, current_user=Depends(get_current_user)):
-        """Get all servers with their access status"""
+    # Keep the old method for potential compatibility, mark as legacy or remove later
+    async def get_servers_legacy(self, current_user: AppUserEntity = Depends(get_current_user)):
+        """Get list of servers (approved status only) for the current user"""
         try:
-            await require_role(current_user, Role.OWNER)
-            
-            async with session_context() as session:
-                logger.info("Fetching servers from database...")
-                result = await session.execute(select(GuildEntity))
-                guilds = result.scalars().all()
-                logger.info(f"Found {len(guilds)} guilds in database")
-                
-                guild_list = []
-                for guild in guilds:
-                    logger.info(f"Processing guild: {guild.name} (ID: {guild.guild_id}) - Status: {guild.access_status}")
-                    guild_list.append({
-                        "guild_id": guild.guild_id,
-                        "name": guild.name,
-                        "access_status": guild.access_status.lower() if guild.access_status else "pending",
-                        "member_count": guild.member_count,
-                        "joined_at": guild.joined_at,
-                        "access_requested_at": guild.access_requested_at,
-                        "access_reviewed_at": guild.access_reviewed_at,
-                        "access_reviewed_by": guild.access_reviewed_by,
-                        "access_notes": guild.access_notes,
-                        "icon_url": guild.icon_url,
-                        "enable_commands": guild.enable_commands,
-                        "enable_logging": guild.enable_logging,
-                        "enable_automod": guild.enable_automod,
-                        "enable_welcome": guild.enable_welcome
-                    })
-                
-                logger.info(f"Returning {len(guild_list)} guilds")
-                return guild_list
-                
+            # This uses the method that filters by 'approved' or user membership
+            servers = await self.server_service.get_available_servers(current_user)
+            return self.success_response(servers) 
         except Exception as e:
-            logger.error(f"Error getting servers: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e)
-            )
+            return self.handle_exception(e)
 
-    async def update_server_access(self, guild_id: str, request: Request, current_user=Depends(get_current_user)):
-        """Update server access status - Pure database operation"""
+    async def get_manageable_servers(self, current_user: AppUserEntity = Depends(get_current_user)) -> List[GuildEntity]:
+        """Get list of ALL servers (all statuses) for owner management."""
         try:
-            await require_role(current_user, Role.OWNER)
+            # Use the new service method that fetches all servers for owners
+            servers: List[GuildEntity] = await self.server_service.get_all_manageable_servers(current_user)
+            # Return the list directly. FastAPI will serialize using ServerInfo response_model.
+            return servers
+        except Exception as e:
+            # Let the global exception handler catch and log
+            self.logger.error(f"Error fetching manageable servers: {e}", exc_info=True) # Log here too
+            # Re-raise the original exception or a generic HTTPException
+            raise HTTPException(status_code=500, detail="Failed to retrieve manageable servers") from e
+    
+    async def update_server_access(self, server_id: str, request: Request, current_user: AppUserEntity = Depends(get_current_user)) -> ServerAccessUpdateResponse:
+        """Update the access status of a server (approve, reject, block, suspend)."""
+        try:
+            if not current_user.is_owner:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only owner can update server access.")
             
-            data = await request.json()
-            status = data.get("status")
-            notes = data.get("notes")
+            payload = await request.json()
+            new_status = payload.get('status')
             
-            if not status:
+            if not new_status or new_status.lower() not in ['pending', 'approved', 'rejected', 'blocked', 'suspended']:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status provided.")
+            
+            # Call the service method
+            updated_server_entity: GuildEntity = await self.server_service.update_guild_access_status(server_id, new_status, current_user.id)
+            
+            # Return the dictionary matching the response model structure
+            # FastAPI will serialize updated_server_entity using ServerInfo schema
+            return {
+                "message": f"Server status updated to {new_status}", 
+                "server": updated_server_entity
+            }
+        except HTTPException as e:
+            raise e # Re-raise validation/permission errors
+        except Exception as e:
+            self.logger.error(f"Error updating server {server_id} access: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Failed to update server access") from e
+
+    async def get_server(self, server_id: str, current_user: AppUserEntity = Depends(get_current_user)):
+        """Get details of a specific server"""
+        try:
+            if not current_user.is_owner:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Status is required"
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only owner can view server details"
                 )
-            
-            async with session_context() as session:
-                result = await session.execute(
-                    select(GuildEntity).where(GuildEntity.guild_id == guild_id)
-                )
-                guild = result.scalar_one_or_none()
-                
-                if not guild:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Server with ID {guild_id} not found"
-                    )
-                
-                guild.access_status = status
-                guild.access_notes = notes
-                guild.access_reviewed_at = func.now()
-                guild.access_reviewed_by = current_user["id"]
-                
-                session.add(guild)
-                await session.commit()
-                
-                return {
-                    "message": f"Server {guild_id} access updated successfully",
-                    "status": status
-                }
-                
-        except HTTPException:
-            raise
+            server = await self.server_service.get_server(server_id)
+            return self.success_response(server)
         except Exception as e:
-            logger.error(f"Error updating server access: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e)
-            )
-
-    async def get_server_details(self, guild_id: str, current_user=Depends(get_current_user)):
-        """Get detailed information about a specific server"""
+            return self.handle_exception(e)
+    
+    async def restart_server(self, server_id: str, current_user: AppUserEntity = Depends(get_current_user)):
+        """Restart a specific server"""
         try:
-            await require_role(current_user, Role.OWNER)
-            
-            async with session_context() as session:
-                result = await session.execute(
-                    select(GuildEntity).where(GuildEntity.guild_id == guild_id)
+            if not current_user.is_owner:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only owner can restart servers"
                 )
-                guild = result.scalar_one_or_none()
-                
-                if not guild:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Server with ID {guild_id} not found"
-                    )
-                
-                return {
-                    "guild_id": guild.guild_id,
-                    "name": guild.name,
-                    "icon_url": guild.icon_url,
-                    "access_status": guild.access_status,
-                    "member_count": guild.member_count,
-                    "joined_at": guild.joined_at,
-                    "access_requested_at": guild.access_requested_at,
-                    "access_reviewed_at": guild.access_reviewed_at,
-                    "access_reviewed_by": guild.access_reviewed_by,
-                    "access_notes": guild.access_notes,
-                    "enable_commands": guild.enable_commands,
-                    "enable_logging": guild.enable_logging,
-                    "enable_automod": guild.enable_automod,
-                    "enable_welcome": guild.enable_welcome
-                }
-                
-        except HTTPException:
-            raise
+            result = await self.server_service.restart_server(server_id)
+            return self.success_response(result)
         except Exception as e:
-            logger.error(f"Error getting server details: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e)
-            )
-
-    async def add_server(self, request: Request, current_user=Depends(get_current_user)):
-        """Add a new server to the database"""
+            return self.handle_exception(e)
+    
+    async def stop_server(self, server_id: str, current_user: AppUserEntity = Depends(get_current_user)):
+        """Stop a specific server"""
         try:
-            await require_role(current_user, Role.OWNER)
-            data = await request.json()
-            
-            async with session_context() as session:
-                guild = GuildEntity(
-                    guild_id=data["guild_id"],
-                    name=data["name"],
-                    access_status="pending",
-                    access_requested_at=func.now(),
-                    icon_url=data.get("icon_url")
+            if not current_user.is_owner:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only owner can stop servers"
                 )
-                
-                session.add(guild)
-                await session.commit()
-                
-                return {
-                    "message": "Server added successfully",
-                    "guild_id": guild.guild_id
-                }
-                
+            result = await self.server_service.stop_server(server_id)
+            return self.success_response(result)
         except Exception as e:
-            logger.error(f"Error adding server: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e)
-            )
+            return self.handle_exception(e)
+    
+    async def start_server(self, server_id: str, current_user: AppUserEntity = Depends(get_current_user)):
+        """Start a specific server"""
+        try:
+            if not current_user.is_owner:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only owner can start servers"
+                )
+            result = await self.server_service.start_server(server_id)
+            return self.success_response(result)
+        except Exception as e:
+            return self.handle_exception(e)
+    
+    async def get_server_status(self, server_id: str, current_user: AppUserEntity = Depends(get_current_user)):
+        """Get status of a specific server"""
+        try:
+            if not current_user.is_owner:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only owner can view server status"
+                )
+            status = await self.server_service.get_server_status(server_id)
+            return self.success_response(status)
+        except Exception as e:
+            return self.handle_exception(e)
 
-# Create controller instance
+# Controller instance
 server_management_controller = ServerManagementController()
-get_servers = server_management_controller.get_servers
-add_server = server_management_controller.add_server
-get_server_details = server_management_controller.get_server_details
-update_server_access = server_management_controller.update_server_access 
+
+# Remove legacy/outdated function exports
+# get_servers = server_management_controller.get_servers # Removed
+# get_server = server_management_controller.get_server
+# restart_server = server_management_controller.restart_server
+# stop_server = server_management_controller.stop_server
+# start_server = server_management_controller.start_server
+# get_server_status = server_management_controller.get_server_status 

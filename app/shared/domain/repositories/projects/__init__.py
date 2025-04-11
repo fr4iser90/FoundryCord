@@ -1,3 +1,4 @@
+"""Project repository interfaces"""
 from .project_repository import ProjectRepository
 from .task_repository import TaskRepository
 

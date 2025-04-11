@@ -200,3 +200,13 @@ class KeyRepositoryImpl(KeyRepository):
         """Save AES key to database."""
         return await self.store_key('aes_key', key)
     
+    async def get_encryption_key(self) -> Optional[str]:
+        """Get the current encryption key."""
+        try:
+            result = await self.session.execute(
+                text("SELECT value FROM security_keys WHERE name = 'current_encryption_key'")
+            )
+            return result.scalar()
+        except Exception as e:
+            logger.error(f"Failed to get encryption key: {e}")
+            return None

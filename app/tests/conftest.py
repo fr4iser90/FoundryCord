@@ -68,13 +68,7 @@ def pytest_configure(config):
         print("Installing fastapi for web tests...")
         subprocess.check_call([sys.executable, "-m", "pip", "install", "fastapi"])
         
-    # Setup other test dependencies
-    try:
-        # For web tests
-        from app.shared.infrastructure.database import setup_database_connection
-        # Other test setup logic...
-    except ImportError as e:
-        print(f"Setup warning: {e}")
+
 
 # ===== Shared Fixtures =====
 @pytest.fixture(scope="session")
@@ -131,15 +125,20 @@ def mock_bot():
 @pytest.fixture
 def mock_db_session():
     """Provides a mock database session for unit tests"""
-    mock_session = MagicMock()
-    mock_session.commit = AsyncMock()
-    mock_session.close = AsyncMock()
-    mock_session.execute = AsyncMock()
-    mock_session.refresh = AsyncMock()
+    mock_session = AsyncMock()
     
-    # Configure default return values
-    mock_session.execute.return_value.scalars().all.return_value = []
-    mock_session.execute.return_value.scalar_one_or_none.return_value = None
+    # Create a mock result object that returns actual values
+    mock_result = AsyncMock()
+    mock_result.scalar = AsyncMock(return_value="test_value")
+    mock_result.scalars = AsyncMock(return_value=mock_result)
+    mock_result.all = AsyncMock(return_value=[])
+    
+    # Configure session methods to return our mock result
+    mock_session.execute = AsyncMock(return_value=mock_result)
+    mock_session.commit = AsyncMock(return_value=True)
+    mock_session.rollback = AsyncMock(return_value=True)
+    mock_session.close = AsyncMock(return_value=True)
+    mock_session.refresh = AsyncMock(return_value=True)
     
     return mock_session
 
@@ -148,9 +147,37 @@ def mock_db_session():
 def mock_get_session(mock_db_session):
     """Patch the get_session function to return a mock session"""
     with patch('app.shared.infrastructure.database.models.config.get_session') as mock_get_session:
-        
         async def mock_generator():
             yield mock_db_session
-            
         mock_get_session.return_value = mock_generator()
-        yield mock_session 
+        yield mock_db_session
+
+@pytest.fixture(autouse=True)
+def setup_test_env():
+    """Set up test environment variables."""
+    # Save original environment
+    original_env = {
+        'APP_DB_USER': os.environ.get('APP_DB_USER'),
+        'POSTGRES_HOST': os.environ.get('POSTGRES_HOST'),
+        'POSTGRES_PORT': os.environ.get('POSTGRES_PORT'),
+        'POSTGRES_DB': os.environ.get('POSTGRES_DB'),
+        'APP_DB_PASSWORD': os.environ.get('APP_DB_PASSWORD'),
+        'DATABASE_URL': os.environ.get('DATABASE_URL')
+    }
+    
+    # Set test environment
+    os.environ['DATABASE_URL'] = 'postgresql+asyncpg://test:test@localhost:5432/test'
+    os.environ['APP_DB_USER'] = 'test'
+    os.environ['APP_DB_PASSWORD'] = 'test'
+    os.environ['POSTGRES_HOST'] = 'localhost'
+    os.environ['POSTGRES_PORT'] = '5432'
+    os.environ['POSTGRES_DB'] = 'test'
+    
+    yield
+    
+    # Restore original environment
+    for key, value in original_env.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value 

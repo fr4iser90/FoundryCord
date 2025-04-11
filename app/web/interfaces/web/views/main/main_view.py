@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from app.web.core.extensions import templates_extension
 
 router = APIRouter(tags=["Main"])
-templates = templates_extension()
+
 
 class MainView:
     """View für Hauptseiten"""
@@ -20,7 +20,7 @@ class MainView:
     
     async def index(self, request: Request):
         try:
-            return templates.TemplateResponse(
+            return templates_extension().TemplateResponse(
                 "index.html",
                 {"request": request, "user": request.session.get("user")}
             )
@@ -29,7 +29,7 @@ class MainView:
     
     async def about(self, request: Request):
         """About page"""
-        return templates.TemplateResponse(
+        return templates_extension().TemplateResponse(
             "views/about.html",
             {
                 "request": request, 
@@ -40,7 +40,7 @@ class MainView:
     
     async def help_page(self, request: Request):
         """Help page"""
-        return templates.TemplateResponse(
+        return templates_extension().TemplateResponse(
             "views/help.html",
             {
                 "request": request, 

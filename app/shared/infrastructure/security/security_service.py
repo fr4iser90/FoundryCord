@@ -1,7 +1,7 @@
 """Security service for web application."""
 import logging
 from typing import Optional, Dict, Any
-from app.shared.infrastructure.security.security_bootstrapper import SecurityBootstrapper
+from app.shared.infrastructure.security.security_bootstrapper import get_security_bootstrapper
 
 logger = logging.getLogger("homelab.bot")
 
@@ -10,7 +10,7 @@ class SecurityService:
     
     def __init__(self):
         """Initialize the security service."""
-        self.security_bootstrapper = SecurityBootstrapper()
+        self.security_bootstrapper = get_security_bootstrapper()
         self.keys = {}
         self.initialized = False
         
@@ -21,21 +21,14 @@ class SecurityService:
             return True
             
         try:
-            # Initialize security bootstrapper
-            if not await self.security_bootstrapper.initialize():
-                logger.error("Failed to initialize security bootstrapper")
-                return False
-            
             # Load keys from bootstrapper
             for key_type in self.security_bootstrapper.KEY_TYPES:
-                self.keys[key_type] = self.security_bootstrapper.get_key(key_type)
+                key = self.security_bootstrapper.get_key(key_type)
+                if not key:
+                    logger.error(f"Required security key not found: {key_type}")
+                    return False
+                self.keys[key_type] = key
             
-            # Validate that all required keys are available
-            missing_keys = [k for k, v in self.keys.items() if not v]
-            if missing_keys:
-                logger.error(f"Missing security keys: {', '.join(missing_keys)}")
-                return False
-                
             self.initialized = True
             logger.info("Security service initialized successfully")
             return True

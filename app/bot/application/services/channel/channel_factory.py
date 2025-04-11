@@ -4,7 +4,7 @@ from typing import Optional, Dict, Any, List
 from app.shared.infrastructure.models.discord.entities.channel_entity import ChannelEntity, ChannelPermissionEntity
 from app.shared.infrastructure.models.discord.enums.channels import ChannelType, ChannelPermissionLevel
 from app.shared.domain.repositories.discord.channel_repository import ChannelRepository
-from app.bot.domain.categories.repositories.category_repository import CategoryRepository
+from app.shared.domain.repositories.discord.category_repository import CategoryRepository
 from app.bot.application.services.channel.channel_builder import ChannelBuilder
 
 logger = logging.getLogger(__name__)

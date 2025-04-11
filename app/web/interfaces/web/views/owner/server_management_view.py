@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi import APIRouter, Request, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse
 from app.web.core.extensions import templates_extension, session_extension
-from app.web.application.services.auth.dependencies import get_current_user
-from app.web.domain.auth.permissions import Role, require_role
+from app.shared.infrastructure.models.auth import AppUserEntity, AppRoleEntity
+from app.shared.domain.auth.services import AuthenticationService, AuthorizationService
 from app.web.interfaces.api.rest.v1.owner import (
     get_servers,
     add_server,
@@ -10,16 +10,17 @@ from app.web.interfaces.api.rest.v1.owner import (
     update_server_access
 )
 from app.shared.interface.logging.api import get_web_logger
+from app.web.interfaces.web.views.base_view import BaseView
 
 router = APIRouter(prefix="/owner/servers", tags=["Server Management"])
-templates = templates_extension()
+
 logger = get_web_logger()
 
-class ServerManagementView:
+class ServerManagementView(BaseView):
     """View for server management functionality"""
     
     def __init__(self):
-        self.router = router
+        super().__init__(APIRouter(prefix="/owner/servers", tags=["Server Management"]))
         self._register_routes()
     
     def _register_routes(self):
@@ -27,10 +28,15 @@ class ServerManagementView:
         self.router.get("", response_class=HTMLResponse)(self.server_management_page)
         self.router.get("/{guild_id}", response_class=HTMLResponse)(self.server_details_page)
     
-    async def server_management_page(self, request: Request, current_user=Depends(get_current_user)):
+    async def server_management_page(self, request: Request):
         """Render server management page"""
         try:
-            await require_role(current_user, Role.OWNER)
+            current_user = await self.get_current_user(request)
+            if not current_user.is_owner:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only owner can manage servers"
+                )
             
             # Get server list
             logger.info("Fetching servers from API...")
@@ -47,8 +53,8 @@ class ServerManagementView:
             for server in pending_servers:
                 logger.info(f"Pending server: {server['name']} (ID: {server['guild_id']}) - Status: {server['access_status']}")
             
-            return templates.TemplateResponse(
-                "views/owner/bot/server-list.html",
+            return self.render_template(
+                "owner/bot/server-list.html",
                 {
                     "request": request,
                     "user": current_user,
@@ -60,8 +66,8 @@ class ServerManagementView:
             )
         except HTTPException as e:
             logger.error(f"Access denied to server management: {e}")
-            return templates.TemplateResponse(
-                "views/errors/403.html",
+            return self.render_template(
+                "errors/403.html",
                 {
                     "request": request,
                     "user": current_user,
@@ -71,8 +77,8 @@ class ServerManagementView:
             )
         except Exception as e:
             logger.error(f"Error in server management view: {e}")
-            return templates.TemplateResponse(
-                "views/errors/500.html",
+            return self.render_template(
+                "errors/500.html",
                 {
                     "request": request,
                     "user": current_user,
@@ -81,16 +87,21 @@ class ServerManagementView:
                 status_code=500
             )
     
-    async def server_details_page(self, guild_id: str, request: Request, current_user=Depends(get_current_user)):
+    async def server_details_page(self, guild_id: str, request: Request):
         """Render server details page"""
         try:
-            await require_role(current_user, Role.OWNER)
+            current_user = await self.get_current_user(request)
+            if not current_user.is_owner:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only owner can view server details"
+                )
             
             # Get server details
             server = await get_server_details(guild_id, current_user)
             
-            return templates.TemplateResponse(
-                "views/owner/bot/server-details.html",
+            return self.render_template(
+                "owner/bot/server-details.html",
                 {
                     "request": request,
                     "user": current_user,
@@ -100,8 +111,8 @@ class ServerManagementView:
             )
         except HTTPException as e:
             logger.error(f"Access denied to server details: {e}")
-            return templates.TemplateResponse(
-                "views/errors/403.html",
+            return self.render_template(
+                "errors/403.html",
                 {
                     "request": request,
                     "user": current_user,
@@ -111,8 +122,8 @@ class ServerManagementView:
             )
         except Exception as e:
             logger.error(f"Error in server details view: {e}")
-            return templates.TemplateResponse(
-                "views/errors/500.html",
+            return self.render_template(
+                "errors/500.html",
                 {
                     "request": request,
                     "user": current_user,
@@ -123,3 +134,4 @@ class ServerManagementView:
 
 # Create view instance
 server_management_view = ServerManagementView()
+router = server_management_view.router

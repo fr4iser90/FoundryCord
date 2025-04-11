@@ -4,7 +4,7 @@ import logging
 from app.shared.infrastructure.models.discord.entities.channel_entity import ChannelEntity
 from app.shared.infrastructure.models.discord.enums.channels import ChannelType
 from app.shared.domain.repositories.discord.channel_repository import ChannelRepository
-from app.bot.domain.categories.repositories.category_repository import CategoryRepository
+from app.shared.domain.repositories.discord.category_repository import CategoryRepository
 from app.shared.infrastructure.database.session.context import session_context
 
 logger = logging.getLogger(__name__)

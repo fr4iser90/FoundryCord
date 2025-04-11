@@ -11,7 +11,7 @@ from app.shared.interface.logging.api import get_bot_logger
 from app.shared.infrastructure.database.session.context import session_context
 from app.bot.application.services.category.category_setup_service import CategorySetupService
 from app.bot.application.services.category.category_builder import CategoryBuilder
-from app.bot.domain.categories.repositories.category_repository import CategoryRepository
+from app.shared.domain.repositories.discord.category_repository import CategoryRepository
 from app.shared.infrastructure.repositories.discord import CategoryRepositoryImpl
 
 logger = get_bot_logger()

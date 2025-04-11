@@ -19,16 +19,13 @@ Environment Configuration:
 - APP_DB_PASSWORD: Application database password
 """
 
-
-
 # First import the essentials for database connection
 from app.shared.infrastructure.database.core import (
-    DatabaseConnection, get_db_connection,
-    DatabaseCredentialManager, AUTO_DB_CREDENTIAL_MANAGEMENT
+    DatabaseConnection, 
+    get_db_connection,
+    DatabaseCredentialManager, 
+    AUTO_DB_CREDENTIAL_MANAGEMENT
 )
-
-# Only after db connection is available, import migrations
-from app.shared.infrastructure.database.migrations.wait_for_postgres import wait_for_postgres
 
 # Import models
 from app.shared.infrastructure.models import (
@@ -43,11 +40,8 @@ from app.shared.infrastructure.models import (
     DashboardComponentEntity
 )
 
-
-
 # Import API functions
 from .api import (
-    get_db_connection,
     get_session,
     initialize_session,
     session_context,
@@ -60,23 +54,13 @@ from .core import (
     ensure_db_initialized
 )
 
-# Import additional components
-from app.shared.infrastructure.database.api import get_session
-from app.shared.infrastructure.database.service import DatabaseService
-
-# Import the bootstrapper directly instead of individual initialization functions
-from app.shared.infrastructure.database.bootstrapper import initialize_database
-
 # Export all components for easy imports elsewhere
 __all__ = [
-    # Primary entry point for database initialization 
-    'initialize_database',
-    
     # Models
     'Base',
     'AppUserEntity', 'SessionEntity', 'RateLimitEntity', 'AuditLogEntity',
     'ChannelMapping', 'CategoryMapping',
-    'DashboardMessage',
+    'DashboardMessageEntity',
     'Project', 'Task',
     'MetricModel', 'AlertModel',
     'ConfigEntity',
@@ -89,11 +73,7 @@ __all__ = [
     'DatabaseCredentialManager',
     'AUTO_DB_CREDENTIAL_MANAGEMENT',
     
-    # Database initialization
-    'wait_for_postgres',
-    
     # API functions
-    'get_db_connection',
     'get_session',
     'initialize_session',
     'session_context',
@@ -101,7 +81,6 @@ __all__ = [
     'fetch_one',
     
     # Core functions
-    'ensure_db_initialized',
-    'AsyncSession'
+    'ensure_db_initialized'
 ]
 

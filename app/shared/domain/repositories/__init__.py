@@ -1,23 +1,67 @@
+"""
+Central Repository Interface Module
+All repository interfaces are exported from here to provide a single import point
+"""
+
 from .base_repository import BaseRepository
+
+# Auth repositories
+from .auth import (
+    UserRepository,
+    SessionRepository,
+    KeyRepository
+)
+
+# Discord repositories
+from .discord import (
+    ChannelRepository,
+    CategoryRepository,
+    GuildConfigRepository,
+    DashboardRepository,
+    GuildRepository
+)
+
+# Monitoring repositories
+from .monitoring import MonitoringRepository
+
+# Project repositories
+from .projects import (
+    ProjectRepository,
+    TaskRepository
+)
+
+# Utility repositories
+from .utils import RateLimitRepository
+
+# Audit repositories
 from .audit import AuditLogRepository
-from .auth import UserRepository, SessionRepository, KeyRepository
-from .discord import ChannelRepository, CategoryRepository, GuildConfigRepository, DashboardRepository
-#from .monitoring import MonitoringRepository
-#from .projects import ProjectRepository, TaskRepository
-#from .utils import RateLimitRepository
 
 __all__ = [
+    # Base
     'BaseRepository',
-    'AuditLogRepository',
+    
+    # Auth
     'UserRepository',
     'SessionRepository',
     'KeyRepository',
+    
+    # Discord
     'ChannelRepository',
     'CategoryRepository',
     'GuildConfigRepository',
-    'DashboardRepository'
-    #'MonitoringRepository',
-    #'ProjectRepository',
-    #'TaskRepository',
-    #'RateLimitRepository'
+    'DashboardRepository',
+    'GuildRepository',
+    
+    # Monitoring
+    'MonitoringRepository',
+    
+    # Projects
+    'ProjectRepository',
+    'TaskRepository',
+    
+    # Utils
+    'RateLimitRepository',
+    
+    # Audit
+    'AuditLogRepository'
 ]

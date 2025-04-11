@@ -1,5 +1,6 @@
 from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from app.shared.infrastructure.models import AppUserEntity, AppRoleEntity, DiscordGuildUserEntity
 from typing import Optional, List
 from datetime import datetime
@@ -13,8 +14,47 @@ class UserRepositoryImpl(UserRepository):
         self.session = session
     
     async def get_by_id(self, user_id: int) -> Optional[AppUserEntity]:
-        result = await self.session.execute(select(AppUserEntity).where(AppUserEntity.id == user_id))
-        return result.scalar_one_or_none()
+        """Fetches a user by ID, eagerly loading guild roles."""
+        # Load the AppUserEntity and eagerly load the associated DiscordGuildUserEntity objects
+        # and for each of those, load the associated AppRoleEntity.
+        stmt = (
+            select(AppUserEntity)
+            .where(AppUserEntity.id == user_id)
+            # Correct eager loading path: AppUserEntity -> DiscordGuildUserEntity (guild_roles) -> AppRoleEntity (role)
+            .options(selectinload(AppUserEntity.guild_roles).selectinload(DiscordGuildUserEntity.role)) 
+        )
+        result = await self.session.execute(stmt)
+        user = result.scalar_one_or_none()
+        
+        if user:
+            # Calculate permissions based on is_owner and loaded guild roles
+            permissions = set()
+            
+            # Check global owner flag first
+            if user.is_owner:
+                permissions.add('OWNER')
+                permissions.add('ADMIN') # Owners are implicitly Admins
+                permissions.add('MANAGE_BOT') # Example specific owner permission
+                # Add other owner permissions as needed
+            
+            # Add permissions from guild-specific roles
+            for guild_association in user.guild_roles:
+                if guild_association.role: # Check if the role relationship is loaded
+                    role_name = guild_association.role.name
+                    permissions.add(role_name) # Add the role name as a permission
+                    # Add specific permissions based on role name if needed
+                    # Example:
+                    # if role_name == 'ADMIN':
+                    #    permissions.add('MANAGE_USERS') 
+                    #    permissions.add('MANAGE_SETTINGS')
+                else:
+                    logger.warning(f"Guild association found for user {user_id} in guild {guild_association.guild_id}, but role object was not loaded.")
+
+            # Attach the calculated permissions to the user object
+            user.permissions = permissions 
+            logger.debug(f"Loaded user {user_id} with calculated permissions: {user.permissions}")
+            
+        return user
     
     async def get_by_discord_id(self, discord_id: str) -> Optional[AppUserEntity]:
         """Holt einen AppUserEntity anhand der Discord ID"""

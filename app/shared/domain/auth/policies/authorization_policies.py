@@ -1,47 +1,48 @@
 from app.shared.interface.logging.api import get_bot_logger
+from app.shared.infrastructure.models.auth import AppUserEntity, AppRoleEntity
 logger = get_bot_logger()
-from app.shared.domain.auth.models import Role, OWNER, ADMINS, MODERATORS, USERS, GUESTS
 
-def is_bot_owner(user):
+def is_bot_owner(user: AppUserEntity) -> bool:
     """Check if the user is a Bot owner."""
-    return str(user.id) in OWNER.values()
+    return user.is_owner
 
-def is_admin(user):
+def is_admin(user: AppUserEntity) -> bool:
     """Check if the user is an Admin or Super Admin."""
-    return is_bot_owner(user) or str(user.id) in ADMINS.values()
+    if user.is_owner:
+        return True
+    return any(guild_user.role.name == "ADMIN" for guild_user in user.guild_roles)
 
-def is_moderator(user):
+def is_moderator(user: AppUserEntity) -> bool:
     """Check if the user is a Moderator or higher."""
-    return is_admin(user) or str(user.id) in MODERATORS.values()
+    if is_admin(user):
+        return True
+    return any(guild_user.role.name == "MODERATOR" for guild_user in user.guild_roles)
 
-def is_user(user):
+def is_user(user: AppUserEntity) -> bool:
     """Check if the user is a regular User or higher."""
-    return is_moderator(user) or str(user.id) in USERS.values()
+    if is_moderator(user):
+        return True
+    return any(guild_user.role.name == "USER" for guild_user in user.guild_roles)
 
-def is_guest(user):
+def is_guest(user: AppUserEntity) -> bool:
     """Check if the user is a Guest or higher."""
-    return str(user.id) in GUESTS.values()
+    if user.is_owner:
+        return True
+    return bool(user.guild_roles)  # Any role counts as at least guest
 
-def is_authorized(user):
+def is_authorized(user: AppUserEntity) -> bool:
     """Check if the user is authorized."""
-    user_id = str(user.id)
-    # Use debug level instead of print for role checks
-    logger.debug(f"Authorization check for user ID: {user_id}")
+    # Use debug level for role checks
+    logger.debug(f"Authorization check for user ID: {user.id}")
     
-    # Remove sensitive data from logs
-    roles_present = {
-        'owner': bool(OWNER),
-        'admin': bool(ADMINS),
-        'moderator': bool(MODERATORS),
-        'user': bool(USERS),
-        'guest': bool(GUESTS)
+    # Check roles
+    roles = {
+        'owner': user.is_owner,
+        'admin': is_admin(user),
+        'moderator': is_moderator(user),
+        'user': is_user(user),
+        'guest': is_guest(user)
     }
-    logger.debug(f"Available app_roles: {roles_present}")
+    logger.debug(f"User roles: {roles}")
     
-    return (
-        is_bot_owner(user)
-        or is_admin(user)
-        or is_moderator(user)
-        or is_user(user)
-        or is_guest(user)
-    )
+    return any(roles.values())

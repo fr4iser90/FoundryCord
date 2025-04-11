@@ -3,32 +3,36 @@ import { showToast, apiRequest } from '/static/js/components/common/notification
 // Server Selector Component
 export class ServerSelector {
     constructor() {
-        console.log('Initializing ServerSelector');
-        // Initialize when DOM is loaded
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.init());
-        } else {
-            this.init();
+        this.button = document.getElementById('server-selector-button');
+        this.dropdown = document.getElementById('server-dropdown');
+        this.serverList = document.getElementById('server-list');
+        this.currentGuildId = null;
+
+        // Check if essential elements exist before proceeding
+        if (!this.button || !this.dropdown || !this.serverList) {
+            console.warn('ServerSelector: Required HTML elements not found. Skipping initialization.');
+            // Optionally log which elements are missing
+            // console.debug('Missing elements:', { 
+            //     button: !this.button, 
+            //     dropdown: !this.dropdown, 
+            //     serverList: !this.serverList 
+            // });
+            return; // Stop initialization if elements are missing
         }
+
+        this.init();
     }
 
     init() {
-        // Find required elements
-        this.button = document.getElementById('server-selector-button');
-        this.dropdown = document.getElementById('server-dropdown');
-        this.serverList = this.dropdown?.querySelector('.server-list');
-        
-        if (this.button && this.dropdown && this.serverList) {
-            console.log('Found all required elements');
-            this.setupEventListeners();
-            this.loadServers();
-        } else {
-            console.error('Missing required elements:', {
-                button: !!this.button,
-                dropdown: !!this.dropdown,
-                serverList: !!this.serverList
-            });
+        // Check again (defensive programming)
+        if (!this.button || !this.dropdown || !this.serverList) {
+             console.error("ServerSelector init called without required elements.");
+             return;
         }
+        
+        console.log('Initializing ServerSelector');
+        this.setupEventListeners();
+        this.loadServers();
     }
 
     setupEventListeners() {
@@ -73,14 +77,11 @@ export class ServerSelector {
                 }
             }
             
-            const servers = await apiRequest('/api/v1/servers');
-            console.log('Servers loaded:', servers);
+            const response = await apiRequest('/api/v1/servers');
+            const servers = response.data || [];
             
             // Filter for approved servers only
-            const approvedServers = servers.filter(server => {
-                console.log('Checking server:', server);
-                return server && server.access_status === 'approved';
-            });
+            const approvedServers = servers.filter(server => server?.access_status === 'approved');
             
             this.serverList.classList.remove('loading');
             if (approvedServers.length === 0) {
@@ -94,7 +95,7 @@ export class ServerSelector {
             console.error('Error loading servers:', error);
             this.serverList.classList.remove('loading');
             this.serverList.innerHTML = '<div class="server-list-item">Error loading servers</div>';
-            showToast('error', 'Failed to load servers');
+            throw error; // Let apiRequest handle the error display
         }
     }
 
@@ -167,8 +168,7 @@ export class ServerSelector {
             // Reload page to update content
             window.location.reload();
         } catch (error) {
-            console.error('Error switching server:', error);
-            showToast('error', 'Failed to switch server. Please try again.');
+            throw error; // Let apiRequest handle the error display
         }
     }
 }

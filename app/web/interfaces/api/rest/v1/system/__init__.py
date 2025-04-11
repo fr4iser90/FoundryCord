@@ -1,3 +1,5 @@
-from .health_controller import router as health_router, HealthController
+from .health_controller import HealthController, health_controller
 
-__all__ = ['HealthController', 'health_router'] 
+router = health_controller.router
+
+__all__ = ['HealthController', 'router'] 

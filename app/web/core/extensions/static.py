@@ -64,8 +64,8 @@ class StaticExtension:
             "css_theme_light": self._static_dir / "css" / "themes" / "light.css",
             "css_components": self._static_dir / "css" / "components",
             "css_views": self._static_dir / "css" / "views",
-            "js_main": self._static_dir / "js" / "main.js",
-            "js_theme": self._static_dir / "js" / "theme_switcher.js"
+            "js_main": self._static_dir / "js" / "core" / "main.js",
+            "js_theme": self._static_dir / "js" / "core" / "theme.js"
         }
         
         results = {}

@@ -1,34 +1,29 @@
-from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi import APIRouter, Request, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse, JSONResponse
-from app.web.core.extensions import templates_extension, session_extension
-from app.web.application.services.auth.dependencies import get_current_user
-from app.web.domain.auth.permissions import Role, require_role
+from app.web.interfaces.web.views.base_view import BaseView
+from app.shared.infrastructure.models.auth import AppUserEntity, AppRoleEntity
+from app.shared.domain.auth.services import AuthenticationService, AuthorizationService
 from app.shared.interface.logging.api import get_web_logger
 from app.shared.infrastructure.integration.bot_connector import get_bot_connector
+from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
 
-router = APIRouter(prefix="/owner/bot", tags=["Bot Control"])
-templates = templates_extension()
-logger = get_web_logger()
-
-class BotControlView:
+class BotControlView(BaseView):
     """View for bot control functionality"""
     
     def __init__(self):
-        self.router = router
+        super().__init__(APIRouter(prefix="/owner/bot", tags=["Bot Control"]))
         self._register_routes()
     
     def _register_routes(self):
         """Register all routes for this view"""
-        # HTML Routes
         self.router.get("", response_class=HTMLResponse)(self.bot_control_page)
-        
-        # API Routes - Only HTML view related endpoints should be here
         self.router.get("/config")(self.get_config)
     
-    async def bot_control_page(self, request: Request, current_user=Depends(get_current_user)):
-        """Render bot control page"""
+    async def bot_control_page(self, request: Request, current_user: AppUserEntity = Depends(get_current_user)):
+        """Render bot control page - Uses Depends for current_user"""
         try:
-            await require_role(current_user, Role.OWNER)
+            # Permission check now uses the user injected by Depends
+            await self.require_permission(current_user, "OWNER")
             
             # Get bot configuration and status
             bot_connector = await get_bot_connector()
@@ -58,61 +53,39 @@ class BotControlView:
                         "commands_today": 0  # TODO: Implement command tracking
                     }
             
-            # Prepare template context
-            context = {
-                "request": request,
-                "user": current_user,
-                "active_page": "bot-control",
-                "config": config,
-                "bot_status": bot_status,
-                "bot_latency": round(bot.latency * 1000, 2) if bot and hasattr(bot, "latency") else None,
-                "bot_stats": bot_stats
-            }
+            bot_latency = round(bot.latency * 1000, 2) if bot and hasattr(bot, "latency") else None
             
-            # Render the main template which includes our component templates
-            return templates.TemplateResponse(
-                "views/owner/bot/bot.html",
-                context
+            return self.render_template(
+                "owner/bot/bot.html",
+                request,
+                active_page="bot-control",
+                config=config,
+                bot_status=bot_status,
+                bot_latency=bot_latency,
+                bot_stats=bot_stats
             )
-            
-        except HTTPException as e:
-            logger.error(f"Access denied to bot control: {e}")
-            return templates.TemplateResponse(
-                "views/errors/403.html",
-                {"request": request, "user": current_user, "error": str(e.detail)},
-                status_code=403
-            )
+        except HTTPException as http_exc:
+            # Re-raise HTTPExceptions directly to be handled globally
+            raise http_exc 
         except Exception as e:
-            logger.error(f"Error in bot control view: {e}")
-            # Return a more graceful error page that still shows the UI
-            context = {
-                "request": request,
-                "user": current_user,
-                "active_page": "bot-control",
-                "config": {},
-                "bot_status": "offline",
-                "bot_latency": None,
-                "bot_stats": None,
-                "error": "Bot is currently offline or not properly initialized. Some features may be unavailable."
-            }
-            return templates.TemplateResponse(
-                "views/owner/bot/bot.html",
-                context
-            )
+            # Log other exceptions and return a generic 500 error page
+            self.logger.error(f"Error rendering bot control page: {e}", exc_info=True)
+            return self.error_response(request, "An unexpected error occurred while loading the bot control page.", 500)
     
-    async def get_config(self, request: Request, current_user=Depends(get_current_user)):
+    async def get_config(self, request: Request):
         """Get bot configuration"""
         try:
-            await require_role(current_user, Role.OWNER)
+            current_user = await self.get_current_user(request)
+            await self.require_permission(current_user, "MANAGE_BOT")
             bot_connector = await get_bot_connector()
             config = await bot_connector.get_bot_config(current_user)
             return JSONResponse({"status": "success", "config": config})
         except Exception as e:
-            logger.error(f"Error getting config: {e}")
             return JSONResponse(
                 {"status": "error", "detail": str(e)},
                 status_code=500
             )
 
-# Create view instance
+# View instance
 bot_control_view = BotControlView()
+router = bot_control_view.router
