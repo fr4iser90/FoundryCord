@@ -285,7 +285,7 @@ class ChannelRepositoryImpl(ChannelRepository):
                     slowmode_delay=channel.slowmode_delay,
                     topic=channel.topic,
                     thread_config=channel.thread_config.to_dict() if channel.thread_config else None,
-                    metadata_json=channel.metadata or {}  # Changed from metadata to metadata_json
+                    metadata_json=channel.metadata_json or {}  # Changed from metadata_json to metadata_json
                 )
                 
                 session.add(entity)

@@ -25,18 +25,18 @@ class ChannelFactory:
         game_name: str,
         category_name: str = "GAME SERVERS",
         permissions: List[ChannelPermissionEntity] = None,
-        metadata: Dict[str, Any] = None
+        metadata_json: Dict[str, Any] = None
     ) -> Optional[discord.TextChannel]:
         """Create a channel for a specific game server"""
         
         if permissions is None:
             permissions = []
             
-        if metadata is None:
-            metadata = {}
+        if metadata_json is None:
+            metadata_json = {}
             
-        metadata["game_type"] = game_name.lower()
-        metadata["icon"] = self._get_game_icon(game_name)
+        metadata_json["game_type"] = game_name.lower()
+        metadata_json["icon"] = self._get_game_icon(game_name)
         
         # Find category
         category = self.category_repository.get_category_by_name(category_name)
@@ -61,7 +61,7 @@ class ChannelFactory:
             permission_level=ChannelPermissionLevel.MEMBER,
             permissions=permissions,
             topic=f"{game_name} server discussion and status updates",
-            metadata_json=metadata
+            metadata_json=metadata_json
         )
         
         # First check if this is an update or a new channel
@@ -85,18 +85,18 @@ class ChannelFactory:
         description: str = None,
         category_name: str = "PROJECTS",
         permissions: List[ChannelPermissionEntity] = None,
-        metadata: Dict[str, Any] = None
+        metadata_json: Dict[str, Any] = None
     ) -> Optional[discord.TextChannel]:
         """Create a channel for a specific project"""
         
         if permissions is None:
             permissions = []
             
-        if metadata is None:
-            metadata = {}
+        if metadata_json is None:
+            metadata_json = {}
             
-        metadata["project_name"] = project_name
-        metadata["icon"] = "🛠️"
+        metadata_json["project_name"] = project_name
+        metadata_json["icon"] = "🛠️"
         
         # Find category
         category = self.category_repository.get_category_by_name(category_name)
@@ -121,7 +121,7 @@ class ChannelFactory:
             permission_level=ChannelPermissionLevel.MEMBER,
             permissions=permissions,
             topic=description or f"Discussion for {project_name} project",
-            metadata_json=metadata
+            metadata_json=metadata_json
         )
         
         # First check if this is an update or a new channel
@@ -147,15 +147,15 @@ class ChannelFactory:
         available_tags: List[Dict[str, Any]] = None,
         require_tag: bool = True,
         permissions: List[ChannelPermissionEntity] = None,
-        metadata: Dict[str, Any] = None
+        metadata_json: Dict[str, Any] = None
     ) -> Optional[discord.ForumChannel]:
         """Create a forum channel with tags"""
         
         if permissions is None:
             permissions = []
             
-        if metadata is None:
-            metadata = {}
+        if metadata_json is None:
+            metadata_json = {}
             
         if available_tags is None:
             available_tags = [
@@ -196,7 +196,7 @@ class ChannelFactory:
             permissions=permissions,
             topic=description,
             thread_config=thread_config,
-            metadata_json=metadata
+            metadata_json=metadata_json
         )
         
         # First check if this is an update or a new channel

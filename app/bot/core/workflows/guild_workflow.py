@@ -78,7 +78,7 @@ class GuildWorkflow(BaseWorkflow):
                     # Set workflow status based on access status
                     if current_status == ACCESS_APPROVED:
                         self._guild_statuses[guild.guild_id] = WorkflowStatus.ACTIVE
-                        logger.info(f"Guild {guild.guild_id} is already APPROVED")
+                        logger.info(f"Guild {guild.guild_id} is APPROVED")
                         
                         # Ensure config exists for approved guilds
                         config = await self.guild_config_repo.get_by_guild_id(guild.guild_id)
@@ -252,15 +252,31 @@ class GuildWorkflow(BaseWorkflow):
                 # Update local status
                 self._guild_access_statuses[guild_id] = ACCESS_APPROVED
                 self._guild_statuses[guild_id] = WorkflowStatus.PENDING
+
+                # --- Trigger Template Creation --- 
+                # Get the Discord Guild object (needed by create_template_for_guild)
+                discord_guild = self.bot.get_guild(int(guild_id))
+                if discord_guild:
+                    # Get the template workflow and execute template creation
+                    template_workflow = self.bot.workflow_manager.get_workflow("guild_template")
+                    if template_workflow:
+                        logger.info(f"Triggering template creation for approved guild {guild_id}")
+                        await template_workflow.create_template_for_guild(discord_guild)
+                    else:
+                        logger.error("GuildTemplateWorkflow not found in manager!")
+                else:
+                    logger.error(f"Could not find Discord guild {guild_id} to create template.")
+                # --- End Trigger --- 
+
+                # Re-initialize the guild and its dependent workflows
+                # This will now run AFTER the template creation attempt
+                await self.bot.workflow_manager.initialize_guild(guild_id)
                 
-                # Re-initialize the guild
-                await self.initialize_for_guild(guild_id)
-                
-                logger.info(f"Guild {guild_id} has been APPROVED")
+                logger.info(f"Guild {guild_id} has been APPROVED and re-initialized.")
                 return True
                 
         except Exception as e:
-            logger.error(f"Error approving guild {guild_id}: {e}")
+            logger.error(f"Error approving guild {guild_id}: {e}", exc_info=True)
             return False
 
     async def deny_guild(self, guild_id: str) -> bool:
@@ -312,7 +328,7 @@ class GuildWorkflow(BaseWorkflow):
                     return False
                     
                 if not sync_members_only:
-                    # Update guild metadata
+                    # Update guild metadata_json
                     db_guild.name = discord_guild.name
                     db_guild.icon_url = str(discord_guild.icon_url) if discord_guild.icon_url else None
                     db_guild.member_count = discord_guild.member_count
@@ -320,7 +336,7 @@ class GuildWorkflow(BaseWorkflow):
                     
                     # Save guild updates
                     await guild_config_repo.update(db_guild)
-                    logger.info(f"Updated guild metadata for {guild_id}")
+                    logger.info(f"Updated guild metadata_json for {guild_id}")
                     
                 # Sync members if needed
                 if hasattr(self.bot, 'user_workflow'):

@@ -20,7 +20,7 @@ class AlertModel(Base):
     acknowledged_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now(), index=True)
     expires_at = Column(DateTime, nullable=True)
-    alert_data = Column(JSON, nullable=True)  # Renamed from metadata
+    alert_data = Column(JSON, nullable=True)  # Renamed from metadata_json
     
     def __repr__(self):
         return f"<AlertModel(id={self.id}, title='{self.title}', level='{self.level}')>" 

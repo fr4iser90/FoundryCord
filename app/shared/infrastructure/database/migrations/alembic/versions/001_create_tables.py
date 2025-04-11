@@ -363,6 +363,65 @@ def upgrade() -> None:
         sa.UniqueConstraint('user_id', 'guild_id', 'page_id', name='uq_widget_layout')  # Unique constraint for user, guild, and page
     )
 
+    # ==========================================================================
+    # GUILD TEMPLATE Tables - Server-specific Structure Snapshots
+    # ==========================================================================
+    op.create_table(
+        'guild_templates',
+        sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
+        sa.Column('guild_id', sa.String(20), sa.ForeignKey('discord_guilds.guild_id', ondelete='CASCADE'), nullable=False, unique=True),
+        sa.Column('template_name', sa.String(length=255), nullable=False),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+        sa.Column('is_active', sa.Boolean(), server_default='true', nullable=False)
+    )
+    op.create_index('idx_guild_templates_guild_id', 'guild_templates', ['guild_id'])
+
+    op.create_table(
+        'guild_template_categories',
+        sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
+        sa.Column('guild_template_id', sa.Integer(), sa.ForeignKey('guild_templates.id', ondelete='CASCADE'), nullable=False),
+        sa.Column('category_name', sa.String(length=100), nullable=False),
+        sa.Column('position', sa.Integer(), nullable=False),
+        sa.Column('metadata_json', sa.JSON(), nullable=True) 
+    )
+    op.create_index('idx_guild_template_categories_template_id', 'guild_template_categories', ['guild_template_id'])
+
+    op.create_table(
+        'guild_template_channels',
+        sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
+        sa.Column('guild_template_id', sa.Integer(), sa.ForeignKey('guild_templates.id', ondelete='CASCADE'), nullable=False),
+        sa.Column('channel_name', sa.String(length=100), nullable=False),
+        sa.Column('channel_type', sa.String(length=50), nullable=False),
+        sa.Column('position', sa.Integer(), nullable=False),
+        sa.Column('topic', sa.Text(), nullable=True),
+        sa.Column('is_nsfw', sa.Boolean(), server_default='false', nullable=False),
+        sa.Column('slowmode_delay', sa.Integer(), server_default='0', nullable=False),
+        sa.Column('parent_category_template_id', sa.Integer(), sa.ForeignKey('guild_template_categories.id', ondelete='SET NULL'), nullable=True),
+        sa.Column('metadata_json', sa.JSON(), nullable=True)
+    )
+    op.create_index('idx_guild_template_channels_template_id', 'guild_template_channels', ['guild_template_id'])
+    op.create_index('idx_guild_template_channels_parent_cat', 'guild_template_channels', ['parent_category_template_id'])
+
+    op.create_table(
+        'guild_template_category_permissions',
+        sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
+        sa.Column('category_template_id', sa.Integer(), sa.ForeignKey('guild_template_categories.id', ondelete='CASCADE'), nullable=False),
+        sa.Column('role_name', sa.String(length=100), nullable=False), # Using name instead of ID
+        sa.Column('allow_permissions_bitfield', sa.BigInteger(), nullable=True),
+        sa.Column('deny_permissions_bitfield', sa.BigInteger(), nullable=True)
+    )
+    op.create_index('idx_guild_template_cat_perms_cat_id', 'guild_template_category_permissions', ['category_template_id'])
+
+    op.create_table(
+        'guild_template_channel_permissions',
+        sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
+        sa.Column('channel_template_id', sa.Integer(), sa.ForeignKey('guild_template_channels.id', ondelete='CASCADE'), nullable=False),
+        sa.Column('role_name', sa.String(length=100), nullable=False), # Using name instead of ID
+        sa.Column('allow_permissions_bitfield', sa.BigInteger(), nullable=True),
+        sa.Column('deny_permissions_bitfield', sa.BigInteger(), nullable=True)
+    )
+    op.create_index('idx_guild_template_chan_perms_chan_id', 'guild_template_channel_permissions', ['channel_template_id'])
+
 def downgrade() -> None:
     """Drop created tables in reverse order."""
     
@@ -398,3 +457,16 @@ def downgrade() -> None:
 
     # Session Table
     op.drop_table('sessions')
+
+    # Drop GUILD TEMPLATE Tables first due to FKs
+    op.drop_index('idx_guild_template_chan_perms_chan_id', table_name='guild_template_channel_permissions')
+    op.drop_table('guild_template_channel_permissions')
+    op.drop_index('idx_guild_template_cat_perms_cat_id', table_name='guild_template_category_permissions')
+    op.drop_table('guild_template_category_permissions')
+    op.drop_index('idx_guild_template_channels_parent_cat', table_name='guild_template_channels')
+    op.drop_index('idx_guild_template_channels_template_id', table_name='guild_template_channels')
+    op.drop_table('guild_template_channels')
+    op.drop_index('idx_guild_template_categories_template_id', table_name='guild_template_categories')
+    op.drop_table('guild_template_categories')
+    op.drop_index('idx_guild_templates_guild_id', table_name='guild_templates')
+    op.drop_table('guild_templates')

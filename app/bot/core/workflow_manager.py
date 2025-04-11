@@ -20,7 +20,7 @@ class BotWorkflowManager:
         """Register a workflow with optional dependencies"""
         name = workflow.name
         
-        # Store workflow with its metadata
+        # Store workflow with its metadata_json
         self.workflows[name] = {
             'instance': workflow,
             'dependencies': dependencies or workflow.get_dependencies() or [],

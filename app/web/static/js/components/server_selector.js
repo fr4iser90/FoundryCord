@@ -59,10 +59,12 @@ export class ServerSelector {
             
             // Get current server first
             const currentServer = await apiRequest('/api/v1/servers/current');
-            this.currentGuildId = currentServer.guild_id;
             
-            // Update button if we have a current server
+            // --- Safely set currentGuildId ---
+            this.currentGuildId = null; // Default to null
             if (currentServer && currentServer.guild_id) {
+                this.currentGuildId = currentServer.guild_id;
+                // Update button only if we have a current server
                 const button = document.getElementById('server-selector-button');
                 if (button) {
                     const img = button.querySelector('img');
@@ -76,12 +78,19 @@ export class ServerSelector {
                     }
                 }
             }
+            // --- End safe handling ---
             
+            // Fetch ALL servers
             const response = await apiRequest('/api/v1/servers');
-            const servers = response.data || [];
+            console.log('Raw API Response for /api/v1/servers:', response);
             
+            // Adjust based on actual response structure - assuming response IS the array for now
+            const servers = response || []; 
+            console.log('Servers array used for filtering:', servers);
+
             // Filter for approved servers only
             const approvedServers = servers.filter(server => server?.access_status === 'approved');
+            console.log('Approved servers after filtering:', approvedServers);
             
             this.serverList.classList.remove('loading');
             if (approvedServers.length === 0) {

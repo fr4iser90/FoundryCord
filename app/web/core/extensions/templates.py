@@ -76,7 +76,7 @@ class TemplatesExtension:
                 logger.error(f"Required error template not found: {path}")
                 raise FileNotFoundError(f"Required error template not found: {path}")
                 
-        logger.info("All required error templates verified")
+        #logger.debug("All required error templates verified")
         
     def _register_filters(self):
         """Register Jinja2 template filters"""

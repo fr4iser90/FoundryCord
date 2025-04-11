@@ -36,7 +36,7 @@ class SystemCollector(SystemCollectorInterface):
             name="cpu_usage",
             value=data['cpu'],
             unit="percent",
-            metadata={"type": "system", "component": "cpu"}
+            metadata_json={"type": "system", "component": "cpu"}
         ))
         
         # Add CPU hardware information from hardware_info
@@ -46,7 +46,7 @@ class SystemCollector(SystemCollectorInterface):
                 metrics.append(MetricModel(
                     name="cpu_model",
                     value=data['hardware_info']['cpu_model'],
-                    metadata={"type": "system", "component": "cpu"}
+                    metadata_json={"type": "system", "component": "cpu"}
                 ))
             
             # CPU cores
@@ -54,7 +54,7 @@ class SystemCollector(SystemCollectorInterface):
                 metrics.append(MetricModel(
                     name="cpu_cores",
                     value=data['hardware_info']['cpu_cores'],
-                    metadata={"type": "system", "component": "cpu"}
+                    metadata_json={"type": "system", "component": "cpu"}
                 ))
             
             # CPU threads
@@ -62,7 +62,7 @@ class SystemCollector(SystemCollectorInterface):
                 metrics.append(MetricModel(
                     name="cpu_threads",
                     value=data['hardware_info']['cpu_threads'],
-                    metadata={"type": "system", "component": "cpu"}
+                    metadata_json={"type": "system", "component": "cpu"}
                 ))
         
         # Memory metrics
@@ -71,19 +71,19 @@ class SystemCollector(SystemCollectorInterface):
             name="memory_used",
             value=memory.used,
             unit="bytes",
-            metadata={"type": "system", "component": "memory"}
+            metadata_json={"type": "system", "component": "memory"}
         ))
         metrics.append(MetricModel(
             name="memory_total",
             value=memory.total,
             unit="bytes",
-            metadata={"type": "system", "component": "memory"}
+            metadata_json={"type": "system", "component": "memory"}
         ))
         metrics.append(MetricModel(
             name="memory_percent",
             value=memory.percent,
             unit="percent",
-            metadata={"type": "system", "component": "memory"}
+            metadata_json={"type": "system", "component": "memory"}
         ))
         
         # Swap metrics
@@ -92,13 +92,13 @@ class SystemCollector(SystemCollectorInterface):
             name="swap_used",
             value=swap.used,
             unit="bytes",
-            metadata={"type": "system", "component": "memory"}
+            metadata_json={"type": "system", "component": "memory"}
         ))
         metrics.append(MetricModel(
             name="swap_total",
             value=swap.total,
             unit="bytes",
-            metadata={"type": "system", "component": "memory"}
+            metadata_json={"type": "system", "component": "memory"}
         ))
         
         # Disk metrics
@@ -107,7 +107,7 @@ class SystemCollector(SystemCollectorInterface):
             name="disk_percent",
             value=disk.percent,
             unit="percent",
-            metadata={"type": "system", "component": "storage", "path": "/"}
+            metadata_json={"type": "system", "component": "storage", "path": "/"}
         ))
         
         # Festplatten-Metriken
@@ -129,7 +129,7 @@ class SystemCollector(SystemCollectorInterface):
                     name="disk_free",
                     value=details["total"] - details["used"],
                     unit="bytes",
-                    metadata={"type": "system", "component": "storage"}
+                    metadata_json={"type": "system", "component": "storage"}
                 ))
                 
                 # Disk-Total Metrik
@@ -137,7 +137,7 @@ class SystemCollector(SystemCollectorInterface):
                     name="disk_total",
                     value=details["total"],
                     unit="bytes",
-                    metadata={"type": "system", "component": "storage"}
+                    metadata_json={"type": "system", "component": "storage"}
                 ))
             
             # Wenn keine Festplatte gefunden wurde, Basis-Disk-Info verwenden
@@ -148,13 +148,13 @@ class SystemCollector(SystemCollectorInterface):
                         name="disk_free",
                         value=data['disk'].free,
                         unit="bytes",
-                        metadata={"type": "system", "component": "storage"}
+                        metadata_json={"type": "system", "component": "storage"}
                     ))
                     metrics.append(MetricModel(
                         name="disk_total",
                         value=data['disk'].total,
                         unit="bytes",
-                        metadata={"type": "system", "component": "storage"}
+                        metadata_json={"type": "system", "component": "storage"}
                     ))
         
         # Netzwerk-Metriken
@@ -163,13 +163,13 @@ class SystemCollector(SystemCollectorInterface):
                 name="net_upload",
                 value=round(data['network_stats'].get('net_upload', 0), 1),
                 unit="mbps",
-                metadata={"type": "system", "component": "network"}
+                metadata_json={"type": "system", "component": "network"}
             ))
             metrics.append(MetricModel(
                 name="net_download",
                 value=round(data['network_stats'].get('net_download', 0), 1),
                 unit="mbps",
-                metadata={"type": "system", "component": "network"}
+                metadata_json={"type": "system", "component": "network"}
             ))
         logger.info(f"Collected {len(metrics)} system metrics")
         return metrics

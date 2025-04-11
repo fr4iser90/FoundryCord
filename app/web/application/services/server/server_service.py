@@ -132,17 +132,19 @@ class ServerService:
         
         try:
             async with session_context() as session:
-                # Verify user has access AND server is approved
+                # Verify server exists and is approved. Check user access only if not owner.
                 stmt = (
                     select(GuildEntity)
-                    .join(DiscordGuildUserEntity, DiscordGuildUserEntity.guild_id == GuildEntity.guild_id, isouter=not user.is_owner) # Outer join only if not owner
+                    # Always OUTER JOIN to potentially check membership for non-owners
+                    .join(DiscordGuildUserEntity, DiscordGuildUserEntity.guild_id == GuildEntity.guild_id, isouter=True)
                     .where(GuildEntity.guild_id == guild_id)
                     .where(GuildEntity.access_status == 'approved')
                 )
-                # If user is not owner, add condition to check their membership
+                # If user is not owner, add condition to check their membership via the join
                 if not user.is_owner:
                     stmt = stmt.where(DiscordGuildUserEntity.user_id == user.id)
-                
+
+                # Execute the query
                 result = await session.execute(stmt.limit(1))
                 server = result.scalar_one_or_none()
                 

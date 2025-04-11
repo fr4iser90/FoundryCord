@@ -81,7 +81,7 @@ async def initialize_tables():
     
     try:
         async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+            await conn.run_sync(Base.metadata_json.create_all)
         
         logger.info("Database tables created successfully")
         return True

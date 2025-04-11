@@ -6,7 +6,7 @@ from app.shared.infrastructure.models import MetricModel, AlertModel
 class MonitoringRepository(ABC):
     @abstractmethod
     async def save_metric(self, name: str, value: float, unit: str, 
-                         timestamp: datetime = None, metadata: Dict[str, Any] = None) -> MetricModel:
+                         timestamp: datetime = None, metadata_json: Dict[str, Any] = None) -> MetricModel:
         """Save a new metric to the database"""
         pass
 

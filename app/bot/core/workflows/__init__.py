@@ -6,6 +6,7 @@ from .channel_workflow import ChannelWorkflow
 from .dashboard_workflow import DashboardWorkflow
 from .task_workflow import TaskWorkflow
 from .user_workflow import UserWorkflow
+from .guild_template_workflow import GuildTemplateWorkflow
 
 
 __all__ = [
@@ -17,5 +18,6 @@ __all__ = [
     'ChannelWorkflow',
     'DashboardWorkflow',
     'TaskWorkflow',
-    'UserWorkflow'
+    'UserWorkflow',
+    'GuildTemplateWorkflow'
 ] 

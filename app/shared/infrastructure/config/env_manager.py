@@ -271,7 +271,7 @@ async def configure_database_async():
             
             # Register Session for app-wide use
             from app.shared.infrastructure.models.base import Base
-            Base.metadata.bind = engine
+            Base.metadata_json.bind = engine
             
             return engine, async_session_factory
         except Exception as e:

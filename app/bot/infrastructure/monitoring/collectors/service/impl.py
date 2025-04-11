@@ -53,7 +53,7 @@ class ServiceCollector(ServiceCollectorInterface):
                     name="docker_running",
                     value=docker_running,
                     unit="count",
-                    metadata={"type": "service", "component": "docker"}
+                    metadata_json={"type": "service", "component": "docker"}
                 ))
             
             if isinstance(docker_errors, int):
@@ -61,7 +61,7 @@ class ServiceCollector(ServiceCollectorInterface):
                     name="docker_errors",
                     value=docker_errors,
                     unit="count",
-                    metadata={"type": "service", "component": "docker"}
+                    metadata_json={"type": "service", "component": "docker"}
                 ))
             
             # Process container details
@@ -73,7 +73,7 @@ class ServiceCollector(ServiceCollectorInterface):
                             name="container_status",
                             value=1 if "Running" in status or "Up" in status else 0,
                             unit="status",
-                            metadata={
+                            metadata_json={
                                 "type": "service", 
                                 "component": "docker",
                                 "container": container_name,
@@ -92,7 +92,7 @@ class ServiceCollector(ServiceCollectorInterface):
                         name="ssh_attempts",
                         value=ssh_attempts_val,
                         unit="count",
-                        metadata={
+                        metadata_json={
                             "type": "service", 
                             "component": "security",
                             "last_ip": last_ssh_ip
@@ -110,7 +110,7 @@ class ServiceCollector(ServiceCollectorInterface):
                     name="service_status",
                     value=1 if any(x in status for x in ["Online", "✅", "✓"]) else 0,
                     unit="status",
-                    metadata={
+                    metadata_json={
                         "type": "service",
                         "service_name": service_name,
                         "status_text": status

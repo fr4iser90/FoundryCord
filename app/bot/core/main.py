@@ -19,6 +19,8 @@ from app.bot.core.workflows import (
     TaskWorkflow,
     UserWorkflow
 )
+# Import the new workflow
+from app.bot.core.workflows.guild_template_workflow import GuildTemplateWorkflow
 
 logger = get_bot_logger()
 
@@ -38,33 +40,42 @@ class HomelabBot(commands.Bot):
         
         super().__init__(command_prefix=command_prefix, intents=intents)
         
-        # Initialize lifecycle manager
+        # Initialize managers
         self.lifecycle = BotLifecycleManager()
-        
-        # Initialize workflow manager
         self.workflow_manager = BotWorkflowManager()
         
         # Create all workflow instances
         self.database_workflow = DatabaseWorkflow(self)
+        self.guild_workflow = GuildWorkflow(self.database_workflow, bot=self)
         self.category_workflow = CategoryWorkflow(self.database_workflow)
         self.channel_workflow = ChannelWorkflow(self.database_workflow, self.category_workflow)
         self.dashboard_workflow = DashboardWorkflow(self.database_workflow, bot=self)
         self.task_workflow = TaskWorkflow(self.database_workflow, self)
         self.user_workflow = UserWorkflow(self.database_workflow, self)
-        self.guild_workflow = GuildWorkflow(self.database_workflow, bot=self)
+        # Instantiate the new workflow
+        self.guild_template_workflow = GuildTemplateWorkflow(self.database_workflow, self.guild_workflow, self)
         
         # Register workflows with dependencies
         self.workflow_manager.register_workflow(self.database_workflow)
+        self.workflow_manager.register_workflow(self.guild_workflow, ['database'])
+        # Register the new workflow
+        self.workflow_manager.register_workflow(self.guild_template_workflow, ['database', 'guild'])
         self.workflow_manager.register_workflow(self.category_workflow, ['database'])
         self.workflow_manager.register_workflow(self.channel_workflow, ['database', 'category'])
         self.workflow_manager.register_workflow(self.dashboard_workflow, ['database'])
         self.workflow_manager.register_workflow(self.task_workflow, ['database'])
         self.workflow_manager.register_workflow(self.user_workflow, ['database'])
-        self.workflow_manager.register_workflow(self.guild_workflow, ['database'])
         
         # Set explicit initialization order
         self.workflow_manager.set_initialization_order([
-            'database', 'guild', 'category', 'channel', 'dashboard', 'task', 'user'
+            'database', 
+            'guild', 
+            'guild_template', # Add to order
+            'category', 
+            'channel', 
+            'dashboard', 
+            'task', 
+            'user'
         ])
         
         # Add shutdown handler

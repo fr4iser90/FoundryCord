@@ -92,7 +92,7 @@ class DashboardRepository:
                 config_id = f"dashboard_{uuid.uuid4().hex}"
                 config['id'] = config_id
                 
-            # Add metadata
+            # Add metadata_json
             config['updated_at'] = datetime.now().isoformat()
             
             # Save to database

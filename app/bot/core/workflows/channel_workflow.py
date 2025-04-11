@@ -115,7 +115,7 @@ class ChannelWorkflow(BaseWorkflow):
                         "nsfw": nsfw,
                         "slowmode_delay": slowmode_delay,
                         "topic": topic,
-                        "metadata": metadata_json,
+                        "metadata_json": metadata_json,
                         # Provide default values for expected properties that don't exist in DB
                         "discord_id": None,
                         "category_discord_id": None,

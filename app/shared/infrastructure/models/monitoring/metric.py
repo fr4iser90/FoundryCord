@@ -17,7 +17,7 @@ class MetricModel(Base):
     timestamp = Column(DateTime, nullable=False, server_default=func.now(), index=True)
     host = Column(String(100), nullable=True, index=True)
     service = Column(String(100), nullable=True, index=True)
-    metric_data = Column(JSON, nullable=True)  # Renamed from metadata
+    metric_data = Column(JSON, nullable=True)  # Renamed from metadata_json
     
     def __repr__(self):
         return f"<MetricModel(id={self.id}, name='{self.name}', value={self.value})>" 

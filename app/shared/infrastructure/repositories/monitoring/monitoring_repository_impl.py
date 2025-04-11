@@ -11,14 +11,14 @@ class MonitoringRepositoryImpl:
     # === Metric Methods ===
     
     async def save_metric(self, name: str, value: float, unit: str, 
-                          timestamp: datetime = None, metadata: Dict[str, Any] = None) -> MetricModel:
+                          timestamp: datetime = None, metadata_json: Dict[str, Any] = None) -> MetricModel:
         """Save a new metric to the database"""
         db_metric = MetricModel(
             name=name,
             value=value,
             unit=unit,
             timestamp=timestamp or datetime.utcnow(),
-            extra_data=metadata or {}
+            metadata_json=metadata_json or {}
         )
         self.session.add(db_metric)
         await self.session.commit()
@@ -138,10 +138,10 @@ class MonitoringRepositoryImpl:
         
         for metric in game_metrics:
             # Skip non-game server metrics
-            if not metric.extra_data or not isinstance(metric.extra_data, dict) or 'game_server' not in metric.extra_data:
+            if not metric.metadata_json or not isinstance(metric.metadata_json, dict) or 'game_server' not in metric.metadata_json:
                 continue
                 
-            server_name = metric.extra_data.get('name', 'unknown')
+            server_name = metric.metadata_json.get('name', 'unknown')
             if server_name not in game_servers:
                 game_servers[server_name] = {
                     'name': server_name,

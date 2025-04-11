@@ -35,7 +35,13 @@ from .utils import RateLimitRepositoryImpl
 # Audit implementations
 from .audit import AuditLogRepositoryImpl
 
+# Base implementation
+from .base_repository_impl import BaseRepositoryImpl
+
 __all__ = [
+    # Base
+    'BaseRepositoryImpl',
+    
     # Auth
     'UserRepositoryImpl',
     'SessionRepositoryImpl',
