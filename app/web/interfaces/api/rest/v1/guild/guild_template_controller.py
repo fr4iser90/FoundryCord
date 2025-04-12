@@ -55,7 +55,7 @@ class GuildTemplateController(BaseController):
             
             # --- Return Success Response ---
             self.logger.info(f"Successfully retrieved template data for guild {guild_id}")
-            return await self.success_response(template_data)
+            return self.success_response(template_data)
 
         except HTTPException as http_exc:
             # Re-raise HTTP exceptions directly
@@ -65,7 +65,7 @@ class GuildTemplateController(BaseController):
             self.logger.error(f"Error fetching guild template for {guild_id}: {e}", exc_info=True)
             # Use BaseController's exception handler or raise generic 500
             # Assuming self.handle_exception exists, otherwise raise manually
-            return await self.handle_exception(e) 
+            return self.handle_exception(e)
             # raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve guild template.")
 
 # Instantiate the controller for registration

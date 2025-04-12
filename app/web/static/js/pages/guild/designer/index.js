@@ -38,56 +38,112 @@ async function fetchGuildTemplate(guildId) {
 
 /**
  * Renders the fetched template data onto the page.
- * (Placeholder - Implement actual DOM manipulation here)
  * @param {object} templateData - The structured template data.
  */
 function renderTemplate(templateData) {
-    console.log("Rendering template data (placeholder):", templateData);
-    
-    // TODO: Implement DOM manipulation
-    // 1. Find container elements (e.g., #categories-list, #channels-list)
-    // 2. Clear any existing content or loading indicators.
-    // 3. Iterate through templateData.categories and create HTML elements.
-    // 4. Iterate through templateData.channels and create HTML elements, potentially nesting them.
-    // 5. Append the created elements to their respective containers.
-    
-    const infoContainer = document.getElementById('template-info-container'); // Example ID
-    const categoriesContainer = document.getElementById('categories-container'); // Example ID
-    const channelsContainer = document.getElementById('channels-container'); // Example ID
+    console.log("Rendering template data:", templateData);
 
+    const infoContainer = document.getElementById('template-info-container');
+    const categoriesContainer = document.getElementById('categories-container');
+    const channelsContainer = document.getElementById('channels-container');
+
+    // --- Render Template Info ---
     if (infoContainer) {
-        // Example: Display template name and creation date
         infoContainer.innerHTML = `
             <h5>Template: ${templateData.template_name || 'Unnamed Template'}</h5>
-            <p>Created: ${templateData.created_at ? new Date(templateData.created_at).toLocaleString() : 'N/A'}</p>
+            <p class="mb-0"><small class="text-muted">Created: ${templateData.created_at ? new Date(templateData.created_at).toLocaleString() : 'N/A'}</small></p>
         `;
     } else {
         console.warn('Template info container not found.');
     }
 
+    // --- Render Categories ---
     if (categoriesContainer) {
         categoriesContainer.innerHTML = ''; // Clear placeholder/loading
         if (templateData.categories && templateData.categories.length > 0) {
+            // Sort categories by position
+            templateData.categories.sort((a, b) => a.position - b.position);
+
             const list = document.createElement('ul');
+            list.className = 'list-group list-group-flush'; // Add some basic styling
+
             templateData.categories.forEach(cat => {
                 const item = document.createElement('li');
-                item.textContent = `${cat.name} (Pos: ${cat.position}, ID: ${cat.id})`;
-                // TODO: Add buttons/links to manage category
+                item.className = 'list-group-item d-flex justify-content-between align-items-center';
+                item.innerHTML = `
+                    <span>
+                        <i class="fas fa-folder me-2"></i> <!-- Assuming Font Awesome -->
+                        ${cat.name}
+                    </span>
+                    <span class="badge bg-secondary rounded-pill">Pos: ${cat.position}</span>
+                `;
+                // TODO: Add buttons/links to manage category later
                 list.appendChild(item);
             });
             categoriesContainer.appendChild(list);
         } else {
-            categoriesContainer.innerHTML = '<p>No categories defined in this template.</p>';
+            categoriesContainer.innerHTML = '<p class="text-muted">No categories defined in this template.</p>';
         }
     } else {
          console.warn('Categories container not found.');
     }
-    
-    // TODO: Implement channel rendering similarly, possibly grouping by category ID
-    if (channelsContainer) {
-         channelsContainer.innerHTML = '<p>Channel rendering not yet implemented.</p>';
-    }
 
+    // --- Render Channels ---
+    if (channelsContainer) {
+         channelsContainer.innerHTML = ''; // Clear placeholder/loading
+         if (templateData.channels && templateData.channels.length > 0) {
+            // Create a map for quick category lookup
+            const categoriesById = (templateData.categories || []).reduce((acc, cat) => {
+                acc[cat.id] = cat;
+                return acc;
+            }, {});
+
+            // Sort channels primarily by category position, then channel position
+            templateData.channels.sort((a, b) => {
+                const catA = categoriesById[a.parent_category_template_id];
+                const catB = categoriesById[b.parent_category_template_id];
+                // Handle cases where a category might be missing (shouldn't happen ideally)
+                // or if a channel has no parent (parent_category_template_id is null)
+                const posA = a.parent_category_template_id === null ? Infinity : (catA ? catA.position : Infinity - 1); // Uncategorized slightly before missing category refs
+                const posB = b.parent_category_template_id === null ? Infinity : (catB ? catB.position : Infinity - 1);
+
+                if (posA !== posB) return posA - posB;
+                return a.position - b.position; // Then sort by channel position within category/group
+            });
+
+            const list = document.createElement('ul');
+            list.className = 'list-group list-group-flush';
+
+            templateData.channels.forEach(chan => {
+                const item = document.createElement('li');
+                item.className = 'list-group-item d-flex justify-content-between align-items-center';
+                const category = categoriesById[chan.parent_category_template_id];
+                const categoryName = category ? category.name : 'Uncategorized';
+                // Determine icon based on channel type string
+                let channelIcon = 'fa-question-circle'; // Default icon
+                if (chan.type === 'GUILD_TEXT') {
+                    channelIcon = 'fa-hashtag';
+                } else if (chan.type === 'GUILD_VOICE') {
+                    channelIcon = 'fa-volume-up';
+                } // Add more types as needed (e.g., GUILD_STAGE_VOICE, GUILD_FORUM)
+
+                item.innerHTML = `
+                    <span>
+                        <i class="fas ${channelIcon} me-2"></i>
+                        ${chan.name} <small class="text-muted">(${categoryName})</small>
+                    </span>
+                     <span class="badge bg-secondary rounded-pill">Pos: ${chan.position}</span>
+                `;
+                 // TODO: Add buttons/links to manage channel later
+                list.appendChild(item);
+            });
+            channelsContainer.appendChild(list);
+         } else {
+             channelsContainer.innerHTML = '<p class="text-muted">No channels defined in this template.</p>';
+         }
+    } else {
+        console.warn('Channels container not found.');
+    }
 }
 
 /**
