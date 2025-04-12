@@ -10,9 +10,9 @@ class GuildConfigEntity(Base):
     guild_id = Column(String(20), ForeignKey('discord_guilds.guild_id', ondelete='CASCADE'), unique=True, nullable=False)
     guild_name = Column(String(255), nullable=False)
     
-    # Feature flags
-    enable_categories = Column(Boolean, default=True)
-    enable_channels = Column(Boolean, default=True)
+    # Feature flags (Categories/Channels removed, others kept for functional toggle)
+    # enable_categories = Column(Boolean, default=True)
+    # enable_channels = Column(Boolean, default=True)
     enable_dashboard = Column(Boolean, default=False)
     enable_tasks = Column(Boolean, default=False)
     enable_services = Column(Boolean, default=False)

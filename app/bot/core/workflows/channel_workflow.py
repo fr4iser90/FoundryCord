@@ -75,62 +75,14 @@ class ChannelWorkflow(BaseWorkflow):
                 category_service
             )
             
-            # Initialize using direct SQL query to avoid ORM mismatches
-            logger.info("Initializing channel setup service")
-            
-            async with session_context() as session:
-                # Check if channels exist
-                count_result = await session.execute(text("SELECT COUNT(*) FROM discord_channels"))
-                channel_count = count_result.scalar()
-                logger.info(f"Found {channel_count} channels")
-                
-                # Initialize with simplified approach similar to category workflow
-                self.channel_setup_service.channels_cache = {}
-                
-                # Use direct SQL with only columns that actually exist in the database
-                channels_query = text("""
-                    SELECT id, name, description, category_id, type, position, 
-                           permission_level, is_enabled, is_created, nsfw, 
-                           slowmode_delay, topic, metadata_json
-                    FROM discord_channels
-                """)
-                channels_result = await session.execute(channels_query)
-                
-                for row in channels_result:
-                    # Unpack the row data
-                    (id, name, description, category_id, channel_type, position, 
-                     permission_level, is_enabled, is_created, nsfw, 
-                     slowmode_delay, topic, metadata_json) = row
-                    
-                    # Create a channel dictionary for cache
-                    channel = {
-                        "id": id,
-                        "name": name,
-                        "description": description,
-                        "category_id": category_id,
-                        "type": channel_type,
-                        "position": position,
-                        "permission_level": permission_level,
-                        "is_enabled": is_enabled,
-                        "is_created": is_created,
-                        "nsfw": nsfw,
-                        "slowmode_delay": slowmode_delay,
-                        "topic": topic,
-                        "metadata_json": metadata_json,
-                        # Provide default values for expected properties that don't exist in DB
-                        "discord_id": None,
-                        "category_discord_id": None,
-                        "thread_config": None
-                    }
-                    self.channel_setup_service.channels_cache[name] = channel
-                    
-                logger.info(f"Loaded {len(self.channel_setup_service.channels_cache)} channels into cache")
-                
+            # Initialize cache as empty (it will be populated by template application)
+            self.channel_setup_service.channels_cache = {}
+            logger.info("Channel workflow initialized globally (skipping old data load). Cache is empty.")
             return True
             
         except Exception as e:
-            logger.error(f"Channel workflow initialization failed: {e}")
-            traceback.print_exc()
+            logger.error(f"Channel workflow initialization failed: {e}", exc_info=True)
+            # traceback.print_exc() # Handled by exc_info=True
             return False
             
     async def initialize_for_guild(self, guild_id: str) -> bool:
@@ -162,17 +114,20 @@ class ChannelWorkflow(BaseWorkflow):
                     self.guild_status[guild_id] = WorkflowStatus.DISABLED
                     return True
             
-            # Set up channels
-            channels = await self.setup_channels(guild)
-            if not channels:
-                logger.error(f"Failed to set up channels for guild {guild_id}")
-                self.guild_status[guild_id] = WorkflowStatus.FAILED
-                return False
+            # --- Temporarily Disable Old Logic ---
+            logger.warning(f"ChannelWorkflow.initialize_for_guild: Old setup/sync logic for guild {guild_id} is disabled. Structure now comes from templates.")
+            # # Set up channels (OLD LOGIC - accesses discord_channels)
+            # channels = await self.setup_channels(guild)
+            # if not channels:
+            #     logger.error(f"Failed to set up channels for guild {guild_id}")
+            #     self.guild_status[guild_id] = WorkflowStatus.FAILED
+            #     return False
                 
-            # Sync with Discord
-            await self.sync_with_discord(guild)
+            # # Sync with Discord (OLD LOGIC)
+            # await self.sync_with_discord(guild)
+            # --- End Disable ---
             
-            # Mark as active
+            # Mark as active (conceptually, it's ready if guild is approved)
             self.guild_status[guild_id] = WorkflowStatus.ACTIVE
             return True
             

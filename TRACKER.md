@@ -3,14 +3,14 @@ Okay, das ist genau der richtige Zeitpunkt, um innezuhalten und das große Ganze
 
 Lass uns das mal entwirren:
 
-**1. Was die Workflows AKTUELL tun (vereinfacht):** []
+**1. Was die Workflows AKTUELL tun (vereinfacht):** [X]
 
 *   **`GuildTemplateWorkflow`:** (Neu & Gut) Liest beim "Approve" den **IST-Zustand** von Discord (Kategorien, Kanäle, Rollen/Permissions) und speichert ihn als **Snapshot/Template** in die `guild_template_*`-Tabellen. Das funktioniert.
 *   **`CategoryWorkflow` & `ChannelWorkflow`:** (Alt & Problematisch) Sind darauf ausgelegt, beim Initialisieren eines Servers (`initialize_for_guild`) nach **globalen Default-Definitionen** in den Tabellen `discord_categories` und `discord_channels` zu suchen und diese dann auf dem Server zu erstellen/syncen. Sie scheitern jetzt, weil diese globalen Defaults nicht (mehr) in der DB sind (siehe die Fehlermeldungen "No categories found"). Sie wissen nichts vom neuen, server-spezifischen Template.
 *   **`DashboardWorkflow`:** (Separates Thema, aber auch alt) Versucht, Dashboards basierend auf Einträgen in `dashboard_instances` zu initialisieren. Diese Tabelle ist aber aktuell auch nicht richtig mit den Servern/Kanälen verknüpft (siehe unten).
 
 
-**2. Dein Ziel & Wie die Workflows Funktionieren SOLLTEN:** []
+**2. Dein Ziel & Wie die Workflows Funktionieren SOLLTEN:** [X]
 
 *   **Keine globalen Defaults mehr:** Die Tabellen `discord_categories` und `discord_channels` sollten keine Struktur mehr vorgeben. Die alten Seeds (`002_seed_categories.py`, `003_seed_channels.py`) sind, wie du sagst, obsolet für diesen Zweck.
 *   **Template ist die Wahrheit:** Die `guild_template_*`-Tabellen (die ja schon befüllt werden) sollen die **einzige Quelle** sein, die definiert, wie ein Server strukturiert sein soll (Kategorien, Kanäle, Permissions).

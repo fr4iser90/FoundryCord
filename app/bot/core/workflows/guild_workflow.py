@@ -6,12 +6,29 @@ from app.shared.interface.logging.api import get_bot_logger
 from app.shared.infrastructure.database.session import session_context
 from app.shared.infrastructure.models.discord.entities.guild_entity import GuildEntity
 from app.shared.infrastructure.models.discord.entities.guild_user_entity import DiscordGuildUserEntity
+
+# Import Domain interfaces (Repositories)
 from app.shared.domain.repositories.discord.guild_config_repository import GuildConfigRepository
+from app.shared.domain.repositories.guild_templates import (
+    GuildTemplateRepository,
+    GuildTemplateCategoryRepository,
+    GuildTemplateChannelRepository,
+    GuildTemplateCategoryPermissionRepository,
+    GuildTemplateChannelPermissionRepository
+)
+
+# Import Infrastructure implementations
 from app.shared.infrastructure.repositories.discord.guild_config_repository_impl import GuildConfigRepositoryImpl
 from sqlalchemy import select
 from datetime import datetime
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.shared.infrastructure.repositories.discord.guild_repository_impl import GuildRepositoryImpl
+from app.shared.infrastructure.repositories.guild_templates.guild_template_repository_impl import GuildTemplateRepositoryImpl
+from app.shared.infrastructure.repositories.guild_templates.guild_template_category_repository_impl import GuildTemplateCategoryRepositoryImpl
+from app.shared.infrastructure.repositories.guild_templates.guild_template_channel_repository_impl import GuildTemplateChannelRepositoryImpl
+from app.shared.infrastructure.repositories.guild_templates.guild_template_category_permission_repository_impl import GuildTemplateCategoryPermissionRepositoryImpl
+from app.shared.infrastructure.repositories.guild_templates.guild_template_channel_permission_repository_impl import GuildTemplateChannelPermissionRepositoryImpl
+import nextcord
 
 logger = get_bot_logger()
 
@@ -139,13 +156,11 @@ class GuildWorkflow(BaseWorkflow):
                     owner_id=str(discord_guild.owner_id) if discord_guild.owner_id else None
                 )
                 
-                # Create default config (but disabled until approved)
+                # Create default config with relevant feature flags set to False
                 await self.guild_config_repo.create_or_update(
                     guild_id=guild_id,
                     guild_name=discord_guild.name,
                     features={
-                        'categories': False,
-                        'channels': False,
                         'dashboard': False,
                         'tasks': False,
                         'services': False
@@ -236,20 +251,29 @@ class GuildWorkflow(BaseWorkflow):
                     logger.error(f"Cannot approve guild {guild_id}: not found in database")
                     return False
                 
-                # Enable features in config
+                # Ensure config exists and enable relevant features
                 config = await self.guild_config_repo.get_by_guild_id(guild_id)
-                if config:
+                config_features = {
+                    'dashboard': True,
+                    'tasks': True,
+                    'services': True
+                }
+
+                if not config:
                     await self.guild_config_repo.create_or_update(
                         guild_id=guild_id,
                         guild_name=guild.name,
-                        features={
-                            'categories': True,
-                            'channels': True,
-                            'dashboard': True,
-                            'tasks': True,
-                            'services': True
-                        }
+                        features=config_features
                     )
+                    logger.debug(f"Created missing GuildConfigEntity for approved guild {guild_id} with features enabled.")
+                else:
+                    # Update existing config with enabled features
+                    await self.guild_config_repo.create_or_update(
+                        guild_id=guild_id,
+                        guild_name=guild.name,
+                        features=config_features
+                    )
+                    logger.debug(f"Updated existing GuildConfigEntity for approved guild {guild_id} with features enabled.")
                 
                 # Update local status
                 self._guild_access_statuses[guild_id] = ACCESS_APPROVED
@@ -270,18 +294,31 @@ class GuildWorkflow(BaseWorkflow):
                             logger.info(f"Template creation result for guild {guild_id}: {creation_success}")
                         except Exception as template_err:
                             logger.error(f"Error during template_workflow.create_template_for_guild call for {guild_id}: {template_err}", exc_info=True)
+                            creation_success = False # Ensure creation_success is defined
                             # Decide if we should still proceed with initialization
                     else:
                         logger.error("GuildTemplateWorkflow not found in manager!")
+                        creation_success = False # Ensure creation_success is defined
                 else:
                     logger.error(f"Could not find Discord guild object for ID {guild_id} in bot cache. Cannot create template.")
+                    creation_success = False # Ensure creation_success is defined
                 # --- End Trigger --- 
 
-                # Re-initialize the guild and its dependent workflows
-                # This will now run AFTER the template creation attempt
-                await self.bot.workflow_manager.initialize_guild(guild_id)
-                
-                logger.info(f"Guild {guild_id} has been APPROVED and re-initialized.")
+                # --- Apply Template --- 
+                if creation_success: # Only attempt to apply if creation was successful (or if we decide to apply existing)
+                    logger.info(f"Attempting to apply the created/existing template for guild {guild_id}")
+                    apply_success = await self.apply_template(guild_id)
+                    if apply_success:
+                         logger.info(f"Successfully applied template for guild {guild_id}.")
+                         # Final status update can happen here or within apply_template
+                         self._guild_statuses[guild_id] = WorkflowStatus.ACTIVE
+                    else:
+                         logger.error(f"Failed to apply template for guild {guild_id}. Workflow remains PENDING.")
+                         # Keep status as PENDING if apply fails, or set to FAILED?
+                else:
+                    logger.warning(f"Skipping template application for guild {guild_id} due to creation failure or lack of guild object.")
+                # --- End Apply --- 
+
                 return True
                 
         except Exception as e:
@@ -316,6 +353,173 @@ class GuildWorkflow(BaseWorkflow):
         except Exception as e:
             logger.error(f"Error denying guild {guild_id}: {e}")
             return False
+
+    async def apply_template(self, guild_id: str) -> bool:
+        """Applies the stored template structure to the Discord guild."""
+        logger.info(f"Attempting to apply template for guild {guild_id}")
+        discord_guild = self.bot.get_guild(int(guild_id))
+        if not discord_guild:
+            logger.error(f"[apply_template] Could not find Discord guild {guild_id}")
+            return False
+
+        try:
+            async with session_context() as session:
+                # Instantiate repositories
+                template_repo = GuildTemplateRepositoryImpl(session)
+                cat_repo = GuildTemplateCategoryRepositoryImpl(session)
+                chan_repo = GuildTemplateChannelRepositoryImpl(session)
+                cat_perm_repo = GuildTemplateCategoryPermissionRepositoryImpl(session)
+                chan_perm_repo = GuildTemplateChannelPermissionRepositoryImpl(session)
+
+                # 1. Load Template Data
+                template = await template_repo.get_by_guild_id(guild_id)
+                if not template:
+                    logger.warning(f"[apply_template] No template found for guild {guild_id}. Cannot apply.")
+                    return False # Or True?
+
+                template_categories = await cat_repo.get_by_template_id(template.id)
+                template_channels = await chan_repo.get_by_template_id(template.id)
+                # TODO: Load permissions
+
+                logger.info(f"[apply_template] Loaded template '{template.template_name}' for guild {guild_id}")
+                logger.debug(f"  Template contains {len(template_categories)} categories and {len(template_channels)} channels.")
+
+                # ----------------------------------------------------------
+                # 2. Get Current Discord State
+                # ----------------------------------------------------------
+                discord_categories_list = discord_guild.categories
+                discord_channels_list = discord_guild.channels # All channels
+
+                # --- Create Lookups for easy access ---
+                # Map template category name -> template category object
+                template_categories_by_name = {cat.category_name: cat for cat in template_categories}
+                # Map Discord category name -> Discord category object
+                discord_categories_by_name = {cat.name: cat for cat in discord_categories_list}
+
+                logger.debug(f"  Found {len(discord_categories_list)} categories currently on Discord.")
+
+                # ----------------------------------------------------------
+                # 3. Process Categories (Create/Update on Discord based on Template)
+                # ----------------------------------------------------------
+                created_discord_categories = {} # Map template cat ID -> created/found discord cat object
+
+                # Sort template categories by position for correct creation order
+                sorted_template_categories = sorted(template_categories, key=lambda c: c.position)
+
+                for template_cat in sorted_template_categories:
+                    logger.debug(f"  Processing template category: '{template_cat.category_name}' (Pos: {template_cat.position})")
+                    existing_discord_cat = discord_categories_by_name.get(template_cat.category_name)
+
+                    if existing_discord_cat:
+                        logger.info(f"    Category '{template_cat.category_name}' already exists on Discord.")
+                        # TODO: Update position? Apply permissions?
+                        # For now, just record the mapping
+                        created_discord_categories[template_cat.id] = existing_discord_cat
+                        # Apply permissions (placeholder)
+                        await self._apply_category_permissions(existing_discord_cat, template_cat.id, cat_perm_repo)
+
+                    else:
+                        logger.info(f"    Category '{template_cat.category_name}' does not exist. Creating...")
+                        try:
+                            # Basic creation with name
+                            # TODO: Apply overwrites/permissions during creation if possible?
+                            new_discord_cat = await discord_guild.create_category(
+                                name=template_cat.category_name,
+                                reason=f"Applying template: {template.template_name}"
+                            )
+                            logger.info(f"      Successfully created category '{new_discord_cat.name}' (ID: {new_discord_cat.id})")
+                            created_discord_categories[template_cat.id] = new_discord_cat
+
+                            # TODO: Set position AFTER creation if needed (might require separate call)
+                            # await new_discord_cat.edit(position=template_cat.position)
+
+                            # Apply permissions after creation
+                            await self._apply_category_permissions(new_discord_cat, template_cat.id, cat_perm_repo)
+
+                        except nextcord.Forbidden:
+                            logger.error(f"      PERMISSION ERROR: Cannot create category '{template_cat.category_name}'. Check bot permissions.")
+                            # Decide how to handle: continue? rollback? stop?
+                            # For now, let's log and continue, but this might leave state inconsistent.
+                        except nextcord.HTTPException as http_err:
+                            logger.error(f"      HTTP ERROR creating category '{template_cat.category_name}': {http_err}")
+                        except Exception as creation_err:
+                             logger.error(f"      UNEXPECTED ERROR creating category '{template_cat.category_name}': {creation_err}", exc_info=True)
+
+                # ----------------------------------------------------------
+                # 4. Process Categories (Delete from Discord if not in Template - Optional)
+                # ----------------------------------------------------------
+                # TODO: Make deletion configurable
+                delete_unmanaged = False # Set to True to enable deletion
+                if delete_unmanaged:
+                    logger.info("  Checking for Discord categories not present in the template...")
+                    for discord_cat_name, discord_cat in discord_categories_by_name.items():
+                        if discord_cat_name not in template_categories_by_name:
+                            logger.warning(f"    Discord category '{discord_cat_name}' is not in the template. Deleting...")
+                            try:
+                                await discord_cat.delete(reason="Removing category not defined in template")
+                                logger.warning(f"      Successfully deleted category '{discord_cat_name}'.")
+                            except nextcord.Forbidden:
+                                logger.error(f"      PERMISSION ERROR: Cannot delete category '{discord_cat_name}'.")
+                            except nextcord.HTTPException as http_err:
+                                logger.error(f"      HTTP ERROR deleting category '{discord_cat_name}': {http_err}")
+                            except Exception as deletion_err:
+                                logger.error(f"      UNEXPECTED ERROR deleting category '{discord_cat_name}': {deletion_err}", exc_info=True)
+                else:
+                    logger.debug("  Deletion of unmanaged categories is disabled.")
+
+                # ----------------------------------------------------------
+                # 5. Process Channels (Create/Update/Delete)
+                # ----------------------------------------------------------
+                # TODO: Similar logic as categories, but associate with correct created_discord_categories[parent_id]
+                # TODO: **Crucially: Update template_channels.discord_channel_id in the database**
+                logger.warning(f"[apply_template] Channel processing logic for guild {guild_id} is not yet implemented.")
+
+            # If we reach here without errors (even if logic is missing), assume success for now
+            logger.info(f"[apply_template] Category processing (partially) completed for guild {guild_id}. Returning True.")
+            return True
+
+        except Exception as e:
+            logger.error(f"[apply_template] Error applying template for guild {guild_id}: {e}", exc_info=True)
+            return False
+
+    async def _apply_category_permissions(self, discord_category: nextcord.CategoryChannel, template_category_id: int, cat_perm_repo: GuildTemplateCategoryPermissionRepository) -> None:
+        """Helper to apply permissions stored in the template to a Discord category."""
+        logger.debug(f"    Applying permissions for category '{discord_category.name}' (Template ID: {template_category_id})")
+        try:
+            template_perms = await cat_perm_repo.get_by_category_template_id(template_category_id)
+            if not template_perms:
+                logger.debug(f"      No specific permissions found in template for category ID {template_category_id}.")
+                return
+
+            # Get roles from the guild
+            guild_roles = {role.name: role for role in discord_category.guild.roles}
+
+            overwrites = {} # Build the overwrites dictionary
+            for perm in template_perms:
+                role = guild_roles.get(perm.role_name)
+                if not role:
+                    logger.warning(f"      Role '{perm.role_name}' defined in template permissions not found on guild '{discord_category.guild.name}'. Skipping permission.")
+                    continue
+
+                # Create PermissionOverwrite object
+                allow_perms = nextcord.Permissions(perm.allow_permissions_bitfield or 0)
+                deny_perms = nextcord.Permissions(perm.deny_permissions_bitfield or 0)
+                overwrites[role] = nextcord.PermissionOverwrite.from_pair(allow_perms, deny_perms)
+                logger.debug(f"      Prepared overwrite for role '{role.name}': Allow={allow_perms.value}, Deny={deny_perms.value}")
+
+            if overwrites:
+                 logger.info(f"    Setting {len(overwrites)} permission overwrites for category '{discord_category.name}'")
+                 await discord_category.edit(overwrites=overwrites, reason="Applying template permissions")
+                 logger.debug(f"      Successfully applied permissions to category '{discord_category.name}'.")
+            else:
+                logger.debug(f"      No valid roles found for template permissions on category '{discord_category.name}'. No changes made.")
+
+        except nextcord.Forbidden:
+            logger.error(f"      PERMISSION ERROR: Cannot apply permissions to category '{discord_category.name}'. Check bot permissions.")
+        except nextcord.HTTPException as http_err:
+            logger.error(f"      HTTP ERROR applying permissions to category '{discord_category.name}': {http_err}")
+        except Exception as perm_err:
+            logger.error(f"      UNEXPECTED ERROR applying permissions to category '{discord_category.name}': {perm_err}", exc_info=True)
 
     async def sync_guild(self, guild_id: str, sync_members_only: bool = True) -> bool:
         """Synchronize guild data with Discord"""

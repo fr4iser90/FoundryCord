@@ -36,70 +36,53 @@ class CategoryWorkflow(BaseWorkflow):
     async def initialize(self) -> bool:
         """Initialize the category workflow globally"""
         try:
+            # --- REMOVED OLD DB CHECK ---
             # Verify categories exist using direct SQL instead of ORM to avoid mapping issues
+            # async with session_context() as session:
+            #     # Use direct SQL query to check if the table exists and has data
+            #     try:
+            #         result = await session.execute(text("SELECT COUNT(*) FROM discord_categories"))
+            #         count = result.scalar()
+            #         logger.info(f"Found {count} categories")
+            #         if count == 0:
+            #             logger.warning("Table 'discord_categories' exists but is empty. Continuing initialization.")
+            #             # If the table is empty, maybe it's okay to proceed in the new template world?
+            #             # Or should we still error? For now, let's proceed.
+            #     except Exception as db_err:
+            #         # Catch specific error if table doesn't exist
+            #         if "relation \"discord_categories\" does not exist" in str(db_err):
+            #             logger.warning("'discord_categories' table does not exist (expected during refactoring). Continuing initialization.")
+            #             # This is now expected, so we continue
+            #         else:
+            #             logger.error(f"Unexpected database error checking discord_categories: {db_err}")
+            #             return False # Propagate unexpected errors
+
+            # Initialize components needed later, but don't load old data
             async with session_context() as session:
-                # Use direct SQL query to check if the table exists and has data
-                result = await session.execute(text("SELECT COUNT(*) FROM discord_categories"))
-                count = result.scalar()
-                
-                if count == 0:
-                    logger.error("No categories found. Please run database migrations first")
-                    return False
-                
-                logger.info(f"Found {count} categories")
-                
-                # Create a clean session for repository
+                # Still create the repository implementation
                 self.category_repository = CategoryRepositoryImpl(session)
-                
-                # For category_builder, create a simplified version that doesn't rely on ORM
-                try:
-                    category_builder = CategoryBuilder(self.category_repository)
-                    self.category_setup_service = CategorySetupService(
-                        self.category_repository,
-                        category_builder
-                    )
-                    
-                    # Initialize with a simplified approach that avoids ORM relationship issues
-                    self.category_setup_service.categories_cache = {}
-                    
-                    # Just load the basic category data using direct SQL with correct column names
-                    categories_query = text("SELECT id, name, position, description, is_private, created_at FROM discord_categories")
-                    categories_result = await session.execute(categories_query)
-                    
-                    # Manually create category objects for cache
-                    for row in categories_result:
-                        id, name, position, description, is_private, created_at = row
-                        category = {
-                            "id": id, 
-                            "name": name,
-                            "position": position,
-                            "description": description,
-                            "is_private": is_private,
-                            "created_at": created_at,
-                            # Provide default values for expected properties that don't exist in DB
-                            "discord_id": None,
-                            "category_type": "default",
-                            "guild_id": None,
-                            "enabled": True,
-                            "created": True
-                        }
-                        self.category_setup_service.categories_cache[name] = category
-                    
-                    logger.info(f"Loaded {len(self.category_setup_service.categories_cache)} categories into cache")
-                    
-                    # Maintain backwards compatibility with existing code
-                    self.category_service = self.category_setup_service
-                    
-                    return True
-                    
-                except Exception as inner_e:
-                    logger.error(f"Error initializing category service: {inner_e}")
-                    traceback.print_exc()
-                    return False
-                
+                logger.debug("CategoryRepositoryImpl initialized.")
+
+                # Create a simplified builder and service (if needed by other components)
+                # These might need further refactoring if they still rely on old structures.
+                category_builder = CategoryBuilder(self.category_repository)
+                self.category_setup_service = CategorySetupService(
+                    self.category_repository,
+                    category_builder
+                )
+                # Initialize cache as empty
+                self.category_setup_service.categories_cache = {}
+                logger.debug("CategorySetupService initialized with empty cache.")
+
+                # Maintain backwards compatibility if needed
+                self.category_service = self.category_setup_service
+
+            logger.info("Category workflow initialized globally (skipping old data load).")
+            return True
+
         except Exception as e:
-            logger.error(f"Error initializing category workflow: {e}")
-            traceback.print_exc()
+            logger.error(f"Error initializing category workflow: {e}", exc_info=True)
+            # traceback.print_exc() # Handled by exc_info=True
             return False
             
     async def initialize_for_guild(self, guild_id: str) -> bool:
@@ -120,17 +103,20 @@ class CategoryWorkflow(BaseWorkflow):
                 self.guild_status[guild_id] = WorkflowStatus.FAILED
                 return False
             
-            # Set up categories
-            categories = await self.setup_categories(guild)
-            if not categories:
-                logger.error(f"Failed to set up categories for guild {guild_id}")
-                self.guild_status[guild_id] = WorkflowStatus.FAILED
-                return False
+            # --- Temporarily Disable Old Logic --- 
+            logger.warning(f"CategoryWorkflow.initialize_for_guild: Old setup/sync logic for guild {guild_id} is disabled. Structure now comes from templates.")
+            # # Set up categories (OLD LOGIC - accesses discord_categories)
+            # categories = await self.setup_categories(guild)
+            # if not categories:
+            #     logger.error(f"Failed to set up categories for guild {guild_id}")
+            #     self.guild_status[guild_id] = WorkflowStatus.FAILED
+            #     return False
                 
-            # Sync with Discord
-            await self.sync_with_discord(guild)
+            # # Sync with Discord (OLD LOGIC)
+            # await self.sync_with_discord(guild)
+            # --- End Disable --- 
             
-            # Mark as active
+            # Mark as active (conceptually, it's ready if guild is approved)
             self.guild_status[guild_id] = WorkflowStatus.ACTIVE
             return True
             
