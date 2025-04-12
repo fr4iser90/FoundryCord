@@ -1,0 +1,79 @@
+{% extends "layouts/base_layout.html" %}
+
+{% block title %}Guild Designer - {{ guild_template_data.template_name }}{% endblock %}
+
+{% block extra_css %}
+{# Add specific CSS if needed #}
+<style>
+    /* Optional: Basic styling for the lists */
+    #categories-container ul, #channels-container ul {
+        list-style-type: none;
+        padding-left: 0;
+    }
+    #categories-container li, #channels-container li {
+        padding: 5px 0;
+        border-bottom: 1px solid #eee;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4" id="designer-main-content"> {# Added ID for error fallback #}
+    <div class="page-header mb-4">
+        <h1>Guild Structure Designer</h1>
+        <p class="text-muted">Manage the saved template for Guild ID: {{ guild_id }}</p>
+    </div>
+
+    {# Container for potential error messages #}
+    <div id="designer-error-container"></div>
+
+    {# --- Template Info --- #}
+    <div class="card mb-4">
+        <div class="card-header">
+            Template Information
+        </div>
+        {# Container for JS to populate template details #}
+        <div class="card-body" id="template-info-container">
+            <p>Loading template info...</p> {# Placeholder content #}
+        </div>
+    </div>
+
+    {# --- Categories Section --- #}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+           Categories
+           <a href="{{ url_for('designer_dashboard', guild_id=guild_id) }}/categories" class="btn btn-sm btn-outline-primary">Manage Categories</a>
+        </div>
+         {# Container for JS to populate categories list #}
+        <div class="card-body" id="categories-container">
+             <p>Loading categories...</p> {# Placeholder content #}
+        </div>
+    </div>
+
+    {# --- Channels Section --- #}
+    <div class="card mb-4">
+         <div class="card-header d-flex justify-content-between align-items-center">
+            Channels
+            <a href="{{ url_for('designer_dashboard', guild_id=guild_id) }}/channels" class="btn btn-sm btn-outline-primary">Manage Channels</a>
+         </div>
+          {# Container for JS to populate channels list #}
+         <div class="card-body" id="channels-container">
+             <p>Loading channels...</p> {# Placeholder content #}
+         </div>
+    </div>
+
+    {# --- Original Designer Section Cards (Optional: can be kept or removed) --- #}
+    {# 
+    <h2>Designer Sections</h2>
+    <div class="row mt-3">
+        ... (your existing cards for Categories, Channels, Commands) ...
+    </div> 
+    #}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{# Include the JavaScript file for this page #}
+<script type="module" src="{{ url_for('static', path='js/pages/guild/designer/index.js') }}"></script>
+{% endblock %}

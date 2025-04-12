@@ -1,0 +1,25 @@
+{% extends "layouts/base_layout.html" %}
+
+{% block title %}Guild Designer - No Template Found{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="page-header mb-4">
+        <h1>Guild Structure Designer</h1>
+        <p class="text-muted">Guild ID: {{ guild_id }}</p>
+    </div>
+
+    <div class="alert alert-warning" role="alert">
+        <h4 class="alert-heading">No Template Found!</h4>
+        <p>{{ error | default("A structure template has not been created or saved for this guild yet.") }}</p>
+        <hr>
+        <p class="mb-0">
+            If this guild has been approved, the template should have been created automatically. 
+            Check the bot logs or contact an administrator if you believe this is an error.
+            {# Optionally add a button to trigger template creation if applicable #}
+            {# <a href="/guild/{{ guild_id }}/designer/create-template" class="btn btn-primary">Create Template Now</a> #}
+        </p>
+    </div>
+
+</div>
+{% endblock %} 

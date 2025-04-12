@@ -19,9 +19,10 @@ logger = get_bot_logger()
 class CategoryWorkflow(BaseWorkflow):
     """Workflow for category setup and management"""
     
-    def __init__(self, database_workflow: DatabaseWorkflow):
+    def __init__(self, database_workflow: DatabaseWorkflow, bot):
         super().__init__("category")
         self.database_workflow = database_workflow
+        self.bot = bot
         self.category_repository = None
         self.category_service = None
         self.category_setup_service = None

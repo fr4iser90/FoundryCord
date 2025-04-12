@@ -21,6 +21,10 @@ from app.bot.core.workflows import (
 )
 # Import the new workflow
 from app.bot.core.workflows.guild_template_workflow import GuildTemplateWorkflow
+# Import the new service
+from app.bot.application.services.bot_control_service import BotControlService
+# Import the Internal API Server
+from app.bot.infrastructure.internal_api.server import InternalAPIServer
 
 logger = get_bot_logger()
 
@@ -47,8 +51,8 @@ class HomelabBot(commands.Bot):
         # Create all workflow instances
         self.database_workflow = DatabaseWorkflow(self)
         self.guild_workflow = GuildWorkflow(self.database_workflow, bot=self)
-        self.category_workflow = CategoryWorkflow(self.database_workflow)
-        self.channel_workflow = ChannelWorkflow(self.database_workflow, self.category_workflow)
+        self.category_workflow = CategoryWorkflow(self.database_workflow, bot=self)
+        self.channel_workflow = ChannelWorkflow(self.database_workflow, self.category_workflow, bot=self)
         self.dashboard_workflow = DashboardWorkflow(self.database_workflow, bot=self)
         self.task_workflow = TaskWorkflow(self.database_workflow, self)
         self.user_workflow = UserWorkflow(self.database_workflow, self)
@@ -80,13 +84,26 @@ class HomelabBot(commands.Bot):
         
         # Add shutdown handler
         self.shutdown_handler = ShutdownHandler(self)
+
+        # --- Initialize BotControlService --- 
+        # Pass self (the bot instance) to the service
+        self.control_service = BotControlService(self)
+        logger.info("BotControlService attached to bot instance.")
+        # --- End Service Init --- 
+
+        # --- Initialize Internal API Server ---
+        self.internal_api_server = InternalAPIServer(self)
+        logger.info("InternalAPIServer initialized.")
+        # --- End Internal API Init ---
     
     async def on_ready(self):
         """Called when the bot is ready"""
         logger.info(f"Logged in as {self.user.name} (ID: {self.user.id})")
         
         # Start initialization
-        await self.start_initialization()
+        if await self.start_initialization():
+            # Start the internal API server only if initialization was successful
+            await self.internal_api_server.start()
     
     async def start_initialization(self):
         """Start the bot initialization process"""
@@ -106,6 +123,9 @@ class HomelabBot(commands.Bot):
         """Clean up all resources before shutdown"""
         logger.info("Cleaning up bot resources")
         
+        # Stop the internal API server first
+        await self.internal_api_server.stop()
+        
         # Use the workflow manager to cleanup all workflows in reverse order
         await self.workflow_manager.cleanup_all()
         
@@ -113,13 +133,14 @@ class HomelabBot(commands.Bot):
 
     async def setup_hook(self):
         """Setup hook that runs before the bot starts"""
-        from app.bot.domain.services.bot_control_service import BotControlService
-        self.control_service = BotControlService(self)
+        # Now initialize BotControlService properly here or in __init__
+        # self.control_service = BotControlService(self) # Already done in __init__
         
-        # Register the bot with the connector for web interface
-        from app.shared.infrastructure.integration.bot_connector import BotConnector
-        bot_connector = BotConnector()
-        bot_connector.register_bot(self)
+        # REMOVED: BotConnector registration is no longer needed here
+        # from app.shared.infrastructure.integration.OLD import BotConnector
+        # bot_connector = BotConnector()
+        # bot_connector.register_bot(self)
+        # logger.info("Bot instance registered with BotConnector in setup_hook.")
 
 async def main():
     """Main entry point for the bot"""

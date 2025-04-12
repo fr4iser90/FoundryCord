@@ -171,17 +171,19 @@ class GuildWorkflow(BaseWorkflow):
             # Update status to initializing
             self._guild_statuses[guild_id] = WorkflowStatus.INITIALIZING
             
-            # Get guild from database
+            # Get guild from database using the correct repository
             async with session_context() as session:
-                guild_config_repo = GuildConfigRepositoryImpl(session)
-                guild = await guild_config_repo.get_by_guild_id(guild_id)
+                # Use GuildRepositoryImpl to get the GuildEntity which has access_status
+                guild_repo = GuildRepositoryImpl(session) 
+                guild = await guild_repo.get_by_id(guild_id)
                 
                 if not guild:
-                    logger.error(f"Guild {guild_id} not found in database")
+                    # Log the error accurately
+                    logger.error(f"GuildEntity for {guild_id} not found in database")
                     self._guild_statuses[guild_id] = WorkflowStatus.FAILED
                     return False
                     
-                # Store and check access status
+                # Store and check access status from GuildEntity
                 self._guild_access_statuses[guild_id] = guild.access_status
                 
                 if guild.access_status == ACCESS_REJECTED:
@@ -254,18 +256,25 @@ class GuildWorkflow(BaseWorkflow):
                 self._guild_statuses[guild_id] = WorkflowStatus.PENDING
 
                 # --- Trigger Template Creation --- 
-                # Get the Discord Guild object (needed by create_template_for_guild)
+                logger.debug(f"Attempting to fetch discord.Guild object for ID: {guild_id}")
                 discord_guild = self.bot.get_guild(int(guild_id))
+                
                 if discord_guild:
+                    logger.debug(f"Found discord.Guild object: {discord_guild.name}")
                     # Get the template workflow and execute template creation
                     template_workflow = self.bot.workflow_manager.get_workflow("guild_template")
                     if template_workflow:
                         logger.info(f"Triggering template creation for approved guild {guild_id}")
-                        await template_workflow.create_template_for_guild(discord_guild)
+                        try:
+                            creation_success = await template_workflow.create_template_for_guild(discord_guild)
+                            logger.info(f"Template creation result for guild {guild_id}: {creation_success}")
+                        except Exception as template_err:
+                            logger.error(f"Error during template_workflow.create_template_for_guild call for {guild_id}: {template_err}", exc_info=True)
+                            # Decide if we should still proceed with initialization
                     else:
                         logger.error("GuildTemplateWorkflow not found in manager!")
                 else:
-                    logger.error(f"Could not find Discord guild {guild_id} to create template.")
+                    logger.error(f"Could not find Discord guild object for ID {guild_id} in bot cache. Cannot create template.")
                 # --- End Trigger --- 
 
                 # Re-initialize the guild and its dependent workflows
@@ -319,24 +328,29 @@ class GuildWorkflow(BaseWorkflow):
                 logger.error(f"Could not find Discord guild {guild_id}")
                 return False
                 
-            # Get database guild
+            # Get database guild using the correct repository
             async with session_context() as session:
-                guild_config_repo = GuildConfigRepositoryImpl(session)
-                db_guild = await guild_config_repo.get_by_guild_id(guild_id)
+                # Use GuildRepositoryImpl to get the GuildEntity
+                guild_repo = GuildRepositoryImpl(session) 
+                db_guild = await guild_repo.get_by_id(guild_id) # Corrected repo and method usage
+                
                 if not db_guild:
-                    logger.error(f"Could not find database guild {guild_id}")
+                    # Corrected log message
+                    logger.error(f"Could not find GuildEntity {guild_id} in database") 
                     return False
                     
                 if not sync_members_only:
-                    # Update guild metadata_json
+                    # Update guild metadata_json using correct attributes
                     db_guild.name = discord_guild.name
-                    db_guild.icon_url = str(discord_guild.icon_url) if discord_guild.icon_url else None
+                    # Correct attribute access: discord_guild.icon.url (check for None)
+                    db_guild.icon_url = str(discord_guild.icon.url) if discord_guild.icon else None 
                     db_guild.member_count = discord_guild.member_count
-                    db_guild.owner_id = str(discord_guild.owner_id)
+                    # Ensure owner_id is converted to string
+                    db_guild.owner_id = str(discord_guild.owner_id) if discord_guild.owner_id else None 
                     
-                    # Save guild updates
-                    await guild_config_repo.update(db_guild)
-                    logger.info(f"Updated guild metadata_json for {guild_id}")
+                    # Save guild updates using the correct repository
+                    await guild_repo.update(db_guild)
+                    logger.info(f"Updated guild metadata for {guild_id}")
                     
                 # Sync members if needed
                 if hasattr(self.bot, 'user_workflow'):

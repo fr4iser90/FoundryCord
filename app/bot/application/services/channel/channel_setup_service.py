@@ -38,7 +38,7 @@ class ChannelSetupService:
         category_channels = await self.category_service.setup_categories(guild)
         
         # Load all enabled channels from the database
-        db_channels = self.channel_repository.get_enabled_channels()
+        db_channels = await self.channel_repository.get_enabled_channels()
         for channel in db_channels:
             self.channels_cache[channel.name] = channel
         

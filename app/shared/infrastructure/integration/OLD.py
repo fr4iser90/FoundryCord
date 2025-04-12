@@ -29,32 +29,48 @@ class BotConnector:
 
     async def execute(self, service_name: str, method_name: str, *args, **kwargs) -> Any:
         """Execute a method on a bot service"""
+        logger.info(f"BotConnector.execute called for Service: '{service_name}', Method: '{method_name}'")
+        
         if not self.bot_instance:
-            logger.error("No bot instance registered with connector")
+            logger.error("BotConnector: No bot instance registered.")
             return None
+        logger.debug(f"BotConnector: Bot instance found: {type(self.bot_instance)}")
             
         # Get the service from the bot
+        service = None
         if service_name == "control":
             service = getattr(self.bot_instance, "control_service", None)
+            logger.debug(f"BotConnector: Attempted to get 'control_service'. Found: {service is not None}")
         else:
-            service = self.bot_instance.get_service(service_name)
+            # Assume a get_service method exists for other services
+            get_service_method = getattr(self.bot_instance, "get_service", None)
+            if get_service_method and callable(get_service_method):
+                service = get_service_method(service_name)
+                logger.debug(f"BotConnector: Attempted to get service '{service_name}' via get_service. Found: {service is not None}")
+            else:
+                 logger.warning(f"BotConnector: Bot instance lacks a 'get_service' method.")
             
         if not service:
-            logger.error(f"Service {service_name} not found on bot")
+            logger.error(f"BotConnector: Service '{service_name}' not found on bot instance.")
             return None
+        logger.debug(f"BotConnector: Service '{service_name}' found: {type(service)}")
             
         # Get and execute the method
         method = getattr(service, method_name, None)
         if not method or not callable(method):
-            logger.error(f"Method {method_name} not found on service {service_name}")
+            logger.error(f"BotConnector: Method '{method_name}' not found or not callable on service '{service_name}'.")
             return None
+        logger.debug(f"BotConnector: Method '{method_name}' found on service '{service_name}'. Attempting execution...")
             
         try:
             if asyncio.iscoroutinefunction(method):
-                return await method(*args, **kwargs)
-            return method(*args, **kwargs)
+                result = await method(*args, **kwargs)
+            else:
+                result = method(*args, **kwargs)
+            logger.info(f"BotConnector: Successfully executed {service_name}.{method_name}. Result: {result}")
+            return result
         except Exception as e:
-            logger.error(f"Error executing {service_name}.{method_name}: {e}")
+            logger.error(f"BotConnector: Error executing {service_name}.{method_name}: {e}", exc_info=True)
             raise
 
     async def get_status(self):

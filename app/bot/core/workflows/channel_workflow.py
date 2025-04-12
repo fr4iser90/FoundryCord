@@ -15,19 +15,20 @@ from app.shared.domain.repositories.discord import ChannelRepository
 from app.shared.domain.repositories.discord import GuildConfigRepository
 from app.shared.infrastructure.repositories.discord import ChannelRepositoryImpl
 from app.bot.application.services.channel.channel_setup_service import ChannelSetupService
-
+from app.shared.infrastructure.repositories.discord.guild_config_repository_impl import GuildConfigRepositoryImpl
 
 logger = get_bot_logger()
 
 class ChannelWorkflow(BaseWorkflow):
     """Workflow for channel setup and management"""
     
-    def __init__(self, database_workflow: DatabaseWorkflow, category_workflow: CategoryWorkflow):
+    def __init__(self, database_workflow: DatabaseWorkflow, category_workflow: CategoryWorkflow, bot):
         super().__init__("channel")
         self.category_workflow = category_workflow
         self.database_workflow = database_workflow
         self.channel_repository = None
         self.channel_setup_service = None
+        self.bot = bot
         
         # Define dependencies
         self.add_dependency("category")
@@ -152,7 +153,8 @@ class ChannelWorkflow(BaseWorkflow):
                 
             # Check if channels are enabled for this guild
             async with session_context() as session:
-                guild_config_repo = GuildConfigRepository(session)
+                # Use the implementation class
+                guild_config_repo = GuildConfigRepositoryImpl(session)
                 config = await guild_config_repo.get_by_guild_id(str(guild.id))
                 
                 if not config or not config.enable_channels:
