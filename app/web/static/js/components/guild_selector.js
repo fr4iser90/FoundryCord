@@ -174,8 +174,8 @@ export class ServerSelector {
             
             showToast('success', `Switched to server: ${server.name}`);
 
-            // Reload page to update content
-            window.location.reload();
+            // Redirect to the landing page for the newly selected guild
+            window.location.href = `/guild/${server.guild_id}/`;
         } catch (error) {
             throw error; // Let apiRequest handle the error display
         }
@@ -183,9 +183,9 @@ export class ServerSelector {
 }
 
 // Initialize when DOM is loaded
-if (!window.serverSelector) {
+if (!window.guildSelector) {
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('DOM loaded, initializing ServerSelector');
-        window.serverSelector = new ServerSelector();
+        console.log('DOM loaded, initializing GuildSelector');
+        window.guildSelector = new ServerSelector();
     });
 } 

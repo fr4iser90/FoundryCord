@@ -2,10 +2,10 @@
 <header class="main-header">
     <nav class="navbar">
         <div class="navbar-container">
-            <!-- Left Section - Server Selector -->
+            <!-- Left Section - Guild/Server Selector -->
             <div class="navbar-left">
                 {% if request.session.get('user') %}
-                    {% include "components/navigation/server_selector.html" %}
+                    {% include "components/navigation/guild_selector.html" %}
                 {% endif %}
             </div>
 

@@ -50,15 +50,7 @@
                     </td>
                     <td class="discord-id">{{ user.discord_id }}</td>
                     <td>
-                        <select class="guild-role-select" 
-                                data-user-id="{{ user.id }}"
-                                {% if not can_manage_roles or user.is_owner %}disabled{% endif %}>
-                            {% for role in guild.roles %}
-                            <option value="{{ role.id }}" {% if role.id == user.guild_role_id %}selected{% endif %}>
-                                {{ role.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
+                        <span class="badge guild-role">{{ user.guild_role }}</span>
                     </td>
                     <td>
                         {% if can_manage_app_roles and not user.is_owner %}

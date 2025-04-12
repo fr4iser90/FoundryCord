@@ -1,4 +1,5 @@
 {# app/web/templates/components/navigation/nav_links.html #}
+{% set selected_guild = request.session.get('selected_guild') %}
 <ul class="nav-links">
     <li class="nav-item">
         <a class="nav-link {% if request.url.path == '/home' %}active{% endif %}" href="/home">
@@ -6,25 +7,35 @@
             <span>Home</span>
         </a>
     </li>
-    <li class="nav-item">
-        <a class="nav-link {% if request.url.path == '/guilds/users' %}active{% endif %}" href="/guilds/users">
-            <i class="bi bi-people"></i>
-            <span>Guild Users</span>
-        </a>
-    </li>
-    {# Check if user exists and has is_owner flag set to true for Admin/Owner links #}
-    {% if request.session.user and request.session.user.get('is_owner') %}
-    <li class="nav-item">
-        <a class="nav-link {% if request.url.path.startswith('/admin') %}active{% endif %}" href="/admin/users">
-            <i class="bi bi-shield-lock"></i>
-            <span>Admin</span>
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {% if request.url.path.startswith('/owner') %}active{% endif %}" href="/owner/bot">
-            <i class="bi bi-robot"></i>
-            <span>Bot Control</span>
-        </a>
-    </li>
+    {# Show Guild-specific links only if a guild is selected #}
+    {% if selected_guild and selected_guild.guild_id %}
+        {% set guild_base_path = "/guild/" + selected_guild.guild_id %}
+        <li class="nav-item">
+            {# Link to Guild Admin Users page for the selected guild #}
+            <a class="nav-link {% if request.url.path.startswith(guild_base_path + '/admin/users') %}active{% endif %}" 
+               href="{{ guild_base_path }}/admin/users">
+                <i class="bi bi-people"></i>
+                <span>Guild Users</span> {# Renamed from Guild Users #}
+            </a>
+        </li>
+        {# Check if user exists and has is_owner flag set to true for Admin/Owner links #}
+        {# TODO: Replace is_owner check with guild-specific admin permission check #}
+        {% if request.session.user and request.session.user.get('is_owner') %}
+            <li class="nav-item">
+                {# Link to Guild Admin Dashboard/Index for the selected guild #}
+                <a class="nav-link {% if request.url.path.startswith(guild_base_path + '/admin') %}active{% endif %}" 
+                   href="{{ guild_base_path }}/admin/"> {# Link to base guild admin path #}
+                    <i class="bi bi-shield-lock"></i>
+                    <span>Guild Admin</span> {# Renamed from Admin #}
+                </a>
+            </li>
+            {# Bot control is not guild-specific #}
+            <li class="nav-item">
+                <a class="nav-link {% if request.url.path.startswith('/owner/bot') %}active{% endif %}" href="/owner/bot">
+                    <i class="bi bi-robot"></i>
+                    <span>Bot Control</span>
+                </a>
+            </li>
+        {% endif %}
     {% endif %}
 </ul> 

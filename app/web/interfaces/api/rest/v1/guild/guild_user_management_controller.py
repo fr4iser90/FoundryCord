@@ -5,7 +5,8 @@ from sqlalchemy import select
 from app.shared.interface.logging.api import get_web_logger
 from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
 
-router = router = APIRouter(prefix="/guild/users", tags=["Guild User Management"])
+# Change the prefix to include guild_id and update tags
+router = APIRouter(prefix="/guilds/{guild_id}/users", tags=["Guild Admin: Users"])
 logger = get_web_logger()
 
 class GuildUserManagementController:
@@ -203,3 +204,5 @@ class GuildUserManagementController:
 
 # Create and register the controller
 controller = GuildUserManagementController()
+# Export the router instance directly
+guild_user_management_router = controller.router 

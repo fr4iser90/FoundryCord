@@ -21,7 +21,7 @@ class MainView:
     async def index(self, request: Request):
         try:
             return templates_extension().TemplateResponse(
-                "index.html",
+                "views/main/index.html",
                 {"request": request, "user": request.session.get("user")}
             )
         except Exception as e:
@@ -30,7 +30,7 @@ class MainView:
     async def about(self, request: Request):
         """About page"""
         return templates_extension().TemplateResponse(
-            "views/about.html",
+            "views/main/about.html",
             {
                 "request": request, 
                 "user": request.session.get("user"),
@@ -41,7 +41,7 @@ class MainView:
     async def help_page(self, request: Request):
         """Help page"""
         return templates_extension().TemplateResponse(
-            "views/help.html",
+            "views/main/help.html",
             {
                 "request": request, 
                 "user": request.session.get("user"),

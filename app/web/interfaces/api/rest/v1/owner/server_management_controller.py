@@ -10,7 +10,8 @@ from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_curre
 from app.web.interfaces.api.rest.v1.base_controller import BaseController
 from app.web.infrastructure.factories.service.web_service_factory import WebServiceFactory
 from typing import List
-from app.web.interfaces.api.rest.v1.schemas.server_schemas import ServerInfo, ServerAccessUpdateResponse
+from app.web.interfaces.api.rest.v1.schemas.guild_schemas import GuildInfo, GuildAccessUpdateResponse
+
 
 logger = get_web_logger()
 router = APIRouter(prefix="/owner/servers", tags=["Server Management"])
@@ -33,11 +34,11 @@ class ServerManagementController(BaseController):
         # Keep the old route for now, maybe deprecate later?
         self.router.get("/")(self.get_servers_legacy) 
         # Add the new route specifically for the management UI
-        self.router.get("/manageable", response_model=List[ServerInfo])(self.get_manageable_servers) 
+        self.router.get("/manageable", response_model=List[GuildInfo])(self.get_manageable_servers) 
         
         self.router.get("/{server_id}")(self.get_server)
         # Add the access status update endpoint with the response model
-        self.router.post("/{server_id}/access", response_model=ServerAccessUpdateResponse)(self.update_server_access) 
+        self.router.post("/{server_id}/access", response_model=GuildAccessUpdateResponse)(self.update_server_access) 
         self.router.post("/{server_id}/restart")(self.restart_server)
         self.router.post("/{server_id}/stop")(self.stop_server)
         self.router.post("/{server_id}/start")(self.start_server)
@@ -58,7 +59,7 @@ class ServerManagementController(BaseController):
         try:
             # Use the new service method that fetches all servers for owners
             servers: List[GuildEntity] = await self.server_service.get_all_manageable_servers(current_user)
-            # Return the list directly. FastAPI will serialize using ServerInfo response_model.
+            # Return the list directly. FastAPI will serialize using GuildInfo response_model.
             return servers
         except Exception as e:
             # Let the global exception handler catch and log
@@ -66,7 +67,7 @@ class ServerManagementController(BaseController):
             # Re-raise the original exception or a generic HTTPException
             raise HTTPException(status_code=500, detail="Failed to retrieve manageable servers") from e
     
-    async def update_server_access(self, server_id: str, request: Request, current_user: AppUserEntity = Depends(get_current_user)) -> ServerAccessUpdateResponse:
+    async def update_server_access(self, server_id: str, request: Request, current_user: AppUserEntity = Depends(get_current_user)) -> GuildAccessUpdateResponse:
         """Update the access status of a server (approve, reject, block, suspend)."""
         try:
             if not current_user.is_owner:
@@ -82,7 +83,7 @@ class ServerManagementController(BaseController):
             updated_server_entity: GuildEntity = await self.server_service.update_guild_access_status(server_id, new_status, current_user.id)
             
             # Return the dictionary matching the response model structure
-            # FastAPI will serialize updated_server_entity using ServerInfo schema
+            # FastAPI will serialize updated_server_entity using GuildInfo schema
             return {
                 "message": f"Server status updated to {new_status}", 
                 "server": updated_server_entity
