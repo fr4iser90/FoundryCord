@@ -1,6 +1,6 @@
 {# app/web/templates/components/navigation/guild_selector.html #}
 <div class="navbar-item has-dropdown">
-    <button class="navbar-link server-selector" id="server-selector-button" aria-haspopup="true" aria-expanded="false">
+    <button class="navbar-link guild-selector" id="guild-selector-button" aria-haspopup="true" aria-expanded="false">
         {% if request.session.get('selected_guild') %}
             <img src="{{ request.session.selected_guild.icon_url }}" alt="{{ request.session.selected_guild.name }}" class="server-icon">
             <span class="server-name">{{ request.session.selected_guild.name }}</span>
@@ -10,7 +10,7 @@
         {% endif %}
     </button>
     
-    <div class="navbar-dropdown" id="server-dropdown" aria-labelledby="server-selector-button">
+    <div class="navbar-dropdown" id="guild-selector-dropdown" aria-labelledby="guild-selector-button">
         <div class="server-list loading" id="server-list">
             <!-- Server list will be populated by JavaScript (only approved servers) -->
         </div>

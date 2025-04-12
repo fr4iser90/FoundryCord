@@ -1,51 +1,75 @@
 {# app/web/templates/components/navigation/nav_links.html #}
 {% set selected_guild = request.session.get('selected_guild') %}
-<ul class="nav-links">
-    <li class="nav-item">
+{% set is_owner = request.session.user and request.session.user.get('is_owner') %}
+
+<ul class="nav-links navbar-start"> {# Use navbar-start for left alignment #}
+    <li class="navbar-item"> {# Use navbar-item for correct styling #}
         <a class="nav-link {% if request.url.path == '/home' %}active{% endif %}" href="/home">
             <i class="bi bi-house"></i>
             <span>Home</span>
         </a>
     </li>
-    
-    {# --- Guild-Specific Links (Require a selected guild) --- #}
+
+    {# --- Guild Dropdown (Requires selected guild) --- #}
     {% if selected_guild and selected_guild.guild_id %}
         {% set guild_base_path = "/guild/" + selected_guild.guild_id %}
-        
-        <li class="nav-item">
-            {# Link to Guild Users page for the selected guild #}
-            <a class="nav-link {% if request.url.path.startswith(guild_base_path + '/admin/users') %}active{% endif %}" 
-               href="{{ guild_base_path }}/admin/users">
-                <i class="bi bi-people"></i>
-                <span>Guild Users</span>
+        <li class="navbar-item has-dropdown js-navbar-dropdown">
+            <a class="navbar-link" href="#" role="button">
+                <i class="bi bi-server mr-2"></i>
+                <span>Guild</span>
+                <i class="bi bi-caret-down-fill ml-auto dropdown-indicator"></i>
             </a>
-        </li>
-        
-        {# Guild Admin link requires selected guild AND owner status #}
-        {% if request.session.user and request.session.user.get('is_owner') %}
-            <li class="nav-item">
-                {# Link to Guild Admin Dashboard/Index for the selected guild #}
-                <a class="nav-link {% if request.url.path.startswith(guild_base_path + '/admin') %}active{% endif %}" 
-                   href="{{ guild_base_path }}/admin/"> {# Link to base guild admin path #}
-                    <i class="bi bi-shield-lock"></i>
-                    <span>Guild Admin</span>
+            <div class="navbar-dropdown">
+                <a class="dropdown-item {% if request.url.path.startswith(guild_base_path + '/admin/users') %}is-active{% endif %}"
+                   href="{{ guild_base_path }}/admin/users">
+                    <i class="bi bi-people mr-2"></i>
+                    <span>Guild Users</span>
                 </a>
-            </li>
-        {% endif %}
-        
-    {% endif %}
-    {# --- End Guild-Specific Links --- #}
-
-    {# --- Owner-Specific Global Links (Require owner status, NOT selected guild) --- #}
-    {% if request.session.user and request.session.user.get('is_owner') %}
-        {# Bot control is not guild-specific #}
-        <li class="nav-item">
-            <a class="nav-link {% if request.url.path.startswith('/owner/bot') %}active{% endif %}" href="/owner/bot">
-                <i class="bi bi-robot"></i>
-                <span>Bot Control</span>
-            </a>
+                <a class="dropdown-item {% if request.url.path.startswith(guild_base_path + '/designer') %}is-active{% endif %}"
+                   href="{{ guild_base_path }}/designer">
+                    <i class="bi bi-layout-wtf mr-2"></i>
+                    <span>Guild Designer</span>
+                </a>
+                {% if is_owner %}
+                    <hr class="navbar-divider">
+                    <a class="dropdown-item {% if request.url.path.startswith(guild_base_path + '/admin') and not request.url.path.endswith('/users') %}is-active{% endif %}"
+                       href="{{ guild_base_path }}/admin/">
+                        <i class="bi bi-shield-lock mr-2"></i>
+                        <span>Guild Admin</span>
+                    </a>
+                {% endif %}
+            </div>
         </li>
-        {# Add other global owner links here if needed, e.g., a global server management page #}
     {% endif %}
-    {# --- End Owner-Specific Global Links --- #}
+    {# --- End Guild Dropdown --- #}
+
+    {# --- Owner Dropdown (Requires owner status) --- #}
+    {% if is_owner %}
+        <li class="navbar-item has-dropdown js-navbar-dropdown">
+            <a class="navbar-link" href="#" role="button">
+                <i class="bi bi-person-badge mr-2"></i>
+                <span>Owner</span>
+                <i class="bi bi-caret-down-fill ml-auto dropdown-indicator"></i>
+            </a>
+            <div class="navbar-dropdown">
+                <a class="dropdown-item {% if request.url.path.startswith('/owner/bot') %}is-active{% endif %}" href="/owner/bot">
+                    <i class="bi bi-robot mr-2"></i>
+                    <span>Bot Control</span>
+                </a>
+                <a class="dropdown-item {% if request.url.path.startswith('/owner/servers') %}is-active{% endif %}" href="/owner/servers">
+                    <i class="bi bi-hdd-stack mr-2"></i>
+                    <span>Server Management</span>
+                </a>
+                {# Add other global owner links here, e.g., user management #}
+                {# Example:
+                <a class="dropdown-item {% if request.url.path.startswith('/owner/users') %}is-active{% endif %}" href="/owner/users">
+                    <i class="bi bi-person-gear mr-2"></i>
+                    <span>Manage Users</span>
+                </a>
+                #}
+            </div>
+        </li>
+    {% endif %}
+    {# --- End Owner Dropdown --- #}
+
 </ul> 

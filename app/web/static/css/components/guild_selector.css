@@ -4,16 +4,17 @@
     display: inline-block;
 }
 
-.server-selector {
+/* Renamed class for consistency */
+.guild-selector {
     position: relative;
     min-width: 250px;
 }
 
-/* Button Styling */
-.navbar-link.server-selector {
+/* Button Styling - Renamed class for consistency */
+.navbar-link.guild-selector {
     width: 100%;
-    background: var(--server-selector-bg);
-    border: 1px solid var(--server-selector-border);
+    background: var(--server-selector-bg); /* Keeping variable name for now */
+    border: 1px solid var(--server-selector-border); /* Keeping variable name for now */
     padding: var(--spacing-sm) var(--spacing-md);
     display: flex;
     align-items: center;
@@ -24,25 +25,26 @@
     border-radius: var(--border-radius);
 }
 
-.navbar-link.server-selector:hover,
-.navbar-link.server-selector:focus {
-    background: var(--server-selector-hover);
+/* Renamed class for consistency */
+.navbar-link.guild-selector:hover,
+.navbar-link.guild-selector:focus {
+    background: var(--server-selector-hover); /* Keeping variable name for now */
     border-color: var(--primary);
 }
 
-/* Server Icon */
-.server-selector .server-icon {
+/* Server Icon - Renamed parent class */
+.guild-selector .server-icon {
     width: 32px;
     height: 32px;
     border-radius: 50%;
     flex-shrink: 0;
     object-fit: cover;
-    border: 2px solid var(--server-icon-border);
-    background: var(--server-icon-bg);
+    border: 2px solid var(--server-icon-border); /* Keeping variable name for now */
+    background: var(--server-icon-bg); /* Keeping variable name for now */
 }
 
-/* Dropdown Menu */
-.navbar-dropdown {
+/* Dropdown Menu - Using consistent ID */
+#guild-selector-dropdown {
     display: none;
     position: absolute;
     top: 100%;
@@ -57,18 +59,25 @@
     padding: var(--spacing-xs);
 }
 
-.navbar-dropdown.show {
+/* Using consistent ID */
+#guild-selector-dropdown.show {
     display: block;
+    /* Explicitly set visibility styles to override potential base styles */
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    /* Add transition for smooth appearance */
+    transition: opacity 0.15s ease-out, transform 0.15s ease-out, visibility 0.15s;
 }
 
-/* Server List */
-.server-list {
+/* Server List - Using consistent ID */
+#guild-selector-dropdown .server-list {
     max-height: 300px;
     overflow-y: auto;
 }
 
-/* Server List Items */
-.server-list-item {
+/* Server List Items - Using consistent ID */
+#guild-selector-dropdown .server-list-item {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
@@ -79,28 +88,33 @@
     transition: background-color 0.2s ease;
 }
 
-.server-list-item:hover {
+/* Using consistent ID */
+#guild-selector-dropdown .server-list-item:hover {
     background: var(--dropdown-hover-bg);
 }
 
-.server-list-item.active {
+/* Using consistent ID */
+#guild-selector-dropdown .server-list-item.active {
     background: var(--primary-light);
     color: var(--text-primary);
     border-left: 3px solid var(--primary);
 }
 
-.server-list-item .server-icon {
+/* Using consistent ID */
+#guild-selector-dropdown .server-list-item .server-icon {
     width: 24px;
     height: 24px;
     border-width: 1px;
 }
 
-.server-list-item .server-info {
+/* Using consistent ID */
+#guild-selector-dropdown .server-list-item .server-info {
     flex: 1;
     min-width: 0;
 }
 
-.server-list-item .server-name {
+/* Using consistent ID */
+#guild-selector-dropdown .server-list-item .server-name {
     font-size: 0.9rem;
     font-weight: 500;
     white-space: nowrap;
@@ -108,24 +122,27 @@
     text-overflow: ellipsis;
 }
 
-.server-list-item .server-id {
+/* Using consistent ID */
+#guild-selector-dropdown .server-list-item .server-id {
     font-size: 0.75rem;
     color: var(--text-muted);
 }
 
-.server-list-item .active-indicator {
+/* Using consistent ID */
+#guild-selector-dropdown .server-list-item .active-indicator {
     margin-left: auto;
     color: var(--primary);
     display: flex;
     align-items: center;
 }
 
-.server-list-item .active-indicator i {
+/* Using consistent ID */
+#guild-selector-dropdown .server-list-item .active-indicator i {
     font-size: 1.2rem;
 }
 
-/* Loading State */
-.server-list.loading {
+/* Loading State - Using consistent ID */
+#guild-selector-dropdown .server-list.loading {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -133,12 +150,13 @@
     color: var(--text-muted);
 }
 
-.server-list.loading::after {
+/* Using consistent ID */
+#guild-selector-dropdown .server-list.loading::after {
     content: 'Loading servers...';
 }
 
-/* Empty State */
-.server-list.empty {
+/* Empty State - Using consistent ID */
+#guild-selector-dropdown .server-list.empty {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -146,12 +164,13 @@
     color: var(--text-muted);
 }
 
-.server-list.empty::after {
+/* Using consistent ID */
+#guild-selector-dropdown .server-list.empty::after {
     content: 'No servers available';
 }
 
-/* Dropdown Arrow */
-.navbar-link.server-selector::after {
+/* Dropdown Arrow - Renamed class */
+.navbar-link.guild-selector::after {
     content: '';
     display: inline-block;
     margin-left: auto;
@@ -165,11 +184,13 @@
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
-    .server-selector {
+    /* Renamed class */
+    .guild-selector {
         min-width: 200px;
     }
     
-    .navbar-dropdown {
+    /* Using consistent ID - might need review if this should be generic again */
+    #guild-selector-dropdown {
         position: fixed;
         top: auto;
         left: var(--spacing-sm);

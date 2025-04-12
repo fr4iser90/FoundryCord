@@ -51,7 +51,11 @@
     <script src="{{ url_for('static', path='js/core/main.js') }}"></script>
     
     <!-- Component JavaScript -->
+    {# Load shared utilities first #}
     <script type="module" defer src="{{ url_for('static', path='js/components/common/notifications.js') }}"></script>
+    {# Load navbar logic (for click dropdowns) #}
+    <script src="{{ url_for('static', path='js/components/common/navbar.js') }}" defer></script>
+    {# Load guild selector (it's a module and might depend on notifications) #}
     <script type="module" defer src="{{ url_for('static', path='js/components/guild_selector.js') }}"></script>
     
     <!-- Page-specific JavaScript -->

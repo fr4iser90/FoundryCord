@@ -1,121 +1,63 @@
-class ServerSelector {
-    constructor() {
-        this.dropdown = document.querySelector('.server-selector');
-        this.button = this.dropdown?.querySelector('.server-select-btn');
-        this.currentServer = null;
-        this.init();
-    }
+// This file is intended for general Navbar JavaScript functions,
+// but currently contains no specific logic as ServerSelector was moved.
 
-    init() {
-        if (!this.dropdown) {
-            console.error('Server selector dropdown not found');
-            return;
-        }
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("Navbar JS DOMContentLoaded fired."); // Log: Check if script runs
 
-        // Initialize event listeners
-        this.dropdown.addEventListener('click', (e) => {
-            const item = e.target.closest('.dropdown-item');
-            if (item) {
-                e.preventDefault();
-                const serverId = item.getAttribute('href').split('/').pop();
-                this.switchServer(serverId);
+    const clickDropdowns = document.querySelectorAll('.js-navbar-dropdown');
+
+    if (clickDropdowns.length > 0) {
+        console.log(`Initializing ${clickDropdowns.length} click-based navbar dropdowns.`);
+        
+        clickDropdowns.forEach(dropdown => {
+            const trigger = dropdown.querySelector('.navbar-link');
+            if (trigger) {
+                console.log("Adding click listener to:", trigger); // Log: Check which triggers get listeners
+                trigger.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    console.log("Dropdown trigger clicked:", trigger); // Log: Check if click is registered
+                    
+                    // Close other open dropdowns first
+                    clickDropdowns.forEach(otherDropdown => {
+                        if (otherDropdown !== dropdown && otherDropdown.classList.contains('is-active')) {
+                             console.log("Closing other dropdown:", otherDropdown);
+                             otherDropdown.classList.remove('is-active');
+                        }
+                    });
+                    
+                    // Toggle the current dropdown
+                    const isActive = dropdown.classList.toggle('is-active');
+                    console.log(`Toggled dropdown ${isActive ? 'ON' : 'OFF'}:`, dropdown); // Log: Check class toggle
+                });
+            } else {
+                 console.warn("Could not find .navbar-link trigger for dropdown:", dropdown);
             }
         });
 
-        // Load initial server data
-        this.loadServerData();
-    }
-
-    async loadServerData() {
-        try {
-            const response = await fetch('/api/v1/servers');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            if (data.success && data.servers) {
-                this.updateServerList(data.servers);
-            }
-        } catch (error) {
-            console.error('Error loading server data:', error);
-        }
-    }
-
-    async switchServer(serverId) {
-        try {
-            const response = await fetch('/api/v1/servers/switch', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ guild_id: serverId })
+        // Add a listener to the document to close dropdowns when clicking outside
+        document.addEventListener('click', (event) => {
+            let clickedInsideDropdown = false;
+            clickDropdowns.forEach(dropdown => {
+                if (dropdown.contains(event.target)) {
+                    clickedInsideDropdown = true;
+                }
             });
 
-            const data = await response.json();
-            if (data.success && data.server) {
-                this.updateCurrentServer(data.server);
-                window.location.reload();
+            if (!clickedInsideDropdown) {
+                // console.log("Clicked outside, closing dropdowns."); // Optional Log
+                let closedAny = false;
+                clickDropdowns.forEach(dropdown => {
+                    if (dropdown.classList.contains('is-active')) {
+                         dropdown.classList.remove('is-active');
+                         closedAny = true;
+                    }
+                });
+                // if (closedAny) console.log("Closed dropdowns due to outside click.");
             }
-        } catch (error) {
-            console.error('Error switching server:', error);
-        }
+        });
+        
+    } else {
+         console.log("No .js-navbar-dropdown elements found to initialize.");
     }
-
-    updateServerList(servers) {
-        if (!this.dropdown) return;
-        
-        const serverList = this.dropdown.querySelector('.dropdown-menu');
-        if (!serverList) {
-            console.error('Server list dropdown menu not found');
-            return;
-        }
-        
-        if (servers.length === 0) {
-            serverList.innerHTML = '<li><span class="dropdown-item disabled">No servers available</span></li>';
-            return;
-        }
-        
-        serverList.innerHTML = servers.map(server => `
-            <li>
-                <a class="dropdown-item" href="/switch-server/${server.id}">
-                    <img src="${server.icon_url || '/static/img/default_server_icon.png'}" 
-                         alt="${server.name}" 
-                         class="server-icon"
-                         width="24" 
-                         height="24">
-                    <div class="server-info">
-                        <span class="server-name">${server.name}</span>
-                        <small class="server-id">${server.id}</small>
-                    </div>
-                </a>
-            </li>
-        `).join('');
-        
-        // Set the first server as current if none is selected
-        if (servers.length > 0 && !this.currentServer) {
-            this.updateCurrentServer(servers[0]);
-        }
-    }
-
-    updateCurrentServer(server) {
-        this.currentServer = server;
-        if (!this.button) return;
-
-        this.button.innerHTML = `
-            <img src="${server.icon_url || '/static/img/default_server_icon.png'}" 
-                 alt="Server Icon" 
-                 class="server-icon"
-                 width="32" 
-                 height="32">
-            <div class="server-info">
-                <span class="server-name">${server.name}</span>
-                <small class="server-id">${server.id}</small>
-            </div>
-        `;
-    }
-}
-
-// Initialize when document is ready
-document.addEventListener('DOMContentLoaded', () => {
-    new ServerSelector();
 });

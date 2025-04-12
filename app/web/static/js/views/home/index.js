@@ -47,7 +47,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Reset-Button Event-Handler
     const resetButton = document.getElementById('reset-layout');
     if (resetButton) {
-        resetButton.addEventListener('click', resetLayout);
+        // resetButton.addEventListener('click', resetLayout); // Temporarily commented out - function definition missing
+        console.warn("Reset layout button found, but resetLayout function is missing.");
     }
 });
 
@@ -317,7 +318,8 @@ async function updateServersList() {
                     <div class="server-meta">
                         <small class="text-muted">${server.member_count} members</small>
                         <div class="mt-1">
-                            ${getUserPermissionBadges(server.user_permissions)}
+                            <!-- ${getUserPermissionBadges(server.user_permissions)} --> <!-- Temporarily commented out - function definition missing -->
+                            <span class="text-muted small">(Permission badges disabled)</span>
                         </div>
                     </div>
                 </div>

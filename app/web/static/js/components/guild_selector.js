@@ -3,8 +3,8 @@ import { showToast, apiRequest } from '/static/js/components/common/notification
 // Server Selector Component
 export class ServerSelector {
     constructor() {
-        this.button = document.getElementById('server-selector-button');
-        this.dropdown = document.getElementById('server-dropdown');
+        this.button = document.getElementById('guild-selector-button');
+        this.dropdown = document.getElementById('guild-selector-dropdown');
         this.serverList = document.getElementById('server-list');
         this.currentGuildId = null;
 
@@ -65,7 +65,7 @@ export class ServerSelector {
             if (currentServer && currentServer.guild_id) {
                 this.currentGuildId = currentServer.guild_id;
                 // Update button only if we have a current server
-                const button = document.getElementById('server-selector-button');
+                const button = document.getElementById('guild-selector-button');
                 if (button) {
                     const img = button.querySelector('img');
                     const span = button.querySelector('span');
@@ -156,7 +156,7 @@ export class ServerSelector {
             });
 
             // Update UI immediately
-            const button = document.getElementById('server-selector-button');
+            const button = document.getElementById('guild-selector-button');
             if (button) {
                 const img = button.querySelector('img');
                 const span = button.querySelector('span');
