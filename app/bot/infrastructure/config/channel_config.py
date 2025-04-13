@@ -24,7 +24,6 @@ class ChannelConfig:
     # Constants
     CHANNELS = CHANNELS
     DASHBOARD_MAPPINGS = DASHBOARD_MAPPINGS
-    DISCORD_SERVER = None
     
     @staticmethod
     def register(bot) -> Dict:
@@ -70,8 +69,6 @@ class ChannelConfig:
     async def create_channel_setup(cls, bot) -> 'ChannelSetupService':
         """Creates and configures the channel setup service"""
         try:
-            cls.DISCORD_SERVER = bot.env_config.guild_id
-            
             # Load existing channel mappings from database
             async for session in get_session():
                 result = await session.execute(select(ChannelMapping))

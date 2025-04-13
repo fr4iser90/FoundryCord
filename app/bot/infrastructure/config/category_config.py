@@ -9,14 +9,13 @@ from app.shared.infrastructure.config.env_config import EnvConfig
 import os
 
 class CategoryConfig:
-    DISCORD_SERVER = None
+
     CATEGORIES = CATEGORIES
 
     @classmethod
     async def create_category_setup(cls, bot) -> 'CategorySetupService':
         """Creates and configures the category setup service"""
         try:
-            cls.DISCORD_SERVER = bot.env_config.guild_id
             # Import here to avoid circular imports
             from app.bot.infrastructure.discord.category_setup_service import CategorySetupService
             category_setup = CategorySetupService(bot)

@@ -20,9 +20,7 @@ class EnvConfig:
         try:
             # Load required application variables
             self.DISCORD_BOT_TOKEN = self._load_required_env_var('DISCORD_BOT_TOKEN')
-            self.guild_id = self._load_int_env_var('DISCORD_SERVER')
-            if not self.guild_id:
-                raise ValueError("DISCORD_SERVER must be set and must be a valid integer")
+
             
             logger.info("Environment configuration loaded successfully")
             return self

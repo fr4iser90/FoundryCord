@@ -93,7 +93,6 @@ The web interface will be available at `http://localhost:8080`
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `DISCORD_BOT_TOKEN` | Your Discord bot token | Yes |
-| `DISCORD_SERVER` | Your Discord server ID | Yes |
 | `OWNER` | Discord users with full access (NAME\|ID format) | Yes |
 
 All other variables have sensible defaults and will be auto-generated if needed.
