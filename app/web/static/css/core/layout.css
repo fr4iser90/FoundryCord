@@ -1,0 +1,59 @@
+/* app/web/static/css/core/layout.css */
+
+/* Base structure assumed from base.css: body > .app-container > .main-content */
+/* We'll make .main-content the flex container for these layouts */
+
+.main-content {
+    display: flex; /* Make main-content a flex container by default */
+    flex-direction: column; /* Default stacking */
+    flex: 1; /* Ensure it takes remaining space */
+    width: 100%;
+    /* max-width: var(--container-max-width); */ /* Remove or adjust max-width globally? Or override per layout? */
+    /* margin: 0 auto; */ /* Remove or adjust margin globally? Or override per layout? */
+    padding: var(--spacing-md); /* Keep padding consistent */
+}
+
+/* --- Layout Type B: Fixed/Content Layout (Optional Sidebar) --- */
+.layout-fixed {
+    /* Structure: .main-content.layout-fixed > (.sidebar-left?) > .content-area > (.sidebar-right?) */
+    flex-direction: row; /* Arrange content and potential sidebars horizontally */
+    max-width: var(--container-max-width); /* Re-apply max-width for content pages */
+    margin: 0 auto; /* Center the content */
+    gap: var(--spacing-md);
+}
+
+.layout-fixed .content-area {
+    flex: 1; /* Main content takes available space */
+    min-width: 0; /* Prevent overflow issues */
+}
+
+.layout-fixed .sidebar-left,
+.layout-fixed .sidebar-right {
+    flex: 0 0 var(--sidebar-width, 240px); /* Fixed width sidebar */
+    /* Add background, border etc. as needed */
+    background-color: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
+    /* Hide sidebars by default unless specific classes like .has-sidebar-left are added */
+    display: none;
+}
+
+.layout-fixed.has-sidebar-left .sidebar-left,
+.layout-fixed.has-sidebar-right .sidebar-right {
+    display: block; /* Show sidebar if the class is present */
+}
+
+
+/* --- Layout Type A: Dashboard/Grid Layout --- */
+.layout-grid {
+    /* Full width grid, similar to editor but without panels/toolbar structure */
+    max-width: none;
+    margin: 0;
+    padding: var(--spacing-md); /* Add padding around the grid */
+}
+
+/* Ensure Gridstack container fills the available space in grid/editor layouts */
+.layout-grid .grid-stack {
+   /* Maybe height adjustments needed depending on context */
+   /* width: 100%; height: 100%; */
+}

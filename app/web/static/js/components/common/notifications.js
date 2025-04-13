@@ -47,6 +47,11 @@ const apiRequest = async (endpoint, options = {}) => {
             credentials: 'same-origin'
         });
 
+        if (response.status === 204) {
+            console.log(`apiRequest: Received status ${response.status}, returning null.`);
+            return null;
+        }
+
         const data = await response.json();
         
         if (!response.ok) {
@@ -54,11 +59,12 @@ const apiRequest = async (endpoint, options = {}) => {
                 window.location.href = '/auth/login';
                 return;
             }
-            throw new Error(data.detail || data.message || 'API request failed');
+            throw new Error(data.detail || data.message || `API request failed with status ${response.status}`);
         }
         
         return data;
     } catch (error) {
+        console.error("Error in apiRequest:", error);
         showToast('error', error.message);
         throw error;
     }

@@ -259,11 +259,11 @@ def upgrade() -> None:
     )
 
     # ==========================================================================
-    # WebInterface Tables (Keep as is)
+    # WebInterface Tables (Existing one, plus the new one)
     # ==========================================================================
     op.create_table(
         'webinterface_widget_layouts',
-        sa.Column('id', sa.Integer(), nullable=False, primary_key=True), # Added primary key
+        sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
         sa.Column('user_id', sa.Integer(), sa.ForeignKey('app_users.id'), nullable=False),
         sa.Column('guild_id', sa.String(20), nullable=True),
         sa.Column('page_id', sa.String(50), nullable=False),
@@ -271,9 +271,25 @@ def upgrade() -> None:
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
         sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'),
                   onupdate=sa.text('now()'), nullable=False),
-        # sa.PrimaryKeyConstraint('id'), # Defined above
         sa.UniqueConstraint('user_id', 'guild_id', 'page_id', name='uq_widget_layout')
     )
+
+    # --- ADDED: ui_layouts table ---
+    op.create_table('ui_layouts',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('user_id', sa.Integer(), nullable=False),
+        sa.Column('page_identifier', sa.String(), nullable=False), # Use String() without length for text-like behavior if needed, or specify a length
+        sa.Column('layout_data', sa.JSON(), nullable=False),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), onupdate=sa.text('now()'), nullable=False),
+        sa.ForeignKeyConstraint(['user_id'], ['app_users.id'], name='fk_ui_layouts_user_id'),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('user_id', 'page_identifier', name='_user_page_layout_uc')
+    )
+    op.create_index(op.f('ix_ui_layouts_id'), 'ui_layouts', ['id'], unique=False)
+    op.create_index(op.f('ix_ui_layouts_page_identifier'), 'ui_layouts', ['page_identifier'], unique=False)
+    op.create_index(op.f('ix_ui_layouts_user_id'), 'ui_layouts', ['user_id'], unique=False)
+    # --- END ADDED ---
 
     # ==========================================================================
     # Remaining DISCORD Tables (If needed, e.g., for general role definitions)
@@ -312,6 +328,12 @@ def downgrade() -> None:
     op.drop_table('discord_server_roles')
 
     # WebInterface Tables
+    # --- ADDED: Drop ui_layouts table ---
+    op.drop_index(op.f('ix_ui_layouts_user_id'), table_name='ui_layouts')
+    op.drop_index(op.f('ix_ui_layouts_page_identifier'), table_name='ui_layouts')
+    op.drop_index(op.f('ix_ui_layouts_id'), table_name='ui_layouts')
+    op.drop_table('ui_layouts')
+    # --- END ADDED ---
     op.drop_table('webinterface_widget_layouts')
 
     # PROJECT Tables

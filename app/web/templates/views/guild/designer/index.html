@@ -3,77 +3,82 @@
 {% block title %}Guild Designer - {{ guild_template_data.template_name }}{% endblock %}
 
 {% block extra_css %}
-{# Add specific CSS if needed #}
-<style>
-    /* Optional: Basic styling for the lists */
-    #categories-container ul, #channels-container ul {
-        list-style-type: none;
-        padding-left: 0;
-    }
-    #categories-container li, #channels-container li {
-        padding: 5px 0;
-        border-bottom: 1px solid #eee;
-    }
-</style>
+{# Add Gridstack CSS #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack.min.css"/>
+<link rel="stylesheet" href="{{ url_for('static', path='css/views/guild/designer.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4" id="designer-main-content"> {# Added ID for error fallback #}
-    <div class="page-header mb-4">
-        <h1>Guild Structure Designer</h1>
-        <p class="text-muted">Manage the saved template for Guild ID: {{ guild_id }}</p>
-    </div>
+{# Replace the bootstrap container with our layout-editor structure #}
+<div class="layout-editor has-panel-left has-panel-right" id="designer-main-container">
 
-    {# Container for potential error messages #}
-    <div id="designer-error-container"></div>
+    {# --- Editor Toolbar --- #}
+    <div class="editor-toolbar d-flex justify-content-between align-items-center p-2">
+        {# Panel Toggle Buttons #}
+        <div class="panel-toggle-buttons">
+            <button id="toggle-left-panel-btn" class="btn btn-sm btn-outline-secondary" title="Toggle Toolbox Panel">
+                <i class="bi bi-layout-sidebar-inset"></i> <span class="d-none d-md-inline">Toolbox</span>
+            </button>
+            <button id="toggle-right-panel-btn" class="btn btn-sm btn-outline-secondary" title="Toggle Properties Panel">
+                <i class="bi bi-layout-sidebar-inset-reverse"></i> <span class="d-none d-md-inline">Properties</span>
+            </button>
+        </div>
 
-    {# --- Template Info --- #}
-    <div class="card mb-4">
-        <div class="card-header">
-            Template Information
-        </div>
-        {# Container for JS to populate template details #}
-        <div class="card-body" id="template-info-container">
-            <p>Loading template info...</p> {# Placeholder content #}
-        </div>
-    </div>
-
-    {# --- Categories Section --- #}
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-           Categories
-           <a href="{{ url_for('designer_dashboard', guild_id=guild_id) }}/categories" class="btn btn-sm btn-outline-primary">Manage Categories</a>
-        </div>
-         {# Container for JS to populate categories list #}
-        <div class="card-body" id="categories-container">
-             <p>Loading categories...</p> {# Placeholder content #}
+        {# Moved buttons here - Wrapped in a div for alignment #}
+        <div class="page-header-actions">
+            <button id="toggle-lock-btn" class="btn btn-sm btn-outline-secondary" title="Lock/Unlock Layout Editing">
+                <i class="bi bi-unlock-fill"></i> <span class="btn-text d-none d-md-inline">Lock Layout</span> {# Hide text on smaller screens #}
+            </button>
+            <button id="reset-layout-btn" class="btn btn-sm btn-outline-danger" title="Reset Layout to Default">
+                 <i class="bi bi-arrow-repeat"></i> <span class="d-none d-md-inline">Reset Layout</span> {# Hide text on smaller screens #}
+            </button>
         </div>
     </div>
 
-    {# --- Channels Section --- #}
-    <div class="card mb-4">
-         <div class="card-header d-flex justify-content-between align-items-center">
-            Channels
-            <a href="{{ url_for('designer_dashboard', guild_id=guild_id) }}/channels" class="btn btn-sm btn-outline-primary">Manage Channels</a>
-         </div>
-          {# Container for JS to populate channels list #}
-         <div class="card-body" id="channels-container">
-             <p>Loading channels...</p> {# Placeholder content #}
-         </div>
-    </div>
+    {# --- Editor Body (Main Area + Panels) --- #}
+    <div class="editor-body">
 
-    {# --- Original Designer Section Cards (Optional: can be kept or removed) --- #}
-    {# 
-    <h2>Designer Sections</h2>
-    <div class="row mt-3">
-        ... (your existing cards for Categories, Channels, Commands) ...
-    </div> 
-    #}
+        {# --- Left Panel (Toolbox) --- #}
+        <div class="editor-panel-left p-3">
+            <h5><i class="bi bi-tools me-2"></i>Toolbox</h5>
+            <hr>
+            <p class="text-muted small">Drag elements from here later...</p>
+            {# Placeholder for drag-and-drop categories/channels #}
+        </div>
 
-</div>
+        {# --- Main Editor Area --- #}
+        <div class="editor-main-area">
+            {# Page Title #}
+             <div class="mb-3">
+                <h1 class="h4">Guild Structure Designer</h1> {# Smaller header #}
+                <p class="text-muted mb-0 small">Manage the saved template for Guild ID: {{ guild_id }}</p>
+            </div>
+
+             {# Container for potential error messages #}
+            <div id="designer-error-container" class="mb-3"></div>
+
+            {# --- Gridstack Container --- #}
+            <div class="grid-stack" id="designer-grid">
+                {# Widgets will be added here by JavaScript #}
+            </div>
+        </div>
+
+        {# --- Right Panel (Properties) --- #}
+        <div class="editor-panel-right p-3">
+             <h5><i class="bi bi-sliders me-2"></i>Properties</h5>
+             <hr>
+            <p class="text-muted small">Edit selected widget properties here later...</p>
+             {# Placeholder for property editor #}
+        </div>
+
+    </div> {# End editor-body #}
+
+</div> {# End layout-editor #}
 {% endblock %}
 
 {% block extra_js %}
-{# Include the JavaScript file for this page #}
-<script type="module" src="{{ url_for('static', path='js/pages/guild/designer/index.js') }}"></script>
+{# Include Gridstack JS #}
+<script src="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack-all.js"></script>
+{# Include the JavaScript file for this page (using /views/ path and type="module") #}
+<script type="module" src="{{ url_for('static', path='js/views/guild/designer/index.js') }}"></script>
 {% endblock %}

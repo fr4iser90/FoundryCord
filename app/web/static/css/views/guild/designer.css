@@ -1,0 +1,86 @@
+/* app/web/static/css/views/guild/designer.css */
+
+/* --- Layout Type C: Editor/Tool Layout Specific Styles --- */
+.layout-editor {
+    /* Structure: .main-content.layout-editor > (.editor-toolbar?) > .editor-body > (.editor-panel-right?) */
+    flex-direction: column; /* Stack toolbar and body vertically */
+    max-width: none; /* Allow editor to take full width */
+    margin: 0; /* Remove auto margin */
+    padding: 0; /* Remove default padding, handle inside components */
+    gap: 0; /* Remove default gap */
+    /* Make the editor take available vertical space (consider header/footer) */
+    /* Option 1: Calculate height (might need adjustment based on actual header/footer) */
+     height: calc(100vh - var(--header-height, 60px) - var(--footer-height, 40px));
+     /* Option 2: Use flex property (if parent (.main-content) manages height correctly) */
+    /* display: flex; flex: 1;  <- Needs verification if .main-content is setup for this */
+    overflow: hidden; /* Prevent editor overflow issues */
+}
+
+.layout-editor .editor-toolbar {
+    flex: 0 0 auto; /* Toolbar height based on content */
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 1; /* Ensure toolbar is above panels if overlap occurs */
+}
+
+.layout-editor .editor-body {
+    flex: 1; /* Main body takes remaining vertical space */
+    display: flex; /* Arrange main area and panels horizontally */
+    flex-direction: row; /* Explicitly set direction to row */
+    min-height: 0; /* Crucial for flex item height calculation */
+    /* height: 100%; */ /* Redundant if flex: 1 works correctly in parent */
+    overflow: hidden; /* Prevent content overflow */
+}
+
+.layout-editor .editor-main-area {
+    flex: 1; /* Main area (e.g., grid) takes most horizontal space */
+    padding: var(--spacing-md);
+    overflow-y: auto; /* Allow scrolling within the main area */
+    min-width: 0;
+    background-color: var(--bg-primary); /* Give main area distinct background */
+    border-left: 1px solid var(--border-color); /* Add borders for separation */
+    border-right: 1px solid var(--border-color);
+}
+
+.layout-editor .editor-panel-left,
+.layout-editor .editor-panel-right {
+    flex: 0 0 300px; /* Fixed width for panels */
+    padding: var(--spacing-md);
+    background-color: var(--bg-secondary);
+    overflow-y: auto; /* Allow scrolling within panels */
+    transition: flex-basis 0.3s ease-in-out, padding 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    overflow-x: hidden; /* Prevent horizontal overflow during transition */
+    z-index: 0; /* Ensure panels are behind toolbar */
+    /* Panels are shown/hidden by adding/removing .collapsed via JS */
+    /* No display: none; here by default */
+}
+
+/* Define collapsed state */
+.layout-editor .editor-panel-left.collapsed,
+.layout-editor .editor-panel-right.collapsed {
+    flex-basis: 0;
+    padding-left: 0;
+    padding-right: 0;
+    border-width: 0;
+    overflow: hidden;
+    opacity: 0; /* Fade out */
+}
+
+/* Remove borders from main area when corresponding panel is collapsed */
+.layout-editor .editor-panel-left.collapsed + .editor-main-area {
+    border-left-width: 0;
+}
+.layout-editor .editor-main-area + .editor-panel-right.collapsed {
+     /* This selector might not work if right panel isn't directly adjacent */
+     /* A class on editor-body might be better if structure changes */
+}
+.layout-editor.right-panel-collapsed .editor-main-area { /* Alternative: JS adds class to body */
+    border-right-width: 0;
+}
+
+/* Ensure Gridstack container adapts within the main area */
+.layout-editor .editor-main-area .grid-stack {
+   height: 100%; /* Try to make gridstack fill the main area */
+   width: 100%;
+}

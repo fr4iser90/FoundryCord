@@ -87,10 +87,11 @@ a:hover {
 
 .main-content {
     flex: 1;
-    padding: var(--spacing-md);
-    width: 100%;
-    max-width: var(--container-max-width);
-    margin: 0 auto;
+    /* Default display flex added in layout.css */
+    /* width: 100%; */ /* Set by flex */
+    /* max-width controlled by layout type */
+    /* margin controlled by layout type */
+    /* padding controlled by layout type or kept consistent in layout.css */
 }
 
 /* Utility Classes */

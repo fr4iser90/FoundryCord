@@ -8,6 +8,7 @@ Organized in domain-specific subpackages:
 - dashboard: Dashboard UI models
 - project: Project management models
 - monitoring: System monitoring models
+- ui: General UI related models (like layouts)
 """
 from .base import Base
 
@@ -29,6 +30,9 @@ from .project import Project, Task, ProjectMember
 # Monitoring models
 from .monitoring import MetricModel, AlertModel
 
+# UI Models
+from .ui import UILayoutEntity
+
 # Export all models for convenient imports elsewhere
 __all__ = [
     # Base class
@@ -44,5 +48,7 @@ __all__ = [
     # Project models
     'Project', 'Task', 'ProjectMember',
     # Monitoring models
-    'MetricModel', 'AlertModel'
+    'MetricModel', 'AlertModel',
+    # UI Models
+    'UILayoutEntity'
 ]

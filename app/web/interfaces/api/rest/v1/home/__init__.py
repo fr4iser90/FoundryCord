@@ -1,7 +1,10 @@
-# Import the router instance directly from the refactored module
-from .overview_controller import router as home_overview_router
+# Import the router instance directly from the module
+from .overview_controller import router
 
-# Export the router so it can be included in the main API router
+overview_controller_router = router # Use a name reflecting the source
+
+
 __all__ = [
-    'home_overview_router' # Renamed export for clarity
+    'overview_controller_router', 
+    'router' 
 ] 
