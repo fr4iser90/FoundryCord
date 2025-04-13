@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.exc import SQLAlchemyError
@@ -18,7 +18,7 @@ class UILayoutRepositoryImpl(UILayoutRepository):
         self.session = session
 
     async def get_layout(self, user_id: int, page_identifier: str) -> Optional[UILayoutEntity]:
-        """Retrieves the layout for a specific user and page identifier."""
+        """Retrieves the layout entity for a specific user and page identifier."""
         try:
             result = await self.session.execute(
                 select(UILayoutEntity)
@@ -32,8 +32,34 @@ class UILayoutRepositoryImpl(UILayoutRepository):
             logger.error(f"Unexpected error retrieving layout for user {user_id}, page {page_identifier}: {e}")
             return None
 
+    async def list_layouts(self, user_id: int, guild_id: Optional[str] = None, scope: Optional[str] = None) -> List[UILayoutEntity]:
+        """Retrieves a list of layout entities based on filter criteria."""
+        try:
+            stmt = select(UILayoutEntity).filter_by(user_id=user_id)
+
+            # TODO: Implement filtering logic based on guild_id and scope
+            # This might involve parsing the page_identifier or adding dedicated columns
+            # Example placeholder logic (adjust based on actual implementation):
+            # if scope == 'guild' and guild_id:
+            #     stmt = stmt.filter(UILayoutEntity.page_identifier.like(f"guild:{guild_id}:%"))
+            # elif scope == 'user':
+            #     stmt = stmt.filter(UILayoutEntity.page_identifier.like(f"user:%")) # Assuming user-specific pages start with 'user:'
+            # elif scope == 'shared':
+            #     stmt = stmt.filter(UILayoutEntity.page_identifier.like(f"shared:%")) # Assuming shared pages start with 'shared:'
+            # else: # Default to user-specific if scope is None or unhandled
+            #     stmt = stmt.filter(UILayoutEntity.page_identifier.like(f"user:%"))
+
+            result = await self.session.execute(stmt)
+            return result.scalars().all()
+        except SQLAlchemyError as e:
+            logger.error(f"Database error listing layouts for user {user_id}, guild_id={guild_id}, scope={scope}: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"Unexpected error listing layouts for user {user_id}: {e}")
+            return []
+
     async def save_layout(self, user_id: int, page_identifier: str, layout_data: Dict[str, Any]) -> Optional[UILayoutEntity]:
-        """Saves or updates the layout for a specific user and page identifier."""
+        """Saves or updates the layout entity. Expects layout_data to include grid and lock status."""
         try:
             # Try to get the existing layout
             existing_layout = await self.get_layout(user_id, page_identifier)
@@ -82,7 +108,8 @@ class UILayoutRepositoryImpl(UILayoutRepository):
                 return True
             else:
                 logger.info(f"Layout not found for deletion for user {user_id}, page {page_identifier}. No action taken.")
-                return False
+                # Returning True because the state matches the desired outcome (layout doesn't exist)
+                return True # Changed from False to True for idempotency
         except SQLAlchemyError as e:
             logger.error(f"Database error deleting layout for user {user_id}, page {page_identifier}: {e}")
             await self.session.rollback()

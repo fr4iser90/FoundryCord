@@ -1,3 +1,4 @@
+from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +13,10 @@ def get_layout_repository(session: AsyncSession = Depends(get_web_db_session)) -
     return UILayoutRepositoryImpl(session)
 
 # Dependency to get LayoutService instance
-def get_layout_service(repo: UILayoutRepository = Depends(get_layout_repository)) -> LayoutService:
-    """Provides an instance of LayoutService with its repository dependency."""
-    return LayoutService(repo) 
+async def get_layout_service(
+    session: Annotated[AsyncSession, Depends(get_web_db_session)]
+) -> LayoutService:
+    """Dependency provider for LayoutService."""
+    repository = UILayoutRepositoryImpl(session=session)
+    service = LayoutService(layout_repository=repository)
+    return service 

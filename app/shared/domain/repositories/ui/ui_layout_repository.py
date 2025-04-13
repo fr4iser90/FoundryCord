@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 # Assuming the entity path is correct
 from app.shared.infrastructure.models.ui.ui_layout_entity import UILayoutEntity
@@ -12,7 +12,7 @@ class UILayoutRepository(ABC):
     @abstractmethod
     async def get_layout(self, user_id: int, page_identifier: str) -> Optional[UILayoutEntity]:
         """
-        Retrieves the layout for a specific user and page identifier.
+        Retrieves the layout entity for a specific user and page identifier.
 
         Args:
             user_id: The ID of the user.
@@ -24,16 +24,32 @@ class UILayoutRepository(ABC):
         pass
 
     @abstractmethod
+    async def list_layouts(self, user_id: int, guild_id: Optional[str] = None, scope: Optional[str] = None) -> List[UILayoutEntity]:
+        """
+        Retrieves a list of layout entities based on filter criteria.
+        (Implementation needs to handle filtering logic based on page_identifier format, 
+         or potential future columns like 'scope' or 'guild_id' on the entity).
+
+        Args:
+            user_id: The ID of the user requesting the list.
+            guild_id: Optional guild ID to filter by (if applicable).
+            scope: Optional scope ('guild', 'shared', 'user') to filter by (if applicable).
+
+        Returns:
+            A list of UILayoutEntity objects matching the criteria.
+        """
+        pass
+
+    @abstractmethod
     async def save_layout(self, user_id: int, page_identifier: str, layout_data: Dict[str, Any]) -> UILayoutEntity:
         """
         Saves or updates the layout for a specific user and page identifier.
-        If a layout exists, it updates the layout_data and updated_at timestamp.
-        If no layout exists, it creates a new entry.
+        The layout_data dictionary should contain the grid structure AND the is_locked status.
 
         Args:
             user_id: The ID of the user.
             page_identifier: The unique identifier for the page/context.
-            layout_data: The JSON-serializable layout data (e.g., from Gridstack).
+            layout_data: The JSON-serializable layout data including grid items and lock status.
 
         Returns:
             The saved or updated UILayoutEntity.

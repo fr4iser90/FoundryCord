@@ -1,33 +1,51 @@
 from pydantic import BaseModel, Field
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+from datetime import datetime # Import datetime
 
-# Define the structure we expect from Gridstack's save() method.
-# This might need adjustment based on the exact output of grid.save().
-# It typically includes grid items with x, y, w, h, id.
+# --- Schemas for Listing Layout Templates --- #
+
+class LayoutTemplateInfoSchema(BaseModel):
+    """Basic information about a saved layout template."""
+    layout_id: str = Field(..., description="The unique identifier for the saved layout (e.g., page_identifier).")
+    name: str = Field(..., description="A user-friendly name for the template (if implemented).")
+    # Add flags as needed - assuming they exist in the data source
+    is_shared: Optional[bool] = Field(False, description="Whether this template is shared.") 
+    is_initial: Optional[bool] = Field(False, description="Whether this is the initial snapshot.") 
+    updated_at: Optional[datetime] = Field(None, description="When the layout was last saved.")
+
+    class Config:
+        from_attributes = True # Enable ORM mode if data comes from DB models
+
+class LayoutTemplateListResponse(BaseModel):
+    """Response containing a list of available layout templates."""
+    templates: List[LayoutTemplateInfoSchema]
+
+# --- Schemas for Saving/Loading a Single Layout --- #
+
 class GridstackItem(BaseModel):
     x: int
     y: int
     w: int
-    h: int
-    id: str | int # Sometimes id can be string or int
-    # Add other potential fields like content, noResize, noMove etc. if needed
-    # Be flexible with Any for potential custom data
-    # content: str | None = None
-    # noResize: bool | None = None
-    # noMove: bool | None = None 
-    # ... any other fields Gridstack might add
-
+    h: int # Ensure h is required as per frontend validation error
+    id: str | int
+    # Keep allowing extra fields Gridstack might send
     class Config:
-        extra = 'allow' # Allow extra fields not explicitly defined
+        extra = 'allow'
 
-# The main layout payload for saving
 class UILayoutSaveSchema(BaseModel):
-    layout: List[GridstackItem] = Field(..., description="The Gridstack layout data as an array of items.")
+    """Payload sent from frontend when saving a layout."""
+    layout: List[GridstackItem] = Field(..., description="The Gridstack layout data.")
+    is_locked: bool = Field(..., description="The current lock state of the layout.")
+    # Optional: Add name if we allow naming layouts on save?
+    # name: Optional[str] = None 
 
-# The response schema when retrieving a layout
 class UILayoutResponseSchema(BaseModel):
+    """Response schema when retrieving a single layout's details."""
     page_identifier: str
-    layout: List[GridstackItem] # Return the same structure as saved
+    layout: List[GridstackItem]
+    is_locked: bool # Return lock state when loading
+    name: Optional[str] = None # Return name if available
+    updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True # Enable compatibility with ORM models if needed later, although we return dict
+        from_attributes = True
