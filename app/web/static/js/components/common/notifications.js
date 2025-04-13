@@ -52,20 +52,50 @@ const apiRequest = async (endpoint, options = {}) => {
             return null;
         }
 
-        const data = await response.json();
-        
         if (!response.ok) {
             if (response.status === 401) {
                 window.location.href = '/auth/login';
                 return;
             }
-            throw new Error(data.detail || data.message || `API request failed with status ${response.status}`);
+
+            let errorData;
+            let errorMessage = `API request failed with status ${response.status}`;
+            try {
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    errorData = await response.json();
+                    if (errorData && errorData.detail) {
+                        if (typeof errorData.detail === 'string') {
+                            errorMessage = errorData.detail;
+                        } else {
+                            errorMessage = JSON.stringify(errorData.detail);
+                        }
+                    } else if (errorData && errorData.message) {
+                        errorMessage = errorData.message;
+                    }
+                } else {
+                    errorData = await response.text();
+                    if (errorData) {
+                        errorMessage = errorData;
+                    }
+                }
+            } catch (parseError) {
+                console.warn("Could not parse error response body:", parseError);
+                try {
+                    const rawText = await response.text();
+                    if (rawText) errorMessage = rawText.substring(0, 500);
+                } catch (textError) { /* Ignore further errors */ }
+            }
+            
+            throw new Error(errorMessage);
         }
         
+        const data = await response.json();
         return data;
     } catch (error) {
         console.error("Error in apiRequest:", error);
-        showToast('error', error.message);
+        const displayMessage = (error instanceof Error) ? error.message : String(error);
+        showToast('error', displayMessage.substring(0, 500));
         throw error;
     }
 };

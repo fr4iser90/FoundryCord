@@ -160,7 +160,17 @@ export class GridManager {
         }
         console.log(`Saving layout for ${this.options.pageIdentifier}...`);
 
-        const currentLayout = this.grid.save(false); // Get only layout structure
+        // Manually construct layout data ensuring 'h' is included
+        const currentLayout = this.grid.engine.nodes.map(node => ({
+            id: node.id, 
+            x: node.x,
+            y: node.y,
+            w: node.w,
+            h: node.h, 
+            // Include other necessary properties if backend expects them (minW, minH etc.)
+            // Example: minW: node.minW, minH: node.minH
+        }));
+
         const isLocked = this.grid.opts.disableDrag;
         const payload = {
             layout: currentLayout,
@@ -180,9 +190,29 @@ export class GridManager {
             console.log(`Layout save request for ${this.options.pageIdentifier} completed.`);
          } catch (error) {
              // Catch errors not handled by apiRequest or re-thrown
-             console.error(`Failed to save layout (error caught in _saveLayout for ${this.options.pageIdentifier}):`, error.message);
-             // Display a manager-specific error if needed
-             this._displayError("Failed to save the layout changes.");
+             let errorMessage = "Failed to save the layout changes."; // Default message
+             let logMessage = error; // Default log is the raw error
+
+             if (error && typeof error === 'object') {
+                 // Try common locations for API error details
+                 if (error.response && error.response.data && error.response.data.detail) {
+                     errorMessage = `Failed to save layout: ${JSON.stringify(error.response.data.detail)}`;
+                     logMessage = errorMessage; // Log the extracted message
+                 } else if (error.message) {
+                     errorMessage = `Failed to save layout: ${error.message}`;
+                     logMessage = errorMessage; // Log the extracted message
+                 }
+                 // If still no good message, try stringifying the whole error for the log
+                 if (logMessage === error) { 
+                     try {
+                        logMessage = JSON.stringify(error);
+                     } catch (e) { /* Ignore stringify errors */ }
+                 }
+             }
+
+             console.error(`_saveLayout Error (${this.options.pageIdentifier}):`, logMessage);
+             // Display the potentially more specific error message
+             this._displayError(errorMessage);
         }
     }
 
