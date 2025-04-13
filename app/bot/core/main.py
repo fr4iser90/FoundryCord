@@ -25,6 +25,8 @@ from app.bot.core.workflows.guild_template_workflow import GuildTemplateWorkflow
 from app.bot.application.services.bot_control_service import BotControlService
 # Import the Internal API Server
 from app.bot.infrastructure.internal_api.server import InternalAPIServer
+# Import the check function
+from app.bot.core.checks import check_guild_approval
 
 logger = get_bot_logger()
 
@@ -86,7 +88,6 @@ class HomelabBot(commands.Bot):
         self.shutdown_handler = ShutdownHandler(self)
 
         # --- Initialize BotControlService --- 
-        # Pass self (the bot instance) to the service
         self.control_service = BotControlService(self)
         logger.info("BotControlService attached to bot instance.")
         # --- End Service Init --- 
@@ -95,6 +96,12 @@ class HomelabBot(commands.Bot):
         self.internal_api_server = InternalAPIServer(self)
         logger.info("InternalAPIServer initialized.")
         # --- End Internal API Init ---
+
+        # --- Register Global Check --- 
+        # Ensure any previous add_check calls referencing methods are removed
+        self.add_check(check_guild_approval) # Use the imported function
+        logger.info("Registered global check for guild approval on all commands.")
+        # --- End Global Check --- 
     
     async def on_ready(self):
         """Called when the bot is ready"""
