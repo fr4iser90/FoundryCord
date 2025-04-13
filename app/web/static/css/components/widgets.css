@@ -5,14 +5,18 @@
     margin-top: var(--spacing-xl);
 }
 
-.widget-card {
+/* Make widget card theme-specific */
+body.light-theme .widget-card,
+body.dark-theme .widget-card {
     background: var(--bg-secondary);
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
     overflow: hidden;
 }
 
-.widget-header {
+/* Make widget header theme-specific */
+body.light-theme .widget-header,
+body.dark-theme .widget-header {
     padding: var(--spacing-md);
     border-bottom: 1px solid var(--border-color);
     display: flex;
@@ -33,7 +37,9 @@
     gap: var(--spacing-sm);
 }
 
-.widget-content {
+/* Make widget content theme-specific */
+body.light-theme .widget-content,
+body.dark-theme .widget-content {
     padding: var(--spacing-md);
     background: var(--bg-secondary);
 }
@@ -43,11 +49,14 @@
     background: transparent;
 }
 
+/* Keep min-width general */
 .grid-stack > .grid-stack-item {
     min-width: 250px;
 }
 
-.grid-stack-item-content {
+/* Make grid-stack-item-content theme-specific */
+body.light-theme .grid-stack-item-content,
+body.dark-theme .grid-stack-item-content {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
@@ -55,20 +64,24 @@
 }
 
 /* Widget Placeholder */
-.grid-stack-placeholder > .placeholder-content {
+/* Make placeholder theme-specific */
+body.light-theme .grid-stack-placeholder > .placeholder-content,
+body.dark-theme .grid-stack-placeholder > .placeholder-content {
     background: var(--bg-tertiary);
     border: 2px dashed var(--border-color);
     border-radius: var(--border-radius);
 }
 
-/* Widget Dragging State */
-.widget-card.dragging {
+/* Widget Dragging State - Apply theme context */
+body.light-theme .widget-card.dragging,
+body.dark-theme .widget-card.dragging {
     opacity: 0.7;
     cursor: move;
 }
 
-/* Widget Resize Handle */
-.grid-stack-item-content .ui-resizable-handle {
+/* Widget Resize Handle - Apply theme context */
+body.light-theme .grid-stack-item-content .ui-resizable-handle,
+body.dark-theme .grid-stack-item-content .ui-resizable-handle {
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     border-radius: 50%;
@@ -78,12 +91,14 @@
     bottom: 5px;
 }
 
-/* Widget States */
-.widget-card.collapsed .widget-content {
+/* Widget States - Apply theme context */
+body.light-theme .widget-card.collapsed .widget-content,
+body.dark-theme .widget-card.collapsed .widget-content {
     display: none;
 }
 
-.widget-card.loading .widget-content {
+body.light-theme .widget-card.loading .widget-content,
+body.dark-theme .widget-card.loading .widget-content {
     opacity: 0.5;
     pointer-events: none;
 }
@@ -94,7 +109,9 @@
     gap: var(--spacing-xs);
 }
 
-.widget-control {
+/* Widget Control - Apply theme context */
+body.light-theme .widget-control,
+body.dark-theme .widget-control {
     padding: var(--spacing-xs);
     background: none;
     border: none;
@@ -103,19 +120,66 @@
     transition: color 0.2s ease;
 }
 
-.widget-control:hover {
+body.light-theme .widget-control:hover,
+body.dark-theme .widget-control:hover {
     color: var(--text-primary);
 }
 
-/* Widget Types */
-.widget-card.chart {
+/* Widget Types - Apply theme context */
+body.light-theme .widget-card.chart,
+body.dark-theme .widget-card.chart {
     min-height: 300px;
 }
 
-.widget-card.table {
+body.light-theme .widget-card.table,
+body.dark-theme .widget-card.table {
     min-height: 200px;
 }
 
-.widget-card.stats {
+body.light-theme .widget-card.stats,
+body.dark-theme .widget-card.stats {
     min-height: 150px;
+}
+
+/* --- List Styles within Widgets --- */
+
+/* Style the list container itself */
+body.light-theme .widget-content .list-group,
+body.dark-theme .widget-content .list-group {
+    background-color: transparent; /* Ensure container doesn't have its own background */
+    border-radius: var(--border-radius); /* Match card radius if needed */
+    border: none; /* Remove default border if list-group has one */
+}
+
+/* Style individual list items */
+body.light-theme .widget-content .list-group-item,
+body.dark-theme .widget-content .list-group-item {
+    background-color: var(--bg-secondary); /* Use theme secondary background */
+    color: var(--text-primary); /* Use theme primary text */
+    border-color: var(--border-color); /* Use theme border color */
+    padding: var(--spacing-sm) var(--spacing-md); /* Adjust padding as needed */
+    margin-bottom: -1px; /* Overlap borders like Bootstrap */
+    border: 1px solid var(--border-color);
+}
+
+/* Handle first and last item borders/radius */
+body.light-theme .widget-content .list-group-item:first-child,
+body.dark-theme .widget-content .list-group-item:first-child {
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
+}
+
+body.light-theme .widget-content .list-group-item:last-child,
+body.dark-theme .widget-content .list-group-item:last-child {
+    margin-bottom: 0;
+    border-bottom-left-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
+}
+
+/* Hover state for list items */
+body.light-theme .widget-content .list-group-item:hover,
+body.dark-theme .widget-content .list-group-item:hover {
+    background-color: var(--bg-tertiary); /* Use theme tertiary for hover */
+    color: var(--text-primary);
+    z-index: 1; /* Bring item forward on hover */
 }

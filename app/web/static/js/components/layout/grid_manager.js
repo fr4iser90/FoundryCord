@@ -100,6 +100,7 @@ export class GridManager {
              console.log("Initial lock button appearance set.");
         }
          console.log("GridManager initialization complete.");
+         return this.grid; // Return the initialized grid instance
     }
 
     // --- Private Helper Methods ---
@@ -387,7 +388,8 @@ export class GridManager {
                   console.warn("Skipping layout item with missing ID:", item);
                   return null;
              }
-             const title = this.options.widgetDefinitions[widgetId] || 'Widget';
+             // Access the .title property from the definition object
+             const title = this.options.widgetDefinitions[widgetId]?.title || 'Widget'; 
              const contentHTML = this._getWidgetInnerHtml(widgetId, title);
              // Combine original layout properties (x,y,w,h...) with generated content
              return { ...item, content: contentHTML };

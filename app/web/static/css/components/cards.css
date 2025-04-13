@@ -3,198 +3,240 @@
  * Base styles for all cards across the application
  */
 
-.card {
-    background-color: var(--bg-secondary) !important;
-    border: 1px solid var(--border-color) !important;
+/* Make card styles theme-specific to increase specificity over Bootstrap defaults */
+body.light-theme .card,
+body.dark-theme .card {
+    background-color: var(--bg-secondary); /* Use theme variable */
+    border: 1px solid var(--border-color); /* Use theme variable */
     border-radius: var(--border-radius);
     margin-bottom: var(--spacing-lg);
     box-shadow: var(--card-depth-shadow);
     transition: all 0.2s ease-in-out;
 }
 
-.card:hover {
+body.light-theme .card:hover,
+body.dark-theme .card:hover {
     box-shadow: var(--card-depth-shadow-hover);
     transform: translateY(-2px);
 }
 
 /* Card States */
-.card.active {
-    background-color: var(--card-active-bg) !important;
-    border-color: var(--card-active-border) !important;
+body.light-theme .card.active,
+body.dark-theme .card.active {
+    background-color: var(--card-active-bg);
+    border-color: var(--card-active-border);
     box-shadow: var(--card-highlight-glow);
 }
 
-.card.inactive {
-    background-color: var(--card-inactive-bg) !important;
-    border-color: var(--card-inactive-border) !important;
+body.light-theme .card.inactive,
+body.dark-theme .card.inactive {
+    background-color: var(--card-inactive-bg);
+    border-color: var(--card-inactive-border);
     opacity: 0.8;
 }
 
 /* Card Variations */
-.card.card-warning {
-    background-color: var(--card-warning-bg) !important;
-    border-color: var(--card-warning-border) !important;
+body.light-theme .card.card-warning,
+body.dark-theme .card.card-warning {
+    background-color: var(--card-warning-bg);
+    border-color: var(--card-warning-border);
 }
 
-.card.card-danger {
-    background-color: var(--card-danger-bg) !important;
-    border-color: var(--card-danger-border) !important;
+body.light-theme .card.card-danger,
+body.dark-theme .card.card-danger {
+    background-color: var(--card-danger-bg);
+    border-color: var(--card-danger-border);
 }
 
-.card.card-success {
-    background-color: var(--card-success-bg) !important;
-    border-color: var(--card-success-border) !important;
+body.light-theme .card.card-success,
+body.dark-theme .card.card-success {
+    background-color: var(--card-success-bg);
+    border-color: var(--card-success-border);
 }
 
-.card.card-info {
-    background-color: var(--card-info-bg) !important;
-    border-color: var(--card-info-border) !important;
+body.light-theme .card.card-info,
+body.dark-theme .card.card-info {
+    background-color: var(--card-info-bg);
+    border-color: var(--card-info-border);
 }
 
-.card.card-premium {
+body.light-theme .card.card-premium,
+body.dark-theme .card.card-premium {
     border-width: 2px;
     border-image: var(--card-premium-gradient) 1;
     box-shadow: var(--card-highlight-glow);
 }
 
-.card.card-premium:hover {
+body.light-theme .card.card-premium:hover,
+body.dark-theme .card.card-premium:hover {
     box-shadow: var(--card-depth-shadow-hover), var(--card-highlight-glow);
 }
 
 /* Card Header Variations */
-.card-header.warning {
-    border-bottom-color: var(--card-warning-border) !important;
+body.light-theme .card-header.warning,
+body.dark-theme .card-header.warning {
+    border-bottom-color: var(--card-warning-border);
 }
 
-.card-header.danger {
-    border-bottom-color: var(--card-danger-border) !important;
+body.light-theme .card-header.danger,
+body.dark-theme .card-header.danger {
+    border-bottom-color: var(--card-danger-border);
 }
 
-.card-header.success {
-    border-bottom-color: var(--card-success-border) !important;
+body.light-theme .card-header.success,
+body.dark-theme .card-header.success {
+    border-bottom-color: var(--card-success-border);
 }
 
-.card-header.info {
-    border-bottom-color: var(--card-info-border) !important;
+body.light-theme .card-header.info,
+body.dark-theme .card-header.info {
+    border-bottom-color: var(--card-info-border);
 }
 
-.card-header.premium {
+body.light-theme .card-header.premium,
+body.dark-theme .card-header.premium {
     border-image: var(--card-premium-gradient) 1;
     border-bottom-width: 2px;
 }
 
 /* Card with highlight border */
-.card.highlight {
-    border-color: var(--card-highlight-border) !important;
+body.light-theme .card.highlight,
+body.dark-theme .card.highlight {
+    border-color: var(--card-highlight-border);
     box-shadow: var(--card-highlight-glow);
 }
 
-.card.highlight:hover {
+body.light-theme .card.highlight:hover,
+body.dark-theme .card.highlight:hover {
     box-shadow: var(--card-depth-shadow-hover), var(--card-highlight-glow);
 }
 
-.card-header {
-    background-color: var(--bg-tertiary) !important;
-    border-bottom: 1px solid var(--border-color) !important;
+body.light-theme .card-header,
+body.dark-theme .card-header {
+    background-color: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
     padding: var(--spacing-md) var(--spacing-lg);
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
 }
 
-.card-header h1,
-.card-header h2,
-.card-header h3,
-.card-header h4,
-.card-header h5,
-.card-header h6 {
+body.light-theme .card-header h1,
+body.dark-theme .card-header h1,
+body.light-theme .card-header h2,
+body.dark-theme .card-header h2,
+body.light-theme .card-header h3,
+body.dark-theme .card-header h3,
+body.light-theme .card-header h4,
+body.dark-theme .card-header h4,
+body.light-theme .card-header h5,
+body.dark-theme .card-header h5,
+body.light-theme .card-header h6,
+body.dark-theme .card-header h6 {
     margin: 0;
-    color: var(--text-primary) !important;
+    color: var(--text-primary);
     font-weight: 600;
 }
 
-.card-header i {
+body.light-theme .card-header i,
+body.dark-theme .card-header i {
     font-size: 1.1em;
 }
 
-.card-body {
-    background-color: var(--bg-secondary) !important;
+body.light-theme .card-body,
+body.dark-theme .card-body {
+    background-color: var(--bg-secondary);
     padding: var(--spacing-lg);
-    color: var(--text-primary) !important;
+    color: var(--text-primary);
 }
 
-.card-footer {
-    background-color: var(--bg-secondary) !important;
-    border-top: 1px solid var(--border-color) !important;
+body.light-theme .card-footer,
+body.dark-theme .card-footer {
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
     padding: var(--spacing-md) var(--spacing-lg);
 }
 
 /* Status Cards */
-.status-card {
+body.light-theme .status-card,
+body.dark-theme .status-card {
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
     padding: var(--spacing-md);
-    background-color: var(--bg-secondary) !important;
-    border: 1px solid var(--border-color) !important;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
 }
 
-.status-card .status-indicator {
+body.light-theme .status-card .status-indicator,
+body.dark-theme .status-card .status-indicator {
     width: 8px;
     height: 8px;
     border-radius: 50%;
 }
 
-.status-card.success .status-indicator {
-    background-color: var(--success) !important;
+body.light-theme .status-card.success .status-indicator,
+body.dark-theme .status-card.success .status-indicator {
+    background-color: var(--success);
 }
 
-.status-card.warning .status-indicator {
-    background-color: var(--warning) !important;
+body.light-theme .status-card.warning .status-indicator,
+body.dark-theme .status-card.warning .status-indicator {
+    background-color: var(--warning);
 }
 
-.status-card.danger .status-indicator {
-    background-color: var(--danger) !important;
+body.light-theme .status-card.danger .status-indicator,
+body.dark-theme .status-card.danger .status-indicator {
+    background-color: var(--danger);
 }
 
 /* Card Actions */
-.card-actions {
+body.light-theme .card-actions,
+body.dark-theme .card-actions {
     display: flex;
     gap: var(--spacing-sm);
     align-items: center;
 }
 
 /* Card with Table */
-.card .table-container {
+body.light-theme .card .table-container,
+body.dark-theme .card .table-container {
     margin: calc(-1 * var(--spacing-lg));
     margin-top: 0;
     border: none;
 }
 
-.card .table-container:last-child {
+body.light-theme .card .table-container:last-child,
+body.dark-theme .card .table-container:last-child {
     margin-bottom: calc(-1 * var(--spacing-lg));
 }
 
 /* Card Hover Effects */
-.card.hoverable:hover {
-    border-color: var(--border-hover) !important;
+body.light-theme .card.hoverable:hover,
+body.dark-theme .card.hoverable:hover {
+    border-color: var(--border-hover);
     box-shadow: var(--shadow-md);
 }
 
 /* Responsive Card Adjustments */
 @media (max-width: 768px) {
-    .card {
+    body.light-theme .card,
+    body.dark-theme .card {
         margin-bottom: var(--spacing-md);
     }
 
-    .card-header,
-    .card-body,
-    .card-footer {
+    body.light-theme .card-header,
+    body.dark-theme .card-header,
+    body.light-theme .card-body,
+    body.dark-theme .card-body,
+    body.light-theme .card-footer,
+    body.dark-theme .card-footer {
         padding: var(--spacing-md);
     }
 
-    .status-card {
+    body.light-theme .status-card,
+    body.dark-theme .status-card {
         flex-direction: column;
         align-items: flex-start;
         gap: var(--spacing-sm);

@@ -5,6 +5,10 @@
 {% block extra_css %}
 {# Add Gridstack CSS #}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack.min.css"/>
+<link rel="stylesheet" href="{{ url_for('static', path='css/components/widgets.css') }}">
+{# Add jsTree default theme CSS #}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/themes/default/style.min.css" />
+{# Load editor-specific CSS #}
 <link rel="stylesheet" href="{{ url_for('static', path='css/views/guild/designer.css') }}">
 {% endblock %}
 
@@ -79,6 +83,10 @@
 {% block extra_js %}
 {# Include Gridstack JS #}
 <script src="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack-all.js"></script>
+{# Include jQuery (dependency for jsTree) #}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+{# Include jsTree JS #}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/jstree.min.js"></script>
 {# Include the JavaScript file for this page (using /views/ path and type="module") #}
 <script type="module" src="{{ url_for('static', path='js/views/guild/designer/index.js') }}"></script>
 {% endblock %}

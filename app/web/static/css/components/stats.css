@@ -6,7 +6,9 @@
     margin-bottom: var(--spacing-xl);
 }
 
-.stat-card {
+/* Make stat card theme-specific */
+body.light-theme .stat-card,
+body.dark-theme .stat-card {
     background: var(--bg-secondary);
     padding: var(--spacing-lg);
     border-radius: var(--border-radius);
@@ -17,7 +19,8 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.stat-card:hover {
+body.light-theme .stat-card:hover,
+body.dark-theme .stat-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px var(--bg-overlay);
 }

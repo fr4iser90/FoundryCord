@@ -84,3 +84,14 @@
    height: 100%; /* Try to make gridstack fill the main area */
    width: 100%;
 }
+
+/* Style for PRE tags within the properties panel */
+.layout-editor .editor-panel-right pre {
+    background-color: var(--bg-tertiary) !important; /* Use theme tertiary background and override bg-light */
+    color: var(--text-secondary) !important;       /* Use theme secondary text and override bg-light */
+    border: 1px solid var(--border-color);
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius);
+    white-space: pre-wrap; /* Allow wrapping */
+    word-break: break-all; /* Break long lines */
+}

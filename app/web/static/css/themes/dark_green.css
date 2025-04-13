@@ -1,0 +1,197 @@
+.dark-green-theme {
+    /* Core Colors - Green Palette */
+    --primary: #2ECC71; /* Emerald Green */
+    --primary-rgb: 46, 204, 113;
+    --secondary: #1F633A; /* Dark Green */
+    --secondary-rgb: 31, 99, 58;
+    --success: #2ECC71; /* Use Primary */
+    --success-rgb: 46, 204, 113;
+    --danger: #E74C3C; /* Keep contrast */
+    --danger-rgb: 231, 76, 60;
+    --warning: #F1C40F; /* Keep contrast */
+    --warning-rgb: 241, 196, 15;
+    --info: #3498DB; /* Keep contrast */
+    --info-rgb: 52, 152, 219;
+
+    /* Card Enhancement Variables */
+    --card-depth-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* Darker shadow */
+    --card-depth-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.5); /* Darker shadow hover */
+    --card-highlight-border: rgba(46, 204, 113, 0.5); /* Green highlight */
+    --card-highlight-glow: 0 0 8px rgba(46, 204, 113, 0.2); /* Green glow */
+    --card-active-bg: #1F633A; /* Dark green active */
+    --card-active-border: var(--primary);
+    --card-inactive-bg: #162B1F; /* Very dark green inactive */
+    --card-inactive-border: #2C4E3A;
+    --card-warning-bg: rgba(241, 196, 15, 0.1);
+    --card-warning-border: var(--warning);
+    --card-danger-bg: rgba(231, 76, 60, 0.1);
+    --card-danger-border: var(--danger);
+    --card-success-bg: rgba(46, 204, 113, 0.1); /* Green success */
+    --card-success-border: var(--success);
+    --card-info-bg: rgba(52, 152, 219, 0.1);
+    --card-info-border: var(--info);
+    --card-premium-gradient: linear-gradient(45deg, #FF73FA 0%, #73A9FF 50%, #73FFE6 100%); /* Keep Premium */
+    --card-premium-border: rgba(255, 115, 250, 0.5);
+
+    /* Background Colors */
+    --bg-primary: #1E2D24; /* Very Dark Green */
+    --bg-secondary: #283F31; /* Dark Desaturated Green */
+    --bg-tertiary: #1C3023; /* Darker Desaturated Green */
+    --bg-accent: var(--secondary); /* Use secondary dark green */
+    --bg-floating: #121E17; /* Darkest Green */
+    --bg-overlay: rgba(0, 0, 0, 0.4); /* Darker overlay */
+
+    /* Text Colors */
+    --text-normal: #E0E0E0;
+    --text-muted: #8F9E95; /* Muted Green-Gray */
+    --text-link: var(--primary); /* Bright green link */
+    --text-positive: var(--success); /* Bright green positive */
+    --text-warning: #F1C40F; /* Yellow */
+    --text-danger: #E74C3C; /* Red */
+    --text-brand: var(--primary); /* Bright green brand */
+    --text-primary: #F5F5F5;
+    --text-secondary: #B0C4B8; /* Lighter Green-Gray */
+
+    /* Border Colors */
+    --border-primary: #375944; /* Muted Green */
+    --border-secondary: #4A6F58; /* Lighter Muted Green */
+    --border-tertiary: #1C3023; /* Same as bg-tertiary */
+    --border-color: #4A6F58; /* Default border */
+    --border-radius: 4px;
+
+    /* Component Colors */
+    --channel-text: #8F9E95;
+    --channel-text-active: #FFFFFF;
+    --channel-bg: var(--bg-secondary);
+    --channel-bg-active: #375944; /* Muted green active channel */
+    
+    /* Interactive Colors */
+    --interactive-normal: #B0C4B8;
+    --interactive-hover: #E0E0E0;
+    --interactive-active: #FFFFFF;
+    --interactive-muted: #4A6F58;
+
+    /* Component Specific */
+    --navbar-bg: var(--bg-secondary);
+    --navbar-text: var(--text-primary);
+    --navbar-border: var(--border-secondary);
+
+    --sidebar-bg: var(--bg-tertiary);
+    --sidebar-text: var(--text-secondary);
+    --sidebar-hover: var(--primary); /* Bright green hover */
+
+    --footer-bg: var(--bg-secondary);
+    --footer-text: var(--text-secondary);
+    --footer-link: var(--primary); /* Bright green link */
+    --footer-link-hover: #27AE60; /* Slightly darker green */
+
+    /* Card Styles */
+    --card-bg: var(--bg-secondary);
+    --card-header-bg: var(--bg-tertiary);
+    --card-border: var(--border-secondary);
+    --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --card-hover-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    --card-hover-transform: translateY(-2px);
+
+    /* Stats Card */
+    --stat-card-bg: var(--bg-secondary);
+    --stat-card-border: var(--border-secondary);
+    --stat-icon-bg: var(--bg-tertiary);
+    --stat-hover-shadow: var(--card-hover-shadow);
+
+    /* Widget Card */
+    --widget-card-bg: var(--bg-secondary);
+    --widget-header-bg: var(--bg-tertiary);
+    --widget-border: var(--border-secondary);
+    --widget-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --widget-hover-shadow: var(--card-hover-shadow);
+
+    /* Table Styles */
+    --table-bg: var(--bg-secondary);
+    --table-header-bg: var(--bg-tertiary);
+    --table-border: var(--border-primary);
+    --table-hover-bg: var(--bg-tertiary);
+    --table-stripe-bg: var(--bg-tertiary);
+
+    /* Form Controls */
+    --input-bg: var(--bg-tertiary);
+    --input-border: var(--border-secondary);
+    --input-text: var(--text-primary);
+    --input-placeholder: var(--text-muted);
+    --input-focus-border: var(--primary); /* Green focus */
+    --input-focus-shadow: 0 0 0 0.2rem rgba(46, 204, 113, 0.25); /* Green shadow */
+
+    /* Button Colors */
+    --btn-primary-bg: var(--primary); /* Bright Green */
+    --btn-primary-text: #1C3023; /* Dark green text */
+    --btn-primary-hover: #27AE60; /* Darker green */
+    --btn-primary-active: #1E8449; /* Even darker green */
+    
+    --btn-secondary-bg: var(--secondary); /* Dark Green */
+    --btn-secondary-text: #E0E0E0; /* Light text */
+    --btn-secondary-hover: #2C4E3A; /* Slightly lighter dark green */
+    --btn-secondary-active: #375944; /* Muted green */
+
+    /* Dropdown Styles */
+    --dropdown-bg: var(--bg-floating);
+    --dropdown-border: var(--border-secondary);
+    --dropdown-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --dropdown-hover-bg: var(--bg-tertiary);
+    --dropdown-item-color: var(--text-secondary);
+    --dropdown-item-hover-color: var(--text-primary);
+
+    /* Server Selector */
+    --server-selector-bg: var(--bg-tertiary);
+    --server-selector-border: var(--border-secondary);
+    --server-selector-hover: var(--bg-secondary);
+    --server-icon-border: var(--border-secondary);
+    --server-icon-bg: var(--bg-tertiary);
+
+    /* User Menu */
+    --user-menu-bg: var(--bg-secondary);
+    --user-menu-hover: var(--bg-tertiary);
+    --user-avatar-border: var(--primary); /* Bright green border */
+    --user-status-bg: var(--bg-tertiary);
+
+    /* Badge Colors */
+    --badge-bg: var(--bg-tertiary);
+    --badge-text: var(--text-primary);
+    --badge-border: var(--border-secondary);
+    --badge-success: var(--success); /* Bright green */
+    --badge-danger: var(--danger);
+    --badge-warning: var(--warning);
+    --badge-info: var(--info);
+
+    /* Scrollbar */
+    --scrollbar-bg: var(--bg-tertiary);
+    --scrollbar-thumb: var(--text-muted);
+    --scrollbar-thumb-hover: var(--text-secondary);
+
+    /* Warning Colors */
+    --warning-bg: rgba(241, 196, 15, 0.1);
+    --warning-text: #F1C40F;
+    --warning-border: #F1C40F;
+
+    /* Alert Colors */
+    --alert-warning-bg: #3d381a; /* Dark Yellow */
+    --alert-warning-text: #F1C40F;
+    --alert-warning-border: #F1C40F;
+    
+    --alert-success-bg: #1e3a28; /* Dark Green */
+    --alert-success-text: #2ECC71;
+    --alert-success-border: #2ECC71;
+    
+    --alert-danger-bg: #3a1e1e; /* Dark Red */
+    --alert-danger-text: #E74C3C;
+    --alert-danger-border: #E74C3C;
+    
+    --alert-info-bg: #1e2a3a; /* Dark Blue */
+    --alert-info-text: #3498DB;
+    --alert-info-border: #3498DB;
+
+    /* Status Colors */
+    --status-active: var(--success); /* Bright Green */
+    --status-inactive: var(--danger);
+    --status-pending: var(--warning);
+    --status-blocked: var(--bg-tertiary);
+} 

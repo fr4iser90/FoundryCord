@@ -1,85 +1,134 @@
 /* Table Component Base */
-.table-container {
-    background-color: var(--bg-secondary) !important;
-    border: 1px solid var(--border-color) !important;
+/* Make table styles theme-specific to increase specificity over Bootstrap */
+body.light-theme .table-container,
+body.dark-theme .table-container {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     margin-bottom: var(--spacing-lg);
     overflow-x: auto;
 }
 
 /* Table Base */
-.table {
+body.light-theme .table,
+body.dark-theme .table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    background-color: var(--bg-secondary) !important;
-    color: var(--text-primary) !important;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
 }
 
 /* Table Header */
-.table thead th,
-.table th {
-    background-color: var(--bg-tertiary) !important;
-    color: var(--text-primary) !important;
-    border-bottom: 1px solid var(--border-color) !important;
+body.light-theme .table thead th,
+body.light-theme .table th,
+body.dark-theme .table thead th,
+body.dark-theme .table th {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
     padding: var(--spacing-md);
     font-weight: 600;
     text-align: left;
     white-space: nowrap;
 }
 
-/* Table Body */
-.table tbody tr {
-    background-color: var(--bg-secondary) !important;
+/* Table Body - Increase Specificity */
+body.light-theme .card .table tbody tr,
+body.dark-theme .card .table tbody tr {
+    background-color: var(--bg-secondary);
 }
 
-.table td {
+/* Table Cell - Apply theme background explicitly */
+body.light-theme .card .table td,
+body.dark-theme .card .table td {
     padding: var(--spacing-md);
-    border-bottom: 1px solid var(--border-color) !important;
-    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
     vertical-align: middle;
+    background-color: var(--bg-tertiary); 
 }
 
-/* Table Row Hover */
-.table-hover tbody tr:hover {
-    background-color: var(--bg-tertiary) !important;
+/* Table Row Hover - Increase Specificity */
+body.light-theme .card .table-hover tbody tr:hover,
+body.dark-theme .card .table-hover tbody tr:hover {
+    background-color: var(--bg-tertiary);
 }
 
-/* Table Row States */
-.table tr.active {
-    background-color: var(--bg-tertiary) !important;
+/* Table Row States - Increase Specificity */
+body.light-theme .card .table tr.active,
+body.dark-theme .card .table tr.active {
+    background-color: var(--bg-tertiary);
 }
 
-.table tr.selected {
-    background-color: rgba(var(--primary-rgb), 0.1) !important;
+body.light-theme .card .table tr.selected,
+body.dark-theme .card .table tr.selected {
+    background-color: rgba(var(--primary-rgb), 0.1);
 }
 
-/* Table in Card */
-.card .table {
+/* Table Striping - Add theme/card specific rules */
+body.light-theme .card .table-striped > tbody > tr:nth-of-type(odd),
+body.dark-theme .card .table-striped > tbody > tr:nth-of-type(odd) {
+    background-color: var(--table-stripe-bg);
+}
+/* Also apply striped background directly to TD for higher specificity if needed */
+body.light-theme .card .table-striped > tbody > tr:nth-of-type(odd) > td,
+body.dark-theme .card .table-striped > tbody > tr:nth-of-type(odd) > td {
+    background-color: var(--table-stripe-bg);
+}
+
+/* Ensure even rows in striped tables default correctly within cards */
+body.light-theme .card .table-striped > tbody > tr:nth-of-type(even) {
+    background-color: var(--bg-secondary);
+}
+/* Use --bg-primary for dark theme even rows for better contrast */
+body.dark-theme .card .table-striped > tbody > tr:nth-of-type(even) {
+    background-color: var(--bg-primary);
+}
+/* Also apply even background directly to TD for higher specificity if needed */
+body.light-theme .card .table-striped > tbody > tr:nth-of-type(even) > td {
+    background-color: var(--bg-secondary);
+}
+/* Use --bg-primary for dark theme even rows for better contrast */
+body.dark-theme .card .table-striped > tbody > tr:nth-of-type(even) > td {
+    background-color: var(--bg-primary);
+}
+
+/* Table in Card - Keep rules for the table element itself */
+body.light-theme .card .table,
+body.dark-theme .card .table {
     margin-bottom: 0;
 }
 
-.card .table td:first-child,
-.card .table th:first-child {
+body.light-theme .card .table td:first-child,
+body.light-theme .card .table th:first-child,
+body.dark-theme .card .table td:first-child,
+body.dark-theme .card .table th:first-child {
     padding-left: var(--spacing-lg);
 }
 
-.card .table td:last-child,
-.card .table th:last-child {
+body.light-theme .card .table td:last-child,
+body.light-theme .card .table th:last-child,
+body.dark-theme .card .table td:last-child,
+body.dark-theme .card .table th:last-child {
     padding-right: var(--spacing-lg);
 }
 
 /* Responsive Table */
 @media (max-width: 768px) {
-    .table-container {
+    body.light-theme .table-container,
+    body.dark-theme .table-container {
         margin: 0 calc(-1 * var(--spacing-md));
         border-radius: 0;
-        border-left: none !important;
-        border-right: none !important;
+        /* Removed important borders */
+        border-left: none;
+        border-right: none;
     }
 
-    .table td,
-    .table th {
+    body.light-theme .table td,
+    body.light-theme .table th,
+    body.dark-theme .table td,
+    body.dark-theme .table th {
         padding: var(--spacing-sm);
     }
 } 

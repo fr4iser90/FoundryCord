@@ -1,54 +1,54 @@
-.light-theme {
-    /* Core Colors */
-    --primary: #5865F2;
-    --primary-rgb: 88, 101, 242;
-    --secondary: #747F8D;
-    --secondary-rgb: 116, 127, 141;
-    --success: #3BA55C;
-    --success-rgb: 59, 165, 92;
-    --danger: #ED4245;
-    --danger-rgb: 237, 66, 69;
-    --warning: #FAA61A;
-    --warning-rgb: 250, 166, 26;
-    --info: #5865F2;
-    --info-rgb: 88, 101, 242;
+.light-green-theme {
+    /* Core Colors - Green Palette */
+    --primary: #2ECC71; /* Emerald Green */
+    --primary-rgb: 46, 204, 113;
+    --secondary: #A8D5BA; /* Light Green-Gray */
+    --secondary-rgb: 168, 213, 186;
+    --success: #2ECC71; /* Use Primary */
+    --success-rgb: 46, 204, 113;
+    --danger: #E74C3C; /* Keep contrast */
+    --danger-rgb: 231, 76, 60;
+    --warning: #F1C40F; /* Keep contrast */
+    --warning-rgb: 241, 196, 15;
+    --info: #3498DB; /* Keep contrast */
+    --info-rgb: 52, 152, 219;
 
     /* Card Enhancement Variables */
     --card-depth-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     --card-depth-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.15);
-    --card-highlight-border: rgba(88, 101, 242, 0.5);
-    --card-highlight-glow: 0 0 12px rgba(88, 101, 242, 0.15);
+    --card-highlight-border: rgba(46, 204, 113, 0.5); /* Green highlight */
+    --card-highlight-glow: 0 0 12px rgba(46, 204, 113, 0.15); /* Green glow */
     --card-active-bg: #FFFFFF;
-    --card-active-border: #5865F2;
+    --card-active-border: var(--primary); /* Green border */
     --card-inactive-bg: #F2F3F5;
     --card-inactive-border: #E3E5E8;
-    --card-warning-bg: rgba(250, 166, 26, 0.1);
-    --card-warning-border: #FAA61A;
-    --card-danger-bg: rgba(237, 66, 69, 0.1);
-    --card-danger-border: #ED4245;
-    --card-success-bg: rgba(59, 165, 92, 0.1);
-    --card-success-border: #3BA55C;
-    --card-info-bg: rgba(88, 101, 242, 0.1);
-    --card-info-border: #5865F2;
-    --card-premium-gradient: linear-gradient(45deg, #FF73FA 0%, #73A9FF 50%, #73FFE6 100%);
+    --card-warning-bg: rgba(241, 196, 15, 0.1);
+    --card-warning-border: var(--warning);
+    --card-danger-bg: rgba(231, 76, 60, 0.1);
+    --card-danger-border: var(--danger);
+    --card-success-bg: rgba(46, 204, 113, 0.1); /* Green success */
+    --card-success-border: var(--success);
+    --card-info-bg: rgba(52, 152, 219, 0.1);
+    --card-info-border: var(--info);
+    --card-premium-gradient: linear-gradient(45deg, #FF73FA 0%, #73A9FF 50%, #73FFE6 100%); /* Keep Premium */
     --card-premium-border: rgba(255, 115, 250, 0.5);
 
     /* Background Colors */
     --bg-primary: #FFFFFF;
     --bg-secondary: #F2F3F5;
     --bg-tertiary: #E3E5E8;
-    --bg-accent: #747F8D;
+    --bg-accent: var(--secondary); /* Use secondary green-gray */
     --bg-floating: #FFFFFF;
     --bg-overlay: rgba(0, 0, 0, 0.1);
 
     /* Text Colors */
     --text-normal: #2E3338;
     --text-muted: #747F8D;
-    --text-link: #0068E0;
-    --text-positive: #3BA55C;
-    --text-warning: #FAA61A;
-    --text-danger: #ED4245;
-    --text-brand: #5865F2;
+    --text-link: var(--primary); /* Green link */
+    --text-positive: var(--success); /* Green positive */
+    --text-warning: #D39E00; /* Darker Yellow */
+    --text-danger: var(--danger);
+    --text-brand: var(--primary); /* Green brand */
     --text-primary: #2E3338;
     --text-secondary: #747F8D;
 
@@ -78,12 +78,12 @@
 
     --sidebar-bg: var(--bg-secondary);
     --sidebar-text: var(--text-secondary);
-    --sidebar-hover: var(--primary);
+    --sidebar-hover: var(--primary); /* Green hover */
 
     --footer-bg: var(--bg-primary);
     --footer-text: var(--text-secondary);
-    --footer-link: var(--primary);
-    --footer-link-hover: #4752c4;
+    --footer-link: var(--primary); /* Green link */
+    --footer-link-hover: #27AE60; /* Darker green */
 
     /* Card Styles */
     --card-bg: var(--bg-primary);
@@ -118,19 +118,19 @@
     --input-border: var(--border-color);
     --input-text: var(--text-primary);
     --input-placeholder: var(--text-muted);
-    --input-focus-border: var(--primary);
-    --input-focus-shadow: 0 0 0 0.2rem rgba(88, 101, 242, 0.25);
+    --input-focus-border: var(--primary); /* Green focus */
+    --input-focus-shadow: 0 0 0 0.2rem rgba(46, 204, 113, 0.25); /* Green shadow */
 
     /* Button Colors */
-    --btn-primary-bg: var(--primary);
+    --btn-primary-bg: var(--primary); /* Green */
     --btn-primary-text: white;
-    --btn-primary-hover: #4752c4;
-    --btn-primary-active: #3c45a5;
+    --btn-primary-hover: #27AE60; /* Darker green */
+    --btn-primary-active: #1E8449; /* Even darker green */
     
-    --btn-secondary-bg: var(--secondary);
-    --btn-secondary-text: white;
-    --btn-secondary-hover: #5a6268;
-    --btn-secondary-active: #4e555b;
+    --btn-secondary-bg: var(--secondary); /* Light Green-Gray */
+    --btn-secondary-text: #333; /* Dark text for contrast */
+    --btn-secondary-hover: #95C9AE; /* Slightly darker green-gray */
+    --btn-secondary-active: #81BBA0; /* Even darker green-gray */
 
     /* Dropdown Styles */
     --dropdown-bg: var(--bg-primary);
@@ -150,14 +150,14 @@
     /* User Menu */
     --user-menu-bg: var(--bg-primary);
     --user-menu-hover: var(--bg-secondary);
-    --user-avatar-border: var(--primary);
+    --user-avatar-border: var(--primary); /* Green border */
     --user-status-bg: var(--bg-secondary);
 
     /* Badge Colors */
     --badge-bg: var(--bg-secondary);
     --badge-text: var(--text-primary);
     --badge-border: var(--border-color);
-    --badge-success: var(--success);
+    --badge-success: var(--success); /* Green */
     --badge-danger: var(--danger);
     --badge-warning: var(--warning);
     --badge-info: var(--info);
@@ -168,16 +168,16 @@
     --scrollbar-thumb-hover: var(--text-secondary);
 
     /* Warning Colors */
-    --warning-bg: rgba(250, 166, 26, 0.1);
+    --warning-bg: rgba(241, 196, 15, 0.1);
     --warning-text: #856404;
-    --warning-border: #ffd700;
+    --warning-border: #ffeeba; /* Match alert */
 
     /* Alert Colors */
     --alert-warning-bg: #fff3cd;
     --alert-warning-text: #856404;
     --alert-warning-border: #ffeeba;
     
-    --alert-success-bg: #d4edda;
+    --alert-success-bg: #d4edda; /* Keep light bootstrap green */
     --alert-success-text: #155724;
     --alert-success-border: #c3e6cb;
     
@@ -190,8 +190,8 @@
     --alert-info-border: #bee5eb;
 
     /* Status Colors */
-    --status-active: var(--success);
+    --status-active: var(--success); /* Green */
     --status-inactive: var(--danger);
     --status-pending: var(--warning);
     --status-blocked: var(--bg-tertiary);
-}
+} 

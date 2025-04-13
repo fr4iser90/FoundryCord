@@ -1,6 +1,11 @@
 import { GridManager } from '/static/js/components/layout/grid_manager.js';
 // Keep showToast and apiRequest available if needed directly, though GridManager uses them
 import { apiRequest, showToast } from '/static/js/components/common/notifications.js';
+// Import the specific widget initializer
+import { initializeStructureTree } from './widgets/structure_tree.js';
+import { initializeTemplateInfo } from './widgets/template_info.js';
+import { initializeCategoriesList } from './widgets/categories_list.js';
+import { initializeChannelsList } from './widgets/channels_list.js';
 
 /**
  * Extracts the Guild ID from the current URL path.
@@ -40,118 +45,58 @@ async function fetchGuildTemplate(guildId) {
 }
 
 /**
- * Populates the content areas of widgets specific to the Guild Designer page.
- * This is passed as a callback to the GridManager.
- * @param {object} templateData - The structured template data (categories, channels etc.).
+ * Main population function called by GridManager after widgets are added/loaded.
+ * Delegates to specific widget initializers.
+ * @param {object} templateData - The structured template data.
+ * @param {string|null} targetWidgetId - ID of the specific widget to populate, or null for all.
+ * @param {HTMLElement|null} targetElement - The content element of the specific widget, or null.
  */
-function populateGuildDesignerWidgets(templateData) {
-    console.log("Populating Guild Designer widget contents:", templateData);
-    if (!templateData) {
-        console.error("Template data is missing, cannot populate designer widgets.");
-        return;
-    }
+function populateGuildDesignerWidgets(templateData, targetWidgetId = null, targetElement = null) {
+    console.log(`[Index] Populating widget content. Target: ${targetWidgetId || 'all'}`);
+    const guildId = getGuildIdFromUrl(); // Needed for links
 
-    const guildId = getGuildIdFromUrl();
+    const widgetsToPopulate = targetWidgetId ? [targetWidgetId] : [
+        'template-info', 
+        'categories', // Categories List Widget
+        'channels',   // Channels List Widget
+        'structure-tree' // Structure Tree Widget
+    ];
 
-    // --- Populate Template Info ---
-    const infoContentEl = document.getElementById('widget-content-template-info');
-    if (infoContentEl) {
-        infoContentEl.innerHTML = `
-            <h5>${templateData.template_name || 'Unnamed Template'}</h5>
-            <p class="mb-0"><small class="text-muted">Created: ${templateData.created_at ? new Date(templateData.created_at).toLocaleString() : 'N/A'}</small></p>
-        `;
-    } else {
-        console.warn("Content area for template-info widget not found.");
-    }
-
-    // --- Populate Categories ---
-    const categoriesById = {}; // Build map for channel population
-    const categoriesContentEl = document.getElementById('widget-content-categories');
-    if (categoriesContentEl) {
-        if (Array.isArray(templateData.categories) && templateData.categories.length > 0) {
-            templateData.categories.sort((a, b) => a.position - b.position);
-            const listItems = templateData.categories.map(cat => {
-                 if (cat && cat.id) { categoriesById[cat.id] = cat; } // Populate map
-                return `
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-folder me-2"></i> ${cat.name || 'Unnamed Category'}</span>
-                        <span class="badge bg-secondary rounded-pill">Pos: ${cat.position !== undefined ? cat.position : 'N/A'}</span>
-                    </li>
-                `;
-            }).join('');
-            categoriesContentEl.innerHTML = `<ul class="list-group list-group-flush">${listItems}</ul>`;
-
-            // Ensure Manage link exists (GridManager might create header, but not link)
-            const header = categoriesContentEl.closest('.grid-stack-item-content')?.querySelector('.widget-header');
-             if (header && guildId && !header.querySelector('a')) {
-                const manageLink = document.createElement('a');
-                manageLink.href = `/guild/${guildId}/designer/categories`;
-                manageLink.className = 'btn btn-sm btn-outline-primary ms-auto'; // Use ms-auto for right alignment
-                manageLink.textContent = 'Manage';
-                 manageLink.style.marginLeft = 'auto'; // Ensure it aligns right
-                header.appendChild(manageLink);
-            }
-
-        } else {
-            categoriesContentEl.innerHTML = '<p class="text-muted p-3">No categories defined.</p>';
+    widgetsToPopulate.forEach(widgetId => {
+        const contentElement = targetElement && targetWidgetId === widgetId 
+            ? targetElement 
+            : document.getElementById(`widget-content-${widgetId}`);
+        
+        if (!contentElement) {
+            console.warn(`[Index] Content container for widget ID '${widgetId}' not found.`);
+            return;
         }
-    } else {
-        console.warn("Content area for categories widget not found.");
-    }
 
-    // --- Populate Channels ---
-    const channelsContentEl = document.getElementById('widget-content-channels');
-    if (channelsContentEl) {
-        if (Array.isArray(templateData.channels) && templateData.channels.length > 0) {
-            // Sort using the categoriesById map built above
-            templateData.channels.sort((a, b) => {
-                 const parentA = a?.parent_category_template_id;
-                 const parentB = b?.parent_category_template_id;
-                 const catA = categoriesById[parentA];
-                 const catB = categoriesById[parentB];
-                 const posA = parentA === null ? Infinity : (catA ? catA.position : Infinity - 1);
-                 const posB = parentB === null ? Infinity : (catB ? catB.position : Infinity - 1);
-                 if (posA !== posB) return posA - posB;
-                 const channelPosA = typeof a?.position === 'number' ? a.position : Infinity;
-                 const channelPosB = typeof b?.position === 'number' ? b.position : Infinity;
-                 return channelPosA - channelPosB;
-            });
-            const listItems = templateData.channels.map(chan => {
-                if (!chan) return '';
-                const category = categoriesById[chan.parent_category_template_id];
-                const categoryName = category ? category.name : 'Uncategorized';
-                let channelIcon = 'fa-question-circle';
-                if (chan.type === 'GUILD_TEXT') channelIcon = 'fa-hashtag';
-                else if (chan.type === 'GUILD_VOICE') channelIcon = 'fa-volume-up';
-                 return `
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>
-                            <i class="fas ${channelIcon} me-2"></i>
-                            ${chan.name || 'Unnamed Channel'} <small class="text-muted">(${categoryName})</small>
-                        </span>
-                        <span class="badge bg-secondary rounded-pill">Pos: ${chan.position !== undefined ? chan.position : 'N/A'}</span>
-                    </li>
-                `;
-            }).join('');
-            channelsContentEl.innerHTML = `<ul class="list-group list-group-flush">${listItems}</ul>`;
-
-            // Ensure Manage link exists
-            const header = channelsContentEl.closest('.grid-stack-item-content')?.querySelector('.widget-header');
-             if (header && guildId && !header.querySelector('a')) {
-                const manageLink = document.createElement('a');
-                manageLink.href = `/guild/${guildId}/designer/channels`;
-                manageLink.className = 'btn btn-sm btn-outline-primary ms-auto';
-                manageLink.textContent = 'Manage';
-                 manageLink.style.marginLeft = 'auto';
-                header.appendChild(manageLink);
+        try {
+            switch (widgetId) {
+                case 'template-info':
+                    initializeTemplateInfo(templateData, contentElement);
+                    break;
+                case 'categories':
+                    initializeCategoriesList(templateData, contentElement, guildId);
+                    break;
+                case 'channels':
+                    initializeChannelsList(templateData, contentElement, guildId);
+                    break;
+                case 'structure-tree':
+                    // The tree initializes itself via its dedicated function called after grid init
+                    // We might just put a placeholder here if needed, or do nothing.
+                    // initializeStructureTree(templateData); // DON'T call here, called separately
+                    contentElement.innerHTML = 'Tree is initializing...'; // Placeholder
+                    break;
+                default:
+                    console.warn(`[Index] Unknown widget ID for population: ${widgetId}`);
             }
-        } else {
-            channelsContentEl.innerHTML = '<p class="text-muted p-3">No channels defined.</p>';
+        } catch (error) {
+             console.error(`[Index] Error populating widget ${widgetId}:`, error);
+             if(contentElement) contentElement.innerHTML = `<p class="text-danger p-3">Error loading content.</p>`;
         }
-    } else {
-        console.warn("Content area for channels widget not found.");
-    }
-     console.log("Finished populating Guild Designer widgets.");
+    });
 }
 
 /**
@@ -203,10 +148,10 @@ function debounce(func, wait) {
  */
 async function saveLayout(grid, pageIdentifier) {
     if (!grid) {
-        console.error("Cannot save layout: Grid instance is not available.");
+        console.error("[Index] Cannot save layout: Grid instance is not available.");
         return;
     }
-    console.log(`Debounced save triggered for ${pageIdentifier}`);
+    console.log(`[Index] Debounced save triggered for ${pageIdentifier}`);
     
     // Get the current layout structure from Gridstack
     // grid.save(false) saves only layout structure (x, y, w, h, id), not content
@@ -222,7 +167,7 @@ async function saveLayout(grid, pageIdentifier) {
     };
 
     const apiUrl = `/api/v1/layouts/${pageIdentifier}`;
-    console.log(`Saving layout to: ${apiUrl}`);
+    console.log(`[Index] Saving layout to: ${apiUrl}`);
 
     try {
         // Use apiRequest (which should handle errors and toasts implicitly)
@@ -235,11 +180,11 @@ async function saveLayout(grid, pageIdentifier) {
         });
         // If we reach here, the request was successful (status 2xx)
         showToast('success', 'Layout saved successfully!');
-        console.log("Layout save request successful (2xx status).");
+        console.log("[Index] Layout save request successful.");
     } catch (error) {
         // Generic error handling here, as apiRequest now handles 204 and logs/toasts other errors.
         // The error is already logged by apiRequest's catch block.
-        console.error("Failed to save layout (error caught in saveLayout):", error.message);
+        console.error("[Index] Failed to save layout:", error.message);
         // Optionally display a user-facing error message on the page if apiRequest's toast isn't enough.
         // displayErrorMessage("Failed to save the layout. Please try again.");
     }
@@ -660,121 +605,119 @@ function populateWidgetContents(templateData) {
  * Sets up the event listeners for the panel toggle buttons.
  */
 function setupPanelToggles() {
-    console.log("[Debug] Setting up panel toggles..."); // DEBUG
+    console.log("[Index] Setting up panel toggles...");
     const leftPanelBtn = document.getElementById('toggle-left-panel-btn');
     const rightPanelBtn = document.getElementById('toggle-right-panel-btn');
     const leftPanel = document.querySelector('.editor-panel-left');
     const rightPanel = document.querySelector('.editor-panel-right');
 
-    // DEBUG: Check if elements are found
-    console.log("[Debug] Left Button:", leftPanelBtn);
-    console.log("[Debug] Left Panel:", leftPanel);
-    console.log("[Debug] Right Button:", rightPanelBtn);
-    console.log("[Debug] Right Panel:", rightPanel);
-
     if (leftPanelBtn && leftPanel) {
-        console.log("[Debug] Adding listener for LEFT panel toggle."); // DEBUG
         leftPanelBtn.addEventListener('click', () => {
-            console.log("[Debug] LEFT panel toggle CLICKED!"); // DEBUG
             leftPanel.classList.toggle('collapsed');
-            console.log("[Debug] Left panel collapsed class toggled. Has class now?", leftPanel.classList.contains('collapsed')); // DEBUG
-            // Optional: Change button icon/text based on state
             const icon = leftPanelBtn.querySelector('i');
-            if (icon) {
-                icon.className = leftPanel.classList.contains('collapsed') 
-                    ? 'bi bi-layout-sidebar' 
-                    : 'bi bi-layout-sidebar-inset';
-            }
-             // Optional: Adjust grid layout after panel toggle if needed
-             // grid?.onParentResize(); 
+            if (icon) icon.className = leftPanel.classList.contains('collapsed') ? 'bi bi-layout-sidebar' : 'bi bi-layout-sidebar-inset';
+            // TODO: Maybe notify grid to resize? grid?.onParentResize();
         });
-    } else {
-        console.error("[Debug] Could not find left button or panel elements.");
     }
-
     if (rightPanelBtn && rightPanel) {
-        console.log("[Debug] Adding listener for RIGHT panel toggle."); // DEBUG
         rightPanelBtn.addEventListener('click', () => {
-            console.log("[Debug] RIGHT panel toggle CLICKED!"); // DEBUG
             rightPanel.classList.toggle('collapsed');
-            console.log("[Debug] Right panel collapsed class toggled. Has class now?", rightPanel.classList.contains('collapsed')); // DEBUG
-            // Optional: Change button icon/text based on state
             const icon = rightPanelBtn.querySelector('i');
-            if (icon) {
-                 icon.className = rightPanel.classList.contains('collapsed') 
-                    ? 'bi bi-layout-sidebar-reverse' 
-                    : 'bi bi-layout-sidebar-inset-reverse';
-            }
-            // Optional: Adjust grid layout after panel toggle if needed
-            // grid?.onParentResize(); 
+            if (icon) icon.className = rightPanel.classList.contains('collapsed') ? 'bi bi-layout-sidebar-reverse' : 'bi bi-layout-sidebar-inset-reverse';
+            // TODO: Maybe notify grid to resize? grid?.onParentResize();
         });
-    } else {
-         console.error("[Debug] Could not find right button or panel elements.");
     }
+    console.log("[Index] Panel toggles set up.");
 }
 
 // --- Main Execution ---
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('Guild Designer page loading...');
+    console.log("[Index] DOM fully loaded.");
+
     const guildId = getGuildIdFromUrl();
     if (!guildId) {
-        displayErrorMessage('Could not determine the Guild ID from the URL.');
+        displayErrorMessage('Could not determine Guild ID. Cannot initialize designer.');
         return;
     }
 
-    // --- Fetch initial data needed for population ---
-    // This data is needed both for initial load and for reset
-    let initialTemplateData = null;
+    const gridContainer = document.getElementById('designer-grid');
+    const lockButton = document.getElementById('toggle-lock-btn');
+    const resetButton = document.getElementById('reset-layout-btn');
+
+    if (!gridContainer || !lockButton || !resetButton) {
+        console.error('[Index] Essential UI elements missing.');
+        displayErrorMessage('Initialization failed: Core UI elements missing.');
+        return;
+    }
+
     try {
-        initialTemplateData = await fetchGuildTemplate(guildId);
-        if (!initialTemplateData) {
-            // fetchGuildTemplate should handle displaying the error
-            console.error('Failed to fetch initial template data.');
-            // If template data is essential, stop execution
-            // displayErrorMessage is likely already called by fetchGuildTemplate
-            return;
+        // 1. Fetch Initial Data (Template for content)
+        console.log("[Index] Fetching initial template data...");
+        const templateData = await fetchGuildTemplate(guildId);
+        if (!templateData) {
+             console.error("[Index] Failed to fetch initial template data. Stopping initialization.");
+            // Error message already shown by fetchGuildTemplate
+            return; 
         }
+        console.log("[Index] Initial template data fetched.");
+
+        // 2. Define Widgets and Default Layout
+        console.log("[Index] Defining widgets and default layout...");
+        const pageIdentifier = `guild-designer-${guildId}`;
+        const widgetDefs = {
+            'structure-tree': { title: 'Guild Structure', content: '<div id="widget-content-structure-tree">Loading tree...</div>' },
+            'template-info': { title: 'Template Information', content: '<div id="widget-content-template-info">Loading...</div>' },
+            'categories': { title: 'Categories (List View)', content: '<div id="widget-content-categories">Loading...</div>', headerControls: [{ type: 'link', text: 'Manage', href: `/guild/${guildId}/designer/categories`, class: 'manage-link' }] },
+            'channels': { title: 'Channels (List View)', content: '<div id="widget-content-channels">Loading...</div>', headerControls: [{ type: 'link', text: 'Manage', href: `/guild/${guildId}/designer/channels`, class: 'manage-link' }] },
+        };
+        const defaultLayout = [
+            { id: 'structure-tree', x: 0, y: 0, w: 4, h: 8, minW: 3, minH: 5 },
+            { id: 'template-info', x: 4, y: 0, w: 4, h: 2, minW: 3, minH: 2 },
+            { id: 'categories', x: 4, y: 2, w: 4, h: 3, minW: 3, minH: 3 },
+            { id: 'channels', x: 8, y: 0, w: 4, h: 5, minW: 3, minH: 4 },
+        ];
+        console.log("[Index] Widget definitions:", widgetDefs);
+        console.log("[Index] Default layout:", defaultLayout);
+
+        // 3. Initialize GridManager
+        console.log("[Index] Initializing GridManager...");
+        const debouncedSaveLayout = debounce((grid) => saveLayout(grid, pageIdentifier), 1000); 
+        const gridManager = new GridManager({
+            gridElementId: 'designer-grid', // Specify the correct container ID
+            pageIdentifier: pageIdentifier,
+            widgetDefinitions: widgetDefs, // Pass definitions here
+            defaultLayout: defaultLayout, // Pass default layout here
+            // Removed direct references to lock/reset buttons and saveCallback as GridManager finds them by ID and handles saving internally
+            populateContentCallback: (data) => {
+                // This callback now just needs the data. GridManager calls it after loading.
+                populateGuildDesignerWidgets(templateData, null, null); 
+            },
+            resetRequiresDataCallback: () => fetchGuildTemplate(guildId), // Fetch fresh data on reset
+            // Removed error/success callbacks as GridManager handles them internally now
+        });
+
+        const grid = await gridManager.initialize(templateData); // Initialize (loads/renders layout)
+        console.log("[Index] GridManager initialized.");
+
+        // 4. Populate Initial Content (after grid elements exist)
+        if (grid) {
+            console.log("[Index] Populating initial content for all widgets...");
+            populateGuildDesignerWidgets(templateData, null, null); 
+            console.log("[Index] Initializing structure tree...");
+            initializeStructureTree(templateData); // Initialize the tree now
+            console.log("[Index] Structure tree initialization called.");
+        } else {
+            console.error("[Index] Grid initialization failed. Cannot populate content.");
+            displayErrorMessage('Failed to initialize the layout grid.');
+        }
+
+        // 5. Setup Panel Toggles
+        setupPanelToggles();
+
+        console.log("[Index] Guild Designer initialization sequence complete.");
+
     } catch (error) {
-        // Should be caught by fetchGuildTemplate, but as a safeguard
-        displayErrorMessage('An critical error occurred while fetching initial page data.');
-        return;
+        console.error("[Index] Error during Guild Designer initialization process:", error);
+        displayErrorMessage('An unexpected error occurred during initialization. Please check the console.');
     }
-
-
-    // --- Configure and Initialize GridManager ---
-    const pageIdentifier = `guild_designer_${guildId}`;
-    const gridManagerOptions = {
-        gridElementId: 'designer-grid', // ID of the grid container div
-        lockButtonId: 'toggle-lock-btn',
-        resetButtonId: 'reset-layout-btn',
-        pageIdentifier: pageIdentifier,
-        widgetDefinitions: { // Titles for widgets managed by GridManager
-            'template-info': 'Template Information',
-            'categories': 'Categories',
-            'channels': 'Channels'
-        },
-        defaultLayout: [ // Define the default structure
-            { id: 'template-info', x: 0, y: 0, w: 4, h: 2 },
-            { id: 'categories', x: 4, y: 0, w: 4, h: 4 },
-            { id: 'channels', x: 8, y: 0, w: 4, h: 4 }
-        ],
-        // Pass the page-specific function to populate content
-        populateContentCallback: populateGuildDesignerWidgets,
-        // Pass the function to get data needed after a reset
-        resetRequiresDataCallback: () => fetchGuildTemplate(guildId) // Re-fetch template data on reset
-    };
-
-    const manager = new GridManager(gridManagerOptions);
-    try {
-        // Pass the already fetched template data to initialize
-        await manager.initialize(initialTemplateData);
-        console.log("GridManager initialized successfully.");
-    } catch (error) {
-         // Initialize should handle its own errors, but catch just in case
-         console.error("Failed to initialize GridManager:", error);
-         displayErrorMessage("Failed to initialize the layout manager.");
-    }
-
-    // --- Setup Panel Toggles ---
-    setupPanelToggles();
 }); 

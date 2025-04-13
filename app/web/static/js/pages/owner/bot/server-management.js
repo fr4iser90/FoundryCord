@@ -87,7 +87,7 @@ function updateServerList(tbodyId, servers) {
             </td>
             <td>${getStatusBadge(server.access_status)}</td>
             <td>${server.member_count || 0}</td>
-            <td>${formatDateTime(lastUpdatedDate)}</td> {# Use the formatted date #}
+            <td>${formatDateTime(lastUpdatedDate)}</td>
             <td>${getActionButtons(server)}</td>
         `;
         tbody.appendChild(row);
