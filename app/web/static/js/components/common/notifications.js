@@ -1,4 +1,14 @@
 // Notification Utilities
+// Custom Error for API Requests
+class ApiError extends Error {
+    constructor(message, status, data = null) {
+        super(message);
+        this.name = 'ApiError';
+        this.status = status;
+        this.data = data; // Store the parsed error data if available
+    }
+}
+
 const showToast = (type, message) => {
     const toast = document.createElement('div');
     toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : 'success'} border-0`;
@@ -37,8 +47,9 @@ const showToast = (type, message) => {
 
 // API Request Utilities
 const apiRequest = async (endpoint, options = {}) => {
+    let response; // Define response outside try block to access in catch
     try {
-        const response = await fetch(endpoint, {
+        response = await fetch(endpoint, {
             ...options,
             headers: {
                 'Content-Type': 'application/json',
@@ -58,12 +69,12 @@ const apiRequest = async (endpoint, options = {}) => {
                 return;
             }
 
-            let errorData;
+            let errorData = null; // Initialize errorData
             let errorMessage = `API request failed with status ${response.status}`;
             try {
                 const contentType = response.headers.get("content-type");
                 if (contentType && contentType.indexOf("application/json") !== -1) {
-                    errorData = await response.json();
+                    errorData = await response.json(); // Store parsed data
                     if (errorData && errorData.detail) {
                         if (typeof errorData.detail === 'string') {
                             errorMessage = errorData.detail;
@@ -74,29 +85,41 @@ const apiRequest = async (endpoint, options = {}) => {
                         errorMessage = errorData.message;
                     }
                 } else {
-                    errorData = await response.text();
-                    if (errorData) {
-                        errorMessage = errorData;
+                    const textData = await response.text(); // Store text data
+                    errorData = textData; // Assign text data to errorData
+                    if (textData) {
+                        errorMessage = textData;
                     }
                 }
             } catch (parseError) {
                 console.warn("Could not parse error response body:", parseError);
                 try {
-                    const rawText = await response.text();
-                    if (rawText) errorMessage = rawText.substring(0, 500);
-                } catch (textError) { /* Ignore further errors */ }
+                    // Try to get raw text as fallback message
+                    const rawText = await response.text(); 
+                    errorData = rawText; // Assign raw text to errorData
+                    if (rawText) errorMessage = rawText.substring(0, 500); 
+                } catch (textError) { 
+                    console.warn("Could not get raw text from error response:", textError);
+                    // Keep the default status message if text fails
+                 }
             }
             
-            throw new Error(errorMessage);
+            // Throw the custom ApiError with status and data
+            throw new ApiError(errorMessage, response.status, errorData);
         }
         
         const data = await response.json();
         return data;
     } catch (error) {
         console.error("Error in apiRequest:", error);
-        const displayMessage = (error instanceof Error) ? error.message : String(error);
+        
+        // Use ApiError properties if available for the toast
+        const displayMessage = (error instanceof ApiError) 
+            ? `${error.message} (Status: ${error.status})`
+            : (error instanceof Error ? error.message : String(error));
+            
         showToast('error', displayMessage.substring(0, 500));
-        throw error;
+        throw error; // Re-throw the original error (could be ApiError or other)
     }
 };
 
@@ -132,5 +155,6 @@ export {
     showToast,
     apiRequest,
     formatDateTime,
-    formatDuration
+    formatDuration,
+    ApiError // Export the custom error class too
 }; 

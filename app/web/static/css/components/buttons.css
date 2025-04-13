@@ -16,101 +16,101 @@
 /* Button Variants */
 .btn-primary {
     background-color: var(--primary);
-    color: white;
+    color: var(--btn-primary-text);
 }
 
 .btn-primary:hover {
-    background-color: #5c6fb1;
-    color: white;
+    background-color: var(--btn-primary-hover);
+    color: var(--btn-primary-text);
     transform: translateY(-1px);
 }
 
 .btn-secondary {
     background-color: var(--secondary);
-    color: white;
+    color: var(--btn-secondary-text);
 }
 
 .btn-secondary:hover {
-    background-color: #43464d;
-    color: white;
+    background-color: var(--btn-secondary-hover);
+    color: var(--btn-secondary-text);
     transform: translateY(-1px);
 }
 
 .btn-success {
     background-color: var(--success);
-    color: white;
+    color: var(--btn-success-text);
 }
 
 .btn-success:hover {
-    background-color: #3ca374;
-    color: white;
+    background-color: var(--btn-success-hover);
+    color: var(--btn-success-text);
     transform: translateY(-1px);
 }
 
 .btn-danger {
     background-color: var(--danger);
-    color: white;
+    color: var(--btn-danger-text);
 }
 
 .btn-danger:hover {
-    background-color: #d84040;
-    color: white;
+    background-color: var(--btn-danger-hover);
+    color: var(--btn-danger-text);
     transform: translateY(-1px);
 }
 
 .btn-warning {
     background-color: var(--warning);
-    color: var(--bg-tertiary);
+    color: var(--btn-warning-text);
 }
 
 .btn-warning:hover {
-    background-color: #e19517;
-    color: var(--bg-tertiary);
+    background-color: var(--btn-warning-hover);
+    color: var(--btn-warning-text);
     transform: translateY(-1px);
 }
 
 /* Action Button Variants */
 .btn-approve {
     background-color: var(--success);
-    color: white;
+    color: var(--btn-success-text);
     border-color: var(--success);
 }
 
 .btn-approve:hover {
-    background-color: #3ca374;
+    background-color: var(--btn-success-hover);
     transform: translateY(-1px);
 }
 
 .btn-deny {
     background-color: var(--warning);
-    color: var(--warning-text);
+    color: var(--btn-warning-text);
     border-color: var(--warning);
 }
 
 .btn-deny:hover {
-    background-color: #e19517;
+    background-color: var(--btn-warning-hover);
     transform: translateY(-1px);
 }
 
 .btn-block {
     background-color: var(--danger);
-    color: white;
+    color: var(--btn-danger-text);
     border-color: var(--danger);
 }
 
 .btn-block:hover {
-    background-color: #d84040;
+    background-color: var(--btn-danger-hover);
     transform: translateY(-1px);
 }
 
 .btn-details {
     background-color: var(--info);
-    color: white;
+    color: var(--btn-info-text);
     border-color: var(--info);
 }
 
 .btn-details:hover {
-    background-color: #4752c4;
+    background-color: var(--btn-info-hover);
     transform: translateY(-1px);
 }
 
@@ -190,7 +190,7 @@
 /* Discord-specific Buttons */
 .btn-discord {
     background-color: var(--primary);
-    color: white;
+    color: var(--btn-primary-text);
     padding: var(--spacing-sm) var(--spacing-lg);
     display: inline-flex;
     align-items: center;
@@ -201,8 +201,8 @@
 }
 
 .btn-discord:hover {
-    background-color: #5c6fb1;
-    color: white;
+    background-color: var(--btn-primary-hover);
+    color: var(--btn-primary-text);
     text-decoration: none;
 }
 
@@ -220,7 +220,7 @@
 }
 
 .btn-outline-primary:hover {
-    color: white;
+    color: var(--btn-primary-text);
     background-color: var(--primary);
 }
 
@@ -231,7 +231,7 @@
 }
 
 .btn-outline-secondary:hover {
-    color: white;
+    color: var(--btn-secondary-text);
     background-color: var(--secondary);
 }
 
@@ -245,7 +245,7 @@
 }
 
 .btn-link:hover {
-    color: #5c6fb1;
+    color: var(--btn-link-hover);
     text-decoration: underline;
 }
 

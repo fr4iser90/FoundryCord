@@ -13,17 +13,17 @@
 
 /* Status Badges */
 .badge.bg-success {
-    background-color: var(--badge-success) !important;
+    background-color: var(--badge-success);
     color: var(--badge-text);
 }
 
 .badge.bg-danger {
-    background-color: var(--badge-danger) !important;
+    background-color: var(--badge-danger);
     color: var(--badge-text);
 }
 
 .badge.bg-warning {
-    background-color: var(--badge-warning) !important;
+    background-color: var(--badge-warning);
     color: var(--badge-text);
 }
 

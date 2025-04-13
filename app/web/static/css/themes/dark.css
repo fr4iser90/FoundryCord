@@ -43,14 +43,14 @@
 
     /* Text Colors */
     --text-normal: #DCDDDE;
-    --text-muted: #72767D;
+    --text-muted: #B9BBBE;
     --text-link: #00B0F4;
     --text-positive: #57F287;
     --text-warning: #FEE75C;
     --text-danger: #ED4245;
     --text-brand: #5865F2;
     --text-primary: #ffffff;
-    --text-secondary: #b9bbbe;
+    --text-secondary: #2676ed;
 
     /* Border Colors */
     --border-primary: #242628;
@@ -131,6 +131,28 @@
     --btn-secondary-text: white;
     --btn-secondary-hover: #43464d;
     --btn-secondary-active: #383b41;
+    
+    --btn-success-bg: var(--success);
+    --btn-success-text: #1E2D24; /* Dark text for contrast on light green */
+    --btn-success-hover: #45a049; /* Slightly darker green */
+    --btn-success-active: #367c39; /* Even darker green */
+    
+    --btn-danger-bg: var(--danger);
+    --btn-danger-text: white;
+    --btn-danger-hover: #d32f2f; /* Slightly darker red */
+    --btn-danger-active: #b71c1c; /* Even darker red */
+    
+    --btn-warning-bg: var(--warning);
+    --btn-warning-text: #1C3023; /* Dark text for contrast on yellow */
+    --btn-warning-hover: #fbc02d; /* Slightly darker yellow */
+    --btn-warning-active: #f9a825; /* Even darker yellow */
+    
+    --btn-info-bg: var(--info);
+    --btn-info-text: white;
+    --btn-info-hover: #4752c4; /* Slightly darker info blue */
+    --btn-info-active: #3c45a5; /* Even darker info blue */
+    
+    --btn-link-hover: #5c6fb1; /* Use primary hover color for link hover */
 
     /* Dropdown Styles */
     --dropdown-bg: var(--bg-secondary);

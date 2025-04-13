@@ -150,7 +150,7 @@
 
 .navbar-item.has-dropdown .navbar-dropdown .dropdown-item.is-active {
     background: var(--primary);
-    color: white;
+    color: var(--btn-primary-text);
 }
 
 .navbar-item.has-dropdown .navbar-dropdown .dropdown-item i {

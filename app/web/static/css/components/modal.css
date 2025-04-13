@@ -1,0 +1,88 @@
+/* General Modal Styling for App */
+
+/* Ensure modal backdrop uses theme overlay */
+.modal-backdrop.show {
+    background-color: var(--bg-overlay);
+    opacity: 0.5; /* Default Bootstrap backdrop opacity */
+}
+
+/* Style the modal content based on theme variables */
+.modal-content {
+    background-color: var(--bg-primary); 
+    color: var(--text-normal); 
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg); /* Larger radius for modals? */
+}
+
+.modal-header {
+    background-color: var(--bg-secondary); 
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+    padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.modal-header .btn-close {
+    /* Adjust close button color for visibility on modal header bg */
+    /* Using Bootstrap's built-in invert for dark backgrounds */
+    filter: var(--bs-btn-close-white-filter, invert(1) grayscale(100%) brightness(200%));
+}
+
+.modal-body {
+    background-color: var(--bg-primary);
+    color: var(--text-normal);
+    padding: var(--spacing-lg);
+}
+
+.modal-body .form-label {
+    color: var(--text-normal);
+    font-weight: 500;
+}
+
+.modal-body .form-control {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+/* Improve placeholder contrast */
+.modal-body .form-control::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+.modal-body .form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
+}
+
+.modal-body .invalid-feedback {
+     color: var(--danger);
+}
+
+.modal-footer {
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    padding: var(--spacing-md) var(--spacing-lg);
+    display: flex; /* Ensure footer content is aligned properly */
+    justify-content: flex-end; /* Align buttons to the right */
+    gap: var(--spacing-sm);
+}
+
+/* Ensure buttons in modal footer use standard styling */
+.modal-footer .btn-secondary {
+    background-color: var(--btn-secondary-bg, var(--secondary));
+    color: var(--btn-secondary-text);
+    border-color: var(--btn-secondary-bg, var(--secondary));
+}
+.modal-footer .btn-secondary:hover {
+    filter: brightness(90%);
+}
+
+.modal-footer .btn-primary {
+    background-color: var(--btn-primary-bg, var(--primary));
+    color: var(--btn-primary-text);
+    border-color: var(--btn-primary-bg, var(--primary));
+}
+.modal-footer .btn-primary:hover {
+    filter: brightness(90%);
+}

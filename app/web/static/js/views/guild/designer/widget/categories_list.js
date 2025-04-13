@@ -10,7 +10,7 @@ export function initializeCategoriesList(templateData, contentElement, guildId) 
         return;
     }
      if (!templateData || !Array.isArray(templateData.categories)) {
-        contentElement.innerHTML = '<p class="text-muted p-3">Categories data not available.</p>';
+        contentElement.innerHTML = '<p class="panel-placeholder">Categories data not available.</p>';
         return;
     }
 
@@ -42,6 +42,6 @@ export function initializeCategoriesList(templateData, contentElement, guildId) 
         }
 
     } else {
-        contentElement.innerHTML = '<p class="text-muted p-3">No categories defined.</p>';
+        contentElement.innerHTML = '<p class="panel-placeholder">No categories defined.</p>';
     }
 } 

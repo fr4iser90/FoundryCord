@@ -4,8 +4,10 @@
 @import 'buttons.css';
 @import 'cards.css';
 @import 'forms.css';
+@import 'modal.css';
 @import 'navbar.css';
 @import 'guild_selector.css';
 @import 'stats.css';
 @import 'table.css';
-@import 'widgets.css'; 
+@import 'widgets.css';
+@import 'panels.css'; 

@@ -43,6 +43,18 @@
     border-right: 1px solid var(--border-color);
 }
 
+/* Improve subtitle contrast below main header */
+.layout-editor .editor-main-area .mb-3 > h1 + p.small.text-muted {
+    color: var(--text-normal); /* Use normal text for best contrast */
+}
+
+/* Improve placeholder text contrast in editor panels */
+.layout-editor .editor-panel-left p.text-muted.small,
+.layout-editor .editor-panel-right p.text-muted.small {
+    color: var(--text-muted); /* Use muted text color for better contrast */
+    opacity: 0.8; /* Add slight transparency for muted effect while maintaining readability */
+}
+
 .layout-editor .editor-panel-left,
 .layout-editor .editor-panel-right {
     flex: 0 0 300px; /* Fixed width for panels */
@@ -85,13 +97,65 @@
    width: 100%;
 }
 
-/* Style for PRE tags within the properties panel */
-.layout-editor .editor-panel-right pre {
-    background-color: var(--bg-tertiary) !important; /* Use theme tertiary background and override bg-light */
-    color: var(--text-secondary) !important;       /* Use theme secondary text and override bg-light */
+/* Style for PRE tags within the properties panel, targeting specifically within the designer */
+.layout-editor .editor-panel-right .panel-content-area pre {
+    background-color: var(--bg-tertiary); /* Remove  */
+    color: var(--text-secondary);       /* Remove  */
     border: 1px solid var(--border-color);
     padding: var(--spacing-sm);
     border-radius: var(--border-radius);
     white-space: pre-wrap; /* Allow wrapping */
     word-break: break-all; /* Break long lines */
 }
+
+/* Template list styles */
+#widget-content-template-list .list-group {
+    /* Remove potential borders/backgrounds from the group itself */
+    border: none;
+    background-color: transparent;
+}
+
+#widget-content-template-list .list-group-item {
+    background-color: var(--bg-primary); /* Use theme primary background */
+    color: var(--text-normal);
+    border: 1px solid var(--border-color); /* Add border */
+    margin-bottom: -1px; /* Overlap borders */
+    padding: var(--spacing-sm) var(--spacing-md);
+}
+
+/* Handle borders for first/last items */
+#widget-content-template-list .list-group-item:first-child {
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
+}
+
+#widget-content-template-list .list-group-item:last-child {
+    margin-bottom: 0;
+    border-bottom-left-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
+}
+
+/* Hover effect for list items */
+#widget-content-template-list .list-group-item:hover {
+    background-color: var(--bg-tertiary);
+    z-index: 1; /* Bring item forward on hover */
+    color: var(--text-primary);
+}
+
+/* Style for links within list group items */
+#widget-content-template-list .list-group-item a.template-load-link {
+    color: var(--text-link); /* Use theme link color */
+    text-decoration: none;
+}
+
+#widget-content-template-list .list-group-item a.template-load-link:hover {
+    text-decoration: underline;
+}
+
+/* Style for the share button within the list item */
+#widget-content-template-list .list-group-item .btn-share-template:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-primary);
+}
+

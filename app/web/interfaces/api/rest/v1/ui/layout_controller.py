@@ -10,7 +10,8 @@ from app.web.interfaces.api.rest.v1.schemas.ui_layout_schemas import (
     UILayoutSaveSchema, 
     UILayoutResponseSchema,
     LayoutTemplateListResponse,
-    LayoutTemplateInfoSchema
+    LayoutTemplateInfoSchema,
+    LayoutShareRequestSchema
 )
 from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user 
 from app.shared.infrastructure.models.auth import AppUserEntity 
@@ -52,6 +53,15 @@ class LayoutController(BaseController):
             status_code=status.HTTP_204_NO_CONTENT,
             summary="Delete Layout"
         )(self.delete_layout)
+
+        # --- New route for sharing --- 
+        self.router.post(
+            "/templates/share/{identifier_to_share}",
+            status_code=status.HTTP_201_CREATED, # Return 201 on successful creation
+            summary="Share Layout as Template",
+            # Optionally return the created SharedTemplateInfo? For now, just status code.
+            # response_model=SharedTemplateInfoSchema # Define if needed
+        )(self.share_layout_template)
 
     # --- Endpoint Implementations ---
 
@@ -142,6 +152,43 @@ class LayoutController(BaseController):
         except Exception as e:
             self.logger.error(f"Error deleting layout {page_identifier} for user {current_user.id}: {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete layout.")
+
+    # --- New endpoint implementation for sharing --- 
+    async def share_layout_template(
+        self,
+        identifier_to_share: str,
+        share_payload: LayoutShareRequestSchema, # Use the new schema for request body
+        layout_service: Annotated[LayoutService, Depends(get_layout_service)],
+        current_user: AppUserEntity = Depends(get_current_user)
+    ):
+        """API endpoint to share an existing layout as a named template."""
+        self.logger.info(f"POST /templates/share/{identifier_to_share} requested by user {current_user.id} with name '{share_payload.template_name}'")
+        try:
+            success = await layout_service.share_layout(
+                user_id=current_user.id,
+                identifier_to_share=identifier_to_share,
+                template_name=share_payload.template_name,
+                template_description=share_payload.template_description
+            )
+
+            if not success:
+                # Potential reasons: layout not found, name already taken, DB error
+                self.logger.error(f"Service failed to share layout '{identifier_to_share}' as '{share_payload.template_name}' for user {current_user.id}")
+                # Consider more specific error codes based on service feedback if available
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, # Or 500 if internal error
+                    detail=f"Failed to share layout. Ensure the layout exists and the template name '{share_payload.template_name}' is unique."
+                )
+            
+            self.logger.info(f"Successfully shared layout '{identifier_to_share}' as template '{share_payload.template_name}' by user {current_user.id}")
+            # Return status 201 (handled by FastAPI decorator)
+            return # Optionally return the created resource details
+
+        except HTTPException as http_exc:
+            raise http_exc # Re-raise specific exceptions
+        except Exception as e:
+            self.logger.error(f"Unexpected error sharing layout '{identifier_to_share}' as '{share_payload.template_name}': {e}", exc_info=True)
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to share layout due to an unexpected error.")
 
 # Instantiate the controller
 layout_controller = LayoutController()

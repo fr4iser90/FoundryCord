@@ -155,11 +155,23 @@ body.dark-theme .widget-content .list-group {
 body.light-theme .widget-content .list-group-item,
 body.dark-theme .widget-content .list-group-item {
     background-color: var(--bg-secondary); /* Use theme secondary background */
-    color: var(--text-primary); /* Use theme primary text */
+    color: var(--text-primary); /* DEFAULT text color for item - SHOULD BE WHITE IN DARK */
     border-color: var(--border-color); /* Use theme border color */
     padding: var(--spacing-sm) var(--spacing-md); /* Adjust padding as needed */
     margin-bottom: -1px; /* Overlap borders like Bootstrap */
     border: 1px solid var(--border-color);
+}
+
+/* Ensure main text span within list item uses primary color */
+body.light-theme .widget-content .list-group-item span:not(.badge),
+body.dark-theme .widget-content .list-group-item span:not(.badge) {
+    color: var(--text-primary);
+}
+
+/* Ensure nested small text-muted uses secondary color for better contrast */
+body.light-theme .widget-content .list-group-item small.text-muted,
+body.dark-theme .widget-content .list-group-item small.text-muted {
+    color: var(--text-secondary);
 }
 
 /* Handle first and last item borders/radius */

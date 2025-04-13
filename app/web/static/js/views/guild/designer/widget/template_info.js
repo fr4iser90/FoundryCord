@@ -9,13 +9,13 @@ export function initializeTemplateInfo(templateData, contentElement) {
         return; // Or find by ID as fallback?
     }
     if (!templateData) {
-        contentElement.innerHTML = '<p class="text-muted p-3">Template data not available.</p>';
+        contentElement.innerHTML = '<p class="panel-placeholder">Template data not available.</p>';
         return;
     }
 
     console.log("[TemplateInfoWidget] Populating...");
     contentElement.innerHTML = `
         <h5>${templateData.template_name || 'Unnamed Template'}</h5>
-        <p class="mb-0"><small class="text-muted">Created: ${templateData.created_at ? new Date(templateData.created_at).toLocaleString() : 'N/A'}</small></p>
+        <p class="mb-0"><small class="text-secondary">Created: ${templateData.created_at ? new Date(templateData.created_at).toLocaleString() : 'N/A'}</small></p>
     `;
 } 

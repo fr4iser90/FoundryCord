@@ -10,7 +10,7 @@ export function initializeChannelsList(templateData, contentElement, guildId) {
         return;
     }
     if (!templateData || !Array.isArray(templateData.channels) || !Array.isArray(templateData.categories)) {
-        contentElement.innerHTML = '<p class="text-muted p-3">Channels or Categories data not available.</p>';
+        contentElement.innerHTML = '<p class="panel-placeholder">Channels or Categories data not available.</p>';
         return;
     }
 
@@ -45,7 +45,7 @@ export function initializeChannelsList(templateData, contentElement, guildId) {
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                 <span>
                     <i class="fas ${channelIcon} me-2"></i>
-                        ${chan.name || 'Unnamed Channel'} <small class="text-muted">(${categoryName})</small>
+                        ${chan.name || 'Unnamed Channel'} <small class="text-secondary">(${categoryName})</small>
                 </span>
                     <span class="badge bg-secondary rounded-pill">Pos: ${chan.position !== undefined ? chan.position : 'N/A'}</span>
                 </li>
@@ -64,6 +64,6 @@ export function initializeChannelsList(templateData, contentElement, guildId) {
             header.appendChild(manageLink);
         }
      } else {
-        contentElement.innerHTML = '<p class="text-muted p-3">No channels defined.</p>';
+        contentElement.innerHTML = '<p class="panel-placeholder">No channels defined.</p>';
      }
 } 

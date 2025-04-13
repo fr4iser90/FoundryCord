@@ -1,0 +1,68 @@
+/* Panel Component Styles */
+
+/* Base Panel Structure */
+.panel {
+    flex: 0 0 300px;
+    padding: var(--spacing-md);
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 0;
+}
+
+/* Panel Header */
+.panel-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.panel-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-normal);
+    margin: 0;
+}
+
+.panel-title i {
+    margin-right: var(--spacing-xs);
+    color: var(--text-muted);
+}
+
+/* Panel Content */
+.panel-content {
+    color: var(--text-normal);
+}
+
+/* Panel Placeholder Text */
+.panel-placeholder {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+/* Editor-specific Panel Styles */
+.editor-panel-left,
+.editor-panel-right {
+    transition: flex-basis 0.3s ease-in-out, 
+                padding 0.3s ease-in-out, 
+                opacity 0.3s ease-in-out;
+}
+
+/* Collapsed State */
+.editor-panel-left.collapsed,
+.editor-panel-right.collapsed {
+    flex-basis: 0;
+    padding: 0;
+    border-width: 0;
+    overflow: hidden;
+    opacity: 0;
+}
+
+/* Panel Divider */
+.panel-divider {
+    border-top: 1px solid var(--border-color);
+    margin: var(--spacing-md) 0;
+} 

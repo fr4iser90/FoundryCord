@@ -291,6 +291,24 @@ def upgrade() -> None:
     op.create_index(op.f('ix_ui_layouts_user_id'), 'ui_layouts', ['user_id'], unique=False)
     # --- END ADDED ---
 
+    # --- ADDED: shared_ui_layout_templates table ---
+    op.create_table('shared_ui_layout_templates',
+        sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
+        sa.Column('name', sa.String(length=100), nullable=False, unique=True), # Unique name for the shared template
+        sa.Column('description', sa.Text(), nullable=True),
+        sa.Column('layout_data', sa.JSON(), nullable=False), # The actual Gridstack layout
+        sa.Column('creator_user_id', sa.Integer(), sa.ForeignKey('app_users.id', name='fk_shared_ui_layouts_user_id'), nullable=False),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), onupdate=sa.text('now()'), nullable=False),
+        sa.Column('source_layout_id', sa.Integer(), nullable=True), # Optional: Track original layout
+        # Consider adding guild_id if sharing should be per-guild
+        # sa.Column('guild_id', sa.String(20), nullable=True),
+        # sa.ForeignKeyConstraint(['guild_id'], ['discord_guilds.guild_id'], name='fk_shared_ui_layouts_guild_id'),
+    )
+    op.create_index(op.f('ix_shared_ui_layout_templates_name'), 'shared_ui_layout_templates', ['name'], unique=True)
+    op.create_index(op.f('ix_shared_ui_layout_templates_created_by'), 'shared_ui_layout_templates', ['creator_user_id'], unique=False)
+    # --- END ADDED ---
+
     # ==========================================================================
     # Remaining DISCORD Tables (If needed, e.g., for general role definitions)
     # ==========================================================================
@@ -326,6 +344,12 @@ def downgrade() -> None:
     # Drop tables kept in upgrade
     op.drop_table('discord_guild_users')
     op.drop_table('discord_server_roles')
+
+    # --- ADDED: Drop shared_ui_layout_templates table ---
+    op.drop_index(op.f('ix_shared_ui_layout_templates_created_by'), table_name='shared_ui_layout_templates')
+    op.drop_index(op.f('ix_shared_ui_layout_templates_name'), table_name='shared_ui_layout_templates')
+    op.drop_table('shared_ui_layout_templates')
+    # --- END ADDED ---
 
     # WebInterface Tables
     # --- ADDED: Drop ui_layouts table ---

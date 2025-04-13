@@ -10,7 +10,6 @@ from app.web.interfaces.api.rest.v1.home import router as home_router
 # Import generic router from ui and rename
 from app.web.interfaces.api.rest.v1.ui import router as ui_router
 
-from app.web.interfaces.api.rest.v1.layout import router as layout_router   
 
 # Create main API router
 router = APIRouter(prefix="/api/v1")
@@ -26,5 +25,5 @@ router.include_router(system_router)
 router.include_router(debug_router)
 router.include_router(home_router) # Use the aliased name
 router.include_router(ui_router) # Use the aliased name
-router.include_router(layout_router)
+
 __all__ = ['router']

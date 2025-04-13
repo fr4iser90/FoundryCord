@@ -284,7 +284,7 @@
 
 .action-card:hover .action-icon,
 .action-card:hover .action-title {
-    color: white;
+    color: var(--btn-primary-text);
 }
 
 .action-icon {
