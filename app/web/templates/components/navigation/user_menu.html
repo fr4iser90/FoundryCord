@@ -1,12 +1,12 @@
 {# app/web/templates/components/navigation/user_menu.html #}
 <div class="navbar-item has-dropdown">
     <button class="navbar-link user-menu" id="user-menu-button">
-        {% if request.session.user.avatar %}
-        <img src="https://cdn.discordapp.com/avatars/{{ request.session.user.discord_id }}/{{ request.session.user.avatar }}.png" alt="{{ request.session.user.username }}" class="user-avatar">
+        {% if current_user and current_user.avatar %}
+        <img src="https://cdn.discordapp.com/avatars/{{ current_user.discord_id }}/{{ current_user.avatar }}.png" alt="{{ current_user.username }}" class="user-avatar">
         {% else %}
-        <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="{{ request.session.user.username }}" class="user-avatar">
+        <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="{{ current_user.username if current_user else 'User' }}" class="user-avatar">
         {% endif %}
-        <span>{{ request.session.user.username }}</span>
+        <span>{{ current_user.username if current_user else 'User' }}</span>
     </button>
     <div class="navbar-dropdown is-right" id="user-dropdown">
         <a href="/profile" class="dropdown-item">

@@ -184,5 +184,3 @@
 .overflow-scroll { overflow: scroll ; }
 .overflow-visible { overflow: visible ; }
 
-/* Background */
-.bg-tertiary { background-color: var(--bg-tertiary) ; } 

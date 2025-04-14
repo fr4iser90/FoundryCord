@@ -20,6 +20,9 @@ tbody, tfoot, thead, tr, th, td {
 /* Set core root defaults */
 html {
     scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%; /* Safari */
+    -moz-text-size-adjust: 100%; /* Firefox */
+    -ms-text-size-adjust: 100%; /* IE */
     text-size-adjust: 100%;
 }
 
