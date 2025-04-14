@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # =======================================================
-# HomeLab Discord Bot - Central Management Interface
+# Application Center - Central Management Interface
 # =======================================================
 
 # Move to project root directory regardless of where script is called from
@@ -13,48 +13,42 @@ find utils -name "*.sh" -type f -exec chmod +x {} \;
 find utils -name "*.py" -type f -exec chmod +x {} \;
 echo "Permissions set successfully."
 
-# Check if local_config.sh exists, if not create it from example
-if [ ! -f "./utils/config/local_config.sh" ]; then
-    echo "No local configuration found. Creating from example..."
-    if [ -f "./utils/config/local_config.example.sh" ]; then
-        cp "./utils/config/local_config.example.sh" "./utils/config/local_config.sh"
-        # Replace $(date) with actual date in the copied file
-        sed -i "s/\$(date)/$(date)/g" "./utils/config/local_config.sh"
-        echo "✅ Created local_config.sh from example."
-        echo "⚠️ Please review and edit ./utils/config/local_config.sh to match your environment before proceeding."
-        echo "    You can press Ctrl+C now to exit and edit the file,"
-        echo "    or continue with default values."
-        read -p "Press Enter to continue or Ctrl+C to exit..." response
-    else
-        echo "❌ Error: Could not find local_config.example.sh!"
-        echo "Please create ./utils/config/local_config.sh manually before continuing."
-        exit 1
-    fi
+# Ensure project_config.sh exists manually before running.
+if [ ! -f "./utils/config/project_config.sh" ]; then
+    echo "❌ Error: Project configuration file ./utils/config/project_config.sh not found!"
+    echo "Please create this file (e.g., by copying from another project or manually) before running the Application Center."
+    exit 1
 fi
 
 # Check for Docker .env file and load if it exists
-if [ -f "../docker/.env" ]; then
-    echo "Loading environment variables from ../docker/.env..."
-    # Only export valid VAR=VALUE lines, properly handling comments
+# Load from project root first, then docker dir
+if [ -f "./.env" ]; then
+    echo "Loading environment variables from ./.env..."
     set -a
-    source <(grep -E '^[A-Za-z0-9_]+=.+' ../docker/.env | sed '/^#/d')
+    source <(grep -vE '^\s*(#|$)' ./.env)
+    set +a
+elif [ -f "./docker/.env" ]; then 
+    echo "Loading environment variables from ./docker/.env..."
+    set -a
+    source <(grep -vE '^\s*(#|$)' ./docker/.env)
     set +a
 fi
 
 # Global Variables
-export RUN_LOCALLY=false
+export RUN_LOCALLY=true
 export AUTO_START=true
 export AUTO_BUILD=true
 export REMOVE_VOLUMES=false
 export SKIP_CONFIRMATION=false
 export DIRECT_DEPLOY=false
+export DOCKER_PROFILE="" # Initialize Docker profile variable
 
 # Parse command line arguments for local mode
 for arg in "$@"; do
     case $arg in
-        --local)
-            export RUN_LOCALLY=true
-            echo "Running in local mode with project directory: $LOCAL_PROJECT_DIR"
+        --remote)
+            export RUN_LOCALLY=false
+            echo "Running in remote mode with server: $SERVER_HOST"
             shift
             ;;
     esac
@@ -92,10 +86,10 @@ source "./utils/menus/watch_menu.sh"
 # Main function
 # ------------------------------------------------------
 main() {
-    # Parse command line arguments
+    # Parse command line arguments first to potentially set RUN_LOCALLY etc.
     parse_cli_args "$@"
     
-    # Validate configuration first
+    # Validate configuration (which is now loaded via config.sh -> project_config.sh)
     validate_config
     
     # Handle direct deployment options first (bypass menus)
@@ -126,44 +120,56 @@ main() {
 parse_cli_args() {
     while [[ $# -gt 0 ]]; do
         case $1 in
-            # Development hot-reload options
-            --local-web-replace)
-                RUN_LOCALLY=true
-                hot_reload_web
+            # >>> Add profile handling here <<<
+            --profile=*) 
+                DOCKER_PROFILE="${1#*=}"
+                # Validate profile maybe? (cpu, gpu-nvidia, gpu-amd)
+                # TODO: Add validation if needed
+                echo "Using Docker profile: ${DOCKER_PROFILE}"
+                ;;
+
+            # Development hot-reload options (Generic)
+            --hot-reload=*) 
+                local target="${1#*=}"
+                # Check if target is valid (from HOT_RELOAD_TARGETS in config)
+                if [[ " ${HOT_RELOAD_TARGETS} " =~ " ${target} " ]]; then
+                    RUN_LOCALLY=true # Hot-reload only makes sense locally
+                    print_info "Initiating hot-reload for target: ${target}..."
+                    run_hot_reload "${target}" # Assumes this function exists in development_functions.sh
+                    exit $?
+                else
+                    print_error "Invalid hot-reload target: '${target}'."
+                    print_info "Valid targets are: ${HOT_RELOAD_TARGETS}"
+                    exit 1
+                fi
+                ;;
+            --hot-reload-all)
+                RUN_LOCALLY=true # Hot-reload only makes sense locally
+                print_info "Initiating hot-reload for all targets: ${HOT_RELOAD_TARGETS}..."
+                for target in ${HOT_RELOAD_TARGETS}; do
+                    run_hot_reload "${target}" # Assumes this function exists
+                done
                 exit $?
                 ;;
-            --local-bot-replace)
-                RUN_LOCALLY=true
-                hot_reload_bot
-                exit $?
-                ;;
-            --local-shared-replace)
-                RUN_LOCALLY=true
-                hot_reload_shared
-                exit $?
-                ;;
-            --local-all-replace)
-                RUN_LOCALLY=true
-                hot_reload_web
-                hot_reload_bot
-                hot_reload_shared
-                exit $?
-                ;;
-            
+
             # Existing options...
-            --init-only) INIT_ONLY=true ;;
+            --local) # Ensure --local is handled *after* --profile and hot-reload
+                export RUN_LOCALLY=true
+                echo "Running in local mode with project directory: $LOCAL_PROJECT_DIR"
+                ;;
+            --init-only) INIT_ONLY=true ;; 
             --skip-confirmation) SKIP_CONFIRMATION=true ;;
-            --remove-volumes) REMOVE_VOLUMES=true ;;
+            --remove-volumes) REMOVE_VOLUMES=true ;; 
             --env-file=*) 
                 ENV_FILE="${1#*=}"
                 [ -f "$ENV_FILE" ] && source_env_file "$ENV_FILE"
                 ;;
             
             # Deployment modes
-            --quick-deploy) DIRECT_DEPLOY=true; run_quick_deploy ;;
-            --quick-deploy-attach) DIRECT_DEPLOY=true; run_quick_deploy_attach ;;
-            --partial-deploy) DIRECT_DEPLOY=true; run_partial_deploy ;;
-            --deploy-with-auto-start) DIRECT_DEPLOY=true; run_quick_deploy_with_auto_start ;;
+            --quick-deploy) DIRECT_DEPLOY=true; run_quick_deploy ;; 
+            --quick-deploy-attach) DIRECT_DEPLOY=true; run_quick_deploy_attach ;; 
+            --partial-deploy) DIRECT_DEPLOY=true; run_partial_deploy ;; 
+            --deploy-with-auto-start) DIRECT_DEPLOY=true; run_quick_deploy_with_auto_start ;; 
             --full-reset)
                 DIRECT_DEPLOY=true
                 if [ "$SKIP_CONFIRMATION" != "true" ]; then
@@ -179,23 +185,26 @@ parse_cli_args() {
                 DIRECT_DEPLOY=true
                 run_deployment_with_monitoring "all"
                 ;;
-            --watch-console) WATCH_CONSOLE=true ;;
-            --watch=*) WATCH_SERVICES="${1#*=}"; WATCH_CONSOLE=true ;;
+            --watch-console) WATCH_CONSOLE=true ;; 
+            --watch=*) WATCH_SERVICES="${1#*=}"; WATCH_CONSOLE=true ;; 
 
             # Testing
-            --test-ALL) DIRECT_ACTION=true; run_tests_with_docker_container "all"; exit $? ;;
-            --test-unit) DIRECT_ACTION=true; run_unit_tests; exit $? ;;
-            --test-integration) DIRECT_ACTION=true; run_integration_tests; exit $? ;;
-            --test-system) DIRECT_ACTION=true; run_system_tests; exit $? ;;
-            --test-ordered) DIRECT_ACTION=true; run_ordered_tests; exit $? ;;
-            --test-simple) run_simple_test; exit 0 ;;
-            --test-dashboard) run_dashboard_tests; exit 0 ;;
-            --sequential-tests) DIRECT_ACTION=true; run_sequential_tests; exit $? ;;
-            --sync-results) DIRECT_ACTION=true; sync_test_results; exit 0 ;;
+            --test-ALL) DIRECT_ACTION=true; run_tests_with_docker_container "all"; exit $? ;; 
+            --test-unit) DIRECT_ACTION=true; run_unit_tests; exit $? ;; 
+            --test-integration) DIRECT_ACTION=true; run_integration_tests; exit $? ;; 
+            --test-system) DIRECT_ACTION=true; run_system_tests; exit $? ;; 
+            --test-ordered) DIRECT_ACTION=true; run_ordered_tests; exit $? ;; 
+            --test-simple) run_simple_test; exit 0 ;; 
+            --test-dashboard) run_dashboard_tests; exit 0 ;; 
+            --sequential-tests) DIRECT_ACTION=true; run_sequential_tests; exit $? ;; 
+            --sync-results) DIRECT_ACTION=true; sync_test_results; exit 0 ;; 
 
             # Unknown argument
             *)
-                echo "⚠️ Unknown argument: $1"
+                # Avoid erroring out if it's just the --local flag which is handled elsewhere
+                if [ "$1" != "--local" ]; then 
+                    echo "⚠️ Unknown argument: $1"
+                fi
                 ;;
         esac
         shift

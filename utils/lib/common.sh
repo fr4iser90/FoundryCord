@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # =======================================================
-# HomeLab Discord Bot - Common Utility Functions
+# Common Utility Functions
 # =======================================================
 
 # Color codes for terminal output
@@ -317,4 +317,190 @@ log_section() {
     echo ""
     echo -e "${YELLOW}=== ${message} ===${NC}"
     echo ""
+}
+
+# ------------------------------------------------------
+# Docker Compose Helpers (NEW)
+# ------------------------------------------------------
+
+# Helper function to construct the base docker compose command with profile
+get_docker_compose_cmd() {
+    local base_cmd="docker compose"
+    # Append profile flag if DOCKER_PROFILE environment variable is set and not empty
+    if [ -n "$DOCKER_PROFILE" ]; then
+        base_cmd="${base_cmd} --profile ${DOCKER_PROFILE}"
+    fi
+    # Append compose file path using the variable set in config.sh
+    base_cmd="${base_cmd} -f ${COMPOSE_FILE}"
+    echo "$base_cmd"
+}
+
+# Run 'docker compose up' locally or remotely
+run_compose_up() {
+    local compose_cmd=$(get_docker_compose_cmd)
+    local full_cmd="${compose_cmd} up $@"
+    local work_dir=""
+
+    if [ "$RUN_LOCALLY" = true ]; then
+        work_dir="${LOCAL_DOCKER_DIR}"
+        log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
+        (cd "${work_dir}" && eval "${full_cmd}") # Execute locally in subshell
+        return $?
+    else
+        work_dir="${EFFECTIVE_DOCKER_DIR}"
+        # Note: run_remote_command already adds cd
+        run_remote_command "cd ${work_dir} && ${full_cmd}"
+        return $?
+    fi
+}
+
+# Run 'docker compose build' locally or remotely
+run_compose_build() {
+    local compose_cmd=$(get_docker_compose_cmd)
+    local full_cmd="${compose_cmd} build $@"
+    local work_dir=""
+
+    if [ "$RUN_LOCALLY" = true ]; then
+        work_dir="${LOCAL_DOCKER_DIR}"
+        log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
+        (cd "${work_dir}" && eval "${full_cmd}")
+        return $?
+    else
+        work_dir="${EFFECTIVE_DOCKER_DIR}"
+        run_remote_command "cd ${work_dir} && ${full_cmd}"
+        return $?
+    fi
+}
+
+# Run 'docker compose down' locally or remotely
+run_compose_down() {
+    local compose_cmd=$(get_docker_compose_cmd)
+    local full_cmd="${compose_cmd} down $@"
+    local work_dir=""
+
+    if [ "$RUN_LOCALLY" = true ]; then
+        work_dir="${LOCAL_DOCKER_DIR}"
+        log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
+        (cd "${work_dir}" && eval "${full_cmd}")
+        return $?
+    else
+        work_dir="${EFFECTIVE_DOCKER_DIR}"
+        run_remote_command "cd ${work_dir} && ${full_cmd}"
+        return $?
+    fi
+}
+
+# Run 'docker compose ps' locally or remotely
+run_compose_ps() {
+    local compose_cmd=$(get_docker_compose_cmd)
+    local full_cmd="${compose_cmd} ps $@"
+    local work_dir=""
+
+    if [ "$RUN_LOCALLY" = true ]; then
+        work_dir="${LOCAL_DOCKER_DIR}"
+        log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
+        (cd "${work_dir}" && eval "${full_cmd}")
+        return $?
+    else
+        work_dir="${EFFECTIVE_DOCKER_DIR}"
+        run_remote_command "cd ${work_dir} && ${full_cmd}"
+        return $?
+    fi
+}
+
+# Run 'docker compose logs' locally or remotely
+run_compose_logs() {
+    local compose_cmd=$(get_docker_compose_cmd)
+    local full_cmd="${compose_cmd} logs $@"
+    local work_dir=""
+
+    if [ "$RUN_LOCALLY" = true ]; then
+        work_dir="${LOCAL_DOCKER_DIR}"
+        log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
+        # Note: Running logs directly might be interactive, handle accordingly
+        (cd "${work_dir}" && eval "${full_cmd}")
+        return $?
+    else
+        work_dir="${EFFECTIVE_DOCKER_DIR}"
+        # For remote logs, especially with -f, direct ssh might be better than run_remote_command
+        # Or ensure run_remote_command handles interactive sessions if needed
+        log_info "[REMOTE] Running: ssh ${SERVER_USER}@${SERVER_HOST} -p ${SERVER_PORT} \"cd ${work_dir} && ${full_cmd}\""
+        ssh "${SERVER_USER}@${SERVER_HOST}" -p "${SERVER_PORT}" "cd ${work_dir} && ${full_cmd}"
+        return $?
+    fi
+}
+
+# Run 'docker compose restart' locally or remotely
+run_compose_restart() {
+    local compose_cmd=$(get_docker_compose_cmd)
+    local full_cmd="${compose_cmd} restart $@"
+    local work_dir=""
+
+    if [ "$RUN_LOCALLY" = true ]; then
+        work_dir="${LOCAL_DOCKER_DIR}"
+        log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
+        (cd "${work_dir}" && eval "${full_cmd}")
+        return $?
+    else
+        work_dir="${EFFECTIVE_DOCKER_DIR}"
+        run_remote_command "cd ${work_dir} && ${full_cmd}"
+        return $?
+    fi
+}
+
+# Run 'docker compose stop' locally or remotely
+run_compose_stop() {
+    local compose_cmd=$(get_docker_compose_cmd)
+    local full_cmd="${compose_cmd} stop $@"
+    local work_dir=""
+
+    if [ "$RUN_LOCALLY" = true ]; then
+        work_dir="${LOCAL_DOCKER_DIR}"
+        log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
+        (cd "${work_dir}" && eval "${full_cmd}")
+        return $?
+    else
+        work_dir="${EFFECTIVE_DOCKER_DIR}"
+        run_remote_command "cd ${work_dir} && ${full_cmd}"
+        return $?
+    fi
+}
+
+# Run 'docker compose rm' locally or remotely
+run_compose_rm() {
+    local compose_cmd=$(get_docker_compose_cmd)
+    local full_cmd="${compose_cmd} rm $@"
+    local work_dir=""
+
+    if [ "$RUN_LOCALLY" = true ]; then
+        work_dir="${LOCAL_DOCKER_DIR}"
+        log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
+        (cd "${work_dir}" && eval "${full_cmd}")
+        return $?
+    else
+        work_dir="${EFFECTIVE_DOCKER_DIR}"
+        run_remote_command "cd ${work_dir} && ${full_cmd}"
+        return $?
+    fi
+}
+
+# Run 'docker compose exec' locally or remotely
+run_compose_exec() {
+    local compose_cmd=$(get_docker_compose_cmd)
+    local full_cmd="${compose_cmd} exec $@" # Arguments like container and command come from caller
+    local work_dir=""
+
+    if [ "$RUN_LOCALLY" = true ]; then
+        work_dir="${LOCAL_DOCKER_DIR}"
+        log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
+        # Running exec directly might be interactive, handle accordingly
+        (cd "${work_dir}" && eval "${full_cmd}")
+        return $?
+    else
+        work_dir="${EFFECTIVE_DOCKER_DIR}"
+        # For remote exec, direct ssh might be better for interactivity
+        log_info "[REMOTE] Running: ssh ${SERVER_USER}@${SERVER_HOST} -p ${SERVER_PORT} \"cd ${work_dir} && ${full_cmd}\""
+        ssh "${SERVER_USER}@${SERVER_HOST}" -p "${SERVER_PORT}" "cd ${work_dir} && ${full_cmd}"
+        return $?
+    fi
 } 

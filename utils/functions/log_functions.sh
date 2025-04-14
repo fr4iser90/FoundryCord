@@ -1,94 +1,41 @@
 #!/usr/bin/env bash
 
 # =======================================================
-# HomeLab Discord Bot - Log Functions
+# Log Functions
 # =======================================================
 
-# View bot logs
-view_bot_logs() {
-    clear
-    print_section_header "Bot Logs"
-    
-    if [ "$RUN_LOCALLY" = true ]; then
-        print_error "Cannot view logs in local mode"
-    else
-        local lines=$(get_string_input "Number of log lines to show" "100")
-        local follow=false
-        
-        if get_yes_no "Follow logs in real time?"; then
-            follow=true
-        fi
-        
-        if [ "$follow" = true ]; then
-            print_info "Viewing bot logs (Press Ctrl+C to exit)..."
-            run_remote_command "docker logs --tail=${lines} -f ${BOT_CONTAINER}"
-        else
-            print_info "Viewing last ${lines} lines of bot logs..."
-            run_remote_command "docker logs --tail=${lines} ${BOT_CONTAINER}"
-        fi
-    fi
-    
-    press_enter_to_continue
-    show_logs_menu
-}
+# View logs for a specific container
+view_container_logs_generic() {
+    local container_name="$1"
+    local log_type_name="${2:-$container_name}" # Optional friendly name for header
 
-# View database logs
-view_db_logs() {
     clear
-    print_section_header "Database Logs"
+    print_section_header "${log_type_name} Logs"
     
     if [ "$RUN_LOCALLY" = true ]; then
         print_error "Cannot view logs in local mode"
     else
-        local lines=$(get_string_input "Number of log lines to show" "100")
-        local follow=false
-        
-        if get_yes_no "Follow logs in real time?"; then
-            follow=true
-        fi
-        
-        if [ "$follow" = true ]; then
-            print_info "Viewing database logs (Press Ctrl+C to exit)..."
-            run_remote_command "docker logs --tail=${lines} -f ${POSTGRES_CONTAINER}"
-        else
-            print_info "Viewing last ${lines} lines of database logs..."
-            run_remote_command "docker logs --tail=${lines} ${POSTGRES_CONTAINER}"
-        fi
-    fi
-    
-    press_enter_to_continue
-    show_logs_menu
-}
-
-# View web logs
-view_web_logs() {
-    clear
-    print_section_header "Web Logs"
-    
-    if [ "$RUN_LOCALLY" = true ]; then
-        print_error "Cannot view logs in local mode"
-    else
-        # Check if web container exists
-        if ! run_remote_command "docker ps -q -f name=${WEB_CONTAINER}" "silent" | grep -q .; then
-            print_error "Web container not found or not running"
+        # Check if the container exists
+        if ! run_remote_command "${DOCKER_CMD} ps -a --filter name=^/${container_name}$ --format '{{.Names}}' | grep -q ${container_name}" "silent"; then
+            print_error "Container '${container_name}' not found."
             press_enter_to_continue
             show_logs_menu
             return
         fi
-        
+
         local lines=$(get_string_input "Number of log lines to show" "100")
         local follow=false
         
-        if get_yes_no "Follow logs in real time?"; then
+        if get_yes_no "Follow logs in real time (Ctrl+C to exit)?"; then
             follow=true
         fi
         
         if [ "$follow" = true ]; then
-            print_info "Viewing web logs (Press Ctrl+C to exit)..."
-            run_remote_command "docker logs --tail=${lines} -f ${WEB_CONTAINER}"
+            print_info "Viewing ${log_type_name} logs (Press Ctrl+C to exit)..."
+            run_remote_command "${DOCKER_CMD} logs --tail=${lines} -f ${container_name}"
         else
-            print_info "Viewing last ${lines} lines of web logs..."
-            run_remote_command "docker logs --tail=${lines} ${WEB_CONTAINER}"
+            print_info "Viewing last ${lines} lines of ${log_type_name} logs..."
+            run_remote_command "${DOCKER_CMD} logs --tail=${lines} ${container_name}"
         fi
     fi
     
@@ -96,32 +43,27 @@ view_web_logs() {
     show_logs_menu
 }
 
-# View redis logs
-view_redis_logs() {
-    clear
-    print_section_header "Redis Logs"
-    
-    if [ "$RUN_LOCALLY" = true ]; then
-        print_error "Cannot view logs in local mode"
-    else
-        local lines=$(get_string_input "Number of log lines to show" "100")
-        local follow=false
-        
-        if get_yes_no "Follow logs in real time?"; then
-            follow=true
-        fi
-        
-        if [ "$follow" = true ]; then
-            print_info "Viewing Redis logs (Press Ctrl+C to exit)..."
-            run_remote_command "docker logs --tail=${lines} -f ${REDIS_CONTAINER}"
-        else
-            print_info "Viewing last ${lines} lines of Redis logs..."
-            run_remote_command "docker logs --tail=${lines} ${REDIS_CONTAINER}"
-        fi
+# --- Specific log view functions now call the generic one --- 
+
+# View logs for the main container (defined in config)
+view_main_container_logs() {
+    view_container_logs_generic "${MAIN_CONTAINER}" "Main Container (${MAIN_CONTAINER})"
+}
+
+# View database logs (using DB_CONTAINER_NAME from config)
+view_db_logs() {
+    view_container_logs_generic "${DB_CONTAINER_NAME}" "Database (${DB_CONTAINER_NAME})"
+}
+
+# View logs for an arbitrary container from the list
+# This requires the logs menu to pass the container name
+view_specific_container_logs() {
+    local container_to_view="$1"
+    if [ -z "$container_to_view" ]; then
+        print_error "No container name provided to view_specific_container_logs"
+        return
     fi
-    
-    press_enter_to_continue
-    show_logs_menu
+    view_container_logs_generic "${container_to_view}" "Container (${container_to_view})"
 }
 
 # View system logs
@@ -130,9 +72,9 @@ view_system_logs() {
     print_section_header "System Logs"
     
     if [ "$RUN_LOCALLY" = true ]; then
-        print_error "Cannot view logs in local mode"
+        print_error "Cannot view system logs in local mode"
     else
-        print_info "Viewing system journal logs..."
+        print_info "Viewing system journal logs (last 100 lines)..."
         run_remote_command "sudo journalctl -n 100 --no-pager"
     fi
     
@@ -146,9 +88,9 @@ view_docker_logs() {
     print_section_header "Docker Logs"
     
     if [ "$RUN_LOCALLY" = true ]; then
-        print_error "Cannot view logs in local mode"
+        print_error "Cannot view Docker daemon logs in local mode"
     else
-        print_info "Viewing Docker daemon logs..."
+        print_info "Viewing Docker daemon logs (last 100 lines)..."
         run_remote_command "sudo journalctl -u docker -n 100 --no-pager"
     fi
     
@@ -156,10 +98,10 @@ view_docker_logs() {
     show_logs_menu
 }
 
-# Download logs
+# Download logs - Generic implementation
 download_logs() {
     clear
-    print_section_header "Download Logs"
+    print_section_header "Download All Container Logs"
     
     if [ "$RUN_LOCALLY" = true ]; then
         print_error "Cannot download logs in local mode"
@@ -174,34 +116,29 @@ download_logs() {
     # Get timestamp for unique filenames
     local timestamp=$(date +"%Y%m%d_%H%M%S")
     
-    print_info "Downloading logs..."
+    print_info "Downloading logs for all containers defined in config (${CONTAINER_LIST[@]})..."
     
-    # Bot logs
-    print_info "Downloading bot logs..."
-    run_remote_command "docker logs ${BOT_CONTAINER} > /tmp/bot_${timestamp}.log"
-    scp "${SERVER_USER}@${SERVER_HOST}:/tmp/bot_${timestamp}.log" "./logs/"
+    local remote_temp_dir="/tmp/${PROJECT_NAME}_logs_${timestamp}"
+    run_remote_command "mkdir -p ${remote_temp_dir}"
+
+    # Iterate through CONTAINER_LIST from config
+    for container_name in "${CONTAINER_LIST[@]}"; do
+        print_info "Downloading ${container_name} logs..."
+        # Save logs to a temporary file on the remote server
+        run_remote_command "${DOCKER_CMD} logs ${container_name} > ${remote_temp_dir}/${container_name}.log 2>&1"
+    done
+
+    # Download the directory
+    print_info "Transferring logs to local ./logs/ directory..."
+    scp -r "${SERVER_USER}@${SERVER_HOST}:${remote_temp_dir}" "./logs/"
+
+    # Rename the downloaded directory locally
+    mv "./logs/$(basename ${remote_temp_dir})" "./logs/project_${PROJECT_NAME}_logs_${timestamp}"
+
+    print_success "Logs downloaded to ./logs/project_${PROJECT_NAME}_logs_${timestamp}/ directory"
     
-    # Database logs
-    print_info "Downloading database logs..."
-    run_remote_command "docker logs ${POSTGRES_CONTAINER} > /tmp/db_${timestamp}.log"
-    scp "${SERVER_USER}@${SERVER_HOST}:/tmp/db_${timestamp}.log" "./logs/"
-    
-    # Redis logs
-    print_info "Downloading Redis logs..."
-    run_remote_command "docker logs ${REDIS_CONTAINER} > /tmp/redis_${timestamp}.log"
-    scp "${SERVER_USER}@${SERVER_HOST}:/tmp/redis_${timestamp}.log" "./logs/"
-    
-    # Web logs (if container exists)
-    if run_remote_command "docker ps -q -f name=${WEB_CONTAINER}" "silent" | grep -q .; then
-        print_info "Downloading web logs..."
-        run_remote_command "docker logs ${WEB_CONTAINER} > /tmp/web_${timestamp}.log"
-        scp "${SERVER_USER}@${SERVER_HOST}:/tmp/web_${timestamp}.log" "./logs/"
-    fi
-    
-    print_success "Logs downloaded to ./logs/ directory"
-    
-    # Clean up remote temp files
-    run_remote_command "rm /tmp/*_${timestamp}.log"
+    # Clean up remote temp directory
+    run_remote_command "rm -rf ${remote_temp_dir}"
     
     press_enter_to_continue
     show_logs_menu

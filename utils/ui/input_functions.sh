@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # =======================================================
-# HomeLab Discord Bot - Input Functions
+# Input Functions
 # =======================================================
 
 # Get numeric input with validation

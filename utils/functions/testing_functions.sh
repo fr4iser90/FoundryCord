@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # =======================================================
-# HomeLab Discord Bot - Testing Functions
+# Testing Functions
 # =======================================================
 
 # Run all tests
@@ -12,7 +12,9 @@ run_all_tests() {
     if [ "$RUN_LOCALLY" = true ]; then
         run_local_tests "all"
     else
-        ./utils/testing/run_tests.sh --type=all
+        # Assuming a generic test runner script exists or tests run directly
+        # Example: run tests inside the main container
+        run_tests_in_container "all"
     fi
     
     return $?
@@ -26,7 +28,7 @@ run_unit_tests() {
     if [ "$RUN_LOCALLY" = true ]; then
         run_local_tests "unit"
     else
-        ./utils/testing/run_tests.sh --type=unit
+        run_tests_in_container "unit"
     fi
     
     return $?
@@ -40,7 +42,7 @@ run_integration_tests() {
     if [ "$RUN_LOCALLY" = true ]; then
         run_local_tests "integration"
     else
-        ./utils/testing/run_tests.sh --type=integration
+        run_tests_in_container "integration"
     fi
     
     return $?
@@ -54,7 +56,7 @@ run_system_tests() {
     if [ "$RUN_LOCALLY" = true ]; then
         run_local_tests "system"
     else
-        ./utils/testing/run_tests.sh --type=system
+        run_tests_in_container "system"
     fi
     
     return $?
@@ -63,12 +65,13 @@ run_system_tests() {
 # Run dashboard tests specifically
 run_dashboard_tests() {
     clear
-    print_section_header "Run Dashboard Tests"
+    print_section_header "Run Example Application Tests"
     
-    log_info "Running simplified dashboard tests..."
+    log_info "Running example application tests..."
     
-    # Use the specific test file that avoids circular import issues
-    local docker_cmd="docker exec discord-server-bot pytest -xvs /app/tests/unit/test_dashboard_simple.py"
+    # Use a placeholder test file or adapt existing one
+    local test_file="/app/tests/unit/test_example_app.py"
+
     
     # Run the tests and save results
     mkdir -p test-results
@@ -80,134 +83,149 @@ run_dashboard_tests() {
     local exit_code=${PIPESTATUS[0]}
     
     if [ $exit_code -eq 0 ]; then
-        log_success "Dashboard tests completed successfully!"
+        log_success "Example Application tests completed successfully!"
     else
-        log_error "Dashboard tests failed with exit code: $exit_code"
+        log_error "Example Application tests failed with exit code: $exit_code"
     fi
     
     log_info "Test results saved to: $results_file"
     return $exit_code
 }
 
-# Run tests locally
+# Generic function to run tests inside a container (e.g., MAIN_CONTAINER)
+run_tests_in_container() {
+    local test_type="${1:-all}" # Default to all tests
+    local test_pattern="$2"
+    local container_to_use="${MAIN_CONTAINER}" # Default to main container
+
+    log_info "Running ${test_type} tests in container ${container_to_use}..."
+
+    # Make sure container exists and is running
+    if ! run_remote_command "${DOCKER_CMD} ps --filter name=^/${container_to_use}$ --format '{{.Names}}' | grep -q ${container_to_use}" "true"; then
+        log_error "Container '${container_to_use}' is not running. Cannot run tests."
+        return 1
+    fi
+
+    # Define base test path (assuming tests are in /app/tests inside container)
+    local base_test_path="/app/tests"
+    local test_path="${base_test_path}"
+    local pytest_marker=""
+
+    # Set path and marker based on type
+    case "$test_type" in
+        "unit")
+            test_path="${base_test_path}/unit/"
+            pytest_marker="-m unit"
+            ;;
+        "integration")
+            test_path="${base_test_path}/integration/"
+            pytest_marker="-m integration"
+            ;;
+        "system")
+            test_path="${base_test_path}/system/"
+            pytest_marker="-m system"
+            ;;
+        "all"|*)
+            # Run all tests, no specific path or marker
+            test_path="${base_test_path}/"
+            pytest_marker=""
+            test_type="all" # Ensure type is 'all' for filename
+            ;;
+    esac
+
+    # Construct the pytest command
+    # Using -vs for verbose output, add -x to stop on first failure if desired
+    local docker_cmd="${DOCKER_CMD} exec ${container_to_use} pytest -vs ${pytest_marker} ${test_path}"
+
+    # Add pattern matching if specified
+    if [ -n "$test_pattern" ]; then
+        docker_cmd="${docker_cmd} -k \"${test_pattern}\""
+    fi
+
+    # Run the tests and save results
+    mkdir -p test-results
+    local timestamp=$(date +"%Y%m%d_%H%M%S")
+    local results_file="test-results/test_results_${PROJECT_NAME}_${test_type}_${timestamp}.txt"
+
+    log_info "Running: ${docker_cmd}"
+    run_remote_command "${docker_cmd}" | tee "$results_file"
+    local exit_code=${PIPESTATUS[0]}
+
+    if [ $exit_code -eq 0 ]; then
+        log_success "Tests (${test_type}) completed successfully!"
+    else
+        log_error "Tests (${test_type}) failed with exit code: $exit_code"
+    fi
+
+    log_info "Test results saved to: $results_file"
+    # Optionally sync results back immediately
+    # sync_test_results 
+    return $exit_code
+}
+
+# Run tests locally (delegates to run_tests_in_container for consistency if possible, or runs locally)
 run_local_tests() {
     local test_type="$1"
     local test_pattern="$2"
     
-    log_info "Running ${test_type} tests locally using Docker container..."
+    log_info "Running ${test_type} tests locally..."
     
-    # Get the name of the bot container
-    BOT_CONTAINER="discord-server-bot"
-    
-    # Make sure container exists and is running
-    if ! docker ps | grep -q "${BOT_CONTAINER}"; then
-        log_error "Bot container '${BOT_CONTAINER}' is not running. Start it first with './utils/HomeLabCenter.sh --start'."
+    # Check if MAIN_CONTAINER is running locally
+    if ! docker ps | grep -q "${MAIN_CONTAINER}"; then
+        log_warning "Main container '${MAIN_CONTAINER}' is not running locally. Attempting to run tests directly."
+        # Implement direct local test execution here if needed
+        # Requires Python environment setup (e.g., using shell.nix or venv)
+        # Example using pytest directly:
+        log_info "Ensuring local Python environment is activated..."
+        # Assume environment activation happens elsewhere or use nix-shell
+        # nix-shell --run "pytest -vs -m ${test_type} tests/" # Example
+        print_error "Direct local test execution not fully implemented yet."
         return 1
     fi
-    
-    # Special case for the simple dashboard test during development
-    if [ "$test_type" = "dashboard" ]; then
-        log_info "Running dashboard tests with the simplified test file..."
-        docker exec ${BOT_CONTAINER} pytest -xvs /app/tests/unit/test_dashboard_simple.py
-        return $?
-    fi
-    
-    # Set up the command based on test type
-    local test_path=""
-    case "$test_type" in
-        "unit")
-            test_path="/app/tests/unit/"
-            ;;
-        "integration")
-            test_path="/app/tests/integration/"
-            ;;
-        "system")
-            test_path="/app/tests/system/"
-            ;;
-        "all"|*)
-            # Skip problematic test files during development
-            log_info "Skipping problematic dashboard lifecycle test for now..."
-            local docker_cmd="docker exec ${BOT_CONTAINER} pytest -xvs /app/tests/ --ignore=/app/tests/unit/test_dashboard_lifecycle.py"
-            ;;
-    esac
-    
-    # Build the Docker command if not already set for special cases
-    if [ -z "$docker_cmd" ]; then
-        local docker_cmd="docker exec ${BOT_CONTAINER} pytest -xvs ${test_path}"
-    fi
-    
-    # Add pattern if specified
-    if [ -n "$test_pattern" ]; then
-        docker_cmd="${docker_cmd} -k \"${test_pattern}\""
-    fi
-    
-    # Run the tests and save results
-    mkdir -p test-results
-    local timestamp=$(date +"%Y%m%d_%H%M%S")
-    local results_file="test-results/test_results_${test_type}_${timestamp}.txt"
-    
-    log_info "Running: $docker_cmd"
-    eval "$docker_cmd" | tee "$results_file"
-    local exit_code=${PIPESTATUS[0]}
-    
-    if [ $exit_code -eq 0 ]; then
-        log_success "Tests completed successfully!"
-    else
-        log_error "Tests failed with exit code: $exit_code"
-    fi
-    
-    log_info "Test results saved to: $results_file"
-    return $exit_code
-}
 
-# Run tests using Docker
-run_docker_tests() {
-    local test_type="$1"
-    local test_pattern="$2"
+    # If container is running, use it for consistency
+    log_info "Main container running locally. Running tests inside container ${MAIN_CONTAINER}..."
     
-    log_info "Running ${test_type} tests using Docker..."
-    
-    # Set up the command based on test type
-    local test_path=""
+    local base_test_path="/app/tests" # Assuming tests are mounted here
+    local test_path="${base_test_path}"
+    local pytest_marker=""
+
     case "$test_type" in
-        "unit")
-            test_path="/app/tests/unit/"
-            ;;
-        "integration")
-            test_path="/app/tests/integration/"
-            ;;
-        "system")
-            test_path="/app/tests/system/"
-            ;;
+        "unit") test_path="${base_test_path}/unit/"; pytest_marker="-m unit" ;; 
+        "integration") test_path="${base_test_path}/integration/"; pytest_marker="-m integration" ;; 
+        "system") test_path="${base_test_path}/system/"; pytest_marker="-m system" ;; 
+        # REMOVE project-specific markers
+        # "ollama") pytest_marker="-m ollama" ;; 
+        # "anythingllm") pytest_marker="-m anythingllm" ;; 
+        # "comfyui") pytest_marker="-m comfyui" ;; 
+        # "n8n") pytest_marker="-m n8n" ;; 
         "all"|*)
-            test_path="/app/tests/"
-            ;;
+             test_path="${base_test_path}/"
+             pytest_marker=""
+             test_type="all"
+             ;;
     esac
-    
-    # Create the Docker command
-    local docker_cmd="docker exec discord-server-bot pytest -xvs ${test_path}"
-    
-    # Add pattern if specified
+
+    local pytest_cmd="pytest -vs ${pytest_marker} ${test_path}"
     if [ -n "$test_pattern" ]; then
-        docker_cmd="${docker_cmd} -k \"${test_pattern}\""
+        pytest_cmd="${pytest_cmd} -k \"${test_pattern}\""
     fi
-    
-    # Run the tests and save results
+
     mkdir -p test-results
     local timestamp=$(date +"%Y%m%d_%H%M%S")
-    local results_file="test-results/test_results_${test_type}_${timestamp}.txt"
-    
-    print_info "Running: $docker_cmd"
-    eval "$docker_cmd" | tee "$results_file"
+    local results_file="test-results/test_results_${PROJECT_NAME}_${test_type}_local_${timestamp}.txt"
+
+    log_info "Running in container: docker exec ${MAIN_CONTAINER} ${pytest_cmd}"
+    docker exec ${MAIN_CONTAINER} ${pytest_cmd} | tee "$results_file"
     local exit_code=${PIPESTATUS[0]}
-    
+
     if [ $exit_code -eq 0 ]; then
-        print_success "Tests completed successfully!"
+        log_success "Local tests (${test_type}) completed successfully!"
     else
-        print_error "Tests failed with exit code: $exit_code"
+        log_error "Local tests (${test_type}) failed with exit code: $exit_code"
     fi
-    
-    print_info "Test results saved to: $results_file"
+
+    log_info "Test results saved to: $results_file"
     return $exit_code
 }
 
@@ -256,320 +274,355 @@ check_remote_services() {
     show_testing_menu
 }
 
-# Initialize test environment
+# Initialize test environment - Generic
 initialize_test_environment() {
     clear
     print_section_header "Initialize Test Environment"
     
-    # Create test directories
+    # Create test directories locally
     mkdir -p tests/unit
     mkdir -p tests/integration
     mkdir -p tests/system
     mkdir -p test-results
     
-    print_success "Created test directory structure"
+    print_success "Created local test directory structure in ./tests/"
     
-    # Copy dashboard test if it doesn't exist
-    if [ ! -f "tests/unit/test_dashboard_lifecycle.py" ]; then
-        print_info "Creating sample dashboard test..."
-        cp -n utils/testing/samples/test_dashboard_lifecycle.py tests/unit/ 2>/dev/null || true
+    # Create a generic placeholder test file if none exist
+    if [ ! -f "tests/unit/test_example.py" ]; then
+        print_info "Creating sample placeholder test file tests/unit/test_example.py ..."
+        cat > tests/unit/test_example.py << EOF
+import pytest
+
+# Example test marker (can be used with pytest -m unit)
+@pytest.mark.unit
+def test_placeholder_unit():
+    """A placeholder unit test."""
+    assert True
+
+# Example test marker (can be used with pytest -m integration)
+@pytest.mark.integration
+def test_placeholder_integration():
+    """A placeholder integration test."""
+    assert 1 + 1 == 2
+EOF
+        print_success "Sample test file created."
     fi
     
-    # Ensure pytest is available
+    # Ensure pytest is available (locally or suggest installation)
     if ! command -v pytest &> /dev/null; then
-        print_warning "pytest is not installed. Consider installing it with: pip install pytest"
+        print_warning "pytest command not found locally."
+        print_info "Testing relies on pytest being available either locally or inside the test container."
+        print_info "Consider installing it locally: pip install pytest"
     else
-        print_success "pytest is installed and available"
+        print_success "pytest is installed and available locally."
     fi
     
-    print_success "Test environment initialized successfully"
+    print_success "Local test environment directories initialized successfully."
     press_enter_to_continue
-    show_testing_menu
+    # Assuming show_testing_menu exists and is the caller
+    # show_testing_menu 
 }
 
-# Run simple test
+# Run simple test - Generic, runs inside container
 run_simple_test() {
     clear
-    print_section_header "Run Simple Test"
+    print_section_header "Run Simple Environment Test"
     
-    log_info "Running simple test that doesn't depend on application code..."
+    log_info "Running simple environment test inside container ${MAIN_CONTAINER}..."
     
-    # Create a simple test file if it doesn't exist
-    if [ ! -f "app/tests/test_simple.py" ]; then
-        log_info "Creating simple test file..."
-        mkdir -p app/tests
-        cat > app/tests/test_simple.py << 'EOL'
-import pytest
-import os
-import sys
+    # Define the simple test content
+    local simple_test_content='import pytest\nimport os\nimport sys\n\ndef test_environment():\n    """Test basic Python environment inside container"""\n    print("\\nPython version:", sys.version)\n    print("Working directory:", os.getcwd())\n    print("PYTHONPATH:", os.environ.get("PYTHONPATH", "Not set"))\n    assert True, "Basic environment test passed"\n'
+    local simple_test_path="/tmp/test_simple_env.py"
 
-def test_environment():
-    """Test that the testing environment works correctly"""
-    # Print environment information for diagnostics
-    print("\nPython version:", sys.version)
-    print("Working directory:", os.getcwd())
-    print("PYTHONPATH:", os.environ.get('PYTHONPATH', 'Not set'))
-    
-    # A simple assertion that always passes
-    assert True, "Basic environment test passed"
-
-def test_simple_math():
-    """Test basic arithmetic operations"""
-    assert 2 + 2 == 4, "Basic addition"
-    assert 10 - 5 == 5, "Basic subtraction"
-    assert 3 * 4 == 12, "Basic multiplication"
-    assert 8 / 4 == 2, "Basic division"
-    
-    # More complex math
-    result = (5 + 3) * 2 / 4
-    assert result == 4, f"Complex calculation failed: got {result}"
-    
-    print("All math tests passed!")
-
-def test_string_operations():
-    """Test string manipulation"""
-    # String concatenation
-    assert "hello" + " " + "world" == "hello world"
-    
-    # String methods
-    text = "Testing is IMPORTANT"
-    assert text.lower() == "testing is important"
-    assert text.upper() == "TESTING IS IMPORTANT"
-    assert text.split()[0] == "Testing"
-    
-    print("All string tests passed!")
-EOL
-        log_success "Simple test file created!"
+    # Make sure container is running
+    if ! run_remote_command "${DOCKER_CMD} ps --filter name=^/${MAIN_CONTAINER}$ --format '{{.Names}}' | grep -q ${MAIN_CONTAINER}" "true"; then
+        log_error "Container '${MAIN_CONTAINER}' is not running. Cannot run test."
+        return 1
     fi
+
+    # Write the test file inside the container
+    run_remote_command "echo -e \"${simple_test_content}\" > ${simple_test_path}"
     
-    # Run the simple test
-    local docker_cmd="docker exec discord-server-bot pytest -xvs /app/tests/test_simple.py"
+    # Run the simple test using pytest inside the container
+    local docker_cmd="${DOCKER_CMD} exec ${MAIN_CONTAINER} pytest -vs ${simple_test_path}"
     
-    # Run the tests and save results
+    # Run the tests and save results locally
     mkdir -p test-results
     local timestamp=$(date +"%Y%m%d_%H%M%S")
-    local results_file="test-results/test_results_simple_${timestamp}.txt"
+    local results_file="test-results/test_results_${PROJECT_NAME}_simple_${timestamp}.txt"
     
-    log_info "Running: $docker_cmd"
-    eval "$docker_cmd" | tee "$results_file"
+    log_info "Running: ${docker_cmd}"
+    # Execute and capture output locally
+    ssh ${SERVER_USER}@${SERVER_HOST} "${docker_cmd}" | tee "$results_file"
     local exit_code=${PIPESTATUS[0]}
     
+    # Clean up the test file in the container
+    run_remote_command "rm ${simple_test_path}"
+
     if [ $exit_code -eq 0 ]; then
-        log_success "Simple tests completed successfully!"
+        log_success "Simple environment test completed successfully!"
     else
-        log_error "Simple tests failed with exit code: $exit_code"
+        log_error "Simple environment test failed with exit code: $exit_code"
     fi
     
     log_info "Test results saved to: $results_file"
     return $exit_code
 } 
 
+# Run ordered tests - Generic, uses run_tests_in_container
 run_ordered_tests() {
     clear
-    print_section_header "Run Tests in Ordered Sequence"
+    print_section_header "Run Tests in Standard Order (Unit -> Integration -> System)"
     
-    # Get the name of the bot container
-    BOT_CONTAINER="${BOT_CONTAINER:-discord-server-bot}"
+    local overall_exit_code=0
     
-    # Make sure container exists and is running
-    if ! docker ps | grep -q "${BOT_CONTAINER}"; then
-        log_error "Bot container '${BOT_CONTAINER}' is not running. Start it first."
-        return 1
-    fi
+    print_info "--- Running Unit Tests --- "
+    run_tests_in_container "unit"
+    if [ $? -ne 0 ]; then overall_exit_code=1; fi
     
-    # Create results directory
-    mkdir -p test-results
-    local timestamp=$(date +"%Y%m%d_%H%M%S")
-    local results_file="test-results/ordered_tests_${timestamp}.txt"
-    
-    # Run the tests using the mounted run_tests.sh script
-    log_info "Running ordered tests in container..."
-    docker exec ${BOT_CONTAINER} bash /app/tests/run_tests.sh all | tee "$results_file"
-    local exit_code=${PIPESTATUS[0]}
-    
-    if [ $exit_code -eq 0 ]; then
-        log_success "Ordered tests completed successfully!"
+    print_info "--- Running Integration Tests --- "
+    run_tests_in_container "integration"
+     if [ $? -ne 0 ]; then overall_exit_code=1; fi
+   
+    print_info "--- Running System Tests --- "
+    run_tests_in_container "system"
+     if [ $? -ne 0 ]; then overall_exit_code=1; fi
+
+    # Optionally run project-specific tests here
+    # print_info "--- Running Ollama Tests --- "
+    # run_tests_in_container "ollama"
+    # if [ $? -ne 0 ]; then overall_exit_code=1; fi
+
+    if [ $overall_exit_code -eq 0 ]; then
+        log_success "All ordered tests completed successfully!"
     else
-        log_error "Ordered tests failed with exit code: $exit_code"
+        log_error "One or more ordered test suites failed."
     fi
     
-    log_info "Test results saved to: $results_file"
+    sync_test_results # Sync results after all tests run
     
-    # Sync results across directories
-    sync_test_results
-    
-    return $exit_code
+    return $overall_exit_code
 }
 
-# Sync test results between development and git directories
+# Sync test results - Generic (already updated to use variables)
 sync_test_results() {
-    log_info "Synchronizing test results using framework SCP..."
+    log_info "Synchronizing test results..."
     
-    # Ensure target directories exist
-    mkdir -p "$LOCAL_GIT_DIR/test-results"
+    # Ensure local target directory exists
+    mkdir -p "${LOCAL_GIT_DIR}/test-results"
     
-    # First get the results from the remote server
     if [ "$RUN_LOCALLY" = false ]; then
-        # Using the framework's SSH/SCP functions to get results from server
-        run_remote_command "mkdir -p ${PROJECT_ROOT_DIR}/test-results"
-        run_remote_command "cp -f ${PROJECT_ROOT_DIR}/docker/test-results/* ${PROJECT_ROOT_DIR}/test-results/ 2>/dev/null || true"
-        scp_from_server "${PROJECT_ROOT_DIR}/test-results/*" "${LOCAL_GIT_DIR}/test-results/"
-        log_success "Test results retrieved from remote server using SCP"
-    else
-        # We're in local mode, just copy from docker directory to git directory
-        if [ -d "$LOCAL_PROJECT_DIR/docker/test-results" ]; then
-            cp -f "$LOCAL_PROJECT_DIR/docker/test-results/"* "$LOCAL_GIT_DIR/test-results/" 2>/dev/null || true
-            log_success "Test results copied from local Docker directory"
+        # Define remote source directory (can be standardized)
+        local remote_results_dir="${SERVER_PROJECT_DIR}/test-results"
+        # Ensure remote directory exists (might be created by test run)
+        run_remote_command "mkdir -p ${remote_results_dir}" "silent"
+        # Copy results from potential location within docker context to project results dir
+        run_remote_command "cp -f ${EFFECTIVE_DOCKER_DIR}/test-results/* ${remote_results_dir}/ 2>/dev/null || true"
+        # Use SCP helper function if available, otherwise raw scp
+        log_info "Attempting to copy results from ${SERVER_HOST}:${remote_results_dir}/ to ${LOCAL_GIT_DIR}/test-results/"
+        scp -r "${SERVER_USER}@${SERVER_HOST}:${remote_results_dir}/"* "${LOCAL_GIT_DIR}/test-results/" 
+        if [ $? -eq 0 ]; then
+            log_success "Test results retrieved from remote server."
         else
-            log_warning "No test results found in local Docker directory"
+            log_warning "Failed to retrieve test results from remote server (directory might be empty or SCP failed)."
+        fi
+    else
+        # In local mode, copy from local docker dir results to git dir results
+        local local_docker_results_dir="${LOCAL_DOCKER_DIR}/test-results"
+        if [ -d "$local_docker_results_dir" ]; then
+            cp -f "${local_docker_results_dir}/"* "${LOCAL_GIT_DIR}/test-results/" 2>/dev/null || true
+            log_success "Test results copied from local Docker directory to Git directory."
+        else
+            log_warning "No test results found in local Docker directory: ${local_docker_results_dir}"
         fi
     fi
 }
 
-# Add this function to utils/functions/testing_functions.sh
+# Run unit tests safely - Generic
 run_unit_tests_safely() {
     clear
-    print_section_header "Run Unit Tests (Safe Mode)"
+    print_section_header "Run Unit Tests (Safe Mode - Experimental)"
     
-    # Get the name of the bot container
-    BOT_CONTAINER="discord-server-bot"
+    # Define the container to use
+    local container_to_use="${MAIN_CONTAINER}"
     
+    log_info "Attempting to run unit tests safely in container ${container_to_use}..."
+
     # Make sure container exists and is running
-    if ! docker ps | grep -q "${BOT_CONTAINER}"; then
-        log_error "Bot container '${BOT_CONTAINER}' is not running. Start it first."
+    if ! run_remote_command "${DOCKER_CMD} ps --filter name=^/${container_to_use}$ --format '{{.Names}}' | grep -q ${container_to_use}" "true"; then
+        log_error "Container '${container_to_use}' is not running. Cannot run tests."
         return 1
     fi
     
-    # Copy the special unit test script
-    docker cp app/tests/run_unit_tests.sh ${BOT_CONTAINER}:/app/tests/
-    docker exec ${BOT_CONTAINER} chmod +x /app/tests/run_unit_tests.sh
+    # Assuming a script /app/tests/run_unit_tests.sh exists inside the container
+    local unit_test_script="/app/tests/run_unit_tests.sh"
+
+    # Check if the script exists inside the container
+     if ! run_remote_command "${DOCKER_CMD} exec ${container_to_use} test -f ${unit_test_script}" "true"; then
+         log_error "Unit test script ${unit_test_script} not found inside container ${container_to_use}."
+         # Optionally try copying it?
+         # log_info "Attempting to copy local ./tests/run_unit_tests.sh to container..."
+         # docker cp ./tests/run_unit_tests.sh ${container_to_use}:${unit_test_script}
+         # if [ $? -ne 0 ]; then log_error "Failed to copy script."; return 1; fi
+         # run_remote_command "${DOCKER_CMD} exec ${container_to_use} chmod +x ${unit_test_script}"
+         return 1
+     fi
     
     # Run the special unit test script
-    docker exec ${BOT_CONTAINER} /app/tests/run_unit_tests.sh
-    return $?
+    log_info "Executing ${unit_test_script} in container..."
+    run_remote_command "${DOCKER_CMD} exec ${container_to_use} ${unit_test_script}"
+    local exit_code=$?
+
+    if [ $exit_code -eq 0 ]; then
+        log_success "Unit tests (safe mode) completed successfully!"
+    else
+        log_error "Unit tests (safe mode) failed with exit code: $exit_code"
+    fi
+    return $exit_code
 }
 
-# Run tests using the dedicated test Docker container
+# Run tests using a dedicated test Docker container - Generic
 run_tests_with_docker_container() {
     local test_type="${1:-all}"
     local test_pattern="${2:-}"
+    local fail_fast="${3:-false}" # Add fail_fast option
+    local test_container_name="${PROJECT_NAME}-tests" # Standardized test container name
+    local test_compose_file="${EFFECTIVE_DOCKER_DIR}/test/docker-compose.yml" # Standardized path
+
+    print_section_header "Running Tests with Dedicated Test Container (${test_container_name})"
     
-    print_section_header "Running Tests with Docker Test Container"
-    
-    if [ "$fail_fast" = true ]; then
-        pytest_cmd="${pytest_cmd} -xvs"  # Stop on first failure
+    # Check if test compose file exists
+    if [ "$RUN_LOCALLY" = true ]; then
+        if [ ! -f "${test_compose_file}" ]; then
+            print_error "Test docker-compose file not found locally at: ${test_compose_file}"
+            return 1
+        fi
     else
-        pytest_cmd="${pytest_cmd} -vs"   # Run all tests
+        if ! run_remote_command "test -f ${test_compose_file}" "true"; then
+             print_error "Test docker-compose file not found on server at: ${test_compose_file}"
+             return 1
+        fi
     fi
-    
+
+    local compose_cmd_prefix=""
+    if [ "$RUN_LOCALLY" = true ]; then
+        compose_cmd_prefix="cd ${LOCAL_DOCKER_DIR}/test && ${DOCKER_COMPOSE_CMD} -f docker-compose.yml"
+    else
+        compose_cmd_prefix="cd ${EFFECTIVE_DOCKER_DIR}/test && ${DOCKER_COMPOSE_CMD} -f docker-compose.yml"
+    fi
+
     # Step 1: Build the test container if needed
     log_info "Building test Docker container..."
-    docker compose -f ${LOCAL_PROJECT_DIR}/docker/test/docker-compose.yml build
+    run_command "${compose_cmd_prefix} build"
+    if [ $? -ne 0 ]; then log_error "Failed to build test Docker container"; return 1; fi
     
-    if [ $? -ne 0 ]; then
-        log_error "Failed to build test Docker container"
-        return 1
-    fi
+    # Step 2: Start the test container (and dependencies)
+    log_info "Starting test Docker container and dependencies..."
+    run_command "${compose_cmd_prefix} up -d"
+    if [ $? -ne 0 ]; then log_error "Failed to start test Docker container"; return 1; fi
     
-    # Step 2: Start the test container
-    log_info "Starting test Docker container..."
-    docker compose -f ${LOCAL_PROJECT_DIR}/docker/test/docker-compose.yml up -d
+    # Step 3: Run tests based on type inside the test container
+    log_info "Running ${test_type} tests in Docker test container ${test_container_name}..."
     
-    if [ $? -ne 0 ]; then
-        log_error "Failed to start test Docker container"
-        return 1
-    fi
-    
-    # Step 3: Run tests based on type
-    log_info "Running ${test_type} tests in Docker test container..."
-    
-    # Create results directory if it doesn't exist
     mkdir -p test-results
-    
-    # Timestamp for unique results file
     local timestamp=$(date +"%Y%m%d_%H%M%S")
-    local results_file="test-results/test_results_${test_type}_${timestamp}.txt"
+    local results_file="test-results/test_results_${PROJECT_NAME}_docker_${test_type}_${timestamp}.txt"
     
-    # Build the pytest command based on test type
+    # Build the pytest command based on test type marker
     local pytest_cmd="python -m pytest"
+    local pytest_marker=""
     
     case "$test_type" in
-        "unit")
-            pytest_cmd="${pytest_cmd} -m unit"
-            ;;
-        "integration")
-            pytest_cmd="${pytest_cmd} -m integration"
-            ;;
-        "functional")
-            pytest_cmd="${pytest_cmd} -m functional"
-            ;;
-        "performance")
-            pytest_cmd="${pytest_cmd} -m performance"
-            ;;
-        "dashboard")
-            pytest_cmd="${pytest_cmd} -m dashboard"
-            ;;
-        "commands")
-            pytest_cmd="${pytest_cmd} -m commands"
-            ;;
-        "core")
-            pytest_cmd="${pytest_cmd} -m core"
-            ;;
-        "system")
-            pytest_cmd="${pytest_cmd} -m system"
-            ;;
+        "unit") pytest_marker="-m unit" ;; 
+        "integration") pytest_marker="-m integration" ;; 
+        "system") pytest_marker="-m system" ;; 
+        # REMOVE project-specific markers
+        # "ollama") pytest_marker="-m ollama" ;; 
+        # "anythingllm") pytest_marker="-m anythingllm" ;; 
+        # "comfyui") pytest_marker="-m comfyui" ;; 
+        # "n8n") pytest_marker="-m n8n" ;; 
         "all"|*)
-            # For 'all', don't specify a marker to run everything
+            pytest_marker="" # Run all tests if type is 'all' or unknown
+            test_type="all"
             ;;
     esac
     
-    # Add verbosity flags for better output
-    pytest_cmd="${pytest_cmd} -vs"
+    pytest_cmd="${pytest_cmd} ${pytest_marker}" # Add marker if defined
+    
+    # Add verbosity and fail-fast flags
+    if [ "$fail_fast" = true ]; then
+        pytest_cmd="${pytest_cmd} -xvs"
+    else
+        pytest_cmd="${pytest_cmd} -vs"
+    fi
     
     # Add test pattern if specified
     if [ -n "$test_pattern" ]; then
         pytest_cmd="${pytest_cmd} -k \"${test_pattern}\""
     fi
     
-    # Execute the tests
-    log_info "Running: docker exec homelab-tests ${pytest_cmd}"
-    docker exec homelab-tests ${pytest_cmd} | tee "$results_file"
+    # Execute the tests inside the test container
+    log_info "Running in test container: docker exec ${test_container_name} ${pytest_cmd}"
+    run_command "docker exec ${test_container_name} ${pytest_cmd}" | tee "$results_file"
     local exit_code=${PIPESTATUS[0]}
+
+    # Step 4: Stop and remove the test container and its dependencies
+    log_info "Stopping test Docker container and dependencies..."
+    run_command "${compose_cmd_prefix} down"
     
     if [ $exit_code -eq 0 ]; then
-        log_success "All tests completed successfully!"
+        log_success "All tests completed successfully using dedicated test container!"
     else
-        log_error "Tests failed with exit code: $exit_code"
+        log_error "Tests failed with exit code: $exit_code using dedicated test container."
     fi
     
     log_info "Test results saved to: $results_file"
+    sync_test_results # Sync results after run
     return $exit_code
 }
 
-# Add this function to run tests in sequence without stopping
+# Run sequential tests - Generic, uses run_tests_in_container
 run_sequential_tests() {
-    local test_type="${1:-all}"
+    print_section_header "Running Tests Sequentially (Unit -> Integration -> System)"
     
-    print_section_header "Running Sequential Tests"
-    
-    # Build and start test container (existing code)...
-    
-    # Create results directory and timestamp (existing code)...
-    
-    # Find all test files based on test type
-    log_info "Discovering test files for type: ${test_type}"
-    
-    # Execute tests one directory at a time
-    if [ "$test_type" = "all" ]; then
-        # Run tests by category in sequence
-        docker exec homelab-tests python -m pytest -xvs unit/ | tee -a "$results_file"
-        docker exec homelab-tests python -m pytest -xvs integration/ | tee -a "$results_file"
-        docker exec homelab-tests python -m pytest -xvs functional/ | tee -a "$results_file"
-        docker exec homelab-tests python -m pytest -xvs performance/ | tee -a "$results_file"
+    local overall_exit_code=0
+    local run_in_dedicated_container=false # Option to use dedicated container
+
+    if get_yes_no "Use dedicated test container (requires test/docker-compose.yml)?" "n"; then
+        run_in_dedicated_container=true
+    fi
+
+    # Define test sequence
+    local test_sequence=("unit" "integration" "system")
+    # REMOVE project specific markers
+    # test_sequence+=("ollama" "anythingllm")
+
+    for test_suite in "${test_sequence[@]}"; do
+        print_info "--- Running ${test_suite} Tests --- "
+        if [ "$run_in_dedicated_container" = true ]; then
+            run_tests_with_docker_container "$test_suite"
+        else
+            run_tests_in_container "$test_suite"
+        fi
+        if [ $? -ne 0 ]; then 
+            log_error "Test suite '${test_suite}' failed."
+            overall_exit_code=1
+            # Decide whether to stop or continue on failure
+            if get_yes_no "Continue with next test suite despite failure?" "n"; then
+                log_info "Continuing with next test suite..."
+            else
+                log_error "Aborting sequential test run."
+                break
+            fi
+        fi
+    done
+
+    if [ $overall_exit_code -eq 0 ]; then
+        log_success "All sequential tests completed successfully!"
     else
-        # Run just the specified category
-        docker exec homelab-tests python -m pytest -xvs "${test_type}/" | tee "$results_file"
+        log_error "One or more sequential test suites failed."
     fi
     
-    log_info "All test sequences completed. Results saved to: $results_file"
+    sync_test_results # Sync results at the end
+    return $overall_exit_code
 }

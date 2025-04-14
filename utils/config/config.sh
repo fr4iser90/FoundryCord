@@ -14,11 +14,10 @@ export CONFIG_LOADED=1
 # Core Configuration Loading
 # ------------------------------------------------------
 
-# Load Local Configuration First
-if [ -f "./utils/config/local_config.sh" ]; then
-    source "./utils/config/local_config.sh"
-elif [ -f "$(dirname "$0")/local_config.sh" ]; then
-    source "$(dirname "$0")/local_config.sh"
+if [ -f "./utils/config/project_config.sh" ]; then
+    source "./utils/config/project_config.sh"
+elif [ -f "$(dirname "$0")/project_config.sh" ]; then # Also check relative to script dir
+    source "$(dirname "$0")/project_config.sh"
 fi
 
 # ------------------------------------------------------
@@ -26,7 +25,7 @@ fi
 # ------------------------------------------------------
 
 # Runtime mode
-export RUN_LOCALLY="${RUN_LOCALLY:-false}"
+export RUN_LOCALLY="${RUN_LOCALLY:-true}"
 
 # Project source directory (where the git repo is)
 export SOURCE_DIR="$(pwd)"
@@ -91,14 +90,15 @@ fi
 # Directory Creation
 # ------------------------------------------------------
 
-if [ "$RUN_LOCALLY" = true ]; then
-    echo -e "\033[0;34mRunning in local mode with project directory: $LOCAL_PROJECT_DIR\033[0m"
-    
-    # Create local development directory structure
-    mkdir -p "$LOCAL_PROJECT_DIR" \
-             "$LOCAL_DOCKER_DIR" \
-             "$LOCAL_APP_DIR"
-fi
+# Directory creation logic might be better handled during deployment if needed
+# if [ "$RUN_LOCALLY" = true ]; then
+#     echo -e "\033[0;34m(Local Mode Active) Ensuring local dev structure exists: $LOCAL_PROJECT_DIR\033[0m"
+#     
+#     # Create local development directory structure
+#     mkdir -p "$LOCAL_PROJECT_DIR" \
+#              "$LOCAL_DOCKER_DIR" \
+#              "$LOCAL_APP_DIR"
+# fi
 
 # ------------------------------------------------------
 # Configuration Complete
@@ -107,7 +107,8 @@ fi
 echo -e "\033[0;32mConfiguration loaded successfully for project: ${PROJECT_NAME}\033[0m"
 echo -e "\033[0;33mEnvironment: ${ENVIRONMENT}\033[0m"
 if [ "$RUN_LOCALLY" = true ]; then
-    echo -e "\033[0;34mDeploying to: ${LOCAL_PROJECT_DIR}\033[0m"
+    echo -e "\033[0;34mMode: Local Development (Using LOCAL_PROJECT_DIR: ${LOCAL_PROJECT_DIR})\033[0m"
+    echo -e "\033[0;34mUse '--remote' flag to target the server.\033[0m"
 else
-    echo -e "\033[0;34mDeploying to: ${SERVER_PROJECT_DIR}\033[0m"
+    echo -e "\033[0;34mMode: Remote Server Deployment (Using SERVER_PROJECT_DIR: ${SERVER_PROJECT_DIR})\033[0m"
 fi 

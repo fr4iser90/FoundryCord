@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # =======================================================
-# HomeLab Discord Bot - Main Menu
+# Main Menu
 # =======================================================
 
 # Show main menu
@@ -24,7 +24,7 @@ show_main_menu() {
     
     if [ "$is_first_setup" = true ]; then
         print_section_header "Initial Setup Required"
-        print_info "It appears this is your first time running the HomeLab Discord Bot."
+        print_info "It appears this is your first time running the Application Center for project: ${PROJECT_NAME}."
         print_info "Let's set up the environment on your remote server."
         echo ""
         
@@ -66,13 +66,13 @@ show_main_menu() {
 
 # Show regular main menu (when already set up)
 show_regular_menu() {
-    print_section_header "Main Menu"
+    print_section_header "Main Menu - Project: ${PROJECT_NAME}"
     print_menu_item "1" "Deployment Tools"
     print_menu_item "2" "Container Management"
     print_menu_item "3" "Testing Tools"
     print_menu_item "4" "Database Tools" 
     print_menu_item "5" "Development Tools"
-    print_menu_item "6" "Configure Settings"
+    print_menu_item "6" "Projektkonfiguration bearbeiten (öffnet Editor)"
     print_menu_item "7" "Manage Environment Files"
     print_menu_item "8" "View Logs"
     print_menu_item "9" "Real-time Monitoring"
@@ -99,7 +99,7 @@ show_regular_menu() {
             show_development_menu
             ;;
         6)
-            configure_settings
+            edit_project_config
             show_main_menu
             ;;
         7)
@@ -127,9 +127,9 @@ show_regular_menu() {
 # Run initial setup to properly configure the remote server
 run_initial_setup() {
     clear
-    print_section_header "Initial Setup"
+    print_section_header "Initial Setup for Project: ${PROJECT_NAME}"
     
-    print_info "Setting up the HomeLab Discord Bot on your remote server..."
+    print_info "Setting up the Application Environment on your remote server..."
     
     # Check if server is accessible
     if ! check_ssh_connection; then
@@ -179,71 +179,94 @@ run_initial_setup() {
     
     # 1. Create necessary directories on remote server with proper permissions
     print_info "Creating directory structure with proper permissions..."
-    run_remote_command "mkdir -p ${PROJECT_ROOT_DIR}/{docker,app,backups,utils/config} && chmod -R 775 ${PROJECT_ROOT_DIR}"
+    run_remote_command "mkdir -p ${SERVER_PROJECT_DIR}/{docker,backups,utils/config} && chmod -R 775 ${SERVER_PROJECT_DIR}"
     
     # 2. Copy Docker configuration files
     print_info "Copying Docker configuration files..."
     if [ -d "${LOCAL_GIT_DIR}/docker" ]; then
         # First ensure the target directory has proper permissions
-        run_remote_command "mkdir -p ${PROJECT_ROOT_DIR}/docker && chmod -R 775 ${PROJECT_ROOT_DIR}/docker"
+        run_remote_command "mkdir -p ${SERVER_PROJECT_DIR}/docker && chmod -R 775 ${SERVER_PROJECT_DIR}/docker"
         # Copy the files
-        scp -r "${LOCAL_GIT_DIR}/docker/"* "${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}/docker/"
+        scp -r "${LOCAL_GIT_DIR}/docker/"* "${SERVER_USER}@${SERVER_HOST}:${SERVER_PROJECT_DIR}/docker/"
         
         # Copy .env file if it exists
         if [ -f "${LOCAL_GIT_DIR}/.env" ]; then
             print_info "Copying main .env file from project root..."
-            scp "${LOCAL_GIT_DIR}/.env" "${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}/.env"
+            scp "${LOCAL_GIT_DIR}/.env" "${SERVER_USER}@${SERVER_HOST}:${SERVER_PROJECT_DIR}/.env"
         fi
         
         if [ -f "${LOCAL_GIT_DIR}/docker/.env" ]; then
             print_info "Copying docker/.env file..."
-            scp "${LOCAL_GIT_DIR}/docker/.env" "${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}/docker/.env"
+            scp "${LOCAL_GIT_DIR}/docker/.env" "${SERVER_USER}@${SERVER_HOST}:${SERVER_PROJECT_DIR}/docker/.env"
         fi
     else
         print_error "Local docker directory not found at ${LOCAL_GIT_DIR}/docker"
         print_info "Creating empty Docker directory structure..."
-        run_remote_command "mkdir -p ${PROJECT_ROOT_DIR}/docker && chmod -R 775 ${PROJECT_ROOT_DIR}/docker"
+        run_remote_command "mkdir -p ${SERVER_PROJECT_DIR}/docker && chmod -R 775 ${SERVER_PROJECT_DIR}/docker"
     fi
     
-    # 3. Copy application files
-    print_info "Copying application files..."
-    if [ -d "${LOCAL_GIT_DIR}/app" ]; then
-        # First ensure the target directory has proper permissions
-        run_remote_command "mkdir -p ${PROJECT_ROOT_DIR}/app/{bot,web,postgres} && chmod -R 775 ${PROJECT_ROOT_DIR}/app"
-        # Copy the files
-        scp -r "${LOCAL_GIT_DIR}/app/"* "${SERVER_USER}@${SERVER_HOST}:${PROJECT_ROOT_DIR}/app/"
-    else
-        print_error "Local app directory not found at ${LOCAL_GIT_DIR}/app"
-        print_info "Creating empty app directory structure..."
-        run_remote_command "mkdir -p ${PROJECT_ROOT_DIR}/app/{bot,web,postgres} && chmod -R 775 ${PROJECT_ROOT_DIR}/app"
-    fi
+    # 3. Copy application files (Commented out/Skipped)
+    # print_info "Copying application files..."
+    # if [ -d "${LOCAL_GIT_DIR}/app" ]; then
+    #     # First ensure the target directory has proper permissions
+    #     # Remove app-specific paths like {bot,web,postgres}
+    #     run_remote_command "mkdir -p ${SERVER_PROJECT_DIR}/app && chmod -R 775 ${SERVER_PROJECT_DIR}/app"
+    #     # Copy the files
+    #     scp -r "${LOCAL_GIT_DIR}/app/"* "${SERVER_USER}@${SERVER_HOST}:${SERVER_PROJECT_DIR}/app/"
+    # else
+    #     print_error "Local app directory not found at ${LOCAL_GIT_DIR}/app"
+    #     # print_info "Creating empty app directory structure..."
+    #     # run_remote_command "mkdir -p ${SERVER_PROJECT_DIR}/app && chmod -R 775 ${SERVER_PROJECT_DIR}/app"
+    # fi
+    print_info "Skipping app directory deployment (not needed for this stack)."
     
     # 4. Check if we have .env files, create them if needed
     local need_env_setup=true
     
-    # Check if the main .env file was copied earlier
-    if run_remote_command "test -f ${PROJECT_ROOT_DIR}/.env" "silent"; then
-        print_success ".env file found in project root"
+    # Check if the main .env file was copied earlier (check project root first)
+    if run_remote_command "test -f ${SERVER_PROJECT_DIR}/.env" "silent"; then
+        print_success ".env file found in project root (${SERVER_PROJECT_DIR})"
         need_env_setup=false
         
         # Copy to docker directory as well if it doesn't exist there
-        if ! run_remote_command "test -f ${DOCKER_DIR}/.env" "silent"; then
-            print_info "Copying .env file to Docker directory..."
-            run_remote_command "cp ${PROJECT_ROOT_DIR}/.env ${DOCKER_DIR}/.env"
+        local server_docker_dir="${SERVER_PROJECT_DIR}/docker"
+        if ! run_remote_command "test -f ${server_docker_dir}/.env" "silent"; then
+            print_info "Copying .env file to Docker directory (${server_docker_dir})..."
+            run_remote_command "cp ${SERVER_PROJECT_DIR}/.env ${server_docker_dir}/.env"
         fi
-    elif run_remote_command "test -f ${DOCKER_DIR}/.env" "silent"; then
-        print_success ".env file found in Docker directory"
+    elif run_remote_command "test -f ${SERVER_PROJECT_DIR}/docker/.env" "silent"; then
+        local server_docker_dir="${SERVER_PROJECT_DIR}/docker"
+        print_success ".env file found in Docker directory (${server_docker_dir})"
         need_env_setup=false
         
-        # Copy to project root as well
-        print_info "Copying .env file to project root..."
-        run_remote_command "cp ${DOCKER_DIR}/.env ${PROJECT_ROOT_DIR}/.env"
+        # Copy to project root as well if it doesn't exist there
+        if ! run_remote_command "test -f ${SERVER_PROJECT_DIR}/.env" "silent"; then
+             print_info "Copying .env file to project root (${SERVER_PROJECT_DIR})..."
+             run_remote_command "cp ${server_docker_dir}/.env ${SERVER_PROJECT_DIR}/.env"
+        fi
     fi
     
     # Ask if user wants to create .env files if they don't exist
     if [ "$need_env_setup" = true ]; then
-        if get_yes_no "No .env file found. Would you like to create one now?"; then
-            create_env_file
+        if get_yes_no "No .env file found. Would you like to create one now from the template?"; then
+            # Call the generic template function
+            create_project_templates # Assumes this creates ./templates/env.template
+            # Offer to upload the template as .env
+            if [ -f "./templates/env.template" ]; then
+                 if get_yes_no "Upload the generated template (./templates/env.template) as .env to the server project root?"; then
+                     # Upload to project root
+                     scp "./templates/env.template" "${SERVER_USER}@${SERVER_HOST}:${SERVER_PROJECT_DIR}/.env"
+                     # Also copy to docker dir on server
+                     local server_docker_dir="${SERVER_PROJECT_DIR}/docker"
+                     run_remote_command "cp ${SERVER_PROJECT_DIR}/.env ${server_docker_dir}/.env"
+                     print_success ".env file uploaded and copied to docker directory."
+                     print_warning "Remember to edit the server's .env file with your actual secrets!"
+                 else
+                     print_warning "No .env file created on server. You'll need to create one manually."
+                 fi
+            else
+                 print_error "Template file ./templates/env.template not found locally."
+            fi
         else
             print_warning "No .env file created. You'll need to create one manually before starting services."
         fi
@@ -251,42 +274,27 @@ run_initial_setup() {
     
     # 5. Initialize auto-start configuration
     print_info "Setting up auto-start configuration..."
-    if get_yes_no "Do you want to enable auto-start for services?"; then
-        AUTO_START="true"
-        AUTO_START_SERVICES="all"
-        
-        # Ask about services if they want specifics
-        if ! get_yes_no "Do you want to auto-start all services?"; then
-            print_info "Please select which services to auto-start in the next menu."
-            AUTO_START_SERVICES="bot,postgres,redis"
-        fi
-        
-        # Ask about build options
-        if get_yes_no "Do you want to enable automatic rebuilding before starting?"; then
-            AUTO_BUILD_ENABLED="true"
-        else
-            AUTO_BUILD_ENABLED="false"
-        fi
-        
-        # Ask about feedback level
-        echo "Select feedback level during auto-start:"
-        echo "1. None - No feedback"
-        echo "2. Minimal - Basic status information"
-        echo "3. Verbose - Detailed logs and status"
-        local feedback_choice=$(get_numeric_input "Select an option: ")
-        
-        case $feedback_choice in
-            1) AUTO_START_FEEDBACK="none" ;;
-            2) AUTO_START_FEEDBACK="minimal" ;;
-            3) AUTO_START_FEEDBACK="verbose" ;;
-            *) AUTO_START_FEEDBACK="minimal" ;;
-        esac
-        
-        # Save auto-start configuration
-        save_auto_start_config "${AUTO_START}" "${AUTO_START_SERVICES}" "${AUTO_START_FEEDBACK}"
+    # Load defaults before asking
+    local current_auto_start="${AUTO_START_ENABLED:-true}"
+    local current_auto_services="${AUTO_START_SERVICES:-all}"
+    local current_feedback="${AUTO_START_FEEDBACK:-minimal}"
+    local current_auto_build="${AUTO_BUILD_ENABLED:-true}"
+    local current_auto_wait="${AUTO_START_WAIT:-10}"
+    local current_local_auto_start="${LOCAL_AUTO_START_ENABLED:-true}"
+    local current_local_auto_services="${LOCAL_AUTO_START_SERVICES:-all}"
+
+    if get_yes_no "Do you want to configure auto-start options now? (Current: Enabled=${current_auto_start})" "y"; then
+        # Use the dedicated auto_start_menu function for configuration
+        show_auto_start_menu # This function should handle saving
+        # Re-load the config after the menu potentially saves it
+        source "${EFFECTIVE_CONFIG_DIR}/auto_start.conf" 2>/dev/null || true
     else
-        AUTO_START="false"
-        save_auto_start_config "false" "none" "none"
+         print_info "Keeping existing auto-start settings (or defaults)."
+         # Ensure default config is saved if none exists
+         if ! run_remote_command "test -f ${EFFECTIVE_CONFIG_DIR}/auto_start.conf" "silent"; then
+              print_info "No remote auto_start.conf found, saving defaults..."
+              save_auto_start_config "$current_auto_start" "$current_auto_services" "$current_feedback" "$current_auto_build" "$current_auto_wait" "$current_local_auto_start" "$current_local_auto_services"
+         fi
     fi
     
     # 6. Ask if user wants to build and start containers
@@ -295,74 +303,67 @@ run_initial_setup() {
         run_partial_deploy
     fi
     
-    print_success "Initial setup completed!"
-    print_info "You can now use the main menu to manage your HomeLab Discord Bot."
+    print_success "Initial setup completed for project: ${PROJECT_NAME}!"
+    print_info "You can now use the main menu to manage your application."
     
     press_enter_to_continue
     show_main_menu
 }
 
-# Configure settings
-configure_settings() {
-    clear
-    print_section_header "Configuration Settings"
-    
-    echo "Current configuration:"
-    echo "---------------------"
-    echo "  Server User: ${SERVER_USER}"
-    echo "  Server Host: ${SERVER_HOST}"
-    echo "  Server Port: ${SERVER_PORT}"
-    echo "  Environment: ${ENVIRONMENT}"
-    echo "  Remote Directory: ${PROJECT_ROOT_DIR}"
-    echo "  Docker Directory: ${DOCKER_DIR}"
-    echo ""
-    
-    if get_yes_no "Are these settings correct?"; then
-        # Test SSH connection
-        echo ""
-        echo "Testing SSH connection..."
-        if ! check_ssh_connection; then
-            print_error "ERROR: SSH connection failed!"
-            print_info "Please check your SSH configuration and server status."
-            
-            if get_yes_no "Do you want to run tools locally?"; then
-                export RUN_LOCALLY=true
-                print_warning "Running in local mode. Some features will be disabled."
-            else
-                print_info "Please update your settings."
-                configure_settings  # Recursively call this function
-                return
-            fi
-        else
-            print_success "SUCCESS: SSH connection successful!"
-        fi
-        
+# Function to open project_config.sh in an editor
+edit_project_config() {
+    local config_file="./utils/config/project_config.sh"
+    local editor=""
+
+    # Check for preferred editors
+    if command -v nano >/dev/null 2>&1; then
+        editor="nano"
+    elif command -v vim >/dev/null 2>&1; then
+        editor="vim"
+    elif command -v vi >/dev/null 2>&1; then
+        editor="vi"
+    elif [ -n "$EDITOR" ]; then # Check environment variable
+        editor="$EDITOR"
+    else
+        print_error "Could not find a suitable text editor (nano, vim, vi)."
+        print_info "Please edit '${config_file}' manually."
         press_enter_to_continue
-        return
+        return 1
     fi
-    
-    # Get new settings
-    echo "Please enter new settings:"
-    SERVER_USER=$(get_string_input "Server User" "${SERVER_USER}")
-    SERVER_HOST=$(get_string_input "Server Host" "${SERVER_HOST}")
-    SERVER_PORT=$(get_string_input "Server Port" "${SERVER_PORT}")
-    ENVIRONMENT=$(get_string_input "Environment (dev, staging, prod)" "${ENVIRONMENT}")
-    PROJECT_ROOT_DIR=$(get_string_input "Remote Project Directory" "${PROJECT_ROOT_DIR}")
-    
-    # Save settings to local_config.sh
-    mkdir -p "./utils/config"
-    echo "#!/usr/bin/env bash" > "./utils/config/local_config.sh"
-    echo "" >> "./utils/config/local_config.sh"
-    echo "# Local configuration - UPDATED $(date)" >> "./utils/config/local_config.sh"
-    echo "export SERVER_USER=\"${SERVER_USER}\"" >> "./utils/config/local_config.sh"
-    echo "export SERVER_HOST=\"${SERVER_HOST}\"" >> "./utils/config/local_config.sh"
-    echo "export SERVER_PORT=\"${SERVER_PORT}\"" >> "./utils/config/local_config.sh"
-    echo "export PROJECT_ROOT_DIR=\"${PROJECT_ROOT_DIR}\"" >> "./utils/config/local_config.sh"
-    echo "export ENVIRONMENT=\"${ENVIRONMENT}\"" >> "./utils/config/local_config.sh"
-    
-    print_success "Settings saved to local_config.sh"
-    
-    # Re-source the config to apply changes
-    source "./utils/config/config.sh"
+
+    if [ ! -f "$config_file" ]; then
+        print_error "Configuration file not found: ${config_file}"
+        print_info "Ensure the project setup has been run or the file exists."
+        press_enter_to_continue
+        return 1
+    fi
+
+    clear
+    print_section_header "Projektkonfiguration bearbeiten"
+    print_info "Öffne ${config_file} mit ${editor}..."
+    echo "Bitte bearbeite die Datei, speichere deine Änderungen und schließe den Editor."
     press_enter_to_continue
-} 
+
+    # Run the editor
+    ${editor} "${config_file}"
+
+    # Check if the file still exists after editing (user might delete it)
+    if [ ! -f "$config_file" ]; then
+         print_warning "Configuration file ${config_file} seems to be missing after editing."
+         press_enter_to_continue
+         return 1
+    fi
+
+    print_info "Editor geschlossen. Lade Konfiguration neu..."
+    # Re-source the main config loader which sources project_config.sh
+    # Reset CONFIG_LOADED flag to allow re-sourcing
+    unset CONFIG_LOADED 
+    source "./utils/config/config.sh"
+    
+    if [ -z "$CONFIG_LOADED" ]; then
+         print_error "Konnte die Konfiguration nach dem Bearbeiten nicht neu laden!"
+    else
+         print_success "Konfiguration neu geladen."
+    fi
+    press_enter_to_continue
+}

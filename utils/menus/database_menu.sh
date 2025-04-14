@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 
 # =======================================================
-# HomeLab Discord Bot - Database Menu
+# Database Menu
 # =======================================================
 
 # Show database menu
 show_database_menu() {
     show_header
     
-    print_section_header "Database Tools"
-    print_menu_item "1" "Apply Alembic Migration"
-    print_menu_item "2" "Update Remote Database"
-    print_menu_item "3" "Backup Database"
-    print_menu_item "4" "Restore Database"
+    print_section_header "Database Tools - Project: ${PROJECT_NAME}"
+    print_menu_item "1" "Apply Alembic Migration (if applicable)"
+    print_menu_item "2" "Update Remote Database (if applicable)"
+    print_menu_item "3" "Backup Database (${DB_NAME})"
+    print_menu_item "4" "Restore Database (${DB_NAME})"
     print_back_option
     echo ""
     
@@ -20,12 +20,20 @@ show_database_menu() {
     
     case "$choice" in
         1) 
-            run_alembic_migration
+            if [ -f "./utils/database/update_alembic_migration.sh" ]; then
+                 run_alembic_migration
+            else
+                 print_warning "Alembic migration script not found."
+            fi
             press_enter_to_continue
             show_database_menu
             ;;
         2) 
-            update_remote_database
+            if [ -f "./utils/database/update_remote_database.sh" ]; then
+                 update_remote_database
+             else
+                 print_warning "Remote database update script not found."
+             fi
             press_enter_to_continue
             show_database_menu
             ;;

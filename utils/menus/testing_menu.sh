@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # =======================================================
-# HomeLab Discord Bot - Testing Menu
+# Testing Menu
 # =======================================================
 
 # Show testing menu
@@ -9,21 +9,23 @@ show_testing_menu() {
     while true; do
         show_header
         
-        print_section_header "Testing Menu"
+        print_section_header "Testing Menu - Project: ${PROJECT_NAME}"
         
-        print_menu_item "1" "Run All Tests"
-        print_menu_item "2" "Run Unit Tests"
-        print_menu_item "3" "Run Integration Tests"
-        print_menu_item "4" "Run System Tests"
-        print_menu_item "5" "Run Dashboard Tests"
-        print_menu_item "6" "Run Dashboard Tests Only"
-        print_menu_item "7" "Run Simple Tests (No Dependencies)"
-        print_menu_item "8" "Show Test Results"
-        print_menu_item "9" "Server Status Tests"
-        print_menu_item "10" "Run Tests in Priority Order"
-        print_menu_item "11" "Run Tests with Docker Test Container"
+        print_menu_item "1" "Run All Tests (in container)"
+        print_menu_item "2" "Run Unit Tests (in container)"
+        print_menu_item "3" "Run Integration Tests (in container)"
+        print_menu_item "4" "Run System Tests (in container)"
+        print_menu_item "5" "Run Tests by Marker (e.g., 'ollama')"
+        print_menu_item "6" "Run Tests with Pattern Match"
+        print_menu_item "7" "Run Simple Environment Test (in container)"
+        print_menu_item "8" "Show Local Test Results"
+        print_menu_item "9" "Run Server Status/Connectivity Tests"
+        print_menu_item "10" "Run Tests in Standard Order (Unit->Int->Sys)"
+        print_menu_item "11" "Run Tests with Dedicated Docker Test Container"
+        print_menu_item "12" "Initialize Local Test Environment"
+        print_menu_item "13" "Sync Test Results from Server"
         
-        print_back_option
+        print_back_option # Usually 0
         
         echo ""
         local choice
@@ -31,69 +33,96 @@ show_testing_menu() {
         
         case $choice in
             1)
-                run_all_tests
+                run_tests_in_container "all"
                 press_enter_to_continue
                 ;;
             2)
-                run_unit_tests
+                run_tests_in_container "unit"
                 press_enter_to_continue
                 ;;
             3)
-                run_integration_tests
+                run_tests_in_container "integration"
                 press_enter_to_continue
                 ;;
             4)
-                run_system_tests
+                run_tests_in_container "system"
                 press_enter_to_continue
                 ;;
             5)
-                run_dashboard_tests
+                read -p "Enter pytest marker expression: " marker
+                run_tests_in_container "${marker}" # Pass marker as type
                 press_enter_to_continue
                 ;;
             6)
-                run_dashboard_tests
+                read -p "Enter pytest pattern (-k): " pattern
+                run_tests_in_container "all" "${pattern}" # Run all with pattern
+                press_enter_to_continue
                 ;;
             7)
-                run_simple_test
+                run_simple_test # Generic
+                press_enter_to_continue
                 ;;
-            8) show_test_results ;;
-            9) test_server ;;
+            8) 
+                show_test_results # Generic
+                ;; # show_test_results has its own continue prompt
+            9) 
+                test_server # Generic (likely)
+                press_enter_to_continue
+                ;;
             10)
-                run_ordered_tests
+                run_ordered_tests # Generic
                 press_enter_to_continue
                 ;;
             11)
-                run_tests_with_docker_container "all"
+                run_tests_with_docker_container "all" # Add options later if needed
                 press_enter_to_continue
                 ;;
-            0) show_main_menu ;;
+            12)
+                initialize_test_environment # Generic
+                press_enter_to_continue
+                ;;
+             13)
+                 sync_test_results # Generic
+                 press_enter_to_continue
+                 ;;
+            0) show_main_menu ;; # Back
             *) 
                 print_error "Invalid option!"
                 sleep 1
-                show_testing_menu
-                ;;
+                ;; # Loop back
         esac
     done
 }
 
-# Add this function to utils/menus/testing_menu.sh
+# Show test results - Generic
 show_test_results() {
     clear
-    print_section_header "Test Results"
+    print_section_header "Local Test Results - Project: ${PROJECT_NAME}"
     
-    # Create results directory if it doesn't exist
-    mkdir -p "$LOCAL_GIT_DIR/test-results"
+    local results_dir="${LOCAL_GIT_DIR}/test-results"
+    mkdir -p "$results_dir"
     
     # Check if we have any test results
-    if [ ! "$(ls -A "$LOCAL_GIT_DIR/test-results/")" ]; then
-        print_warning "No test results found in $LOCAL_GIT_DIR/test-results/"
-        press_enter_to_continue
-        return
+    if [ ! "$(ls -A "$results_dir/" 2>/dev/null)" ]; then
+        print_warning "No test results found in ${results_dir}/"
+        # Offer to sync
+        if get_yes_no "Sync results from server now?" "y"; then
+            sync_test_results
+            # Recheck after sync
+            if [ ! "$(ls -A "$results_dir/" 2>/dev/null)" ]; then
+                 print_warning "Still no test results found after sync."
+                 press_enter_to_continue
+                 return
+            fi
+        else
+            press_enter_to_continue
+            return
+        fi
     fi
     
-    # Show the available results files
-    echo "Available test results:"
-    ls -1t "$LOCAL_GIT_DIR/test-results/" | nl
+    # Show the available results files, sorted by time (newest first)
+    echo "Available test results (newest first):"
+    ls -1t "$results_dir/" | nl
     
     # Ask user which file to view
     echo ""
@@ -104,12 +133,17 @@ show_test_results() {
     fi
     
     # Get the filename from the list
-    local file=$(ls -1t "$LOCAL_GIT_DIR/test-results/" | sed -n "${choice}p")
+    local file=$(ls -1t "$results_dir/" | sed -n "${choice}p")
     
     if [ -n "$file" ]; then
         clear
         print_section_header "Test Results: $file"
-        cat "$LOCAL_GIT_DIR/test-results/$file"
+        # Use less for pagination if available
+        if command -v less > /dev/null; then
+            less "$results_dir/$file"
+        else
+            cat "$results_dir/$file"
+        fi
         echo ""
         press_enter_to_continue
     else

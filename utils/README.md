@@ -1,12 +1,13 @@
-# Application Center
+# Application Center - Utility Suite
 
 ## Overview
 
-This utility suite provides comprehensive management tools for deploying, configuring, and maintaining applications in various environments. It simplifies the operational aspects of running your applications on remote servers through an interactive command-line interface with automated setup, intelligent deployment, and robust monitoring capabilities.
+This utility suite provides a generic framework for managing Docker-based applications. It offers tools for deploying, configuring, and maintaining projects defined in a `project_config.sh` file, simplifying operations on local or remote servers through an interactive command-line interface.
 
 ## Key Features
 
-- **Intelligent Setup**: Automatic detection and initialization of local/remote environments.
+- **Project Agnostic**: Designed to manage different projects by loading settings from `project_config.sh`.
+- **Intelligent Setup**: Automatic detection and initialization based on the loaded configuration.
 - **Remote Server Management**: Deploy and manage applications on remote servers without manual SSH commands.
 - **Container Management**: Control Docker containers with simple menu options.
 - **Database Operations**: Perform backups, restores, and migrations with ease.
@@ -20,23 +21,25 @@ This utility suite provides comprehensive management tools for deploying, config
 
 ### Prerequisites
 
-- SSH access to your target server.
-- Docker and Docker Compose installed on the target server.
-- Basic knowledge of Linux and shell operations.
+- For remote use: SSH access to your target server.
+- Docker and Docker Compose installed on the target machine (local or remote).
+- A `utils/config/project_config.sh` file defining your project specifics (see Configuration section).
 
 ### Initial Setup
 
-1. Run the management utility:
+1. **Configure `project_config.sh`**: Copy `utils/config/project_config.example.sh` to `utils/config/project_config.sh` and edit it with your project details (Project Name, Server Info, Container Names, Paths, etc.).
+
+2. **Run the management utility**:
    ```bash
    chmod +x utils/ApplicationCenter.sh
    ./utils/ApplicationCenter.sh
    ```
 
-2. The utility will:
-   - Check for existing configuration and initialize if needed.
-   - Guide you through server connection setup.
-   - Detect if the remote environment requires initialization.
-   - Offer automated or manual deployment options.
+3. **First Run**: The utility will:
+   - Load settings from `project_config.sh`.
+   - If running in remote mode, check SSH connection.
+   - Guide you through server environment initialization if needed (creating directories based on config).
+   - Offer deployment options based on your configuration.
 
 ## Main Menu Options
 
@@ -44,7 +47,7 @@ This utility suite provides comprehensive management tools for deploying, config
 
 - **Quick Deploy**: Preserves database, auto-starts services.
 - **Partial Deploy**: Rebuilds containers only.
-- **Full Reset Deploy**: WARNING: destroys all data.
+- **Full Reset Deploy**: WARNING: destroys all persistent data (DB, models).
 - **Deploy with Monitoring**: Shows real-time console output.
 
 ### Container Management
@@ -63,10 +66,9 @@ This utility suite provides comprehensive management tools for deploying, config
 
 ### Database Tools
 
-- Apply migrations.
-- Backup database.
+- Apply migrations (if applicable to the project).
+- Backup database (using `DB_NAME`, `DB_CONTAINER_NAME` from config).
 - Restore database.
-- View database statistics.
 
 ### Development Tools
 
@@ -84,7 +86,7 @@ This utility suite provides comprehensive management tools for deploying, config
 
 ### Logs & Monitoring
 
-- View various service logs.
+- View logs for specific services (names depend on `CONTAINER_NAMES` in config).
 - Download log files.
 - Set up log watching.
 - Configure alert thresholds.
@@ -102,21 +104,21 @@ This utility suite provides comprehensive management tools for deploying, config
 
 ## Configuration Files
 
-The primary configuration is stored in:
-- `utils/config/config.sh`: Main configuration file.
-- `utils/config/local_config.sh`: Local settings overrides.
-- `utils/config/auto_start.conf`: Auto-start configuration.
+The framework relies on configuration loaded primarily from:
+- `utils/config/project_config.sh`: **REQUIRED**. Defines all project-specific settings (server, paths, project name, container names, DB names, etc.). *Copy from `project_config.example.sh` and customize.*
+- `utils/config/config.sh`: Loads `project_config.sh` and sets up effective paths and variables.
+- `utils/config/auto_start.conf`: Default auto-start settings (can be overridden in `project_config.sh` or via menu).
 
 ## Initialization Process
 
-When run for the first time, the utility will:
-1. Check for existing configuration files.
-2. Detect local Git repository and configuration files.
-3. Guide you through setting up SSH connection to your server.
-4. Create necessary directory structure on the remote server.
-5. Initialize database and required environment variables.
-6. Configure auto-start preferences.
-7. Deploy and start services.
+When run for the first time for a project defined in `project_config.sh`:
+1. Loads configuration from `project_config.sh`.
+2. Detects local Git repository path from config.
+3. If in remote mode, checks SSH connection using server details from config.
+4. Creates necessary directory structure on the remote server based on paths in config.
+5. Checks for `.env` file, helps create from template if missing.
+6. Configures auto-start preferences based on defaults or user input.
+7. Offers deployment and service start options.
 
 ## Auto-Start and Feedback Options
 
@@ -136,7 +138,7 @@ The utility now includes enhanced deployment options:
 
 ### Command-line Arguments
 
-The utility supports various command-line arguments:
+The utility supports various command-line arguments to override configuration or perform direct actions:
 ```bash
 ./utils/ApplicationCenter.sh --host=192.168.1.100 --user=admin --port=2222 --auto-start --watch-console
 ```
@@ -158,7 +160,7 @@ Common options:
 If you can't connect to a remote server, you can run in local mode for limited functionality:
 ```bash
 # The utility will detect SSH connection failures and offer local mode
-./utils/ApplicationCenter.sh --local
+./utils/ApplicationCenter.sh --remote
 ```
 
 ## Troubleshooting
@@ -181,24 +183,24 @@ If deployment fails:
 
 ### Database Problems
 
-For database issues:
+For database issues related to your project's components:
 1. Use the "Database Tools > Check Database Health" menu.
 2. Consider running a database backup before attempting fixes.
 3. Check logs for specific error messages.
-4. Try "Database Tools > Rebuild Schema" for persistent issues.
+4. Try "Database Tools > Rebuild Schema" (if applicable) for persistent issues.
 
 ## Best Practices
 
 1. **Regular Backups**: Create database backups before major changes.
 2. **Version Control**: Keep your local repository updated.
 3. **Testing**: Run tests after configuration changes.
-4. **Environment Files**: Secure your .env files as they contain sensitive information.
+4. **Environment Files**: Secure your `.env` files as they contain sensitive information for your project's components.
 5. **Auto-Start Config**: Regularly review auto-start configurations for security.
 6. **Feedback Logs**: Check feedback logs after unattended deployments.
 
 ## Getting Feedback
 
-The utility now provides several ways to collect and analyze system feedback:
+The utility now provides several ways to collect and analyze system feedback for your project stack:
 1. **Live Console**: Watch real-time output during deployment.
 2. **Service Logs**: Monitor specific service logs for issues.
 3. **Health Reports**: Generate system health reports.

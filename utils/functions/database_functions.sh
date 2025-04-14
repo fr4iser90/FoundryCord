@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # =======================================================
-# HomeLab Discord Bot - Database Functions
+# Database Functions
 # =======================================================
 
 # Run Alembic migration
@@ -42,15 +42,17 @@ backup_database() {
         return 1
     fi
     
-    # Create backup directory if it doesn't exist
+    # Use DB_BACKUP_DIR from config (ensure it's set in project_config if needed)
+    export DB_BACKUP_DIR="${DB_BACKUP_DIR:-${EFFECTIVE_PROJECT_DIR}/backups}"
     run_remote_command "mkdir -p ${DB_BACKUP_DIR}"
     
-    # Get timestamp for backup name
+    # Get timestamp for backup name using PROJECT_NAME and DB_NAME
     local timestamp=$(date +"%Y%m%d_%H%M%S")
-    local backup_name="homelab_backup_${timestamp}.sql"
+    local backup_name="${PROJECT_NAME}_${DB_NAME}_backup_${timestamp}.sql"
     
     print_info "Creating database backup: ${backup_name}"
-    run_remote_command "docker exec ${POSTGRES_CONTAINER} pg_dump -U postgres -d homelab > ${DB_BACKUP_DIR}/${backup_name}"
+    # Use DB_CONTAINER_NAME and DB_NAME variables
+    run_remote_command "docker exec ${DB_CONTAINER_NAME} pg_dump -U postgres -d ${DB_NAME} > ${DB_BACKUP_DIR}/${backup_name}"
     
     # Ask if user wants to download backup
     if get_yes_no "Do you want to download the backup to your local machine?"; then
@@ -82,9 +84,12 @@ restore_database() {
         return 1
     fi
     
+    # Use DB_BACKUP_DIR from config (ensure it's set in project_config if needed)
+    export DB_BACKUP_DIR="${DB_BACKUP_DIR:-${EFFECTIVE_PROJECT_DIR}/backups}"
+
     # List available backups
     print_info "Available backups on server:"
-    local available_backups=$(run_remote_command "ls -lh ${DB_BACKUP_DIR}/*.sql 2>/dev/null || echo 'No backups found'")
+    local available_backups=$(run_remote_command "ls -lh ${DB_BACKUP_DIR}/${PROJECT_NAME}_${DB_NAME}_backup_*.sql 2>/dev/null || echo 'No backups found'") # Filter by expected name pattern
     
     local backup_file=""
     
@@ -97,7 +102,7 @@ restore_database() {
             # Ask user if they want to upload a local backup
             if get_yes_no "Would you like to upload a local backup to the server?"; then
                 # List local backups
-                local local_backups=$(ls -1 ./backups/*.sql 2>/dev/null)
+                local local_backups=$(ls -1 ./backups/${PROJECT_NAME}_${DB_NAME}_backup_*.sql 2>/dev/null)
                 
                 # Ask which backup to upload
                 print_info "Available local backups:"
@@ -146,16 +151,20 @@ restore_database() {
     
     print_info "Restoring database from ${backup_file}..."
     
-    # Stop the bot to release database connections
-    run_remote_command "cd ${DOCKER_DIR} && docker compose stop bot"
+    # Restore the database using DB_CONTAINER_NAME and DB_NAME
+    # Stop relevant containers first (maybe MAIN_CONTAINER or others dependent on DB?)
+    # This needs careful consideration based on the actual stack dependencies
+    # For now, let's assume stopping MAIN_CONTAINER is sufficient, but this might need adjustment
+    print_warning "Stopping main container (${MAIN_CONTAINER}) before restore..."
+    run_remote_command "cd ${EFFECTIVE_DOCKER_DIR} && ${DOCKER_COMPOSE_CMD} stop ${MAIN_CONTAINER}"
     
-    # Restore the database
-    run_remote_command "docker exec ${POSTGRES_CONTAINER} psql -U postgres -c 'DROP DATABASE IF EXISTS homelab WITH (FORCE)'"
-    run_remote_command "docker exec ${POSTGRES_CONTAINER} psql -U postgres -c 'CREATE DATABASE homelab'"
-    run_remote_command "docker exec ${POSTGRES_CONTAINER} psql -U postgres -d homelab -f /docker-entrypoint-initdb.d/${backup_file}"
+    run_remote_command "docker exec ${DB_CONTAINER_NAME} psql -U postgres -c 'DROP DATABASE IF EXISTS ${DB_NAME} WITH (FORCE)'"
+    run_remote_command "docker exec ${DB_CONTAINER_NAME} psql -U postgres -c 'CREATE DATABASE ${DB_NAME}'"
+    run_remote_command "docker exec ${DB_CONTAINER_NAME} psql -U postgres -d ${DB_NAME} -f /docker-entrypoint-initdb.d/${backup_file}"
     
-    # Restart the bot
-    run_remote_command "cd ${DOCKER_DIR} && docker compose start bot"
+    # Restart the main container
+    print_info "Restarting main container (${MAIN_CONTAINER})..."
+    run_remote_command "cd ${EFFECTIVE_DOCKER_DIR} && ${DOCKER_COMPOSE_CMD} start ${MAIN_CONTAINER}"
     
     print_success "Database restored successfully!"
     return 0

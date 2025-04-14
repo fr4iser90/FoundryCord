@@ -1,23 +1,40 @@
 #!/usr/bin/env bash
 
 # =======================================================
-# HomeLab Discord Bot - Container Functions
+# Container Functions
 # =======================================================
 
 # Global variable for container list
 declare -a CONTAINER_ACTIONS
 
-# Load available containers
+# Load available containers from config or docker-compose
 load_available_containers() {
+    # TODO: This function needs to be profile-aware
+    # It currently gets ALL services from compose config, not just the active profile ones
+    # Or falls back to CONTAINER_LIST which is also not profile-aware
+    # For now, keep existing logic but add a warning
+    print_warning "Container list loading might not be profile-aware yet."
+
     if [ "$RUN_LOCALLY" = true ]; then
-        CONTAINER_ACTIONS=("bot" "postgres" "redis" "web" "web_db")
+        # Use CONTAINER_LIST derived from CONTAINER_NAMES in config
+        print_info "Loading containers from local config CONTAINER_LIST: ${CONTAINER_LIST[@]}"
+        CONTAINER_ACTIONS=("${CONTAINER_LIST[@]}") # Use the array directly
     else
-        local containers=$(run_remote_command "cd ${DOCKER_DIR} && docker compose config --services" "silent")
+        # Attempt to get container names from docker compose config services for the CURRENT profile
+        local compose_cmd=$(get_docker_compose_cmd) # Get base command with profile
+        local services_cmd="${compose_cmd} config --services"
+        print_info "Attempting to get services from remote Docker Compose config for current profile..."
+
+        local containers=$(run_remote_command "cd ${EFFECTIVE_DOCKER_DIR} && ${services_cmd}" "silent")
+        
         if [ -z "$containers" ]; then
-            CONTAINER_ACTIONS=("bot" "postgres" "redis" "web" "web_db")
+            # Fallback to using CONTAINER_LIST from config if remote command fails
+             print_warning "Failed to get services from remote docker-compose, using CONTAINER_NAMES from config: ${CONTAINER_LIST[@]}"
+            CONTAINER_ACTIONS=("${CONTAINER_LIST[@]}")
         else
             # Convert string to array
             IFS=$'\n' read -r -d '' -a CONTAINER_ACTIONS <<< "$containers"
+            print_info "Loaded active services for profile '${DOCKER_PROFILE:-default}': ${CONTAINER_ACTIONS[@]}"
         fi
     fi
 }
@@ -25,42 +42,45 @@ load_available_containers() {
 # Show container status
 show_container_status() {
     show_header
-    print_section_header "Container Status"
+    print_section_header "Container Status (Profile: ${DOCKER_PROFILE:-default})"
     
-    if [ "$RUN_LOCALLY" = true ]; then
-        print_error "Cannot check container status in local mode"
-    else
-        run_remote_command "cd ${DOCKER_DIR} && docker compose ps"
-    fi
+    # Use helper function
+    run_compose_ps
     
     press_enter_to_continue
     show_container_menu
 }
 
-# Manage all containers
+# Manage all containers (respecting profile)
 manage_all_containers() {
     local action="$1"
     show_header
-    print_section_header "Managing all containers"
+    print_section_header "Managing all containers (Profile: ${DOCKER_PROFILE:-default})"
     
-    if [ "$RUN_LOCALLY" = true ]; then
-        print_error "Cannot manage containers in local mode"
+    case "$action" in
+        "start")
+            print_info "Starting all containers for the current profile..."
+            run_compose_up -d # Use helper
+            ;;
+        "stop")
+            print_info "Stopping all containers for the current profile..."
+            run_compose_stop # Use helper
+            ;;
+        "restart")
+            print_info "Restarting all containers for the current profile..."
+            run_compose_restart # Use helper
+            ;;
+        *)
+             print_error "Unknown action: $action"
+             return 1
+             ;;
+    esac
+    
+    if [ $? -eq 0 ]; then
+        print_success "Action '$action' completed for profile '${DOCKER_PROFILE:-default}'"
     else
-        case "$action" in
-            "start")
-                print_info "Starting all containers..."
-                run_remote_command "cd ${DOCKER_DIR} && docker compose up -d"
-                ;;
-            "stop")
-                print_info "Stopping all containers..."
-                run_remote_command "cd ${DOCKER_DIR} && docker compose stop"
-                ;;
-            "restart")
-                print_info "Restarting all containers..."
-                run_remote_command "cd ${DOCKER_DIR} && docker compose restart"
-                ;;
-        esac
-        print_success "Action completed"
+         print_error "Action '$action' failed for profile '${DOCKER_PROFILE:-default}'"
+         return 1
     fi
     
     press_enter_to_continue
@@ -68,171 +88,149 @@ manage_all_containers() {
 }
 
 # Container action for individual container
+# NOTE: Individual actions might not work correctly with profiles if the container name
+# doesn't match the service name exactly (e.g. due to profile suffix).
+# Consider using 'manage_all_containers' or direct 'docker' commands for specifics.
 container_action() {
-    local container="$1"
+    local container_service_name="$1" # This should be the SERVICE name from compose
     local action="$2"
     
-    print_info "Performing '$action' on $container..."
+    print_warning "Running action '$action' on individual service '$container_service_name'. This might ignore profile settings if container names differ."
+    print_info "Performing '$action' on $container_service_name..."
     
     case "$action" in
         "start")
-            run_remote_command "cd ${DOCKER_DIR} && docker compose up -d ${container}"
+            # Use helper function, passing the service name
+            run_compose_up -d "${container_service_name}"
             ;;
         "stop")
-            run_remote_command "cd ${DOCKER_DIR} && docker compose stop ${container}"
+            run_compose_stop "${container_service_name}"
             ;;
         "restart")
-            run_remote_command "cd ${DOCKER_DIR} && docker compose restart ${container}"
+            run_compose_restart "${container_service_name}"
             ;;
+        *)
+             print_error "Unknown action: $action"
+             return 1
+             ;;
     esac
     
-    print_success "Action completed"
-}
-
-# View container logs
-view_container_logs() {
-    local container="$1"
-    print_info "Viewing logs for ${container}..."
-    run_remote_command "cd ${DOCKER_DIR} && docker compose logs --tail=100 -f ${container}"
-}
-
-# Rebuild single container
-rebuild_single_container() {
-    local container="$1"
-    print_info "Rebuilding ${container}..."
-    
-    local no_cache=false
-    if get_yes_no "Do you want to rebuild with no cache?"; then
-        no_cache=true
-    fi
-    
-    if [ "$no_cache" = true ]; then
-        run_remote_command "cd ${DOCKER_DIR} && docker compose stop ${container} && docker compose build --no-cache ${container} && docker compose up -d ${container}"
+    if [ $? -eq 0 ]; then
+        print_success "Action completed for ${container_service_name}"
     else
-        run_remote_command "cd ${DOCKER_DIR} && docker compose stop ${container} && docker compose build ${container} && docker compose up -d ${container}"
+         print_error "Action failed for ${container_service_name}"
+         return 1
+    fi
+}
+
+# View container logs (uses helper)
+view_container_logs() {
+    local container_service_name="$1"
+    print_info "Viewing logs for service: ${container_service_name} (Profile: ${DOCKER_PROFILE:-default})"
+    # Use logs helper, pass arguments like --tail and -f
+    run_compose_logs --tail=100 -f "${container_service_name}"
+}
+
+# Rebuild single container (service)
+# Similar caveats to container_action regarding profiles
+rebuild_single_container() {
+    local container_service_name="$1"
+    
+    print_warning "Rebuilding individual service '$container_service_name'. This might ignore profile settings if container names differ."
+    print_info "Rebuilding ${container_service_name}..."
+    
+    local no_cache_flag=""
+    if get_yes_no "Do you want to rebuild with no cache?"; then
+        no_cache_flag="--no-cache"
     fi
     
-    print_success "${container} rebuilt successfully"
+    # Use helpers: stop, build, up
+    print_info "Stopping ${container_service_name}..."
+    run_compose_stop "${container_service_name}"
+    print_info "Building ${container_service_name}..."
+    run_compose_build ${no_cache_flag} "${container_service_name}"
+    print_info "Starting ${container_service_name}..."
+    run_compose_up -d "${container_service_name}"
+
+    if [ $? -eq 0 ]; then
+        print_success "${container_service_name} rebuilt and started successfully"
+    else
+        print_error "Failed to rebuild ${container_service_name}"
+        return 1
+    fi
+    return 0
 }
 
-# Execute command in container
+# Execute command in container (uses helper)
 execute_in_container() {
-    local container="$1"
-    local command
+    local container_service_name="$1"
+    local command_to_run
     
-    read -p "Enter command to execute: " command
-    print_info "Executing: ${command}"
+    read -p "Enter command to execute in ${container_service_name}: " command_to_run
+    print_info "Executing in ${container_service_name}: ${command_to_run}"
     
-    run_remote_command "cd ${DOCKER_DIR} && docker compose exec ${container} ${command}"
+    # Use exec helper
+    run_compose_exec "${container_service_name}" ${command_to_run}
+    # Note: Return code handling might be tricky with interactive exec
+    # return $?
 }
 
-# Rebuild all containers
+# Rebuild all containers (respecting profile)
 rebuild_containers() {
     show_header
-    print_section_header "Container Rebuild"
+    print_section_header "Container Rebuild (Profile: ${DOCKER_PROFILE:-default})"
     
-    print_info "This will rebuild all the Docker containers."
+    print_info "This will rebuild applicable Docker images for project: ${PROJECT_NAME} and the current profile."
     
     if [ "$RUN_LOCALLY" = true ]; then
-        print_error "Cannot rebuild containers in local mode"
+        # Handle local rebuild if needed
+        print_info "Performing local rebuild..."
+        run_compose_build --no-cache # Use helper
+        if [ $? -ne 0 ]; then print_error "Local build failed."; return 1; fi
+        print_info "Restarting local containers..."
+        run_compose_stop && run_compose_up -d # Use helpers
+        if [ $? -ne 0 ]; then print_error "Local restart failed."; return 1; fi
+        print_success "Local rebuild completed."
         press_enter_to_continue
         show_container_menu
-        return
+        return 0
     fi
     
-    # Check if a rebuild was done in the last 5 minutes
-    local rebuild_timestamp_file="/tmp/homelab_last_rebuild"
-    local current_time=$(date +%s)
-    local skip_confirmations=false
-    
-    if [ -f "$rebuild_timestamp_file" ]; then
-        local last_rebuild_time=$(cat "$rebuild_timestamp_file")
-        local time_diff=$((current_time - last_rebuild_time))
-        
-        # If less than 5 minutes (300 seconds) since last rebuild
-        if [ $time_diff -lt 300 ]; then
-            print_warning "A rebuild was performed in the last 5 minutes ($(( time_diff / 60 )) minutes ago)"
-            if get_yes_no "Skip confirmations and perform quick rebuild?"; then
-                skip_confirmations=true
-            fi
-        fi
-    fi
-    
-    local delete_data=false
-    
-    if [ "$skip_confirmations" = false ]; then
-        # CRITICAL WARNING about data deletion
-        print_error "⚠️ WARNING: Deleting volumes will PERMANENTLY ERASE ALL DATABASE DATA ⚠️"
-        print_error "This action cannot be undone unless you have a backup!"
-        
-        # Require explicit confirmation with "DELETE" to proceed with data deletion
-        if get_confirmed_input "Are you absolutely sure you want to delete all data? This will ERASE YOUR DATABASE!" "DELETE"; then
-            delete_data=true
-            
-            # Double-check with a different confirmation word for extra safety
-            if ! get_confirmed_input "Final verification - type 'CONFIRM-DELETION' to proceed with data deletion:" "CONFIRM-DELETION"; then
-                print_info "Data deletion cancelled"
-                delete_data=false
-            fi
-        else
-            delete_data=false
-        fi
-        
-        if [ "$delete_data" = true ]; then
-            # Recommend backup before proceeding
-            if get_yes_no "Would you like to create a backup before deleting all data?"; then
-                backup_database
-            fi
-        fi
-    else
-        # With skip_confirmations, default to safe rebuild without data deletion
-        print_info "Using quick rebuild WITHOUT data deletion"
-        delete_data=false
-    fi
-    
-    # Save current timestamp for future reference
-    echo "$current_time" > "$rebuild_timestamp_file"
-    
-    if [ "$delete_data" = true ]; then
-        print_warning "Performing FULL rebuild WITH data deletion..."
-        run_remote_command "cd ${DOCKER_DIR} && docker compose down -v && docker compose build --no-cache && docker compose up -d"
-    else
+    # Remote Rebuild Logic (Full Reset is in deployment_functions)
+    # This function should probably just rebuild images and restart, not down/delete data
+    print_warning "This rebuild function focuses on rebuilding images safely (no data loss)."
+    print_warning "For a full reset with data deletion, use the Deployment Menu -> Full Reset option."
+
+    local skip_confirmations=false # Simplified confirmation for safe rebuild
+    if get_yes_no "Proceed with safe rebuild (stop -> build --no-cache -> up)?"; then
         print_info "Performing rebuild WITHOUT data deletion..."
-        # Use "stop" instead of "down" to ensure volumes are not touched
-        run_remote_command "cd ${DOCKER_DIR} && docker compose stop && docker compose rm -f && docker compose build --no-cache && docker compose up -d"
+        run_compose_stop && run_compose_build --no-cache && run_compose_up -d
+        if [ $? -eq 0 ]; then
+            print_success "Rebuild completed successfully!"
+        else
+            print_error "Rebuild failed."
+            return 1
+        fi
+    else
+        print_info "Rebuild cancelled."
+        return 0
     fi
-    
-    print_success "Rebuild completed successfully!"
+
     press_enter_to_continue
     show_container_menu
 }
 
-# Start all containers (locally or remotely)
+# Start all containers (uses helper)
 start_all_containers() {
-    print_section_header "Starting All Containers"
+    print_section_header "Starting All Project Containers (Profile: ${DOCKER_PROFILE:-default})"
     
-    if [ "$RUN_LOCALLY" = true ]; then
-        print_info "Starting all containers locally..."
-        cd "${LOCAL_DOCKER_DIR}" || { print_error "Local Docker directory not found!"; return 1; }
-        docker compose up -d
-        
-        if [ $? -eq 0 ]; then
-            print_success "All containers started locally!"
-        else
-            print_error "Failed to start containers locally"
-            return 1
-        fi
+    run_compose_up -d # Use helper
+    
+    if [ $? -eq 0 ]; then
+        print_success "All containers started successfully!"
     else
-        print_info "Starting all containers on remote server..."
-        run_remote_command "cd ${DOCKER_DIR} && docker compose up -d"
-        
-        if [ $? -eq 0 ]; then
-            print_success "All containers started on remote server!"
-        else
-            print_error "Failed to start containers on remote server"
-            return 1
-        fi
+        print_error "Failed to start containers"
+        return 1
     fi
-    
     return 0
 } 
