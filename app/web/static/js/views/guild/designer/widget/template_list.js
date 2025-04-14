@@ -7,17 +7,17 @@ import { apiRequest, showToast, ApiError } from '/static/js/components/common/no
  */
 export async function initializeTemplateList(contentElement, currentGuildId) {
     if (!contentElement) {
-        console.warn("[GuildTemplateListWidget] Content element not provided.");
+        // console.warn("[GuildTemplateListWidget] Content element not provided.");
         return;
     }
     if (!currentGuildId) {
         // Maybe still show global templates?
-        console.warn("[GuildTemplateListWidget] Current Guild ID not provided.");
+        // console.warn("[GuildTemplateListWidget] Current Guild ID not provided.");
         // contentElement.innerHTML = '<p class="panel-placeholder">Guild ID not available.</p>';
         // return;
     }
 
-    console.log("[GuildTemplateListWidget] Initializing...");
+    // console.log("[GuildTemplateListWidget] Initializing...");
     contentElement.innerHTML = '<p class="panel-placeholder">Loading guild structure templates...</p>';
 
     // --- API ENDPOINT including current Guild ID for context --- 
@@ -35,7 +35,7 @@ export async function initializeTemplateList(contentElement, currentGuildId) {
         if (!Array.isArray(templates)) {
             // Handle case where response might be null or not have templates array
             if (response === null || response === undefined) {
-                 console.warn("[GuildTemplateListWidget] No response received from template list API.");
+                 // console.warn("[GuildTemplateListWidget] No response received from template list API.");
                  contentElement.innerHTML = '<p class="panel-placeholder">Could not load templates.</p>';
             } else {
                 console.error("[GuildTemplateListWidget] Invalid data received from API (expected array in response.templates):", response);
@@ -49,86 +49,86 @@ export async function initializeTemplateList(contentElement, currentGuildId) {
             return;
         }
         
-        const itemTemplate = document.getElementById('template-list-item-template');
-        if (!itemTemplate) {
-             console.error("[GuildTemplateListWidget] HTML template #template-list-item-template not found!");
-             contentElement.innerHTML = '<p class="text-danger p-3">Error: UI template missing.</p>';
-             return;
-        }
-        
         const fragment = document.createDocumentFragment();
 
         templates.forEach(template => {
-            // Use fields from the GuildTemplateListItemSchema
             const templateId = template.template_id; 
             const templateName = template.template_name || 'Unnamed Template';
-            // const createdAt = template.created_at;
-            // const sourceGuildId = template.guild_id; 
             
             if (templateId === undefined || templateId === null) {
-                console.warn('[GuildTemplateListWidget] Template object missing template_id:', template);
+                // console.warn('[GuildTemplateListWidget] Template object missing template_id:', template);
                 return;
             }
 
-            let iconClass = 'fas fa-server'; 
-            let nameSuffix = ''; 
+            // --- Create elements using DOM --- 
+            const listItem = document.createElement('div');
+            listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
 
-            const clone = itemTemplate.content.cloneNode(true);
+            const link = document.createElement('a');
+            link.href = '#';
+            link.className = 'text-decoration-none text-body flex-grow-1 me-2 template-load-link';
+            link.dataset.templateId = templateId;
+            link.addEventListener('click', (event) => {
+                event.preventDefault();
+                handleTemplateLoad(templateId);
+            });
 
-            const link = clone.querySelector('.template-load-link');
-            const iconElement = clone.querySelector('.template-icon');
-            const nameElement = clone.querySelector('.template-name');
-            const shareButton = clone.querySelector('.btn-share-template');
-            const deleteButton = clone.querySelector('.btn-delete-template'); 
+            const iconElement = document.createElement('i');
+            // TODO: Consider making icon dynamic based on template type (initial, user, shared) if needed
+            iconElement.className = 'template-icon fas fa-server me-2'; // Default icon
+            link.appendChild(iconElement);
 
-            if (link) {
-                 link.dataset.templateId = templateId; 
-                 link.addEventListener('click', (event) => {
-                    event.preventDefault();
-                    handleTemplateLoad(templateId);
-                });
-            }
-            if (iconElement) {
-                iconElement.className = `template-icon ${iconClass} me-2`; 
-            }
-            if (nameElement) {
-                nameElement.textContent = `${templateName}${nameSuffix}`;
-            }
-            // --- Configure SHARE Button --- 
-            if (shareButton) {
-                // Ensure icon is correct (should match HTML template)
-                const shareIconSpan = shareButton.querySelector('i'); 
-                if (shareIconSpan) {
-                    shareIconSpan.className = 'fas fa-share-alt'; // Correct icon
-                }
-                shareButton.dataset.templateId = templateId; // Share needs ID
-                shareButton.dataset.templateName = templateName;
-                shareButton.title = `Share template '${templateName}'`; // Correct title
-                shareButton.addEventListener('click', (event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    // Call the new share handler
-                    handleTemplateShare(templateId, templateName);
-                });
-            }
-            // --- Configure DELETE Button --- 
-            if (deleteButton) {
-                // Style the delete icon red
-                const deleteIconSpan = deleteButton.querySelector('i'); 
-                if (deleteIconSpan) {
-                    deleteIconSpan.className = 'fas fa-trash-alt text-danger'; 
-                }
-                deleteButton.dataset.templateId = templateId;
-                deleteButton.dataset.templateName = templateName; 
-                deleteButton.title = `Delete template '${templateName}'`;
-                deleteButton.addEventListener('click', (event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    handleTemplateDelete(templateId, templateName, contentElement, currentGuildId);
-                });
-            }
-            
-            fragment.appendChild(clone);
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'template-name';
+            nameSpan.textContent = templateName;
+            link.appendChild(nameSpan);
+
+            listItem.appendChild(link);
+
+            // --- Action Buttons Group --- 
+            const buttonGroup = document.createElement('div');
+            buttonGroup.className = 'btn-group btn-group-sm';
+            buttonGroup.setAttribute('role', 'group');
+            buttonGroup.setAttribute('aria-label', 'Template Actions');
+
+            // Share Button
+            const shareButton = document.createElement('button');
+            shareButton.type = 'button';
+            shareButton.className = 'btn btn-outline-secondary btn-share-template';
+            shareButton.title = `Share template '${templateName}'`;
+            shareButton.dataset.templateId = templateId;
+            shareButton.dataset.templateName = templateName;
+            const shareIcon = document.createElement('i');
+            shareIcon.className = 'fas fa-share-alt';
+            shareButton.appendChild(shareIcon);
+            shareButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                handleTemplateShare(templateId, templateName);
+            });
+            buttonGroup.appendChild(shareButton);
+
+            // Delete Button
+            const deleteButton = document.createElement('button');
+            deleteButton.type = 'button';
+            deleteButton.className = 'btn btn-outline-secondary btn-delete-template';
+            deleteButton.title = `Delete template '${templateName}'`;
+            deleteButton.dataset.templateId = templateId;
+            deleteButton.dataset.templateName = templateName;
+            const deleteIcon = document.createElement('i');
+            deleteIcon.className = 'fas fa-trash-alt text-danger'; // Style icon red
+            deleteButton.appendChild(deleteIcon);
+            deleteButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                handleTemplateDelete(templateId, templateName, contentElement, currentGuildId);
+            });
+            buttonGroup.appendChild(deleteButton);
+            // --- End Action Buttons ---
+
+            listItem.appendChild(buttonGroup);
+            fragment.appendChild(listItem);
+            // --- End DOM Creation ---
         });
 
         contentElement.innerHTML = ''; 
@@ -148,7 +148,7 @@ export async function initializeTemplateList(contentElement, currentGuildId) {
  * @param {string} templateId - The ID of the GUILD STRUCTURE template to load.
  */
 function handleTemplateLoad(templateId) {
-    console.log(`[GuildTemplateListWidget] Load GUILD STRUCTURE template selected: ${templateId}`);
+    // console.log(`[GuildTemplateListWidget] Load GUILD STRUCTURE template selected: ${templateId}`);
     // TODO: Implement logic to apply this structure template to the current guild (API call?)
     showToast('info', `Loading guild structure template ${templateId}... (Not implemented yet)`);
 }
@@ -159,7 +159,7 @@ function handleTemplateLoad(templateId) {
  * @param {string} templateName - The name of the template.
  */
 function handleTemplateShare(templateId, templateName) {
-    console.log(`[GuildTemplateListWidget] Share requested for template ID: ${templateId}, Name: ${templateName}`);
+    // console.log(`[GuildTemplateListWidget] Share requested for template ID: ${templateId}, Name: ${templateName}`);
     // TODO: Implement sharing functionality (e.g., generate link, copy to clipboard, open share modal)
     showToast('info', `Sharing template "${templateName}"... (Not implemented yet)`);
 }
@@ -172,16 +172,16 @@ function handleTemplateShare(templateId, templateName) {
  * @param {string} currentGuildId - The current guild ID for list refresh context.
  */
 async function handleTemplateDelete(templateId, templateName, listContentElement, currentGuildId) {
-    console.log(`[GuildTemplateListWidget] Delete requested for template ID: ${templateId}, Name: ${templateName}`);
+    // console.log(`[GuildTemplateListWidget] Delete requested for template ID: ${templateId}, Name: ${templateName}`);
 
     // Confirmation dialog
     if (!confirm(`Are you sure you want to permanently delete the template "${templateName}"?`)) {
-        console.log("[GuildTemplateListWidget] Delete cancelled by user.");
+        // console.log("[GuildTemplateListWidget] Delete cancelled by user.");
         return;
     }
 
     const deleteApiUrl = `/api/v1/templates/guilds/${templateId}`;
-    console.log(`[GuildTemplateListWidget] Sending DELETE request to: ${deleteApiUrl}`);
+    // console.log(`[GuildTemplateListWidget] Sending DELETE request to: ${deleteApiUrl}`);
 
     try {
         await apiRequest(deleteApiUrl, {
@@ -189,13 +189,13 @@ async function handleTemplateDelete(templateId, templateName, listContentElement
         });
         
         showToast('success', `Template "${templateName}" deleted successfully.`);
-        console.log(`[GuildTemplateListWidget] Successfully deleted template ${templateId}.`);
+        // console.log(`[GuildTemplateListWidget] Successfully deleted template ${templateId}.`);
         
         // Refresh the list
         if (listContentElement) {
             initializeTemplateList(listContentElement, currentGuildId);
         } else {
-            console.warn("[GuildTemplateListWidget] Could not refresh list after delete: content element missing.");
+            // console.warn("[GuildTemplateListWidget] Could not refresh list after delete: content element missing.");
         }
 
     } catch (error) {

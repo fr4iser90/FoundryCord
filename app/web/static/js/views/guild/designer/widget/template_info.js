@@ -13,9 +13,21 @@ export function initializeTemplateInfo(templateData, contentElement) {
         return;
     }
 
-    console.log("[TemplateInfoWidget] Populating...");
-    contentElement.innerHTML = `
-        <h5>${templateData.template_name || 'Unnamed Template'}</h5>
-        <p class="mb-0"><small class="text-secondary">Created: ${templateData.created_at ? new Date(templateData.created_at).toLocaleString() : 'N/A'}</small></p>
-    `;
+    // console.log("[TemplateInfoWidget] Populating..."); // AUSKOMMENTIERT
+
+    // Create elements using DOM manipulation
+    const nameHeader = document.createElement('h5');
+    nameHeader.textContent = templateData.template_name || 'Unnamed Template';
+
+    const createdP = document.createElement('p');
+    createdP.className = 'mb-0';
+    const createdSmall = document.createElement('small');
+    createdSmall.className = 'text-secondary'; // Changed from text-muted for better visibility maybe?
+    createdSmall.textContent = `Created: ${templateData.created_at ? new Date(templateData.created_at).toLocaleString() : 'N/A'}`;
+    createdP.appendChild(createdSmall);
+
+    // Clear previous content and append new elements
+    contentElement.innerHTML = '';
+    contentElement.appendChild(nameHeader);
+    contentElement.appendChild(createdP);
 } 

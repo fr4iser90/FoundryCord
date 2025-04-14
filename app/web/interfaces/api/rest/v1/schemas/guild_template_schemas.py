@@ -47,7 +47,7 @@ class ChannelSchema(BaseModel):
     """Schema for a channel within a template."""
     id: int
     name: str = Field(..., alias="channel_name")
-    type: str = Field(..., alias="channel_type")
+    type: str
     position: int
     topic: Optional[str] = None
     is_nsfw: Optional[bool] = False
@@ -68,7 +68,7 @@ class GuildTemplateResponseSchema(BaseModel):
     channels: List[ChannelSchema] = []
 
     class Config:
-        from_attributes = True # Needed if data comes directly from ORM objects/dicts with matching keys
+        # from_attributes = True # REMOVED - Data comes from a dict, not ORM object directly here
         populate_by_name = True # Enable using aliases for population
         # Ensure nested models also use populate_by_name if needed
 

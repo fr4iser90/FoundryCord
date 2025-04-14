@@ -122,6 +122,7 @@ class GuildTemplateService:
                         })
                     structured_template["channels"].append(channel_data)
                 
+
                 logger.info(f"Successfully fetched and structured template data for guild {guild_id}")
                 return structured_template
 

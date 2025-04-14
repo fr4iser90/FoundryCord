@@ -14,7 +14,7 @@ export function initializeChannelsList(templateData, contentElement, guildId) {
         return;
     }
 
-    console.log("[ChannelsListWidget] Populating...");
+    // console.log("[ChannelsListWidget] Populating...");
 
     // Build categories map locally for sorting/display
     const categoriesById = {};
@@ -34,24 +34,49 @@ export function initializeChannelsList(templateData, contentElement, guildId) {
             const channelPosB = typeof b?.position === 'number' ? b.position : Infinity;
             return channelPosA - channelPosB;
         });
-        const listItems = templateData.channels.map(chan => {
-            if (!chan) return '';
+
+        // Create elements using DOM manipulation
+        const listElement = document.createElement('ul');
+        listElement.className = 'list-group list-group-flush';
+        const fragment = document.createDocumentFragment();
+
+        templateData.channels.forEach(chan => {
+            if (!chan) return;
+
+            const listItem = document.createElement('li');
+            listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+            const nameSpan = document.createElement('span');
+            const icon = document.createElement('i');
             const category = categoriesById[chan.parent_category_template_id];
             const categoryName = category ? category.category_name : 'Uncategorized';
-            let channelIcon = 'fas fa-question-circle';
-            if (chan.type === 'GUILD_TEXT') channelIcon = 'fas fa-hashtag';
-            else if (chan.type === 'GUILD_VOICE') channelIcon = 'fas fa-volume-up';
-             return `
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                <span>
-                    <i class="fas ${channelIcon} me-2"></i>
-                        ${chan.channel_name || 'Unnamed Channel'} <small class="text-secondary">(${categoryName})</small>
-                </span>
-                    <span class="badge bg-secondary rounded-pill">Pos: ${chan.position !== undefined ? chan.position : 'N/A'}</span>
-                </li>
-            `;
-        }).join('');
-        contentElement.innerHTML = `<ul class="list-group list-group-flush">${listItems}</ul>`;
+            let channelIconClass = 'fas fa-question-circle';
+            const rawChannelType = chan.type;
+            const channelType = rawChannelType ? rawChannelType.trim().toLowerCase() : '';
+            // console.log(`[ChannelList Icon Check] ID=${chan.id}, Raw Type='${rawChannelType}', Processed Type='${channelType}'`); // ENTFERNT
+            if (channelType === 'text') channelIconClass = 'fas fa-hashtag';
+            else if (channelType === 'voice') channelIconClass = 'fas fa-volume-up';
+
+            icon.className = `${channelIconClass} me-2`;
+            nameSpan.appendChild(icon);
+            nameSpan.appendChild(document.createTextNode(` ${chan.channel_name || 'Unnamed Channel'} `));
+            const categorySmall = document.createElement('small');
+            categorySmall.className = 'text-secondary';
+            categorySmall.textContent = `(${categoryName})`;
+            nameSpan.appendChild(categorySmall);
+
+            const badgeSpan = document.createElement('span');
+            badgeSpan.className = 'badge bg-secondary rounded-pill';
+            badgeSpan.textContent = `Pos: ${chan.position !== undefined ? chan.position : 'N/A'}`;
+
+            listItem.appendChild(nameSpan);
+            listItem.appendChild(badgeSpan);
+            fragment.appendChild(listItem);
+        });
+
+        listElement.appendChild(fragment);
+        contentElement.innerHTML = ''; // Clear previous content
+        contentElement.appendChild(listElement);
 
         // Ensure Manage link exists
         const header = contentElement.closest('.grid-stack-item-content')?.querySelector('.widget-header');
