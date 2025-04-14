@@ -35,7 +35,7 @@ elif [ -f "./docker/.env" ]; then
 fi
 
 # Global Variables
-export RUN_REMOTE=true
+export RUN_REMOTE=false
 export AUTO_START=true
 export AUTO_BUILD=true
 export REMOVE_VOLUMES=false
@@ -47,7 +47,7 @@ export DOCKER_PROFILE="" # Initialize Docker profile variable
 for arg in "$@"; do
     case $arg in
         --remote)
-            export RUN_REMOTE=false
+            export RUN_REMOTE=true
             echo "Running in remote mode with server: $SERVER_HOST"
             shift
             ;;
