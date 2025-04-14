@@ -12,7 +12,7 @@ view_container_logs_generic() {
     clear
     print_section_header "${log_type_name} Logs"
     
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_error "Cannot view logs in local mode"
     else
         # Check if the container exists
@@ -71,7 +71,7 @@ view_system_logs() {
     clear
     print_section_header "System Logs"
     
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_error "Cannot view system logs in local mode"
     else
         print_info "Viewing system journal logs (last 100 lines)..."
@@ -87,7 +87,7 @@ view_docker_logs() {
     clear
     print_section_header "Docker Logs"
     
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_error "Cannot view Docker daemon logs in local mode"
     else
         print_info "Viewing Docker daemon logs (last 100 lines)..."
@@ -103,7 +103,7 @@ download_logs() {
     clear
     print_section_header "Download All Container Logs"
     
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_error "Cannot download logs in local mode"
         press_enter_to_continue
         show_logs_menu

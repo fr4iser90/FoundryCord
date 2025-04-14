@@ -13,7 +13,7 @@ show_header() {
     echo -e "${YELLOW}Project: ${GREEN}${PROJECT_NAME}${NC}"
     echo -e "  Server: ${GREEN}${SERVER_USER}@${SERVER_HOST}:${SERVER_PORT}${NC}"
     echo -e "  Environment: ${GREEN}${ENVIRONMENT:-dev}${NC}"
-    echo -e "  Mode: ${GREEN}$( [ "$RUN_REMOTE" = true ] && echo "Local" || echo "Remote" )${NC}"
+    echo -e "  Mode: ${GREEN}$( [ "$RUN_REMOTE" = false ] && echo "Local" || echo "Remote" )${NC}"
     
     # Show environment variables status (check if a common var like DB_NAME is loaded)
     local env_status=""
@@ -41,7 +41,7 @@ show_header() {
         else
             echo -e "  Running Containers: ${YELLOW}None detected${NC}"
         fi
-    elif [ "$RUN_REMOTE" = true ]; then
+    elif [ "$RUN_REMOTE" = false ]; then
          # Check local running containers
          local running_list=""
          for c_name in "${CONTAINER_LIST[@]}"; do

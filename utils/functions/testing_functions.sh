@@ -9,7 +9,7 @@ run_all_tests() {
     clear
     print_section_header "Run All Tests"
     
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         run_local_tests "all"
     else
         # Assuming a generic test runner script exists or tests run directly
@@ -25,7 +25,7 @@ run_unit_tests() {
     clear
     print_section_header "Run Unit Tests"
     
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         run_local_tests "unit"
     else
         run_tests_in_container "unit"
@@ -39,7 +39,7 @@ run_integration_tests() {
     clear
     print_section_header "Run Integration Tests"
     
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         run_local_tests "integration"
     else
         run_tests_in_container "integration"
@@ -53,7 +53,7 @@ run_system_tests() {
     clear
     print_section_header "Run System Tests"
     
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         run_local_tests "system"
     else
         run_tests_in_container "system"
@@ -234,7 +234,7 @@ upload_tests() {
     clear
     print_section_header "Upload Tests"
     
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_error "Cannot upload tests in local mode"
     else
         ./utils/testing/upload_tests.sh
@@ -249,7 +249,7 @@ test_server() {
     clear
     print_section_header "Test Server"
     
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_error "Cannot test server in local mode"
     else
         ./utils/testing/test_server.sh
@@ -264,7 +264,7 @@ check_remote_services() {
     clear
     print_section_header "Check Remote Services"
     
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_error "Cannot check remote services in local mode"
     else
         ./utils/testing/check_remote_services.sh
@@ -492,7 +492,7 @@ run_tests_with_docker_container() {
     print_section_header "Running Tests with Dedicated Test Container (${test_container_name})"
     
     # Check if test compose file exists
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         if [ ! -f "${test_compose_file}" ]; then
             print_error "Test docker-compose file not found locally at: ${test_compose_file}"
             return 1
@@ -505,7 +505,7 @@ run_tests_with_docker_container() {
     fi
 
     local compose_cmd_prefix=""
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         compose_cmd_prefix="cd ${LOCAL_DOCKER_DIR}/test && ${DOCKER_COMPOSE_CMD} -f docker-compose.yml"
     else
         compose_cmd_prefix="cd ${EFFECTIVE_DOCKER_DIR}/test && ${DOCKER_COMPOSE_CMD} -f docker-compose.yml"

@@ -115,7 +115,7 @@ validate_config() {
 check_ssh_connection() {
     local silent_mode="$1"
     
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         [ "$silent_mode" != "silent" ] && echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] Running in local mode, skipping SSH check.${NC}"
         return 0
     fi
@@ -151,7 +151,7 @@ run_remote_command() {
     local command="$1"
     local silent_mode="$2"
     
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         [ "$silent_mode" != "silent" ] && echo -e "${BLUE}[LOCAL MODE] Would run: ${command}${NC}"
         return 0
     fi
@@ -341,7 +341,7 @@ run_compose_up() {
     local full_cmd="${compose_cmd} up $@"
     local work_dir=""
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         work_dir="${LOCAL_DOCKER_DIR}"
         log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
         (cd "${work_dir}" && eval "${full_cmd}") # Execute locally in subshell
@@ -360,7 +360,7 @@ run_compose_build() {
     local full_cmd="${compose_cmd} build $@"
     local work_dir=""
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         work_dir="${LOCAL_DOCKER_DIR}"
         log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
         (cd "${work_dir}" && eval "${full_cmd}")
@@ -378,7 +378,7 @@ run_compose_down() {
     local full_cmd="${compose_cmd} down $@"
     local work_dir=""
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         work_dir="${LOCAL_DOCKER_DIR}"
         log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
         (cd "${work_dir}" && eval "${full_cmd}")
@@ -396,7 +396,7 @@ run_compose_ps() {
     local full_cmd="${compose_cmd} ps $@"
     local work_dir=""
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         work_dir="${LOCAL_DOCKER_DIR}"
         log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
         (cd "${work_dir}" && eval "${full_cmd}")
@@ -414,7 +414,7 @@ run_compose_logs() {
     local full_cmd="${compose_cmd} logs $@"
     local work_dir=""
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         work_dir="${LOCAL_DOCKER_DIR}"
         log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
         # Note: Running logs directly might be interactive, handle accordingly
@@ -436,7 +436,7 @@ run_compose_restart() {
     local full_cmd="${compose_cmd} restart $@"
     local work_dir=""
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         work_dir="${LOCAL_DOCKER_DIR}"
         log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
         (cd "${work_dir}" && eval "${full_cmd}")
@@ -454,7 +454,7 @@ run_compose_stop() {
     local full_cmd="${compose_cmd} stop $@"
     local work_dir=""
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         work_dir="${LOCAL_DOCKER_DIR}"
         log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
         (cd "${work_dir}" && eval "${full_cmd}")
@@ -472,7 +472,7 @@ run_compose_rm() {
     local full_cmd="${compose_cmd} rm $@"
     local work_dir=""
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         work_dir="${LOCAL_DOCKER_DIR}"
         log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
         (cd "${work_dir}" && eval "${full_cmd}")
@@ -490,7 +490,7 @@ run_compose_exec() {
     local full_cmd="${compose_cmd} exec $@" # Arguments like container and command come from caller
     local work_dir=""
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         work_dir="${LOCAL_DOCKER_DIR}"
         log_info "[LOCAL] Running: cd ${work_dir} && ${full_cmd}"
         # Running exec directly might be interactive, handle accordingly

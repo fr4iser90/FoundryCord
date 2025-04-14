@@ -14,7 +14,7 @@ run_database_migration() {
     clear
     print_section_header "Database Migration"
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_error "Cannot apply migration in local mode"
         return 1
     fi
@@ -56,7 +56,7 @@ backup_database() {
     if [ -z "${DB_CONTAINER_NAME}" ]; then print_error "DB_CONTAINER_NAME not set."; return 1; fi
     if [ -z "${DB_DUMP_COMMAND_TEMPLATE}" ]; then print_error "DB_DUMP_COMMAND_TEMPLATE not set."; return 1; fi
 
-    if [ "$RUN_REMOTE" = true ]; then print_error "Cannot backup database in local mode"; return 1; fi
+    if [ "$RUN_REMOTE" = false ]; then print_error "Cannot backup database in local mode"; return 1; fi
 
     export DB_BACKUP_DIR="${DB_BACKUP_DIR:-${EFFECTIVE_PROJECT_DIR}/backups}"
     run_remote_command "mkdir -p ${DB_BACKUP_DIR}"
@@ -103,7 +103,7 @@ restore_database() {
     if [ -z "${DB_CREATE_COMMAND_TEMPLATE}" ]; then print_error "DB_CREATE_COMMAND_TEMPLATE not set."; return 1; fi
     if [ -z "${DB_RESTORE_COMMAND_TEMPLATE}" ]; then print_error "DB_RESTORE_COMMAND_TEMPLATE not set (must accept data via stdin)."; return 1; fi
 
-    if [ "$RUN_REMOTE" = true ]; then print_error "Cannot restore database in local mode"; return 1; fi
+    if [ "$RUN_REMOTE" = false ]; then print_error "Cannot restore database in local mode"; return 1; fi
 
     export DB_BACKUP_DIR="${DB_BACKUP_DIR:-${EFFECTIVE_PROJECT_DIR}/backups}"
     local backup_file=""

@@ -160,8 +160,44 @@ function handleTemplateLoad(templateId) {
  */
 function handleTemplateShare(templateId, templateName) {
     // console.log(`[GuildTemplateListWidget] Share requested for template ID: ${templateId}, Name: ${templateName}`);
-    // TODO: Implement sharing functionality (e.g., generate link, copy to clipboard, open share modal)
-    showToast('info', `Sharing template "${templateName}"... (Not implemented yet)`);
+
+    // Get the modal element
+    const shareModalElement = document.getElementById('shareTemplateModal');
+    if (!shareModalElement) {
+        console.error("[GuildTemplateListWidget] Share modal element (#shareTemplateModal) not found in the DOM.");
+        showToast('error', 'Could not open the share dialog.');
+        return;
+    }
+
+    // Get the Bootstrap modal instance
+    // Ensure Bootstrap's Modal class is available (likely loaded globally via base template)
+    const bootstrapModal = bootstrap.Modal.getInstance(shareModalElement) || new bootstrap.Modal(shareModalElement);
+
+    // Populate the modal fields
+    const templateIdInput = shareModalElement.querySelector('#shareTemplateIdInput');
+    const templateNameInput = shareModalElement.querySelector('#shareTemplateNameInput');
+    const templateDescriptionInput = shareModalElement.querySelector('#shareTemplateDescriptionInput');
+
+    if (templateIdInput) {
+        templateIdInput.value = templateId;
+    } else {
+        console.warn("[GuildTemplateListWidget] Share modal is missing the template ID input.");
+    }
+    
+    if (templateNameInput) {
+        templateNameInput.value = templateName; // Pre-fill with the original name
+    } else {
+        console.warn("[GuildTemplateListWidget] Share modal is missing the template name input.");
+    }
+
+    if (templateDescriptionInput) {
+        templateDescriptionInput.value = ''; // Clear description on open
+    } else {
+        console.warn("[GuildTemplateListWidget] Share modal is missing the template description input.");
+    }
+
+    // Show the modal
+    bootstrapModal.show();
 }
 
 /**

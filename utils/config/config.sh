@@ -20,18 +20,12 @@ elif [ -f "$(dirname "$0")/project_config.sh" ]; then # Also check relative to s
     source "$(dirname "$0")/project_config.sh"
 fi
 
-# ------------------------------------------------------
-# Default Settings & Overrides
-# ------------------------------------------------------
-
-# Runtime mode
-export RUN_REMOTE="${RUN_REMOTE:-true}"
 
 # Project source directory (where the git repo is)
 export SOURCE_DIR="$(pwd)"
 
 # Determine effective project directory based on mode
-if [ "$RUN_REMOTE" = true ]; then
+if [ "$RUN_REMOTE" = false ]; then
     export EFFECTIVE_PROJECT_DIR="${LOCAL_PROJECT_DIR}"
 else
     export EFFECTIVE_PROJECT_DIR="${SERVER_PROJECT_DIR}"
@@ -86,19 +80,6 @@ if [ -f "${EFFECTIVE_CONFIG_DIR}/auto_start.conf" ]; then
     source "${EFFECTIVE_CONFIG_DIR}/auto_start.conf"
 fi
 
-# ------------------------------------------------------
-# Directory Creation
-# ------------------------------------------------------
-
-# Directory creation logic might be better handled during deployment if needed
-# if [ "$RUN_REMOTE" = true ]; then
-#     echo -e "\033[0;34m(Local Mode Active) Ensuring local dev structure exists: $LOCAL_PROJECT_DIR\033[0m"
-#     
-#     # Create local development directory structure
-#     mkdir -p "$LOCAL_PROJECT_DIR" \
-#              "$LOCAL_DOCKER_DIR" \
-#              "$LOCAL_APP_DIR"
-# fi
 
 # ------------------------------------------------------
 # Configuration Complete
@@ -106,7 +87,7 @@ fi
 
 echo -e "\033[0;32mConfiguration loaded successfully for project: ${PROJECT_NAME}\033[0m"
 echo -e "\033[0;33mEnvironment: ${ENVIRONMENT}\033[0m"
-if [ "$RUN_REMOTE" = true ]; then
+if [ "$RUN_REMOTE" = false ]; then
     echo -e "\033[0;34mMode: Local Development (Using LOCAL_PROJECT_DIR: ${LOCAL_PROJECT_DIR})\033[0m"
     echo -e "\033[0;34mUse '--remote' flag to target the server.\033[0m"
 else

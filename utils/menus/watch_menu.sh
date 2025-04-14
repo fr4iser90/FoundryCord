@@ -24,7 +24,7 @@ show_watch_menu() {
     
     local choice=$(get_numeric_input "Select an option: ")
     
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_error "Cannot monitor remote services in local mode."
         # Maybe offer local `docker stats`?
         if get_yes_no "Show local docker stats instead?" "n"; then

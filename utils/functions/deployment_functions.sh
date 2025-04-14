@@ -9,7 +9,7 @@ deploy_app() {
     # Restore original functionality for FoundryCord
     print_section_header "Deploying App Files"
     
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_info "Deploying app files to local directory..."
         
         # Ensure local directories exist
@@ -63,7 +63,7 @@ deploy_app() {
 deploy_docker() {
     print_section_header "Deploying Docker Configuration"
     
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_info "Deploying Docker configuration to local directory..."
         
         # Ensure local docker directory exists
@@ -127,7 +127,7 @@ deploy_containers() {
     print_section_header "Deploying Containers"
 
     # Verify .env file exists (locally or remotely)
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         if [ ! -f "${LOCAL_DOCKER_DIR}/.env" ]; then
             print_error "No .env file found locally at ${LOCAL_DOCKER_DIR}/.env! Deployment might fail."
             # Ask if user wants to continue anyway
@@ -166,7 +166,7 @@ deploy_containers() {
 check_deployed_services() {
     print_section_header "Checking Deployed Services Status"
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_info "Checking local container status..."
         run_compose_ps # Use helper function
         return $?
@@ -262,7 +262,7 @@ run_quick_deploy() {
     fi
 
     # 4. Check services
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_info "Containers started locally."
     else
         check_deployed_services
@@ -277,7 +277,7 @@ run_partial_deploy() {
     clear
     print_section_header "Partial Deploy (Persistent Data Safe - Rebuilds Images)"
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_error "Partial deploy (rebuild) not typically needed in local mode if volumes are mapped. Use standard deploy."
         # Or implement local build/up if desired
         return 1
@@ -316,7 +316,7 @@ run_full_reset_deploy() {
     print_info "Bringing down containers and removing volumes (if selected)..."
     run_compose_down ${volume_flag}
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
          print_info "Running in local mode..."
          # Consider if cleaning LOCAL_PROJECT_DIR is still desired
          # if [ -d "${LOCAL_PROJECT_DIR}" ]; then ... sudo rm ... fi
@@ -372,7 +372,7 @@ update_docker_config() {
     clear
     print_section_header "Update Docker Configuration"
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_error "Cannot update Docker configuration in local mode"
         return 1
     fi
@@ -404,7 +404,7 @@ check_docker_files() {
     clear
     print_section_header "Check Docker Files"
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         # Check local files
         print_info "Verifying essential Docker configuration files locally..."
         local docker_files_ok=true
@@ -475,7 +475,7 @@ check_docker_files() {
 auto_start_services() {
     print_section_header "Auto-starting Services"
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_info "Running locally. Starting services directly..."
         run_compose_up -d # Use helper
         return $?
@@ -600,7 +600,7 @@ LOCAL_AUTO_START_SERVICES=${local_auto_start_services:-all}"
     local temp_file="/tmp/${PROJECT_NAME}_auto_start_temp.conf"
     echo "$config_content" > "$temp_file"
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_info "Saving auto-start configuration locally..."
         mkdir -p "$(dirname "$target_config_file")"
         cp "$temp_file" "$target_config_file"
@@ -625,7 +625,7 @@ run_quick_deploy_with_auto_start() {
     clear
     print_section_header "Quick Deploy with Auto-Start"
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_error "Auto-start based on remote config not applicable in local mode. Use standard deploy."
         return 1
     fi
@@ -672,7 +672,7 @@ run_deployment_with_monitoring() {
     clear
     print_section_header "Deployment with Real-time Monitoring"
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_error "Cannot run remote monitoring in local mode" # Local monitoring could be added
         return 1
     fi
@@ -747,7 +747,7 @@ run_quick_deploy_attach() {
     local target_container="${MAIN_CONTAINER}" # Use config value
     print_info "Attempting to attach to container: ${target_container}"
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         print_info "Containers started locally."
         sleep 5 # Wait briefly
         # Use docker attach directly

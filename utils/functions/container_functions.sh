@@ -15,7 +15,7 @@ load_available_containers() {
     # For now, keep existing logic but add a warning
     print_warning "Container list loading might not be profile-aware yet."
 
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         # Use CONTAINER_LIST derived from CONTAINER_NAMES in config
         print_info "Loading containers from local config CONTAINER_LIST: ${CONTAINER_LIST[@]}"
         CONTAINER_ACTIONS=("${CONTAINER_LIST[@]}") # Use the array directly
@@ -182,7 +182,7 @@ rebuild_containers() {
     
     print_info "This will rebuild applicable Docker images for project: ${PROJECT_NAME} and the current profile."
     
-    if [ "$RUN_REMOTE" = true ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         # Handle local rebuild if needed
         print_info "Performing local rebuild..."
         run_compose_build --no-cache # Use helper
