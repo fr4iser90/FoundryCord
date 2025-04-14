@@ -12,7 +12,7 @@ show_main_menu() {
     local is_first_setup=false
     
     # Run a check to see if Docker files exist on remote server
-    if [ "$RUN_LOCALLY" = false ]; then
+    if [ "$RUN_REMOTE" = false ]; then
         if ! run_remote_command "test -d ${DOCKER_DIR}" "silent"; then
             is_first_setup=true
         fi

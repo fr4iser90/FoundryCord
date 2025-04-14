@@ -61,7 +61,7 @@ show_env_files_menu() {
 edit_env_file() {
     clear
     
-    if [ "$RUN_LOCALLY" = true ]; then
+    if [ "$RUN_REMOTE" = true ]; then
         print_error "Cannot edit remote .env file in local mode. Edit ./docker/.env or ./.env manually."
         press_enter_to_continue
         return
@@ -160,7 +160,7 @@ upload_env_file() {
     clear
     print_section_header "Upload Local .env File to Server"
     
-    if [ "$RUN_LOCALLY" = true ]; then
+    if [ "$RUN_REMOTE" = true ]; then
         print_error "Cannot upload files in local mode. Place your .env in ./ or ./docker/ manually."
         press_enter_to_continue
         return
@@ -235,7 +235,7 @@ download_env_file() {
     clear
     print_section_header "Download Server .env File"
     
-    if [ "$RUN_LOCALLY" = true ]; then
+    if [ "$RUN_REMOTE" = true ]; then
         print_error "Cannot download files in local mode."
         press_enter_to_continue
         return
@@ -286,7 +286,7 @@ generate_template_env() {
 sync_env_values() {
     print_section_header "Sync Server .env Values to Local Shell (Temporary)"
     
-    if [ "$RUN_LOCALLY" = true ]; then
+    if [ "$RUN_REMOTE" = true ]; then
         print_error "Cannot sync from remote server in local mode."
         return 1
     fi

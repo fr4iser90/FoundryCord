@@ -51,7 +51,7 @@ update_utility_scripts() {
     clear
     print_section_header "Update Utility Scripts"
     
-    if [ "$RUN_LOCALLY" = true ]; then
+    if [ "$RUN_REMOTE" = true ]; then
         print_error "Cannot update utility scripts in local mode"
         press_enter_to_continue
         show_development_menu

@@ -35,7 +35,7 @@ elif [ -f "./docker/.env" ]; then
 fi
 
 # Global Variables
-export RUN_LOCALLY=true
+export RUN_REMOTE=true
 export AUTO_START=true
 export AUTO_BUILD=true
 export REMOVE_VOLUMES=false
@@ -47,7 +47,7 @@ export DOCKER_PROFILE="" # Initialize Docker profile variable
 for arg in "$@"; do
     case $arg in
         --remote)
-            export RUN_LOCALLY=false
+            export RUN_REMOTE=false
             echo "Running in remote mode with server: $SERVER_HOST"
             shift
             ;;
@@ -86,7 +86,7 @@ source "./utils/menus/watch_menu.sh"
 # Main function
 # ------------------------------------------------------
 main() {
-    # Parse command line arguments first to potentially set RUN_LOCALLY etc.
+    # Parse command line arguments first to potentially set RUN_REMOTE etc.
     parse_cli_args "$@"
     
     # Validate configuration (which is now loaded via config.sh -> project_config.sh)
@@ -133,7 +133,7 @@ parse_cli_args() {
                 local target="${1#*=}"
                 # Check if target is valid (from HOT_RELOAD_TARGETS in config)
                 if [[ " ${HOT_RELOAD_TARGETS} " =~ " ${target} " ]]; then
-                    RUN_LOCALLY=true # Hot-reload only makes sense locally
+                    RUN_REMOTE=true # Hot-reload only makes sense locally
                     print_info "Initiating hot-reload for target: ${target}..."
                     run_hot_reload "${target}" # Assumes this function exists in development_functions.sh
                     exit $?
@@ -144,7 +144,7 @@ parse_cli_args() {
                 fi
                 ;;
             --hot-reload-all)
-                RUN_LOCALLY=true # Hot-reload only makes sense locally
+                RUN_REMOTE=true # Hot-reload only makes sense locally
                 print_info "Initiating hot-reload for all targets: ${HOT_RELOAD_TARGETS}..."
                 for target in ${HOT_RELOAD_TARGETS}; do
                     run_hot_reload "${target}" # Assumes this function exists
@@ -154,7 +154,7 @@ parse_cli_args() {
 
             # Existing options...
             --local) # Ensure --local is handled *after* --profile and hot-reload
-                export RUN_LOCALLY=true
+                export RUN_REMOTE=true
                 echo "Running in local mode with project directory: $LOCAL_PROJECT_DIR"
                 ;;
             --init-only) INIT_ONLY=true ;; 

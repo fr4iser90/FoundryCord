@@ -21,7 +21,7 @@ show_database_menu() {
     case "$choice" in
         1) 
             if [ -f "./utils/database/update_alembic_migration.sh" ]; then
-                 run_alembic_migration
+                 run_database_migration
             else
                  print_warning "Alembic migration script not found."
             fi
