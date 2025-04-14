@@ -126,12 +126,15 @@ def upgrade() -> None:
     op.create_table(
         'guild_templates',
         sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
-        sa.Column('guild_id', sa.String(20), sa.ForeignKey('discord_guilds.guild_id', ondelete='CASCADE'), nullable=False, unique=True),
+        sa.Column('guild_id', sa.String(20), sa.ForeignKey('discord_guilds.guild_id', ondelete='SET NULL'), nullable=True),
         sa.Column('template_name', sa.String(length=255), nullable=False),
+        sa.Column('creator_user_id', sa.Integer(), sa.ForeignKey('app_users.id', ondelete='SET NULL'), nullable=True),
+        sa.Column('is_shared', sa.Boolean(), server_default='false', nullable=False, default=False),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
         sa.Column('is_active', sa.Boolean(), server_default='true', nullable=False)
     )
     op.create_index('idx_guild_templates_guild_id', 'guild_templates', ['guild_id'])
+    op.create_index('idx_guild_templates_creator_user_id', 'guild_templates', ['creator_user_id'])
 
     op.create_table(
         'guild_template_categories',

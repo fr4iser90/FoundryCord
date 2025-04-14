@@ -232,41 +232,67 @@ class GuildTemplateService:
             # Returning None for now, controller can handle the 404/500 response.
             return None
 
-    async def list_templates(self, user_id: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Lists basic information about saved guild templates.
+    async def list_templates(self, user_id: int, context_guild_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Lists basic information about saved guild templates visible to the user.
         
+        Fetches:
+        1. Templates created by the user.
+        2. Templates marked as shared.
+        3. The initial snapshot (creator_user_id is NULL) for the specified context_guild_id (if provided).
+
         Args:
-            user_id: If provided, potentially filter templates by creator (TODO: Implement filtering).
+            user_id: The ID of the user requesting the templates.
+            context_guild_id: The ID of the guild currently being viewed/designed, to include its initial snapshot.
 
         Returns:
-            A list of dictionaries, each containing basic template info (id, name, created_at).
+            A list of dictionaries, each containing basic template info.
         """
-        logger.info(f"Listing available guild templates (filter user_id: {user_id})")
+        logger.info(f"Listing visible guild templates for user_id: {user_id}, context_guild_id: {context_guild_id}")
         templates_info = []
         try:
             async with session_context() as session:
-                template_repo = GuildTemplateRepositoryImpl(session)
                 
-                # TODO: Add filtering by user_id if the GuildTemplateEntity has a creator_user_id field
-                # For now, fetch all templates
-                query = select(GuildTemplateEntity).order_by(GuildTemplateEntity.created_at.desc())
+                # Build the base query parts
+                user_owned_filter = (GuildTemplateEntity.creator_user_id == user_id)
+                shared_filter = (GuildTemplateEntity.is_shared == True)
+                
+                # Filter for the specific initial snapshot of the context guild
+                initial_snapshot_filter = None
+                if context_guild_id:
+                    initial_snapshot_filter = (
+                        (GuildTemplateEntity.guild_id == context_guild_id) & 
+                        (GuildTemplateEntity.creator_user_id.is_(None)) # Check for NULL explicitly
+                    )
+                
+                # Combine filters with OR
+                combined_filter = user_owned_filter | shared_filter
+                if initial_snapshot_filter is not None:
+                    combined_filter = combined_filter | initial_snapshot_filter
+
+                query = (
+                    select(GuildTemplateEntity)
+                    .where(combined_filter)
+                    .order_by(GuildTemplateEntity.created_at.desc())
+                )
 
                 result = await session.execute(query)
-                all_templates: List[GuildTemplateEntity] = result.scalars().all()
+                visible_templates: List[GuildTemplateEntity] = result.scalars().all()
 
-                for template in all_templates:
+                for template in visible_templates:
                     templates_info.append({
                         "template_id": template.id,
                         "template_name": template.template_name,
                         "created_at": template.created_at.isoformat() if template.created_at else None,
-                        "guild_id": template.guild_id 
+                        "guild_id": template.guild_id,
+                        "creator_user_id": template.creator_user_id,
+                        "is_shared": template.is_shared 
                     })
                 
-                logger.info(f"Successfully listed {len(templates_info)} templates.")
+                logger.info(f"Successfully listed {len(templates_info)} visible templates for user {user_id} (context: {context_guild_id}).")
                 return templates_info
                 
         except Exception as e:
-            logger.error(f"Error listing guild templates: {e}", exc_info=True)
+            logger.error(f"Error listing visible guild templates for user {user_id} (context: {context_guild_id}): {e}", exc_info=True)
             return []
 
     async def delete_template(self, template_id: int) -> bool:

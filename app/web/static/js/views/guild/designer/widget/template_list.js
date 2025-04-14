@@ -20,11 +20,12 @@ export async function initializeTemplateList(contentElement, currentGuildId) {
     console.log("[GuildTemplateListWidget] Initializing...");
     contentElement.innerHTML = '<p class="panel-placeholder">Loading guild structure templates...</p>';
 
-    // --- CORRECTED API ENDPOINT --- 
-    const listApiUrl = `/api/v1/templates/guilds/`; // Correct list endpoint
+    // --- API ENDPOINT including current Guild ID for context --- 
+    // Need to pass the current guild ID so the backend can include its initial snapshot
+    const listApiUrl = `/api/v1/templates/guilds/?context_guild_id=${encodeURIComponent(currentGuildId)}`; 
 
     try {
-        // Fetch the list of templates
+        // Fetch the list of templates visible to the user, plus initial for context guild
         const response = await apiRequest(listApiUrl); 
         
         // --- CORRECTED RESPONSE HANDLING --- 

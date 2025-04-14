@@ -101,20 +101,29 @@ class GuildTemplateController(BaseController):
             return self.handle_exception(e)
 
     # --- Method for NEW List Route --- 
-    async def list_guild_templates(self, current_user: AppUserEntity = Depends(get_current_user)) -> GuildTemplateListResponseSchema:
-        """API endpoint to list accessible guild structure templates."""
+    async def list_guild_templates(self, 
+                                   current_user: AppUserEntity = Depends(get_current_user),
+                                   # Add context_guild_id as an optional query parameter
+                                   context_guild_id: Optional[str] = None 
+                                  ) -> GuildTemplateListResponseSchema:
+        """API endpoint to list guild structure templates visible to the current user,
+           optionally including the initial snapshot for a specific context guild.
+        """ # Updated docstring
+        self.logger.info(f"Listing templates requested by user {current_user.id}. Context guild_id: {context_guild_id}") # Updated log
         try:
-            # TODO: Add permission check if needed (e.g., list only user's own templates?)
-            pass # Assuming any authenticated user can list for now
+            # TODO: Add permission check if needed 
+            pass 
 
             # --- Call Service Layer --- 
-            # TODO: Potentially pass user_id to service for filtering?
-            templates_list: List[Dict[str, Any]] = await self.template_service.list_templates()
+            # Pass user ID and context guild ID to the service for filtering
+            templates_list: List[Dict[str, Any]] = await self.template_service.list_templates(
+                user_id=current_user.id, 
+                context_guild_id=context_guild_id
+            )
 
             # --- Return Success Response --- 
-            # Wrap the list in the response schema structure { "templates": [...] }
             return {"templates": templates_list}
-        
+
         except Exception as e:
             self.logger.error(f"Error listing guild templates: {e}", exc_info=True)
             # Use base controller handler or raise generic 500
