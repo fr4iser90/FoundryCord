@@ -128,6 +128,7 @@ def upgrade() -> None:
         sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
         sa.Column('guild_id', sa.String(20), sa.ForeignKey('discord_guilds.guild_id', ondelete='SET NULL'), nullable=True),
         sa.Column('template_name', sa.String(length=255), nullable=False),
+        sa.Column('template_description', sa.Text, nullable=True),
         sa.Column('creator_user_id', sa.Integer(), sa.ForeignKey('app_users.id', ondelete='SET NULL'), nullable=True),
         sa.Column('is_shared', sa.Boolean(), server_default='false', nullable=False, default=False),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),

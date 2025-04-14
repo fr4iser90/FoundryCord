@@ -42,6 +42,7 @@ export REMOVE_VOLUMES=false
 export SKIP_CONFIRMATION=false
 export DIRECT_DEPLOY=false
 export DOCKER_PROFILE="" # Initialize Docker profile variable
+export DIRECT_ACTION=false # Initialize DIRECT_ACTION
 
 # Parse command line arguments for local mode
 for arg in "$@"; do
@@ -93,14 +94,15 @@ main() {
     validate_config
     
     # Handle direct deployment options first (bypass menus)
-    if [ "$DIRECT_DEPLOY" = true ]; then
-        # Skip showing any menus and run the requested deployment directly
-        exit $?
-    fi
+    # If parse_cli_args handled a direct action and exited, this won't be reached.
+    # This check might need refinement depending on how DIRECT_DEPLOY is set/used.
+    # if [ "$DIRECT_DEPLOY" = true ]; then
+    #     exit $?
+    # fi
     
-    # Handle special execution modes
+    # Handle special execution modes (WATCH_CONSOLE, INIT_ONLY)
+    # These also might need to exit directly from parse_cli_args if passed as flags
     if [ "$WATCH_CONSOLE" = true ]; then
-        # Direct to deployment with monitoring
         print_info "Starting deployment with console monitoring..."
         run_deployment_with_monitoring "$WATCH_SERVICES"
         exit $?
@@ -112,12 +114,19 @@ main() {
         exit $?
     fi
         
-    # Display main menu
+    # Display main menu if no direct action caused an exit earlier
     show_main_menu
 }
 
 # Parse command line arguments
 parse_cli_args() {
+    # Initialize variables for direct log viewing
+    local VIEW_LOGS_TARGET=""
+    local VIEW_LOGS_LINES="50" # Default lines
+    local VIEW_LOGS_FOLLOW=false
+    # Reset DIRECT_ACTION at the start of parsing
+    DIRECT_ACTION=false 
+
     while [[ $# -gt 0 ]]; do
         case $1 in
             # >>> Add profile handling here <<<
@@ -152,26 +161,53 @@ parse_cli_args() {
                 exit $?
                 ;;
 
+            # Direct Log Viewing
+            --logs=*)
+                DIRECT_ACTION=true # Mark that a direct action is happening
+                VIEW_LOGS_TARGET="${1#*=}"
+                ;;
+            --lines=*)
+                VIEW_LOGS_LINES="${1#*=}"
+                ;;
+            --follow)
+                VIEW_LOGS_FOLLOW=true
+                ;;
+
             # Existing options...
             --local) # Ensure --local is handled *after* --profile and hot-reload
                 export RUN_REMOTE=true
                 echo "Running in local mode with project directory: $LOCAL_PROJECT_DIR"
                 ;;
-            --init-only) INIT_ONLY=true ;; 
-            --skip-confirmation) SKIP_CONFIRMATION=true ;;
-            --remove-volumes) REMOVE_VOLUMES=true ;; 
+            --init-only)
+                INIT_ONLY=true # Flag for main loop
+                DIRECT_ACTION=true
+                ;;
+            --skip-confirmation)
+                SKIP_CONFIRMATION=true
+                ;;
+            --remove-volumes)
+                REMOVE_VOLUMES=true
+                ;;
             --env-file=*) 
                 ENV_FILE="${1#*=}"
                 [ -f "$ENV_FILE" ] && source_env_file "$ENV_FILE"
                 ;;
             
-            # Deployment modes
-            --quick-deploy) DIRECT_DEPLOY=true; run_quick_deploy ;; 
-            --quick-deploy-attach) DIRECT_DEPLOY=true; run_quick_deploy_attach ;; 
-            --partial-deploy) DIRECT_DEPLOY=true; run_partial_deploy ;; 
-            --deploy-with-auto-start) DIRECT_DEPLOY=true; run_quick_deploy_with_auto_start ;; 
+            # Deployment modes that should exit directly
+            --quick-deploy)
+                DIRECT_ACTION=true; run_quick_deploy; exit $?
+                ;;
+            --quick-deploy-attach)
+                DIRECT_ACTION=true; run_quick_deploy_attach; exit $?
+                ;;
+            --partial-deploy)
+                DIRECT_ACTION=true; run_partial_deploy; exit $?
+                ;;
+            --deploy-with-auto-start)
+                DIRECT_ACTION=true; run_quick_deploy_with_auto_start; exit $?
+                ;;
             --full-reset)
-                DIRECT_DEPLOY=true
+                DIRECT_ACTION=true
                 if [ "$SKIP_CONFIRMATION" != "true" ]; then
                     print_error "⚠️ WARNING: This will COMPLETELY ERASE your database!"
                     if ! get_confirmed_input "Are you ABSOLUTELY sure?" "DELETE"; then
@@ -180,24 +216,58 @@ parse_cli_args() {
                     fi
                 fi
                 run_full_reset_deploy
+                exit $?
                 ;;
             --deploy-with-monitoring)
-                DIRECT_DEPLOY=true
+                DIRECT_ACTION=true
                 run_deployment_with_monitoring "all"
+                exit $?
                 ;;
-            --watch-console) WATCH_CONSOLE=true ;; 
-            --watch=*) WATCH_SERVICES="${1#*=}"; WATCH_CONSOLE=true ;; 
+            --watch-console)
+                WATCH_CONSOLE=true # Flag for main loop
+                DIRECT_ACTION=true
+                ;;
+            --watch=*)
+                WATCH_SERVICES="${1#*=}"; WATCH_CONSOLE=true # Flag for main loop
+                DIRECT_ACTION=true
+                ;;
 
-            # Testing
-            --test-ALL) DIRECT_ACTION=true; run_tests_with_docker_container "all"; exit $? ;; 
-            --test-unit) DIRECT_ACTION=true; run_unit_tests; exit $? ;; 
-            --test-integration) DIRECT_ACTION=true; run_integration_tests; exit $? ;; 
-            --test-system) DIRECT_ACTION=true; run_system_tests; exit $? ;; 
-            --test-ordered) DIRECT_ACTION=true; run_ordered_tests; exit $? ;; 
-            --test-simple) run_simple_test; exit 0 ;; 
-            --test-dashboard) run_dashboard_tests; exit 0 ;; 
-            --sequential-tests) DIRECT_ACTION=true; run_sequential_tests; exit $? ;; 
-            --sync-results) DIRECT_ACTION=true; sync_test_results; exit 0 ;; 
+            # --- ADD NEW SAFE DOWN FLAG ---    
+            --safe-down-volumes)
+                DIRECT_ACTION=true
+                print_warning "Stopping containers and removing volumes (docker compose down -v)..."
+                run_compose_down -v # Call helper with -v flag
+                exit $? # Exit immediately
+                ;;
+
+            # Testing flags that should exit directly
+            --test-ALL)
+                DIRECT_ACTION=true; run_tests_with_docker_container "all"; exit $?
+                ;;
+            --test-unit)
+                DIRECT_ACTION=true; run_unit_tests; exit $?
+                ;;
+            --test-integration)
+                DIRECT_ACTION=true; run_integration_tests; exit $?
+                ;;
+            --test-system)
+                DIRECT_ACTION=true; run_system_tests; exit $?
+                ;;
+            --test-ordered)
+                DIRECT_ACTION=true; run_ordered_tests; exit $?
+                ;;
+            --test-simple)
+                DIRECT_ACTION=true; run_simple_test; exit $? # run_simple_test already exits with 0 on success
+                ;;
+            --test-dashboard)
+                DIRECT_ACTION=true; run_dashboard_tests; exit $?
+                ;;
+            --sequential-tests)
+                DIRECT_ACTION=true; run_sequential_tests; exit $?
+                ;;
+            --sync-results)
+                DIRECT_ACTION=true; sync_test_results; exit $?
+                ;;
 
             # Unknown argument
             *)
@@ -209,6 +279,19 @@ parse_cli_args() {
         esac
         shift
     done
+
+    # === Handle Direct Log View Action After Loop ===
+    # Check if --logs was specified (and no other direct action already exited)
+    if [ -n "$VIEW_LOGS_TARGET" ]; then
+        # Ensure log_functions.sh is sourced if parse_cli_args is called before source lines in main
+        if ! type run_direct_log_view > /dev/null 2>&1;
+            then print_error "Log function 'run_direct_log_view' not found. Ensure log_functions.sh is sourced."; exit 1;
+        fi
+        run_direct_log_view "$VIEW_LOGS_TARGET" "$VIEW_LOGS_LINES" "$VIEW_LOGS_FOLLOW"
+        exit $? # Exit after viewing logs
+    fi
+
+    # If we reach here, no direct action caused an exit during the loop or log check
 }
 
 # Run the main function with all command line arguments

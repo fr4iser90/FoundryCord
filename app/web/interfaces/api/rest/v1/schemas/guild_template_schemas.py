@@ -21,6 +21,13 @@ class GuildTemplateCreateSchema(BaseModel):
     # Note: source_guild_id is taken from the URL path parameter in the controller,
     # so it doesn't need to be in the request body schema.
 
+# --- Schema for Sharing/Copying a Template ---
+class GuildTemplateShareSchema(BaseModel):
+    """Schema for the request body when sharing/copying a template."""
+    original_template_id: int = Field(..., description="The database ID of the template to be copied.")
+    new_template_name: str = Field(..., min_length=3, max_length=100, description="The unique name for the new shared template.")
+    new_template_description: Optional[str] = Field(None, max_length=500, description="Optional description for the new shared template.")
+
 # --- Schemas for Template Response ---
 
 class PermissionSchema(BaseModel):

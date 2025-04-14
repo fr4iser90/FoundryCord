@@ -19,6 +19,7 @@ class GuildTemplateEntity(Base):
     # guild_id is the original source, not necessarily unique anymore
     guild_id = Column(String(20), ForeignKey('discord_guilds.guild_id', ondelete='SET NULL'), nullable=True, index=True)
     template_name = Column(String(length=255), nullable=False)
+    template_description = Column(Text, nullable=True)
     # Add creator user ID (nullable for bot-created snapshots)
     creator_user_id = Column(Integer, ForeignKey('app_users.id', ondelete='SET NULL'), nullable=True, index=True)
     # Add shared flag

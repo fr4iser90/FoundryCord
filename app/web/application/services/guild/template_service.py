@@ -296,6 +296,131 @@ class GuildTemplateService:
             logger.error(f"Error listing visible guild templates for user {user_id} (context: {context_guild_id}): {e}", exc_info=True)
             return []
 
+    async def share_template(
+        self, 
+        original_template_id: int, 
+        new_name: str, 
+        new_description: Optional[str], 
+        creator_user_id: int
+    ) -> Optional[Dict[str, Any]]:
+        """Creates a new template by copying an existing one."""
+        logger.info(f"Attempting to share/copy template ID {original_template_id} as '{new_name}' for user {creator_user_id}")
+        
+        # Fetch the original template structure first
+        original_template_data = await self.get_template_by_id(original_template_id)
+        if not original_template_data:
+            logger.warning(f"Original template ID {original_template_id} not found for sharing.")
+            return None # Original template doesn't exist
+
+        async with session_context() as session:
+            try:
+                # Instantiate repositories within the session
+                template_repo = GuildTemplateRepositoryImpl(session)
+                cat_repo = GuildTemplateCategoryRepositoryImpl(session)
+                chan_repo = GuildTemplateChannelRepositoryImpl(session)
+                cat_perm_repo = GuildTemplateCategoryPermissionRepositoryImpl(session)
+                chan_perm_repo = GuildTemplateChannelPermissionRepositoryImpl(session)
+
+                # Check if the new name already exists FOR THIS USER
+                existing_by_name = await template_repo.get_by_name_and_creator(new_name, creator_user_id)
+                if existing_by_name:
+                    logger.warning(f"Template name '{new_name}' already exists for user {creator_user_id}. Cannot create copy.")
+                    raise ValueError(f"You already have a template named '{new_name}'.")
+
+                # 1. Create the new main template entity
+                new_template = GuildTemplateEntity(
+                    template_name=new_name,
+                    template_description=new_description,
+                    creator_user_id=creator_user_id,
+                    guild_id=None,  # Not tied to a specific guild initially
+                    is_shared=False # Default to not shared? Or maybe True? Let's assume False.
+                )
+                session.add(new_template)
+                await session.flush() # Get the new template ID
+                new_template_id = new_template.id
+                logger.debug(f"Created new template record with ID: {new_template_id}")
+
+                # 2. Copy categories and their permissions
+                original_cat_id_to_new_cat_id = {} # Map old category IDs to new ones
+                for original_cat_data in original_template_data.get("categories", []):
+                    new_category = GuildTemplateCategoryEntity(
+                        guild_template_id=new_template_id,
+                        category_name=original_cat_data["name"],
+                        position=original_cat_data["position"]
+                    )
+                    session.add(new_category)
+                    await session.flush() # Get new category ID
+                    new_category_id = new_category.id
+                    original_cat_id = original_cat_data["id"]
+                    original_cat_id_to_new_cat_id[original_cat_id] = new_category_id
+                    logger.debug(f"Copied category '{new_category.category_name}' (Original ID: {original_cat_id}, New ID: {new_category_id})")
+
+                    # Copy category permissions
+                    for original_perm_data in original_cat_data.get("permissions", []):
+                        new_cat_perm = GuildTemplateCategoryPermissionEntity(
+                            category_template_id=new_category_id,
+                            role_name=original_perm_data["role_name"],
+                            allow_permissions_bitfield=original_perm_data["allow"],
+                            deny_permissions_bitfield=original_perm_data["deny"]
+                        )
+                        session.add(new_cat_perm)
+                    await session.flush() # Flush permissions for this category
+
+                # 3. Copy channels and their permissions
+                for original_chan_data in original_template_data.get("channels", []):
+                    original_parent_id = original_chan_data.get("parent_category_template_id")
+                    new_parent_id = original_cat_id_to_new_cat_id.get(original_parent_id) if original_parent_id else None
+
+                    new_channel = GuildTemplateChannelEntity(
+                        guild_template_id=new_template_id,
+                        channel_name=original_chan_data["name"],
+                        channel_type=original_chan_data["type"],
+                        position=original_chan_data["position"],
+                        topic=original_chan_data.get("topic"),
+                        is_nsfw=original_chan_data.get("is_nsfw", False),
+                        slowmode_delay=original_chan_data.get("slowmode_delay", 0),
+                        parent_category_template_id=new_parent_id # Use the mapped new category ID
+                    )
+                    session.add(new_channel)
+                    await session.flush() # Get new channel ID
+                    new_channel_id = new_channel.id
+                    logger.debug(f"Copied channel '{new_channel.channel_name}' (Original ID: {original_chan_data['id']}, New ID: {new_channel_id})")
+
+                    # Copy channel permissions
+                    for original_perm_data in original_chan_data.get("permissions", []):
+                        new_chan_perm = GuildTemplateChannelPermissionEntity(
+                            channel_template_id=new_channel_id,
+                            role_name=original_perm_data["role_name"],
+                            allow_permissions_bitfield=original_perm_data["allow"],
+                            deny_permissions_bitfield=original_perm_data["deny"]
+                        )
+                        session.add(new_chan_perm)
+                    await session.flush() # Flush permissions for this channel
+
+                # 4. Commit the entire transaction
+                await session.commit()
+                logger.info(f"Successfully committed shared/copied template '{new_name}' (New ID: {new_template_id})")
+
+                # Return some representation of the new template (optional)
+                # Could call get_template_by_id(new_template_id) or just return basic info
+                return {
+                    "template_id": new_template_id,
+                    "template_name": new_template.template_name,
+                    "created_at": new_template.created_at.isoformat() if new_template.created_at else None,
+                    # Add other fields if needed by the controller/frontend
+                }
+
+            except ValueError as ve: # Catch specific error for duplicate name
+                 logger.error(f"Value error during template share: {ve}", exc_info=False) # Log as error, but don't need full traceback
+                 await session.rollback()
+                 # Propagate the error so controller can potentially return 409 or similar
+                 raise ve 
+            except Exception as e:
+                logger.error(f"Error during template share transaction: {e}", exc_info=True)
+                await session.rollback() # Rollback on any other error
+                # Return None or re-raise a custom service exception
+                return None
+
     async def delete_template(self, template_id: int) -> bool:
         """Deletes a guild structure template by its database ID."""
         logger.info(f"Attempting to delete template with ID: {template_id}")

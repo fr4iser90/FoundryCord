@@ -11,7 +11,8 @@ from app.web.application.services.guild.template_service import GuildTemplateSer
 from app.web.interfaces.api.rest.v1.schemas.guild_template_schemas import (
     GuildTemplateCreateSchema, 
     GuildTemplateResponseSchema, 
-    GuildTemplateListResponseSchema
+    GuildTemplateListResponseSchema,
+    GuildTemplateShareSchema
 )
 
 class GuildTemplateController(BaseController):
@@ -70,6 +71,14 @@ class GuildTemplateController(BaseController):
                                           summary="Delete Guild Structure Template by DB ID",
                                           description="Deletes a specific guild structure template using its unique database ID."
                                          )(self.delete_guild_template_by_id) # NEW method
+
+        # === NEW Share Route (using general router) ===
+        self.general_template_router.post("/templates/guilds/share",
+                                          status_code=status.HTTP_201_CREATED,
+                                          # response_model=GuildTemplateResponseSchema, # Optional: return the created template
+                                          summary="Share/Copy Guild Structure Template",
+                                          description="Creates a new template by copying an existing one."
+                                          )(self.share_guild_template) # NEW method
 
     async def get_guild_template(self, guild_id: str, current_user: AppUserEntity = Depends(get_current_user)) -> GuildTemplateResponseSchema:
         """API endpoint to retrieve the guild template structure by Guild ID."""
@@ -177,6 +186,55 @@ class GuildTemplateController(BaseController):
              raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Template deletion not implemented.")
         except Exception as e:
             self.logger.error(f"Error deleting template ID {template_id}: {e}", exc_info=True)
+            return self.handle_exception(e)
+
+    # --- NEW Method for Share Route ---
+    async def share_guild_template(
+        self,
+        share_data: GuildTemplateShareSchema, # <-- Use the imported schema
+        current_user: AppUserEntity = Depends(get_current_user)
+        # Optional: Return type can be GuildTemplateResponseSchema if you return the new template
+    ): # -> GuildTemplateResponseSchema: 
+        """API endpoint to create a new template by sharing/copying an existing one."""
+        try:
+            # --- Permission Check (Example: Any logged-in user can share?) ---
+            # Add more specific checks if needed
+            if not current_user:
+                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
+
+            self.logger.info(f"User {current_user.id} requesting to share/copy template ID {share_data.original_template_id} as '{share_data.new_template_name}'")
+
+            # --- Call Service Layer (Assumes service method exists) ---
+            # TODO: Implement self.template_service.share_template
+            new_template = await self.template_service.share_template(
+                original_template_id=share_data.original_template_id,
+                new_name=share_data.new_template_name,
+                new_description=share_data.new_template_description,
+                creator_user_id=current_user.id # Pass user ID for ownership/tracking
+            )
+
+            # --- Handle Service Failure ---
+            if not new_template:
+                self.logger.error(f"Service failed to share/copy template ID {share_data.original_template_id} as '{share_data.new_template_name}'")
+                # More specific error checking might be needed in the service layer
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to share template. Ensure original template exists and new name '{share_data.new_template_name}' is valid/unique.")
+
+            self.logger.info(f"Successfully shared/copied template ID {share_data.original_template_id} as '{share_data.new_template_name}' (New ID: {new_template.get('template_id', 'N/A')})")
+            # Option 1: Return 201 No Content (if frontend doesn't need the new template details)
+            # return 
+            # Option 2: Return the newly created template data (requires response_model setup)
+            # return new_template 
+            # For now, just return 201 implicitly by not returning content
+            return
+
+        except HTTPException as http_exc:
+            raise http_exc
+        except NotImplementedError:
+             self.logger.error(f"Template sharing service method not implemented for original ID {share_data.original_template_id}")
+             raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Template sharing not implemented.")
+        except Exception as e:
+            self.logger.error(f"Error sharing template ID {share_data.original_template_id} as '{share_data.new_template_name}': {e}", exc_info=True)
+            # Use base controller handler or raise generic 500
             return self.handle_exception(e)
 
     # --- NEUE METHODE --- 

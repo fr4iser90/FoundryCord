@@ -708,21 +708,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const grid = await gridManager.initialize(templateData); // Initialize (loads/renders layout)
         console.log("[Index] GridManager initialized.");
 
-        // 4. Populate Initial Content (REMOVED - Handled by GridManager callback now)
-        /*
-        if (grid) {
-            console.log("[Index] Populating initial content for all widgets...");
-            populateGuildDesignerWidgets(templateData, null, null); 
-            console.log("[Index] Initializing structure tree...");
-            initializeStructureTree(templateData); // Initialize the tree now
-            console.log("[Index] Structure tree initialization called.");
-        } else {
-            console.error("[Index] Grid initialization failed. Cannot populate content.");
-            displayErrorMessage('Failed to initialize the layout grid.');
-        }
-        */
 
-        // 5. Setup Panel Toggles
         setupPanelToggles();
 
         console.log("[Index] Guild Designer initialization sequence complete.");
@@ -731,4 +717,99 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error("[Index] Error during Guild Designer initialization process:", error);
         displayErrorMessage('An unexpected error occurred during initialization. Please check the console.');
     }
+
+    // --- Share Template Modal Logic ---
+    const confirmShareBtn = document.getElementById('confirmShareTemplateBtn');
+    const shareModalElement = document.getElementById('shareTemplateModal');
+    const shareTemplateNameInput = document.getElementById('shareTemplateNameInput');
+    const shareTemplateDescInput = document.getElementById('shareTemplateDescriptionInput');
+    const shareTemplateIdInput = document.getElementById('shareTemplateIdInput'); // Hidden input
+
+    if (confirmShareBtn && shareModalElement && shareTemplateNameInput && shareTemplateDescInput && shareTemplateIdInput) {
+        // Get the Bootstrap modal instance
+        const shareModal = bootstrap.Modal.getInstance(shareModalElement) || new bootstrap.Modal(shareModalElement);
+
+        confirmShareBtn.addEventListener('click', async () => {
+            const originalTemplateId = shareTemplateIdInput.value;
+            const newTemplateName = shareTemplateNameInput.value.trim();
+            const newTemplateDescription = shareTemplateDescInput.value.trim();
+
+            // --- Basic Validation ---
+            shareTemplateNameInput.classList.remove('is-invalid'); // Reset validation state
+            if (!newTemplateName || newTemplateName.length < 3 || newTemplateName.length > 100) {
+                shareTemplateNameInput.classList.add('is-invalid');
+                // Optionally show a small message near the input or rely on the default invalid-feedback div
+                console.warn("[ShareModal] Validation failed: Template name is required (3-100 chars).");
+                return; // Stop submission
+            }
+            // --- End Validation ---
+
+
+            // --- API Call ---
+            // TODO: Confirm the correct API endpoint and method for sharing/saving as new
+            const shareApiUrl = `/api/v1/templates/guilds/share`; 
+            const payload = {
+                original_template_id: originalTemplateId,
+                new_template_name: newTemplateName,
+                new_template_description: newTemplateDescription,
+                // Add any other required fields for the API
+            };
+
+            console.log(`[ShareModal] Attempting to share template. Payload:`, payload);
+
+            try {
+                // Disable button during request
+                confirmShareBtn.disabled = true;
+                confirmShareBtn.innerHTML = `
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    Sharing...
+                `;
+
+                const response = await apiRequest(shareApiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                // Assuming the API returns the new template info or just success
+                console.log('[ShareModal] Share request successful:', response);
+                showToast('success', `Template "${newTemplateName}" shared successfully!`);
+                
+                // TODO: Optionally refresh the template list widget if needed
+                // const templateListWidgetContent = document.getElementById('widget-content-template-list');
+                // if (templateListWidgetContent) {
+                //     const currentGuildId = getGuildIdFromUrl(); 
+                //     initializeTemplateList(templateListWidgetContent, currentGuildId);
+                // }
+
+                shareModal.hide(); // Close modal on success
+
+            } catch (error) {
+                console.error('[ShareModal] Error sharing template:', error);
+                // apiRequest should handle showing an error toast, but we can add more specific feedback if needed
+                // Maybe display error within the modal? For now, rely on toast.
+            } finally {
+                 // Re-enable button and restore text
+                confirmShareBtn.disabled = false;
+                confirmShareBtn.innerHTML = 'Share Template';
+                // Clear inputs *after* potential failure might be better UX depending on requirements
+                // shareTemplateNameInput.value = ''; 
+                // shareTemplateDescInput.value = '';
+                // shareTemplateIdInput.value = ''; // Clear hidden ID too
+                shareTemplateNameInput.classList.remove('is-invalid'); // Clear validation state on close/finish
+            }
+            // --- End API Call ---
+        });
+
+         // Optional: Clear validation state when modal is hidden
+        shareModalElement.addEventListener('hidden.bs.modal', () => {
+            shareTemplateNameInput.classList.remove('is-invalid');
+        });
+
+    } else {
+        console.warn('[Index] Could not find all required elements for the Share Template modal logic.');
+    }
+    // --- End Share Template Modal Logic ---
 }); 

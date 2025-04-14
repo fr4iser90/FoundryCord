@@ -45,6 +45,27 @@ class GuildTemplateRepositoryImpl(BaseRepositoryImpl[GuildTemplateEntity], Guild
             logger.error(f"Error retrieving guild template by id {template_id}: {e}", exc_info=True)
             return None
 
+    async def get_by_name_and_creator(self, template_name: str, creator_user_id: int) -> Optional[GuildTemplateEntity]:
+        """Get a guild template by its name and creator user ID."""
+        try:
+            stmt = select(self.model).where(
+                self.model.template_name == template_name,
+                self.model.creator_user_id == creator_user_id 
+            )
+            # Optional: Add other conditions? e.g., only check non-initial snapshots?
+            # stmt = stmt.where(self.model.guild_id.is_(None)) # Example: only check user-created, non-snapshot templates
+
+            result = await self.session.execute(stmt)
+            entity = result.scalar_one_or_none()
+            if entity:
+                logger.debug(f"Found guild template by name: '{template_name}' and creator: {creator_user_id} (ID: {entity.id})")
+            else:
+                logger.debug(f"No guild template found with name: '{template_name}' for creator: {creator_user_id}")
+            return entity
+        except Exception as e:
+            logger.error(f"Error retrieving guild template by name '{template_name}' and creator {creator_user_id}: {e}", exc_info=True)
+            return None
+
     async def create(self, guild_id: str, template_name: str) -> Optional[GuildTemplateEntity]:
         """Create a new guild template record."""
         try:

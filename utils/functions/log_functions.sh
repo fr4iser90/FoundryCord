@@ -142,4 +142,55 @@ download_logs() {
     
     press_enter_to_continue
     show_logs_menu
+}
+
+# Run log view directly based on arguments (non-interactive)
+run_direct_log_view() {
+    local container_name="$1"
+    local lines="${2:-50}" # Default 50 lines
+    local follow="${3:-false}"
+    local log_type_name="${container_name}" # Use container name for logs
+
+    print_section_header "Viewing Logs: ${log_type_name}"
+
+    if [ "$RUN_REMOTE" = false ]; then
+        # Local Mode Check
+        print_info "[LOCAL MODE] Attempting to view logs for ${container_name}..."
+        # Use local docker command
+        local local_log_cmd="${DOCKER_CMD} logs --tail=${lines}"
+        if [ "$follow" = true ]; then
+            local_log_cmd="${local_log_cmd} -f"
+            print_info "Following logs for ${log_type_name} (Press Ctrl+C to exit)..."
+        else
+            print_info "Viewing last ${lines} lines for ${log_type_name}..."
+        fi
+        local_log_cmd="${local_log_cmd} ${container_name}"
+        # Execute directly
+        eval "${local_log_cmd}"
+        return $?
+    fi
+
+    # Remote Mode Check
+    # Check if the container exists remotely
+    if ! run_remote_command "${DOCKER_CMD} ps -a --filter name=^/${container_name}$ --format '{{.Names}}' | grep -q ${container_name}" "silent"; then
+        print_error "Container '${container_name}' not found on remote server."
+        return 1
+    fi
+
+    local log_cmd="${DOCKER_CMD} logs --tail=${lines}"
+    if [ "$follow" = true ]; then
+        log_cmd="${log_cmd} -f"
+        print_info "Following logs for ${log_type_name} (Press Ctrl+C to exit)..."
+        # Use direct ssh for follow to work correctly
+        ssh "${SERVER_USER}@${SERVER_HOST}" -p "${SERVER_PORT}" "${log_cmd} ${container_name}"
+        return $?
+    else
+        print_info "Viewing last ${lines} lines for ${log_type_name}..."
+        log_cmd="${log_cmd} ${container_name}"
+        # Use run_remote_command for non-following logs
+        run_remote_command "${log_cmd}"
+        return $?
+    fi
+    
+    # No "press enter" or menu loop for direct action
 } 

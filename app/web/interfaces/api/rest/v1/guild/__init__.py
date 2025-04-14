@@ -14,6 +14,7 @@ router.include_router(guild_config_controller.router)
 router.include_router(guild_selector_controller.router)
 router.include_router(guild_user_management_router) # Use the router instance directly
 router.include_router(guild_template_controller.router) # Add the guild-specific template router
+router.include_router(guild_template_controller.general_template_router) # Include the general template routes too
 
 # Explicitly define the general template router for export
 general_template_router = guild_template_controller.general_template_router
