@@ -7,8 +7,6 @@ from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_web_d
 # Import repositories (interfaces and implementations)
 from app.shared.domain.repositories.ui.ui_layout_repository import UILayoutRepository
 from app.shared.infrastructure.repositories.ui.ui_layout_repository_impl import UILayoutRepositoryImpl
-from app.shared.domain.repositories.ui.shared_ui_layout_template_repository import SharedUILayoutTemplateRepository
-from app.shared.infrastructure.repositories.ui.shared_ui_layout_template_repository_impl import SharedUILayoutTemplateRepositoryImpl
 
 # Import the service
 from app.web.application.services.ui.layout_service import LayoutService
@@ -26,12 +24,10 @@ from app.web.application.services.ui.layout_service import LayoutService
 async def get_layout_service(
     session: Annotated[AsyncSession, Depends(get_web_db_session)]
 ) -> LayoutService:
-    """Dependency provider for LayoutService, injecting both required repositories."""
+    """Dependency provider for LayoutService, injecting the required repository."""
     user_layout_repo = UILayoutRepositoryImpl(session=session)
-    shared_layout_repo = SharedUILayoutTemplateRepositoryImpl(session=session)
-    # Pass both repositories to the service constructor
+    # Pass only the user layout repository to the service constructor
     service = LayoutService(
-        layout_repository=user_layout_repo, 
-        shared_layout_repository=shared_layout_repo
+        layout_repository=user_layout_repo
     )
     return service 

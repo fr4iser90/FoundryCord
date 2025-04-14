@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 from app.web.interfaces.api.rest.v1.base_controller import BaseController
 from app.shared.infrastructure.models.auth import AppUserEntity
 from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
@@ -7,15 +7,23 @@ from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_curre
 from app.web.application.services.guild.template_service import GuildTemplateService 
 # TODO: Define response model schema when created
 # from app.web.interfaces.api.rest.v1.schemas.guild_template_schemas import GuildTemplateResponse
+# Assuming schema exists or define inline for now
+from app.web.interfaces.api.rest.v1.schemas.guild_template_schemas import (
+    GuildTemplateCreateSchema, 
+    GuildTemplateResponseSchema, 
+    GuildTemplateListResponseSchema
+)
 
 class GuildTemplateController(BaseController):
     """Controller for managing guild structure templates via API."""
 
     def __init__(self):
-        # Define API prefix and tags
-        # Note: Prefix is just /template now, guild_id comes from path parameter in route
-        super().__init__(prefix="/guilds/{guild_id}/template", tags=["Guild Designer API"])
+        # Define API prefix and tags for guild-specific routes
+        super().__init__(prefix="/guilds/{guild_id}/template", tags=["Guild Templates (Guild-Specific)"])
         
+        # Define a separate router for non-guild-specific template routes
+        self.general_template_router = APIRouter(tags=["Guild Templates (General)"])
+
         # Instantiate the service directly for now
         # TODO: Replace with proper injection/factory later
         self.template_service = GuildTemplateService()
@@ -24,23 +32,49 @@ class GuildTemplateController(BaseController):
 
     def _register_routes(self):
         """Register API routes for guild templates."""
+        # === Guild-Specific Routes (under /guilds/{guild_id}/template) ===
+        
         # Route to get the template data for a specific guild
-        # TODO: Add response_model=GuildTemplateResponse when schema is defined
         self.router.get("", 
-                        # response_model=GuildTemplateResponse, 
-                        summary="Get Guild Structure Template",
+                        response_model=GuildTemplateResponseSchema, # Use the detailed response schema
+                        summary="Get Guild Structure Template by Guild ID",
                         description="Retrieves the stored structure template (categories, channels, permissions) for the specified guild.")(self.get_guild_template)
         
-        # TODO: Add routes for updating/applying templates later
-        # self.router.put("", ...)(self.update_guild_template)
-        # self.router.post("/apply", ...)(self.apply_guild_template_to_discord)
+        # Route to save the current guild structure as a new template
+        self.router.post("/save-as", 
+                         status_code=status.HTTP_201_CREATED,
+                         # response_model=..., # TODO: Define response model for creation? Maybe just 201?
+                         summary="Save Guild Structure as New Template",
+                         description="Saves the structure of the specified guild as a new named template."
+                        )(self.create_guild_template)
 
+        # === General Template Routes (using separate router, NO prefix) ===
 
-    async def get_guild_template(self, guild_id: str, current_user: AppUserEntity = Depends(get_current_user)) -> Dict[str, Any]: # TODO: Change return type to response_model
-        """API endpoint to retrieve the guild template structure."""
+        # --- List Guild Structure Templates ---
+        self.general_template_router.get("/templates/guilds/", 
+                                         response_model=GuildTemplateListResponseSchema,
+                                         summary="List Guild Structure Templates",
+                                         description="Retrieves a list of accessible guild structure templates."
+                                        )(self.list_guild_templates) # NEW method
+
+        # --- Get Specific Guild Structure Template by DB ID ---
+        self.general_template_router.get("/templates/guilds/{template_id}", 
+                                         response_model=GuildTemplateResponseSchema,
+                                         summary="Get Guild Structure Template by DB ID",
+                                         description="Retrieves a specific guild structure template using its unique database ID."
+                                        )(self.get_guild_template_by_id) # RENAMED method
+        
+        # --- Delete Specific Guild Structure Template by DB ID ---
+        self.general_template_router.delete("/templates/guilds/{template_id}", 
+                                          status_code=status.HTTP_204_NO_CONTENT,
+                                          summary="Delete Guild Structure Template by DB ID",
+                                          description="Deletes a specific guild structure template using its unique database ID."
+                                         )(self.delete_guild_template_by_id) # NEW method
+
+    async def get_guild_template(self, guild_id: str, current_user: AppUserEntity = Depends(get_current_user)) -> GuildTemplateResponseSchema:
+        """API endpoint to retrieve the guild template structure by Guild ID."""
         try:
             # --- Permission Check ---
-            # Example: Only allow owners for now. Refine later with specific roles/permissions.
             if not current_user.is_owner:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to view guild template.")
 
@@ -51,22 +85,128 @@ class GuildTemplateController(BaseController):
             # --- Handle Not Found --- 
             if not template_data:
                 self.logger.warning(f"Template not found for guild {guild_id} by service.")
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Guild template not found.")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Guild template not found for this guild.")
             
-            # --- Return Success Response ---
+            # --- Return Success Response (Data automatically validated by response_model) ---
             self.logger.info(f"Successfully retrieved template data for guild {guild_id}")
-            return self.success_response(template_data)
+            # FastAPI handles validation against GuildTemplateResponseSchema
+            # We might need to adjust the keys from the service dict to match the schema field names/aliases
+            # Pydantic's populate_by_name in the schema helps here if dict keys match aliases
+            return template_data 
 
         except HTTPException as http_exc:
-            # Re-raise HTTP exceptions directly
             raise http_exc
         except Exception as e:
-            # Handle unexpected errors
             self.logger.error(f"Error fetching guild template for {guild_id}: {e}", exc_info=True)
-            # Use BaseController's exception handler or raise generic 500
-            # Assuming self.handle_exception exists, otherwise raise manually
             return self.handle_exception(e)
-            # raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve guild template.")
+
+    # --- Method for NEW List Route --- 
+    async def list_guild_templates(self, current_user: AppUserEntity = Depends(get_current_user)) -> GuildTemplateListResponseSchema:
+        """API endpoint to list accessible guild structure templates."""
+        try:
+            # TODO: Add permission check if needed (e.g., list only user's own templates?)
+            pass # Assuming any authenticated user can list for now
+
+            # --- Call Service Layer --- 
+            # TODO: Potentially pass user_id to service for filtering?
+            templates_list: List[Dict[str, Any]] = await self.template_service.list_templates()
+
+            # --- Return Success Response --- 
+            # Wrap the list in the response schema structure { "templates": [...] }
+            return {"templates": templates_list}
+        
+        except Exception as e:
+            self.logger.error(f"Error listing guild templates: {e}", exc_info=True)
+            # Use base controller handler or raise generic 500
+            return self.handle_exception(e)
+
+    # --- RENAMED Method for Get by ID Route --- 
+    async def get_guild_template_by_id(self, template_id: int, current_user: AppUserEntity = Depends(get_current_user)) -> GuildTemplateResponseSchema:
+        """API endpoint to retrieve a specific guild template by its database ID."""
+        try:
+            pass # Assuming any authenticated user can fetch for now (permissions check placeholder)
+            
+            self.logger.info(f"Calling GuildTemplateService to fetch template by database ID {template_id}")
+            template_data: Optional[Dict[str, Any]] = await self.template_service.get_template_by_id(template_id)
+
+            if not template_data:
+                self.logger.warning(f"Template not found for database ID {template_id} by service.")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Guild template not found.")
+            
+            self.logger.info(f"Successfully retrieved template data for database ID {template_id}")
+            return template_data
+
+        except HTTPException as http_exc:
+            raise http_exc
+        except Exception as e:
+            self.logger.error(f"Error fetching template for database ID {template_id}: {e}", exc_info=True)
+            return self.handle_exception(e)
+            
+    # --- Method for NEW Delete Route --- 
+    async def delete_guild_template_by_id(self, template_id: int, current_user: AppUserEntity = Depends(get_current_user)):
+        """API endpoint to delete a specific guild template by its database ID."""
+        try:
+            # TODO: Add permission check (e.g., only owner/creator can delete?)
+            self.logger.info(f"User {current_user.id} requesting deletion of template ID {template_id}")
+            
+            # --- Call Service Layer --- 
+            # Assuming service has a delete method - needs implementation
+            deleted_successfully = await self.template_service.delete_template(template_id)
+
+            if not deleted_successfully:
+                 self.logger.warning(f"Failed to delete template ID {template_id}. It might not exist or service failed.")
+                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found or could not be deleted.")
+
+            self.logger.info(f"Successfully deleted template ID {template_id}")
+            # Return nothing for 204 No Content status
+            return
+
+        except HTTPException as http_exc:
+            raise http_exc # Includes 404 if not found
+        except NotImplementedError:
+             self.logger.error(f"Template deletion service method not implemented for ID {template_id}")
+             raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Template deletion not implemented.")
+        except Exception as e:
+            self.logger.error(f"Error deleting template ID {template_id}: {e}", exc_info=True)
+            return self.handle_exception(e)
+
+    # --- NEUE METHODE --- 
+    async def create_guild_template(
+        self, 
+        guild_id: str, # Get guild_id from path
+        template_data: GuildTemplateCreateSchema, # Use schema for body
+        current_user: AppUserEntity = Depends(get_current_user)
+    ):
+        """API endpoint to save the current guild's structure as a new template."""
+        try:
+            # --- Permission Check --- 
+            if not current_user.is_owner:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to create guild templates.")
+
+            # --- Call Service Layer --- 
+            self.logger.info(f"User {current_user.id} requesting to save guild {guild_id} structure as template '{template_data.template_name}'")
+            
+            # Pass guild_id from path to service
+            created_template = await self.template_service.create_template_from_guild(
+                source_guild_id=guild_id, # Use guild_id from path
+                template_name=template_data.template_name,
+                template_description=template_data.template_description,
+                creator_user_id=current_user.id
+            )
+            
+            # --- Handle Service Failure --- 
+            if not created_template:
+                 self.logger.error(f"Service failed to create template '{template_data.template_name}' from guild {guild_id}")
+                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to create template. Ensure source guild exists and template name '{template_data.template_name}' is unique.")
+            
+            self.logger.info(f"Successfully created guild template '{template_data.template_name}' by user {current_user.id}")
+            return # Status 201 indicates success
+
+        except HTTPException as http_exc:
+            raise http_exc
+        except Exception as e:
+            self.logger.error(f"Error creating guild template '{template_data.template_name}' from {guild_id}: {e}", exc_info=True)
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create guild template due to an unexpected error.")
 
 # Instantiate the controller for registration
 guild_template_controller = GuildTemplateController() 

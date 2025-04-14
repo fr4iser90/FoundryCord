@@ -1,0 +1,40 @@
+#log-container {
+    /* Apply theme variables later if needed */
+    background-color: var(--bg-secondary, #f8f9fa); /* Use theme secondary bg or fallback */
+    border: 1px solid var(--border-color, #dee2e6);
+    border-radius: var(--border-radius, .25rem);
+    max-height: 70vh; /* Limit height and enable scrolling */
+    overflow-y: auto; /* Enable vertical scrollbar */
+    font-family: var(--font-monospace, monospace); /* Use custom monospace font var if available */
+    font-size: 0.85rem; /* Slightly smaller font */
+    white-space: pre-wrap; /* Wrap long lines */
+    padding: var(--spacing-md, 1rem); /* Use theme spacing variable */
+    color: var(--text-normal, inherit); /* Changed from --text-primary to --text-normal */
+}
+
+.log-line {
+    margin-bottom: 2px;
+}
+
+/* Optional: Color coding based on log level */
+/* Consider using more theme-aware colors or keeping it simple */
+.log-line.info {
+    color: var(--text-info, #055160); /* Use specific info color var or fallback */
+}
+
+.log-line.warn {
+    color: var(--text-warning, #664d03); /* Use specific warning color var or fallback */
+}
+
+.log-line.error {
+    color: var(--text-danger, #842029); /* Use specific danger color var or fallback */
+}
+
+.log-line.debug {
+    color: var(--text-muted, #6c757d); /* Use theme muted/secondary text color */
+}
+
+/* Style for the loading text inside the container */
+#log-container .text-muted {
+    color: var(--text-muted, #6c757d); /* Use theme muted text color */
+} 

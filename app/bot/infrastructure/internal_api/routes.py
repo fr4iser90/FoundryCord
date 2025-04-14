@@ -1,10 +1,55 @@
 import asyncio
+import os 
+import logging # Added
+import logging.handlers # Added
 from aiohttp import web
 from app.shared.interface.logging.api import get_bot_logger
+from typing import Optional, List # Added
 # Assuming the main bot class is accessible or passed in
 # from app.bot.core.main import HomelabBot 
 
 logger = get_bot_logger()
+
+# Removed file reading config and helpers
+# BOT_LOG_FILE_PATH = ...
+# LOG_LINES_TO_FETCH = ...
+# async def read_last_n_lines(...):
+# def _sync_read_last_n_lines(...):
+
+# --- Helper to find MemoryHandler --- 
+def get_memory_handler() -> Optional[logging.handlers.MemoryHandler]:
+    """Finds the configured MemoryHandler instance."""
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers:
+        if isinstance(handler, logging.handlers.MemoryHandler):
+            return handler
+    logger.warning("No MemoryHandler found in root logger configuration.")
+    return None
+
+# --- Handler for fetching logs --- 
+async def handle_get_logs(request: web.Request):
+    """Handles GET /internal/logs by reading from MemoryHandler."""
+    logger.debug("Internal API: Received /internal/logs request")
+    try:
+        memory_handler = get_memory_handler()
+        if not memory_handler:
+            return web.json_response({"error": "Log buffering not configured"}, status=501) # 501 Not Implemented
+
+        # Get records from buffer and format them
+        log_records = memory_handler.buffer
+        # Ensure we have a formatter (use handler's target formatter or create default)
+        formatter = memory_handler.target.formatter if memory_handler.target and memory_handler.target.formatter else logging.Formatter()
+        
+        # Format records in reverse order (newest first) if desired, or keep original order
+        # formatted_logs = [formatter.format(record) for record in reversed(log_records)]
+        formatted_logs = [formatter.format(record) for record in log_records]
+
+        response_body = {"logs": formatted_logs}
+        return web.json_response(response_body, status=200)
+        
+    except Exception as e:
+        logger.error(f"Error retrieving logs from memory handler: {e}", exc_info=True)
+        return web.json_response({"error": "Failed to retrieve logs from memory"}, status=500)
 
 # --- Handler for triggering Guild Approval Workflow --- 
 async def handle_trigger_approve_guild(request: web.Request):
@@ -77,6 +122,7 @@ def setup_internal_routes(app: web.Application):
     logger.info("Setting up internal API routes...")
     router.add_post('/internal/trigger/approve_guild/{guild_id}', handle_trigger_approve_guild)
     router.add_get('/internal/ping', handle_ping)
+    router.add_get('/internal/logs', handle_get_logs)
     
     # Improved logging for routes
     route_details = []

@@ -113,6 +113,26 @@
 </div>
 {# --- End Share Template Modal --- #}
 
+{# --- ADDED: HTML Template for Saved Template List Item --- #}
+<template id="template-list-item-template">
+    <div class="list-group-item d-flex justify-content-between align-items-center">
+        <a href="#" class="text-decoration-none text-body flex-grow-1 me-2 template-load-link">
+            <i class="template-icon fas fa-file-alt me-2"></i>
+            <span class="template-name">Unnamed Template</span>
+        </a>
+        {# Action Buttons Group #}
+        <div class="btn-group btn-group-sm" role="group" aria-label="Template Actions">
+            <button type="button" class="btn btn-outline-secondary btn-share-template" title="Share this template">
+                <i class="fas fa-share-alt"></i> {# Original Share Icon #}
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-delete-template" title="Delete this template">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
+    </div>
+</template>
+{# --- END ADDED Template --- #}
+
 {% endblock %}
 
 {% block extra_js %}

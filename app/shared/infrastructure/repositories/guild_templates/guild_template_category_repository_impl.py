@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -31,3 +31,15 @@ class GuildTemplateCategoryRepositoryImpl(BaseRepositoryImpl[GuildTemplateCatego
         except Exception as e:
             logger.error(f"Error creating template category '{category_name}' for template {guild_template_id}: {e}", exc_info=True)
             return None
+
+    async def get_by_template_id(self, guild_template_id: int) -> List[GuildTemplateCategoryEntity]:
+        """Retrieve all categories associated with a specific guild template ID."""
+        try:
+            stmt = select(self.model).where(self.model.guild_template_id == guild_template_id).order_by(self.model.position)
+            result = await self.session.execute(stmt)
+            categories = result.scalars().all()
+            logger.debug(f"Found {len(categories)} categories for template_id {guild_template_id}")
+            return list(categories)
+        except Exception as e:
+            logger.error(f"Error fetching categories for template_id {guild_template_id}: {e}", exc_info=True)
+            return []

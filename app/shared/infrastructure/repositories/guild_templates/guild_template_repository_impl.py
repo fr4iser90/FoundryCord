@@ -31,6 +31,20 @@ class GuildTemplateRepositoryImpl(BaseRepositoryImpl[GuildTemplateEntity], Guild
             logger.error(f"Error retrieving guild template by guild_id {guild_id}: {e}", exc_info=True)
             return None
 
+    async def get_by_id(self, template_id: int) -> Optional[GuildTemplateEntity]:
+        """Retrieve a guild template by its primary key."""
+        try:
+            # Correct way to get by primary key using session.get()
+            entity = await self.session.get(self.model, template_id) 
+            if entity:
+                logger.debug(f"Retrieved template {template_id} by ID.")
+            else:
+                logger.debug(f"Template {template_id} not found by ID.")
+            return entity
+        except Exception as e:
+            logger.error(f"Error retrieving guild template by id {template_id}: {e}", exc_info=True)
+            return None
+
     async def create(self, guild_id: str, template_name: str) -> Optional[GuildTemplateEntity]:
         """Create a new guild template record."""
         try:
@@ -51,3 +65,16 @@ class GuildTemplateRepositoryImpl(BaseRepositoryImpl[GuildTemplateEntity], Guild
             # Consider rolling back if part of a larger transaction
             # await self.session.rollback()
             return None
+
+    async def delete(self, entity: GuildTemplateEntity) -> bool:
+        """Delete a guild template entity."""
+        try:
+            await self.session.delete(entity)
+            await self.session.flush() # Use flush to ensure deletion action is sent before commit
+            logger.info(f"Deleted guild template with ID: {entity.id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting guild template with ID {entity.id}: {e}", exc_info=True)
+            # Consider rolling back if part of a larger transaction
+            # await self.session.rollback()
+            return False

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -38,3 +38,15 @@ class GuildTemplateCategoryPermissionRepositoryImpl(BaseRepositoryImpl[GuildTemp
         except Exception as e:
             logger.error(f"Error creating template category permission for role '{role_name}' on category template {category_template_id}: {e}", exc_info=True)
             return None
+
+    async def get_by_category_template_id(self, category_template_id: int) -> List[GuildTemplateCategoryPermissionEntity]:
+        """Retrieve all permissions associated with a specific category template ID."""
+        try:
+            stmt = select(self.model).where(self.model.category_template_id == category_template_id)
+            result = await self.session.execute(stmt)
+            permissions = result.scalars().all()
+            logger.debug(f"Found {len(permissions)} permissions for category_template_id {category_template_id}")
+            return list(permissions)
+        except Exception as e:
+            logger.error(f"Error fetching permissions for category_template_id {category_template_id}: {e}", exc_info=True)
+            return []

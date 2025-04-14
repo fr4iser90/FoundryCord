@@ -23,7 +23,7 @@ export function initializeCategoriesList(templateData, contentElement, guildId) 
             // For now, just render the list item.
             return `
                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span><i class="fas fa-folder me-2 text-warning"></i> ${cat.name || 'Unnamed Category'}</span>
+                    <span><i class="fas fa-folder me-2 text-warning"></i> ${cat.category_name || 'Unnamed Category'}</span>
                     <span class="badge bg-secondary rounded-pill">Pos: ${cat.position !== undefined ? cat.position : 'N/A'}</span>
                 </li>
             `;

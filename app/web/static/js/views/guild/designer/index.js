@@ -37,8 +37,8 @@ async function fetchGuildTemplate(guildId) {
     try {
         const response = await apiRequest(apiUrl);
         console.log('Successfully fetched template data:', response);
-        // Assuming the actual template data is nested under response.data
-        return response && response.data ? response.data : null;
+        // Return the response directly, as FastAPI now sends the data object
+        return response ? response : null;
     } catch (error) {
         console.error('Error fetching guild template:', error);
         displayErrorMessage('Failed to load guild template data. Please check the console.');
@@ -693,19 +693,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             pageIdentifier: pageIdentifier,
             widgetDefinitions: widgetDefs, // Pass definitions here
             defaultLayout: defaultLayout, // Pass default layout here
-            // Removed direct references to lock/reset buttons and saveCallback as GridManager finds them by ID and handles saving internally
-            populateContentCallback: (data) => {
-                // This callback now just needs the data. GridManager calls it after loading.
-                populateGuildDesignerWidgets(templateData, null, null); 
+            // Modified callback to include tree initialization
+            populateContentCallback: (initialData) => { 
+                console.log("[GridManager Callback] Populating widget content.");
+                console.log("[GridManager Callback] Received initialData:", initialData);
+                // Use the data passed by GridManager (which should be the templateData we provided)
+                populateGuildDesignerWidgets(initialData, null, null); 
+                console.log("[GridManager Callback] Initializing structure tree.");
+                initializeStructureTree(initialData);
             },
             resetRequiresDataCallback: () => fetchGuildTemplate(guildId), // Fetch fresh data on reset
-            // Removed error/success callbacks as GridManager handles them internally now
         });
 
         const grid = await gridManager.initialize(templateData); // Initialize (loads/renders layout)
         console.log("[Index] GridManager initialized.");
 
-        // 4. Populate Initial Content (after grid elements exist)
+        // 4. Populate Initial Content (REMOVED - Handled by GridManager callback now)
+        /*
         if (grid) {
             console.log("[Index] Populating initial content for all widgets...");
             populateGuildDesignerWidgets(templateData, null, null); 
@@ -716,6 +720,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error("[Index] Grid initialization failed. Cannot populate content.");
             displayErrorMessage('Failed to initialize the layout grid.');
         }
+        */
 
         // 5. Setup Panel Toggles
         setupPanelToggles();

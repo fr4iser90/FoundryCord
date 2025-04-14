@@ -1,0 +1,42 @@
+{% extends "layouts/base_layout.html" %}
+
+{% block title %}Bot Logs{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/views/owner/bot_logger.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Bot Logs</h4>
+            <div>
+                <button id="refresh-logs-btn" class="btn btn-sm btn-primary" title="Refresh Logs">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+                <div class="form-check form-switch d-inline-block ms-2" title="Toggle Auto-Refresh">
+                    <input class="form-check-input" type="checkbox" role="switch" id="auto-refresh-switch" checked>
+                    <label class="form-check-label" for="auto-refresh-switch">Auto</label>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="log-container" aria-live="polite">
+                <!-- Logs will be loaded here by JavaScript -->
+                <div class="text-center p-3">
+                    Loading logs...
+                </div>
+            </div>
+        </div>
+        <div class="card-footer text-muted">
+            <small>Displaying latest logs. Auto-refresh enabled by default.</small>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Load the specific JS for this page -->
+<script type="module" defer src="{{ url_for('static', path='js/pages/owner/bot/bot-logger.js') }}"></script>
+{% endblock %}

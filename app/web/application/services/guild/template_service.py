@@ -117,8 +117,8 @@ class GuildTemplateService:
                         channel_data["permissions"].append({
                             "id": perm.id,
                             "role_name": perm.role_name,
-                            "allow": perm.allow_permissions_bitfield,
-                            "deny": perm.deny_permissions_bitfield
+                            "allow": perm.allow_permissions_bitfield if perm.allow_permissions_bitfield is not None else 0,
+                            "deny": perm.deny_permissions_bitfield if perm.deny_permissions_bitfield is not None else 0
                         })
                     structured_template["channels"].append(channel_data)
                 
@@ -130,6 +130,168 @@ class GuildTemplateService:
             # Depending on desired behavior, could return None or raise an exception
             # Returning None for now, controller can handle the 404/500 response.
             return None
+
+    async def get_template_by_id(self, template_id: int) -> Optional[Dict[str, Any]]:
+        """Fetches the complete guild template structure from the database using its primary key ID."""
+        logger.info(f"Fetching guild template data for template_id: {template_id}")
+        try:
+            async with session_context() as session:
+                # 1. Get the main template record by its primary key
+                template_repo = GuildTemplateRepositoryImpl(session)
+                template: Optional[GuildTemplateEntity] = await template_repo.get_by_id(template_id)
+
+                if not template:
+                    logger.warning(f"No guild template found for template_id: {template_id}")
+                    return None # Indicate template not found
+
+                template_db_id = template.id
+                logger.debug(f"Found template ID {template_db_id}")
+
+                # Instantiate other repos
+                cat_repo = GuildTemplateCategoryRepositoryImpl(session)
+                chan_repo = GuildTemplateChannelRepositoryImpl(session)
+                # cat_perm_repo = GuildTemplateCategoryPermissionRepositoryImpl(session) # Not directly used
+                # chan_perm_repo = GuildTemplateChannelPermissionRepositoryImpl(session) # Not directly used
+
+                # 2. Get all categories for this template, eager loading permissions
+                cat_stmt = (
+                    select(GuildTemplateCategoryEntity)
+                    .where(GuildTemplateCategoryEntity.guild_template_id == template_db_id)
+                    .options(selectinload(GuildTemplateCategoryEntity.permissions))
+                    .order_by(GuildTemplateCategoryEntity.position)
+                )
+                cat_result = await session.execute(cat_stmt)
+                categories: List[GuildTemplateCategoryEntity] = cat_result.scalars().all()
+                logger.debug(f"Found {len(categories)} categories for template {template_db_id}")
+
+                # 3. Get all channels for this template, eager loading permissions
+                chan_stmt = (
+                    select(GuildTemplateChannelEntity)
+                    .where(GuildTemplateChannelEntity.guild_template_id == template_db_id)
+                    .options(selectinload(GuildTemplateChannelEntity.permissions))
+                    .order_by(GuildTemplateChannelEntity.position) # Order by position
+                )
+                chan_result = await session.execute(chan_stmt)
+                channels: List[GuildTemplateChannelEntity] = chan_result.scalars().all()
+                logger.debug(f"Found {len(channels)} channels for template {template_db_id}")
+
+                # 4. Structure the data for the response
+                structured_template = {
+                    "guild_id": template.guild_id, # Still include guild_id if relevant
+                    "template_id": template.id,
+                    "template_name": template.template_name,
+                    "created_at": template.created_at.isoformat() if template.created_at else None,
+                    "categories": [],
+                    "channels": []
+                }
+
+                # Process categories and their permissions
+                for cat in categories:
+                    category_data = {
+                        "id": cat.id,
+                        "name": cat.category_name,
+                        "position": cat.position,
+                        "permissions": []
+                    }
+                    for perm in cat.permissions:
+                        category_data["permissions"].append({
+                            "id": perm.id,
+                            "role_name": perm.role_name,
+                            "allow": perm.allow_permissions_bitfield,
+                            "deny": perm.deny_permissions_bitfield
+                        })
+                    structured_template["categories"].append(category_data)
+
+                # Process channels and their permissions
+                for chan in channels:
+                    channel_data = {
+                        "id": chan.id,
+                        "name": chan.channel_name,
+                        "type": chan.channel_type,
+                        "position": chan.position,
+                        "topic": chan.topic,
+                        "is_nsfw": chan.is_nsfw,
+                        "slowmode_delay": chan.slowmode_delay,
+                        "parent_category_template_id": chan.parent_category_template_id,
+                        "permissions": []
+                    }
+                    for perm in chan.permissions:
+                        channel_data["permissions"].append({
+                            "id": perm.id,
+                            "role_name": perm.role_name,
+                            "allow": perm.allow_permissions_bitfield if perm.allow_permissions_bitfield is not None else 0,
+                            "deny": perm.deny_permissions_bitfield if perm.deny_permissions_bitfield is not None else 0
+                        })
+                    structured_template["channels"].append(channel_data)
+
+                logger.info(f"Successfully fetched and structured template data for template {template_id}")
+                return structured_template
+
+        except Exception as e:
+            logger.error(f"Error fetching template for template_id {template_id}: {e}", exc_info=True)
+            # Returning None for now, controller can handle the 404/500 response.
+            return None
+
+    async def list_templates(self, user_id: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Lists basic information about saved guild templates.
+        
+        Args:
+            user_id: If provided, potentially filter templates by creator (TODO: Implement filtering).
+
+        Returns:
+            A list of dictionaries, each containing basic template info (id, name, created_at).
+        """
+        logger.info(f"Listing available guild templates (filter user_id: {user_id})")
+        templates_info = []
+        try:
+            async with session_context() as session:
+                template_repo = GuildTemplateRepositoryImpl(session)
+                
+                # TODO: Add filtering by user_id if the GuildTemplateEntity has a creator_user_id field
+                # For now, fetch all templates
+                query = select(GuildTemplateEntity).order_by(GuildTemplateEntity.created_at.desc())
+
+                result = await session.execute(query)
+                all_templates: List[GuildTemplateEntity] = result.scalars().all()
+
+                for template in all_templates:
+                    templates_info.append({
+                        "template_id": template.id,
+                        "template_name": template.template_name,
+                        "created_at": template.created_at.isoformat() if template.created_at else None,
+                        "guild_id": template.guild_id 
+                    })
+                
+                logger.info(f"Successfully listed {len(templates_info)} templates.")
+                return templates_info
+                
+        except Exception as e:
+            logger.error(f"Error listing guild templates: {e}", exc_info=True)
+            return []
+
+    async def delete_template(self, template_id: int) -> bool:
+        """Deletes a guild structure template by its database ID."""
+        logger.info(f"Attempting to delete template with ID: {template_id}")
+        try:
+            async with session_context() as session:
+                template_repo = GuildTemplateRepositoryImpl(session)
+                template_to_delete = await template_repo.get_by_id(template_id)
+                
+                if not template_to_delete:
+                    logger.warning(f"Template ID {template_id} not found for deletion.")
+                    return False # Indicate not found
+                
+                # Assuming the repository handles cascading deletes or we handle relations here
+                await template_repo.delete(template_to_delete)
+                await session.commit() # Commit the transaction
+                logger.info(f"Successfully deleted template ID {template_id}.")
+                return True
+
+        except Exception as e:
+            logger.error(f"Error deleting template ID {template_id}: {e}", exc_info=True)
+            # Raise or return False? Returning False for now.
+            # Consider specific exception types if repo raises them (e.g., IntegrityError)
+            return False
 
 # Instantiate the service if needed globally (e.g., for factory)
 # Or instantiate it where needed

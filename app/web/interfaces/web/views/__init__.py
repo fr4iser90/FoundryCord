@@ -6,6 +6,7 @@ from .debug.debug_view import router as debug_router
 from .guild import guild_router
 from .owner.owner_view import router as owner_router
 from .owner.bot_control_view import router as bot_control_router
+from .owner.bot_logger_view import router as bot_logger_router
 # Liste aller Web-View-Router
 routers = [
     main_router,
@@ -15,5 +16,6 @@ routers = [
     debug_router,   
     guild_router,
     owner_router,
-    bot_control_router
+    bot_control_router,
+    bot_logger_router
 ] 

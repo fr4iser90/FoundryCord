@@ -37,7 +37,7 @@ export function initializeChannelsList(templateData, contentElement, guildId) {
         const listItems = templateData.channels.map(chan => {
             if (!chan) return '';
             const category = categoriesById[chan.parent_category_template_id];
-            const categoryName = category ? category.name : 'Uncategorized';
+            const categoryName = category ? category.category_name : 'Uncategorized';
             let channelIcon = 'fas fa-question-circle';
             if (chan.type === 'GUILD_TEXT') channelIcon = 'fas fa-hashtag';
             else if (chan.type === 'GUILD_VOICE') channelIcon = 'fas fa-volume-up';
@@ -45,7 +45,7 @@ export function initializeChannelsList(templateData, contentElement, guildId) {
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                 <span>
                     <i class="fas ${channelIcon} me-2"></i>
-                        ${chan.name || 'Unnamed Channel'} <small class="text-secondary">(${categoryName})</small>
+                        ${chan.channel_name || 'Unnamed Channel'} <small class="text-secondary">(${categoryName})</small>
                 </span>
                     <span class="badge bg-secondary rounded-pill">Pos: ${chan.position !== undefined ? chan.position : 'N/A'}</span>
                 </li>

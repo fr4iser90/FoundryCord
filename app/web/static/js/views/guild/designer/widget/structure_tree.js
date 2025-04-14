@@ -34,7 +34,7 @@ function formatDataForJsTree(templateData) {
                 treeData.push({
                     id: `category_${cat.id}`,
                     parent: `template_${templateData.id || 'root'}`,
-                    text: `${cat.name || 'Unnamed Category'} (Pos: ${cat.position})`,
+                    text: `${cat.category_name || 'Unnamed Category'} (Pos: ${cat.position})`,
                     icon: 'fas fa-folder', // Example icon
                     type: 'category',
                     data: { type: 'category', dbId: cat.id } // Store original data if needed
@@ -60,7 +60,7 @@ function formatDataForJsTree(templateData) {
                 treeData.push({
                     id: `channel_${chan.id}`,
                     parent: parentId,
-                    text: `${chan.name || 'Unnamed Channel'} (Pos: ${chan.position})`,
+                    text: `${chan.channel_name || 'Unnamed Channel'} (Pos: ${chan.position})`,
                     icon: icon,
                     type: 'channel',
                     data: { type: 'channel', dbId: chan.id, channelType: chan.type } // Store original data

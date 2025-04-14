@@ -31,7 +31,7 @@ from .project import Project, Task, ProjectMember
 from .monitoring import MetricModel, AlertModel
 
 # UI Models
-from .ui import UILayoutEntity, SharedUILayoutTemplateEntity
+from .ui import UILayoutEntity
 
 # Export all models for convenient imports elsewhere
 __all__ = [
@@ -50,5 +50,5 @@ __all__ = [
     # Monitoring models
     'MetricModel', 'AlertModel',
     # UI Models
-    'UILayoutEntity', 'SharedUILayoutTemplateEntity'
+    'UILayoutEntity',
 ]

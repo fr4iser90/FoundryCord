@@ -52,13 +52,17 @@
                 <i class="bi bi-caret-down-fill ml-auto dropdown-indicator"></i>
             </a>
             <div class="navbar-dropdown">
-                <a class="dropdown-item {% if request.url.path.startswith('/owner/bot') %}is-active{% endif %}" href="/owner/bot">
+                <a class="dropdown-item {% if request.url.path == '/owner/bot' %}is-active{% endif %}" href="/owner/bot">
                     <i class="bi bi-robot mr-2"></i>
                     <span>Bot Control</span>
                 </a>
                 <a class="dropdown-item {% if request.url.path.startswith('/owner/servers') %}is-active{% endif %}" href="/owner/servers">
                     <i class="bi bi-hdd-stack mr-2"></i>
                     <span>Server Management</span>
+                </a>
+                <a class="dropdown-item {% if request.url.path.startswith('/owner/bot/logger') %}is-active{% endif %}" href="/owner/bot/logger">
+                    <i class="bi bi-terminal mr-2"></i>
+                    <span>Bot Logs</span>
                 </a>
                 {# Add other global owner links here, e.g., user management #}
                 {# Example:

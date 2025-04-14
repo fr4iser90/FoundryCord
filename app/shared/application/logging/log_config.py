@@ -1,7 +1,7 @@
 from typing import Dict, Any, List
 from dataclasses import dataclass, field
 import logging
-from app.shared.application.logging.formatters import CompactFormatter
+import logging.handlers # Import handlers module
 
 @dataclass
 class LoggingConfig:
@@ -12,10 +12,14 @@ class LoggingConfig:
     
     # Level configuration
     console_level: str = "INFO"
-    file_level: str = "INFO"
+    file_level: str = "INFO" # Keep for potential future use
     debug_level: str = "DEBUG"
     
-    # File configuration
+    # Memory Handler configuration
+    memory_capacity: int = 200 # How many log records to keep in memory
+    memory_flush_level: int = logging.CRITICAL # Only flush to target on CRITICAL or buffer full
+    
+    # File configuration (keep for potential future use)
     max_bytes: int = 1_000_000
     backup_count: int = 5
     
@@ -23,24 +27,62 @@ class LoggingConfig:
     log_to_db: bool = False
     db_level: str = "WARNING"
     
-    # Handlers
-    handlers: List[str] = field(default_factory=lambda: ["console", "file"])
+    # Handlers - Ensure console is always present for MemoryHandler target
+    handlers: List[str] = field(default_factory=lambda: ["console", "memory"]) # Add memory default
     
     def configure_logging(self) -> None:
         """Configure the root logger with the current settings"""
-        # Create console handler with compact formatter
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(CompactFormatter(datefmt=self.date_format))
-        console_handler.setLevel(getattr(logging, self.console_level))
-        
-        # Clear existing handlers
         root_logger = logging.getLogger()
+        # Clear existing handlers first to prevent duplicates on reconfigure
         root_logger.handlers.clear()
         
-        # Add configured handlers
-        root_logger.addHandler(console_handler)
-        root_logger.setLevel(getattr(logging, self.console_level))
-    
+        # Determine the lowest level needed for the root logger
+        min_level = logging.INFO # Start with a sensible default
+        configured_handlers: List[logging.Handler] = [] 
+
+        # --- Setup Console Handler (always needed as target for memory) ---
+        console_handler = logging.StreamHandler()
+        formatter = logging.Formatter(fmt=self.format, datefmt=self.date_format)
+        console_handler.setFormatter(formatter)
+        console_level_num = getattr(logging, self.console_level, logging.INFO)
+        console_handler.setLevel(console_level_num)
+        configured_handlers.append(console_handler)
+        min_level = min(min_level, console_level_num) # Update minimum root level
+
+        # --- Setup Memory Handler (if requested) ---
+        if "memory" in self.handlers:
+            memory_handler = logging.handlers.MemoryHandler(
+                capacity=self.memory_capacity,
+                flushLevel=self.memory_flush_level,
+                target=console_handler, # Target the console handler
+                flushOnClose=True
+            )
+            # MemoryHandler doesn't have a level itself, it passes everything to target
+            configured_handlers.append(memory_handler)
+            # Note: The memory handler itself doesn't influence the root logger level directly
+
+        # --- (Optional) Setup File Handler (if requested and needed later) ---
+        # if "file" in self.handlers:
+        #     log_dir = "logs"
+        #     os.makedirs(log_dir, exist_ok=True)
+        #     log_file = os.path.join(log_dir, "bot.log")
+        #     file_handler = logging.handlers.RotatingFileHandler(
+        #         log_file, maxBytes=self.max_bytes, backupCount=self.backup_count, encoding='utf-8'
+        #     )
+        #     file_handler.setFormatter(formatter) # Use the same formatter
+        #     file_level_num = getattr(logging, self.file_level, logging.INFO)
+        #     file_handler.setLevel(file_level_num)
+        #     configured_handlers.append(file_handler)
+        #     min_level = min(min_level, file_level_num)
+
+        # Add all configured handlers to the root logger
+        for handler in configured_handlers:
+            root_logger.addHandler(handler)
+            
+        # Set root logger level to the minimum required by its handlers
+        root_logger.setLevel(min_level)
+        logging.info(f"Logging configured with handlers: {[h.__class__.__name__ for h in configured_handlers]}, root level: {logging.getLevelName(min_level)}")
+        
     def update(self, config: Dict[str, Any]) -> None:
         """Update configuration with provided values"""
         for key, value in config.items():
