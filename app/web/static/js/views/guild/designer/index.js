@@ -600,6 +600,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             'categories': { title: 'Categories (List View)', content: '<div id="widget-content-categories">Loading...</div>', headerControls: [{ type: 'link', text: 'Manage', href: `/guild/${guildId}/designer/categories`, class: 'manage-link' }] },
             'channels': { title: 'Channels (List View)', content: '<div id="widget-content-channels">Loading...</div>', headerControls: [{ type: 'link', text: 'Manage', href: `/guild/${guildId}/designer/channels`, class: 'manage-link' }] },
             'template-list': { title: 'Saved Templates', content: '<div id="widget-content-template-list">Loading templates...</div>' },
+            'shared-template-list': { title: 'Shared Templates', content: '<div id="widget-content-shared-template-list">Loading shared templates...</div>' },
         };
         const defaultLayout = [
             { id: 'structure-tree', x: 0, y: 0, w: 4, h: 8, minW: 3, minH: 5 },
@@ -607,6 +608,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             { id: 'categories', x: 4, y: 2, w: 4, h: 3, minW: 3, minH: 3 },
             { id: 'channels', x: 8, y: 0, w: 4, h: 5, minW: 3, minH: 4 },
             { id: 'template-list', x: 4, y: 5, w: 4, h: 3, minW: 3, minH: 3 },
+            { id: 'shared-template-list', x: 8, y: 5, w: 4, h: 3, minW: 3, minH: 3 },
         ];
         console.log("[Index] Widget definitions:", widgetDefs);
         console.log("[Index] Default layout:", defaultLayout);

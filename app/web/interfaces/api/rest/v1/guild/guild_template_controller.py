@@ -80,6 +80,13 @@ class GuildTemplateController(BaseController):
                                           description="Creates a new template by copying an existing one."
                                           )(self.share_guild_template) # NEW method
 
+        # === NEW Shared Templates List Route ===
+        self.general_template_router.get("/templates/guilds/shared/",
+                                         response_model=GuildTemplateListResponseSchema, # Use the same list schema for now
+                                         summary="List Shared Guild Structure Templates",
+                                         description="Retrieves a list of publicly shared guild structure templates."
+                                         )(self.list_shared_guild_templates) # NEW method
+
     async def get_guild_template(self, guild_id: str, current_user: AppUserEntity = Depends(get_current_user)) -> GuildTemplateResponseSchema:
         """API endpoint to retrieve the guild template structure by Guild ID."""
         try:
@@ -234,6 +241,32 @@ class GuildTemplateController(BaseController):
              raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Template sharing not implemented.")
         except Exception as e:
             self.logger.error(f"Error sharing template ID {share_data.original_template_id} as '{share_data.new_template_name}': {e}", exc_info=True)
+            # Use base controller handler or raise generic 500
+            return self.handle_exception(e)
+
+    # --- NEW Method for Shared List Route ---
+    async def list_shared_guild_templates(self, current_user: AppUserEntity = Depends(get_current_user)) -> GuildTemplateListResponseSchema:
+        """API endpoint to list publicly shared guild structure templates."""
+        self.logger.info(f"Listing shared templates requested by user {current_user.id}")
+        try:
+            # --- Permission Check (Example: Any logged-in user can view shared?) ---
+            pass
+
+            # --- Call Service Layer (Assumes service method exists) ---
+            # TODO: Implement self.template_service.list_shared_templates
+            # For now, return an empty list or raise NotImplementedError
+            # templates_list: List[Dict[str, Any]] = await self.template_service.list_shared_templates()
+            templates_list = [] # Placeholder - return empty list for now
+            self.logger.warning("Shared template listing service method not implemented yet. Returning empty list.")
+
+            # --- Return Success Response ---
+            return {"templates": templates_list}
+
+        except NotImplementedError:
+             self.logger.error(f"Shared template listing service method not implemented.")
+             raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Shared template listing not implemented.")
+        except Exception as e:
+            self.logger.error(f"Error listing shared guild templates: {e}", exc_info=True)
             # Use base controller handler or raise generic 500
             return self.handle_exception(e)
 
