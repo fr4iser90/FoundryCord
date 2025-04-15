@@ -49,7 +49,8 @@ A Discord bot with web interface for managing Discord servers, channels, and das
    ```bash
    cd docker
    mv .env.example .env
-   nano .env.discordbot
+   nano .env
+   cd ..
    ```
 
 2. **Start the services**:

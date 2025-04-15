@@ -1,5 +1,5 @@
 # HomeLab Discord Bot - .gitignore
-
+.project_config.sh
 # Python
 __pycache__/
 *.py[cod]
