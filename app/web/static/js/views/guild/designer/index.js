@@ -8,6 +8,8 @@ import { initializeCategoriesList } from './widget/categories_list.js';
 import { initializeChannelsList } from './widget/channels_list.js';
 // Import the new template list initializer
 import { initializeTemplateList } from './widget/template_list.js';
+// Import the shared template list initializer
+import { initializeSharedTemplateList } from './widget/shared_template_list.js';
 
 /**
  * Extracts the Guild ID from the current URL path.
@@ -62,7 +64,8 @@ function populateGuildDesignerWidgets(templateData, targetWidgetId = null, targe
         'categories', // Categories List Widget
         'channels',   // Channels List Widget
         'structure-tree', // Structure Tree Widget
-        'template-list', // Added new widget
+        'template-list', // Saved Templates List Widget
+        'shared-template-list' // Shared Templates List Widget
     ];
 
     widgetsToPopulate.forEach(widgetId => {
@@ -92,6 +95,10 @@ function populateGuildDesignerWidgets(templateData, targetWidgetId = null, targe
                 case 'template-list':
                     // Call the actual initializer function
                     initializeTemplateList(contentElement, guildId);
+                    break;
+                case 'shared-template-list':
+                    // Call the shared template list initializer
+                    initializeSharedTemplateList(contentElement, guildId);
                     break;
                 default:
                     console.warn(`[Index] Unknown widget ID for population: ${widgetId}`);
@@ -303,7 +310,7 @@ function createWidgetElement(id, title, contentHtml, gridOptions) {
                 <span>${title}</span>
                 <!-- Add optional controls here -->
             </div>
-            <div class="widget-content" id="widget-content-${id}">
+            <div class="widget-content widget-content-area" id="widget-content-${id}">
                 ${contentHtml}
             </div>
         </div>
@@ -386,109 +393,75 @@ function renderDefaultWidgets(templateData, grid) {
     // Clear existing widgets before adding new ones for default layout
     grid.removeAll();
 
-    // --- Render Template Info Widget --- 
-    const templateInfoContent = `
-        <h5>${templateData.template_name || 'Unnamed Template'}</h5>
-        <p class="mb-0"><small class="text-muted">Created: ${templateData.created_at ? new Date(templateData.created_at).toLocaleString() : 'N/A'}</small></p>
-    `;
-    const templateInfoWidget = createWidgetElement(
-        'template-info', // ID used for targeting content later
-        'Template Information',
-        templateInfoContent,
-        { x: 0, y: 0, w: 4, h: 2 } // Default position
-    );
-    grid.addWidget(templateInfoWidget);
-
-    // --- Render Categories Widget --- 
-    const categoriesById = {}; // Still needed for channels even in default
-    let categoriesContent = '<p class="text-muted p-3">No categories defined.</p>'; 
-    if (Array.isArray(templateData.categories) && templateData.categories.length > 0) {
-        templateData.categories.sort((a, b) => a.position - b.position);
-        const listItems = templateData.categories.map(cat => {
-            if (cat && cat.id) { 
-                 categoriesById[cat.id] = cat;
-            }
-            return `
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span><i class="fas fa-folder me-2"></i> ${cat.name || 'Unnamed Category'}</span>
-                    <span class="badge bg-secondary rounded-pill">Pos: ${cat.position !== undefined ? cat.position : 'N/A'}</span>
-                </li>
-            `;
-        }).join('');
-        categoriesContent = `<ul class="list-group list-group-flush">${listItems}</ul>`;
-    } else {
-        console.warn("No categories data found or data is not an array for default render.");
-    }
-    const categoriesWidget = createWidgetElement(
-        'categories', // ID used for targeting content later
-        'Categories',
-        categoriesContent,
-        { x: 4, y: 0, w: 4, h: 4 } // Default position
-    );
-    const categoriesHeader = categoriesWidget.querySelector('.widget-header');
+    // Define widget configurations
     const guildId = getGuildIdFromUrl();
-    if (categoriesHeader && guildId) {
-        const manageLink = document.createElement('a');
-        manageLink.href = `/guild/${guildId}/designer/categories`;
-        manageLink.className = 'btn btn-sm btn-outline-primary';
-        manageLink.textContent = 'Manage';
-        categoriesHeader.appendChild(manageLink);
-    }
-    grid.addWidget(categoriesWidget);
+    const widgetConfigs = [
+        {
+            id: 'structure-tree',
+            title: 'Guild Structure',
+            content: '<p class="panel-placeholder">Loading structure...</p>', // Just the inner placeholder
+            options: { x: 0, y: 0, w: 4, h: 8, minH: 4, minW: 3 }
+        },
+        {
+            id: 'template-info',
+            title: 'Template Information',
+            content: '', // Content will be populated by JS
+            options: { x: 4, y: 0, w: 4, h: 2, minH: 2, minW: 3, maxH: 2 }
+        },
+        {
+            id: 'categories',
+            title: 'Categories (List View)',
+            content: '', // Content will be populated by JS
+            options: { x: 4, y: 2, w: 4, h: 3, minH: 3, minW: 3 },
+            manageLink: `/guild/${guildId}/designer/categories`
+        },
+         {
+            id: 'channels',
+            title: 'Channels (List View)',
+            content: '', // Content will be populated by JS
+            options: { x: 8, y: 0, w: 4, h: 5, minH: 3, minW: 3 },
+            manageLink: `/guild/${guildId}/designer/channels`
+        },
+        {
+            id: 'template-list', // Saved Templates
+            title: 'Saved Templates',
+            content: '', // Content will be populated by JS
+            options: { x: 4, y: 5, w: 4, h: 3, minH: 3, minW: 3 }
+        },
+        {
+            id: 'shared-template-list', // Shared Templates
+            title: 'Shared Templates',
+            content: '', // Content will be populated by JS
+            options: { x: 8, y: 5, w: 4, h: 3, minH: 3, minW: 3 }
+        }
+        // Add more default widgets here as needed
+    ];
 
-    // --- Render Channels Widget ---
-    let channelsContent = '<p class="text-muted p-3">No channels defined.</p>'; 
-    if (Array.isArray(templateData.channels) && templateData.channels.length > 0) {
-        templateData.channels.sort((a, b) => {
-            const parentA = a?.parent_category_template_id;
-            const parentB = b?.parent_category_template_id;
-            const catA = categoriesById[parentA];
-            const catB = categoriesById[parentB];
-            const posA = parentA === null ? Infinity : (catA ? catA.position : Infinity - 1);
-            const posB = parentB === null ? Infinity : (catB ? catB.position : Infinity - 1);
-            if (posA !== posB) return posA - posB;
-            const channelPosA = typeof a?.position === 'number' ? a.position : Infinity;
-            const channelPosB = typeof b?.position === 'number' ? b.position : Infinity;
-            return channelPosA - channelPosB;
-        });
-        const listItems = templateData.channels.map(chan => {
-             if (!chan) return ''; 
-            const category = categoriesById[chan.parent_category_template_id];
-            const categoryName = category ? category.name : 'Uncategorized';
-            let channelIcon = 'fa-question-circle';
-            if (chan.type === 'GUILD_TEXT') channelIcon = 'fa-hashtag';
-            else if (chan.type === 'GUILD_VOICE') channelIcon = 'fa-volume-up';
-            return `
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>
-                        <i class="fas ${channelIcon} me-2"></i>
-                        ${chan.name || 'Unnamed Channel'} <small class="text-muted">(${categoryName})</small>
-                    </span>
-                    <span class="badge bg-secondary rounded-pill">Pos: ${chan.position !== undefined ? chan.position : 'N/A'}</span>
-                </li>
-            `;
-        }).join('');
-        channelsContent = `<ul class="list-group list-group-flush">${listItems}</ul>`;
-    } else {
-        console.warn("No channels data found or data is not an array for default render.");
-    }
-    const channelsWidget = createWidgetElement(
-        'channels', // ID used for targeting content later
-        'Channels',
-        channelsContent,
-        { x: 8, y: 0, w: 4, h: 4 } // Default position
-    );
-    const channelsHeader = channelsWidget.querySelector('.widget-header');
-    if (channelsHeader && guildId) { 
-        const manageLink = document.createElement('a');
-        manageLink.href = `/guild/${guildId}/designer/channels`; 
-        manageLink.className = 'btn btn-sm btn-outline-primary';
-        manageLink.textContent = 'Manage';
-        channelsHeader.appendChild(manageLink);
-    }
-    grid.addWidget(channelsWidget);
+    // Add widgets to the grid
+    widgetConfigs.forEach(config => {
+        const widgetEl = createWidgetElement(config.id, config.title, config.content, config.options);
+        
+        // Add manage link if specified
+        if (config.manageLink) {
+            const header = widgetEl.querySelector('.widget-header');
+            if (header) {
+                const manageLink = document.createElement('a');
+                manageLink.href = config.manageLink;
+                manageLink.className = 'btn btn-sm btn-outline-primary ms-auto'; // Use ms-auto to push right
+                manageLink.textContent = 'Manage';
+                manageLink.style.marginLeft = 'auto'; // Ensure it aligns right
+                header.appendChild(manageLink);
+            }
+        }
+        
+        grid.addWidget(widgetEl);
+    });
 
     console.log("Default widgets added to grid.");
+    
+    // Initial population after adding default widgets
+    // This is now handled by the populateWidgetContents call in the main initialization logic
+    // populateGuildDesignerWidgets(templateData); // REMOVED - Avoid double population
 }
 
 /**
@@ -509,43 +482,18 @@ function populateWidgetContents(templateData) {
     // --- Populate Template Info ---    
     const infoContentEl = document.getElementById('widget-content-template-info');
     if (infoContentEl) {
-         infoContentEl.innerHTML = `
-            <h5>${templateData.template_name || 'Unnamed Template'}</h5>
-            <p class="mb-0"><small class="text-muted">Created: ${templateData.created_at ? new Date(templateData.created_at).toLocaleString() : 'N/A'}</small></p>
-        `;
+         // Now we just set innerHTML directly, assuming the container exists
+         initializeTemplateInfo(templateData, infoContentEl);
     } else {
         console.warn("Content area for template-info widget not found.");
     }
 
     // --- Populate Categories --- 
-    const categoriesById = {};
     const categoriesContentEl = document.getElementById('widget-content-categories');
     if (categoriesContentEl) {
-        if (Array.isArray(templateData.categories) && templateData.categories.length > 0) {
-             templateData.categories.sort((a, b) => a.position - b.position);
-            const listItems = templateData.categories.map(cat => {
-                 if (cat && cat.id) { categoriesById[cat.id] = cat; }
-                 return `
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-folder me-2"></i> ${cat.name || 'Unnamed Category'}</span>
-                        <span class="badge bg-secondary rounded-pill">Pos: ${cat.position !== undefined ? cat.position : 'N/A'}</span>
-                    </li>
-                `;
-            }).join('');
-            categoriesContentEl.innerHTML = `<ul class="list-group list-group-flush">${listItems}</ul>`;
-            
-            // Ensure Manage link exists (it might not be created by grid.load)
-            const header = categoriesContentEl.closest('.grid-stack-item-content')?.querySelector('.widget-header');
-            if(header && guildId && !header.querySelector('a')) {
-                 const manageLink = document.createElement('a');
-                manageLink.href = `/guild/${guildId}/designer/categories`;
-                manageLink.className = 'btn btn-sm btn-outline-primary';
-                manageLink.textContent = 'Manage';
-                header.appendChild(manageLink);
-            }
-        } else {
-            categoriesContentEl.innerHTML = '<p class="text-muted p-3">No categories defined.</p>';
-        }
+        // Call the initializer function directly
+        initializeCategoriesList(templateData, categoriesContentEl, guildId);
+        // Remove manual population logic here, initializer handles it
     } else {
          console.warn("Content area for categories widget not found.");
     }
@@ -553,56 +501,34 @@ function populateWidgetContents(templateData) {
     // --- Populate Channels --- 
     const channelsContentEl = document.getElementById('widget-content-channels');
     if (channelsContentEl) {
-         if (Array.isArray(templateData.channels) && templateData.channels.length > 0) {
-            // categoriesById map should be populated from the step above
-            templateData.channels.sort((a, b) => {
-                const parentA = a?.parent_category_template_id;
-                const parentB = b?.parent_category_template_id;
-                const catA = categoriesById[parentA];
-                const catB = categoriesById[parentB];
-                const posA = parentA === null ? Infinity : (catA ? catA.position : Infinity - 1);
-                const posB = parentB === null ? Infinity : (catB ? catB.position : Infinity - 1);
-                if (posA !== posB) return posA - posB;
-                const channelPosA = typeof a?.position === 'number' ? a.position : Infinity;
-                const channelPosB = typeof b?.position === 'number' ? b.position : Infinity;
-                return channelPosA - channelPosB;
-            });
-            const listItems = templateData.channels.map(chan => {
-                if (!chan) return ''; 
-                const category = categoriesById[chan.parent_category_template_id];
-                const categoryName = category ? category.name : 'Uncategorized';
-                let channelIcon = 'fa-question-circle';
-                if (chan.type === 'GUILD_TEXT') channelIcon = 'fa-hashtag';
-                else if (chan.type === 'GUILD_VOICE') channelIcon = 'fa-volume-up';
-                return `
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>
-                            <i class="fas ${channelIcon} me-2"></i>
-                            ${chan.name || 'Unnamed Channel'} <small class="text-muted">(${categoryName})</small>
-                        </span>
-                        <span class="badge bg-secondary rounded-pill">Pos: ${chan.position !== undefined ? chan.position : 'N/A'}</span>
-                    </li>
-                `;
-            }).join('');
-            channelsContentEl.innerHTML = `<ul class="list-group list-group-flush">${listItems}</ul>`;
-
-             // Ensure Manage link exists
-            const header = channelsContentEl.closest('.grid-stack-item-content')?.querySelector('.widget-header');
-            if(header && guildId && !header.querySelector('a')) {
-                 const manageLink = document.createElement('a');
-                manageLink.href = `/guild/${guildId}/designer/channels`; 
-                manageLink.className = 'btn btn-sm btn-outline-primary';
-                manageLink.textContent = 'Manage';
-                header.appendChild(manageLink);
-            }
-         } else {
-             channelsContentEl.innerHTML = '<p class="text-muted p-3">No channels defined.</p>';
-         }
+         // Call the initializer function directly
+         initializeChannelsList(templateData, channelsContentEl, guildId);
+         // Remove manual population logic here, initializer handles it
     } else {
         console.warn("Content area for channels widget not found.");
     }
 
-    console.log("Existing widget contents populated.");
+    // --- Populate Saved Templates List ---
+    const templateListContentEl = document.getElementById('widget-content-template-list');
+    if (templateListContentEl) {
+        initializeTemplateList(templateListContentEl, guildId);
+    } else {
+        console.warn("Content area for template-list widget not found.");
+    }
+
+    // --- Populate Shared Templates List ---
+    const sharedTemplateListContentEl = document.getElementById('widget-content-shared-template-list');
+    if (sharedTemplateListContentEl) {
+        initializeSharedTemplateList(sharedTemplateListContentEl, guildId);
+    } else {
+        console.warn("Content area for shared-template-list widget not found.");
+    }
+
+    // --- Initialize Structure Tree (After other data might be ready) ---
+    // We need the template data which should include categories/channels by now
+    initializeStructureTree(templateData); 
+
+    console.log("Widget content population finished.");
 }
 
 /**

@@ -68,32 +68,8 @@
     }
 }
 
-/* Error Pages Styling */
-.login-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    padding: var(--spacing-lg);
-    text-align: center;
-}
 
-.error-card {
-    background-color: var(--bg-secondary);
-    border-radius: var(--border-radius-lg);
-    box-shadow: 0 8px 16px var(--bg-overlay);
-    padding: 2.5rem;
-    border: 1px solid var(--border-color);
-    transition: transform 0.3s ease;
-    width: 100%;
-    max-width: 600px;
-    animation: fadeIn 0.5s ease-in-out;
-}
 
-.error-card:hover {
-    transform: translateY(-5px);
-}
 
 /* Error-specific colors with gradients */
 .error-400 .error-icon { background: linear-gradient(135deg, var(--warning), var(--btn-primary-hover)); }

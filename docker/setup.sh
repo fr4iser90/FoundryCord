@@ -75,7 +75,7 @@ update_var "DISCORD_BOT_TOKEN" "Discord Bot Token"
 update_var "OWNER" "Owner username and ID (format: USERNAME|ID)"
 update_var "ENVIRONMENT" "Environment (development, production, testing)" "development"
 update_var "DOMAIN" "Domain or IP address"
-update_var "ENABLED_SERVICES" "Enabled services (comma-separated list)" "Web,Game,File"
+
 
 echo "Database configuration:"
 update_var "POSTGRES_HOST" "PostgreSQL host" "foundrycord-db"

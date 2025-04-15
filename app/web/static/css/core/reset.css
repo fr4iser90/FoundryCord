@@ -20,10 +20,8 @@ tbody, tfoot, thead, tr, th, td {
 /* Set core root defaults */
 html {
     scroll-behavior: smooth;
-    -webkit-text-size-adjust: 100%; /* Safari */
-    -moz-text-size-adjust: 100%; /* Firefox */
-    -ms-text-size-adjust: 100%; /* IE */
-    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%; /* Needed for older iOS Safari */
+    text-size-adjust: 100%; /* Standard */
 }
 
 /* Set core body defaults */
@@ -78,5 +76,5 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Remove webkit tap highlight */
 * {
-    -webkit-tap-highlight-color: transparent;
+    -webkit-tap-highlight-color: transparent; /* Keep for iOS */
 } 

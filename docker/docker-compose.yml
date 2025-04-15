@@ -8,15 +8,6 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    environment:
-      - ENVIRONMENT=${ENVIRONMENT:-development}
-      - ENABLED_SERVICES=${ENABLED_SERVICES:-Web,Game,File}
-      - OFFLINE_MODE=${OFFLINE_MODE:-false}
-      - SESSION_DURATION_HOURS=${SESSION_DURATION_HOURS:-24}
-      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-60}
-      - RATE_LIMIT_MAX_ATTEMPTS=${RATE_LIMIT_MAX_ATTEMPTS:-5}
-      - PUID=${PUID:-1001}
-      - PGID=${PGID:-987}
     deploy:
       resources:
         limits:

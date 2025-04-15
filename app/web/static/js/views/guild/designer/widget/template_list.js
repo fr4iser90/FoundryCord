@@ -1,9 +1,10 @@
 import { apiRequest, showToast, ApiError } from '/static/js/components/common/notifications.js';
 
 /**
- * Fetches and displays the list of saved GUILD STRUCTURE templates.
+ * Fetches and displays the list of SAVED GUILD STRUCTURE templates for the current context
+ * (including the initial snapshot and user-saved templates).
  * @param {HTMLElement} contentElement - The container element for the widget content.
- * @param {string} currentGuildId - The current guild ID (needed for context, maybe for save-as).
+ * @param {string} currentGuildId - The current guild ID (needed for context).
  */
 export async function initializeTemplateList(contentElement, currentGuildId) {
     if (!contentElement) {
@@ -11,32 +12,29 @@ export async function initializeTemplateList(contentElement, currentGuildId) {
         return;
     }
     if (!currentGuildId) {
-        // Maybe still show global templates?
-        // console.warn("[GuildTemplateListWidget] Current Guild ID not provided.");
-        // contentElement.innerHTML = '<p class="panel-placeholder">Guild ID not available.</p>';
-        // return;
+        console.warn("[GuildTemplateListWidget] Current Guild ID not provided, cannot load templates.");
+        contentElement.innerHTML = '<p class="panel-placeholder">Guild context not available.</p>';
+        return;
     }
 
-    // console.log("[GuildTemplateListWidget] Initializing...");
-    contentElement.innerHTML = '<p class="panel-placeholder">Loading guild structure templates...</p>';
+    console.log("[GuildTemplateListWidget] Initializing saved templates list...");
+    contentElement.innerHTML = '<p class="panel-placeholder">Loading saved guild structure templates...</p>';
 
-    // --- API ENDPOINT including current Guild ID for context --- 
-    // Need to pass the current guild ID so the backend can include its initial snapshot
+    // API ENDPOINT fetches initial snapshot for the context guild + user-saved templates
     const listApiUrl = `/api/v1/templates/guilds/?context_guild_id=${encodeURIComponent(currentGuildId)}`; 
 
     try {
-        // Fetch the list of templates visible to the user, plus initial for context guild
+        // Fetch the list of templates
         const response = await apiRequest(listApiUrl); 
         
-        // --- CORRECTED RESPONSE HANDLING --- 
-        // Expect response format: { templates: [ { template_id: ..., template_name: ... }, ... ] }
-        const templates = response?.templates; // Get the array from the 'templates' key
+        // Expect response format: { templates: [ { template_id: ..., template_name: ..., is_initial_snapshot: boolean (optional) }, ... ] }
+        const templates = response?.templates; 
 
         if (!Array.isArray(templates)) {
             // Handle case where response might be null or not have templates array
             if (response === null || response === undefined) {
                  // console.warn("[GuildTemplateListWidget] No response received from template list API.");
-                 contentElement.innerHTML = '<p class="panel-placeholder">Could not load templates.</p>';
+                 contentElement.innerHTML = '<p class="text-danger p-3">Error loading templates: Invalid data format.</p>';
             } else {
                 console.error("[GuildTemplateListWidget] Invalid data received from API (expected array in response.templates):", response);
                 contentElement.innerHTML = '<p class="text-danger p-3">Error loading templates: Invalid data format.</p>';
@@ -59,6 +57,9 @@ export async function initializeTemplateList(contentElement, currentGuildId) {
                 // console.warn('[GuildTemplateListWidget] Template object missing template_id:', template);
                 return;
             }
+            
+            // --- Check if this is the initial snapshot (assuming API provides a flag) --- 
+            const isInitialSnapshot = template.is_initial_snapshot === true; // Example check
 
             // --- Create elements using DOM --- 
             const listItem = document.createElement('div');
@@ -101,6 +102,8 @@ export async function initializeTemplateList(contentElement, currentGuildId) {
             const shareIcon = document.createElement('i');
             shareIcon.className = 'fas fa-share-alt';
             shareButton.appendChild(shareIcon);
+            // TODO: Disable share button for initial snapshot?
+            // shareButton.disabled = isInitialSnapshot;
             shareButton.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -118,11 +121,21 @@ export async function initializeTemplateList(contentElement, currentGuildId) {
             const deleteIcon = document.createElement('i');
             deleteIcon.className = 'fas fa-trash-alt text-danger'; // Style icon red
             deleteButton.appendChild(deleteIcon);
-            deleteButton.addEventListener('click', (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                handleTemplateDelete(templateId, templateName, contentElement, currentGuildId);
-            });
+            
+            // --- Disable delete for initial snapshot --- 
+            if (isInitialSnapshot) {
+                deleteButton.disabled = true;
+                deleteButton.title = 'Cannot delete the initial guild snapshot.';
+                deleteButton.classList.add('disabled'); // Optional: visual cue
+            } else {
+                deleteButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleTemplateDelete(templateId, templateName, contentElement, currentGuildId);
+                });
+            }
+            // -------------------------------------------
+            
             buttonGroup.appendChild(deleteButton);
             // --- End Action Buttons ---
 
@@ -144,8 +157,8 @@ export async function initializeTemplateList(contentElement, currentGuildId) {
 }
 
 /**
- * Handles loading a selected GUILD STRUCTURE template.
- * @param {string} templateId - The ID of the GUILD STRUCTURE template to load.
+ * Handles loading a selected SAVED or INITIAL GUILD STRUCTURE template.
+ * @param {string} templateId - The ID of the template to load.
  */
 function handleTemplateLoad(templateId) {
     // console.log(`[GuildTemplateListWidget] Load GUILD STRUCTURE template selected: ${templateId}`);
@@ -154,7 +167,7 @@ function handleTemplateLoad(templateId) {
 }
 
 /**
- * Handles sharing a specific GUILD STRUCTURE template.
+ * Handles sharing a specific SAVED GUILD STRUCTURE template.
  * @param {number} templateId - The ID of the template to share.
  * @param {string} templateName - The name of the template.
  */
@@ -201,14 +214,15 @@ function handleTemplateShare(templateId, templateName) {
 }
 
 /**
- * Handles deleting a specific GUILD STRUCTURE template.
+ * Handles deleting a specific SAVED GUILD STRUCTURE template.
+ * (Cannot delete the initial snapshot).
  * @param {number} templateId - The ID of the template to delete.
  * @param {string} templateName - The name of the template (for confirmation).
  * @param {HTMLElement} listContentElement - The element containing the list to refresh.
  * @param {string} currentGuildId - The current guild ID for list refresh context.
  */
 async function handleTemplateDelete(templateId, templateName, listContentElement, currentGuildId) {
-    // console.log(`[GuildTemplateListWidget] Delete requested for template ID: ${templateId}, Name: ${templateName}`);
+    // console.log(`[GuildTemplateListWidget] Delete requested for saved template ID: ${templateId}, Name: ${templateName}`);
 
     // Confirmation dialog
     if (!confirm(`Are you sure you want to permanently delete the template "${templateName}"?`)) {
