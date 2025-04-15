@@ -1,5 +1,6 @@
 # HomeLab Discord Bot - .gitignore
 .project_config.sh
+shell.nix
 # Python
 __pycache__/
 *.py[cod]
@@ -41,6 +42,7 @@ docker-compose.override.yml
 # IDE
 .idea/
 .vscode/
+.cursorrules
 *.sublime-workspace
 *.sublime-project
 *.swp
