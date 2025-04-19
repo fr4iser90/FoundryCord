@@ -252,17 +252,16 @@ class GuildTemplateController(BaseController):
             # --- Permission Check (Example: Any logged-in user can view shared?) ---
             pass
 
-            # --- Call Service Layer (Assumes service method exists) ---
-            # TODO: Implement self.template_service.list_shared_templates
-            # For now, return an empty list or raise NotImplementedError
-            # templates_list: List[Dict[str, Any]] = await self.template_service.list_shared_templates()
-            templates_list = [] # Placeholder - return empty list for now
-            self.logger.warning("Shared template listing service method not implemented yet. Returning empty list.")
+            # --- Call Service Layer --- 
+            # Call the correct service method
+            templates_list: List[Dict[str, Any]] = await self.template_service.list_shared_templates()
+            # Remove placeholder/warning log from previous version if present
+            # self.logger.warning(\"Shared template listing service method not implemented yet. Returning empty list.\")
 
             # --- Return Success Response ---
             return {"templates": templates_list}
 
-        except NotImplementedError:
+        except NotImplementedError: # Keep this handler in case service method is somehow still missing
              self.logger.error(f"Shared template listing service method not implemented.")
              raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Shared template listing not implemented.")
         except Exception as e:

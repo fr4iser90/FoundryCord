@@ -97,6 +97,7 @@ def upgrade() -> None:
         sa.Column('is_active', sa.Boolean(), nullable=False, default=True),
         sa.Column('avatar', sa.String(255), nullable=True),
         sa.Column('last_login', sa.DateTime(), nullable=True),
+        sa.Column('last_selected_guild_id', sa.String(20), nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
         # sa.PrimaryKeyConstraint('id'), # Defined above
         sa.UniqueConstraint('discord_id')

@@ -174,8 +174,28 @@ export class ServerSelector {
             
             showToast('success', `Switched to server: ${server.name}`);
 
-            // Redirect to the landing page for the newly selected guild
-            window.location.href = `/guild/${server.guild_id}/`;
+            // --- Revised Redirect Logic ---
+            const currentPathname = window.location.pathname;
+            const currentSearch = window.location.search; 
+            const currentHash = window.location.hash;     
+
+            // Regex to find /guild/ followed by digits, ending with / or end of string
+            const guildPathRegex = /^(\/guild\/)\d+(\/|$)/;
+            
+            if (guildPathRegex.test(currentPathname)) {
+                // If current path IS a guild path, replace ID and redirect
+                const newPathname = currentPathname.replace(guildPathRegex, `$1${server.guild_id}$2`);
+                console.log(`Redirecting: Keeping guild structure, new path: ${newPathname}`);
+                // Combine the new path with original search params and hash
+                window.location.href = newPathname + currentSearch + currentHash;
+            } else {
+                // If current path IS NOT a guild path (e.g., /home, /owner/), DO NOT REDIRECT.
+                // The selector UI has updated, and the session on the backend is updated.
+                // The user stays on the current page.
+                console.log(`No redirect: Current path (${currentPathname}) is not a guild-specific path. Guild context updated.`);
+            }
+            // --- End Revised Redirect Logic ---
+            
         } catch (error) {
             throw error; // Let apiRequest handle the error display
         }

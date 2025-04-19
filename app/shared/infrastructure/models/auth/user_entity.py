@@ -18,6 +18,7 @@ class AppUserEntity(Base):
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     last_login = Column(DateTime, nullable=True)
     avatar = Column(String(255), nullable=True)  # URL zum Avatar-Bild
+    last_selected_guild_id = Column(String(20), nullable=True) # Store the last selected guild ID
     
     # Relationships
     sessions = relationship("SessionEntity", back_populates="user", cascade="all, delete")

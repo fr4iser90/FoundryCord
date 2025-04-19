@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy import select
+from sqlalchemy import select, and_, or_
 
 from app.shared.infrastructure.database.session.context import session_context
 from app.shared.interface.logging.api import get_web_logger
@@ -253,26 +253,33 @@ class GuildTemplateService:
         try:
             async with session_context() as session:
                 
-                # Build the base query parts
-                user_owned_filter = (GuildTemplateEntity.creator_user_id == user_id)
-                shared_filter = (GuildTemplateEntity.is_shared == True)
+                # --- Build Filter Conditions ---
+                # Condition 1: Template created by the user AND is NOT shared
+                user_owned_not_shared = and_(
+                    GuildTemplateEntity.creator_user_id == user_id,
+                    GuildTemplateEntity.is_shared == False 
+                )
                 
-                # Filter for the specific initial snapshot of the context guild
-                initial_snapshot_filter = None
+                # Condition 2: The initial snapshot for the context guild (creator is NULL)
+                initial_snapshot_condition = None
                 if context_guild_id:
-                    initial_snapshot_filter = (
-                        (GuildTemplateEntity.guild_id == context_guild_id) & 
-                        (GuildTemplateEntity.creator_user_id.is_(None)) # Check for NULL explicitly
+                    initial_snapshot_condition = and_(
+                        GuildTemplateEntity.guild_id == context_guild_id, 
+                        GuildTemplateEntity.creator_user_id.is_(None) # Check for NULL explicitly
+                        # No is_shared check here, assume initial snapshot is always shown regardless
                     )
                 
-                # Combine filters with OR
-                combined_filter = user_owned_filter | shared_filter
-                if initial_snapshot_filter is not None:
-                    combined_filter = combined_filter | initial_snapshot_filter
+                # Combine conditions: Show (user-owned AND NOT shared) OR (initial snapshot)
+                filter_conditions = [user_owned_not_shared]
+                if initial_snapshot_condition is not None:
+                    filter_conditions.append(initial_snapshot_condition)
+                
+                final_filter = or_(*filter_conditions)
+                # --- End Filter Conditions ---
 
                 query = (
                     select(GuildTemplateEntity)
-                    .where(combined_filter)
+                    .where(final_filter) # Use the corrected filter
                     .order_by(GuildTemplateEntity.created_at.desc())
                 )
 
@@ -295,6 +302,40 @@ class GuildTemplateService:
         except Exception as e:
             logger.error(f"Error listing visible guild templates for user {user_id} (context: {context_guild_id}): {e}", exc_info=True)
             return []
+
+    async def list_shared_templates(self) -> List[Dict[str, Any]]:
+        """Lists basic information about publicly shared guild templates."""
+        logger.info(f"Listing shared guild templates.")
+        templates_data = []
+        try:
+            async with session_context() as session:
+                stmt = (
+                    select(
+                        GuildTemplateEntity.id, 
+                        GuildTemplateEntity.template_name, 
+                        GuildTemplateEntity.creator_user_id # Include creator if needed by UI
+                    )
+                    .where(GuildTemplateEntity.is_shared == True) # Fetch only shared templates
+                    .order_by(GuildTemplateEntity.template_name) 
+                )
+
+                result = await session.execute(stmt)
+                templates = result.all()
+
+                # Format the output
+                for template in templates:
+                    templates_data.append({
+                        "template_id": template.id,
+                        "template_name": template.template_name,
+                        # "creator_id": template.creator_user_id # Optional: Include creator info
+                    })
+            
+            logger.info(f"Successfully listed {len(templates_data)} shared templates.")
+            return templates_data
+            
+        except Exception as e:
+            logger.error(f"Error listing shared templates: {e}", exc_info=True)
+            return [] # Return empty list on error
 
     async def share_template(
         self, 
@@ -333,7 +374,7 @@ class GuildTemplateService:
                     template_description=new_description,
                     creator_user_id=creator_user_id,
                     guild_id=None,  # Not tied to a specific guild initially
-                    is_shared=False # Default to not shared? Or maybe True? Let's assume False.
+                    is_shared=True # Set to True when sharing/copying
                 )
                 session.add(new_template)
                 await session.flush() # Get the new template ID

@@ -64,6 +64,12 @@
                     <i class="bi bi-terminal mr-2"></i>
                     <span>Bot Logs</span>
                 </a>
+                {# --- Add New Features Link --- #}
+                <a class="dropdown-item {% if request.url.path.startswith('/owner/features') %}is-active{% endif %}" href="/owner/features">
+                    <i class="bi bi-toggles mr-2"></i> {# Example icon #}
+                    <span>Feature Management</span>
+                </a>
+                {# --- End New Features Link --- #}
                 {# Add other global owner links here, e.g., user management #}
                 {# Example:
                 <a class="dropdown-item {% if request.url.path.startswith('/owner/users') %}is-active{% endif %}" href="/owner/users">

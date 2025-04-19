@@ -164,7 +164,14 @@ async function updateAccess(guildId, status) {
         });
         
         showToast('success', `Server status updated to ${status}`);
-        await refreshServerList(); // Refresh the list to show changes
+        await refreshServerList(); // Refresh the owner's table
+        
+        // Also refresh the global guild selector dropdown
+        if (window.guildSelector && typeof window.guildSelector.loadServers === 'function') {
+            console.log('Refreshing global guild selector...');
+            window.guildSelector.loadServers();
+        }
+
     } catch (error) {
         console.error('Update access error:', error);
         const errorMessage = error.response?.data?.detail || error.message || 'Failed to update server access';

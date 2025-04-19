@@ -7,7 +7,7 @@ from app.shared.infrastructure.models.auth import AppUserEntity
 from app.shared.infrastructure.models.discord import GuildEntity, DiscordGuildUserEntity
 from app.shared.infrastructure.database.session.context import session_context # Or use the factory approach if preferred
 from app.shared.interface.logging.api import get_web_logger
-from sqlalchemy import select
+from sqlalchemy import select, update # Import update
 from sqlalchemy.orm import selectinload # To potentially load relationships if needed by ServerInfo
 from typing import List, Dict, Any, Optional
 from datetime import datetime
@@ -103,32 +103,85 @@ class ServerService:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve manageable server list")
 
     async def get_current_server(self, request: Request, user: AppUserEntity) -> Optional[GuildEntity]: # Return type can also be GuildEntity
-        """Get the currently selected server from the user's session."""
+        """Get the currently selected server from the user's session or last selection."""
         selected_guild_data = request.session.get('selected_guild')
-        if not selected_guild_data or 'guild_id' not in selected_guild_data:
-            logger.debug(f"No server selected in session for user {user.id}")
+        guild_id_to_fetch = None
+
+        if selected_guild_data and 'guild_id' in selected_guild_data:
+            guild_id_to_fetch = selected_guild_data['guild_id']
+            logger.debug(f"Found server {guild_id_to_fetch} in session for user {user.id}")
+        elif user.last_selected_guild_id:
+            guild_id_to_fetch = user.last_selected_guild_id
+            logger.debug(f"No server in session, checking last selected: {guild_id_to_fetch} for user {user.id}")
+        else:
+            logger.debug(f"No server in session and no last selection for user {user.id}")
             return None
 
-        guild_id = selected_guild_data['guild_id']
-        logger.debug(f"Fetching current server {guild_id} from DB for user {user.id}")
+        if not guild_id_to_fetch:
+            return None # Should not happen if logic above is correct, but defensive check
+
+        logger.debug(f"Attempting to fetch current/last server {guild_id_to_fetch} from DB for user {user.id}")
         try:
              async with session_context() as session:
-                # Fetch the full GuildEntity to ensure data consistency
-                stmt = select(GuildEntity).where(GuildEntity.guild_id == guild_id)
-                result = await session.execute(stmt)
+                # Fetch the full GuildEntity
+                # Verify server exists and is approved. Check user access only if not owner.
+                stmt = (
+                    select(GuildEntity)
+                    .outerjoin(DiscordGuildUserEntity, DiscordGuildUserEntity.guild_id == GuildEntity.guild_id)
+                    .where(GuildEntity.guild_id == guild_id_to_fetch)
+                    .where(GuildEntity.access_status == 'approved')
+                )
+                # If user is not owner, add condition to check their membership via the join
+                if not user.is_owner:
+                    stmt = stmt.where(DiscordGuildUserEntity.user_id == user.id)
+
+                result = await session.execute(stmt.limit(1))
                 guild = result.scalar_one_or_none()
+
                 if not guild:
-                     logger.warning(f"Server {guild_id} from session not found in DB.")
-                     # Clear invalid session data?
-                     request.session.pop('selected_guild', None)
+                     logger.warning(f"Server {guild_id_to_fetch} (from session or last_selected) not found, not approved, or user {user.id} lost access.")
+                     # Clear invalid session data if it came from there
+                     if selected_guild_data and selected_guild_data.get('guild_id') == guild_id_to_fetch:
+                         request.session.pop('selected_guild', None)
+                         logger.debug(f"Removed invalid server {guild_id_to_fetch} from session.")
+                     # Clear invalid last_selected_guild_id if it came from there and user still exists
+                     if not selected_guild_data and user.last_selected_guild_id == guild_id_to_fetch:
+                         try:
+                            update_stmt = (
+                                update(AppUserEntity)
+                                .where(AppUserEntity.id == user.id)
+                                .values(last_selected_guild_id=None)
+                            )
+                            await session.execute(update_stmt)
+                            await session.commit()
+                            user.last_selected_guild_id = None # Update in-memory object too
+                            logger.debug(f"Cleared invalid last_selected_guild_id {guild_id_to_fetch} for user {user.id}")
+                         except Exception as db_exc:
+                             logger.error(f"Failed to clear invalid last_selected_guild_id for user {user.id}: {db_exc}", exc_info=True)
+                             await session.rollback() # Rollback only the failed update
+
                      return None
+
+                # If we fetched based on last_selected_guild_id, update the session now
+                if not selected_guild_data and guild:
+                    selected_data = {
+                        "guild_id": guild.guild_id,
+                        "name": guild.name,
+                        "icon_url": str(guild.icon_url) if guild.icon_url else None
+                    }
+                    request.session['selected_guild'] = selected_data
+                    logger.info(f"Updated session with last selected server {guild.guild_id} for user {user.id}")
+
                 return guild # Return the ORM object
         except Exception as e:
-            logger.exception(f"Error fetching current server {guild_id} for user {user.id}: {e}", exc_info=e)
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve current server")
+            logger.exception(f"Error fetching current/last server {guild_id_to_fetch} for user {user.id}: {e}", exc_info=e)
+            # Don't raise HTTPException here, let the controller handle it if needed,
+            # returning None might be sufficient depending on usage.
+            # Consider if clearing session/last_selected is appropriate on general exception
+            return None # Indicate failure to retrieve
 
     async def select_server(self, request: Request, guild_id: str, user: AppUserEntity) -> GuildEntity: # Return GuildEntity
-        """Select a server and store its basic info in the session."""
+        """Select a server, store its basic info in the session, and update user's last selection."""
         logger.info(f"User {user.id} attempting to select server: {guild_id}")
         
         try:
@@ -153,6 +206,25 @@ class ServerService:
                     logger.warning(f"User {user.id} denied access to select server {guild_id} (not found, not approved, or no access).")
                     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied to this server")
 
+                # --- Update User's Last Selected Guild ---
+                try:
+                    # Use SQLAlchemy update for efficiency, especially if user object isn't fully loaded/managed
+                    update_stmt = (
+                        update(AppUserEntity)
+                        .where(AppUserEntity.id == user.id)
+                        .values(last_selected_guild_id=server.guild_id)
+                    )
+                    await session.execute(update_stmt)
+                    logger.debug(f"Attempting to update last_selected_guild_id for user {user.id} to {server.guild_id}")
+                    # We don't commit yet, let it be part of the transaction with session update
+                except Exception as db_exc:
+                    # Log error but proceed with session update if possible
+                    logger.error(f"Failed to update last_selected_guild_id for user {user.id}: {db_exc}", exc_info=True)
+                    await session.rollback() # Rollback the failed update attempt
+                    # Consider re-raising or handling differently if this update is critical
+                    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to save selection preference") from db_exc
+                # --- End Update ---
+
                 # Store essential info in session
                 selected_data = {
                     "guild_id": server.guild_id,
@@ -161,13 +233,23 @@ class ServerService:
                 }
                 request.session['selected_guild'] = selected_data
                 logger.info(f"Stored selected server in session for user {user.id}: {selected_data}")
-                
+
+                # Commit both the user update and session changes implicitly by exiting context manager without error
+                # Explicit commit after both potentially risky operations succeed
+                await session.commit()
+                logger.info(f"Successfully updated last_selected_guild_id and session for user {user.id}")
+
+                # Refresh the user object in memory if needed elsewhere in the request lifecycle
+                user.last_selected_guild_id = server.guild_id
+
                 # Return the full GuildEntity object
-                return server 
+                return server
                 
         except HTTPException as http_exc:
+            await session.rollback() # Rollback on HTTP exceptions triggered within the block
             raise http_exc
         except Exception as e:
+            await session.rollback() # Rollback on general exceptions
             logger.exception(f"Error selecting server {guild_id} for user {user.id}: {e}", exc_info=e)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Server selection failed")
 

@@ -1,0 +1,48 @@
+{% extends "layouts/base_layout.html" %}
+
+{% block title %}Manage Features{% endblock %}
+
+{% block extra_css %}
+{# Add any specific CSS for this page if needed later #}
+{# <link rel="stylesheet" href="{{ url_for('static', path='css/views/owner/features.css') }}"> #}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="page-header mb-4">
+        <h1>Feature Management</h1>
+        <p class="text-muted">Enable or disable bot features globally or per-server.</p>
+    </div>
+
+    {# Placeholder Content #}
+    <div class="card">
+        <div class="card-header">
+            Global Features
+        </div>
+        <div class="card-body">
+            <p class="card-text">Placeholder for global feature toggles (e.g., enable/disable welcome messages everywhere).</p>
+            {# Example Toggle (non-functional) #}
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="globalFeature1" disabled>
+                <label class="form-check-label" for="globalFeature1">Example Global Feature</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            Per-Server Feature Overrides
+        </div>
+        <div class="card-body">
+            <p class="card-text">Placeholder for selecting a server and overriding specific feature settings for it.</p>
+            {# Add server selection dropdown and feature toggles later #}
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{# Add any specific JS for this page if needed later #}
+{# <script type="module" defer src="{{ url_for('static', path='js/pages/owner/features.js') }}"></script> #}
+{% endblock %}
