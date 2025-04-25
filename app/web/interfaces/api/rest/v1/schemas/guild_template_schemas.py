@@ -97,6 +97,7 @@ class GuildTemplateListItemSchema(BaseModel):
     template_name: str
     created_at: Optional[datetime] = None
     guild_id: Optional[str] = None # Include the source guild ID if available
+    creator_user_id: Optional[int] = None # Add creator user ID (optional)
 
     class Config:
         from_attributes = True # Needed if data comes directly from ORM objects/dicts

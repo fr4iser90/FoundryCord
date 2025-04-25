@@ -9,9 +9,20 @@ import { initializeTemplateList } from './template_list.js';
  */
 export async function initializeSharedTemplateList(contentElement, currentGuildId) {
     if (!contentElement) {
-        console.warn("[SharedTemplateListWidget] Content element not provided.");
+        console.error("[SharedTemplateListWidget] Content element not provided.");
         return;
     }
+
+    // --- Get Current User ID --- 
+    const currentUserIdStr = contentElement.dataset.currentUserId;
+    if (!currentUserIdStr) {
+        console.error("[SharedTemplateListWidget] Cannot determine current user ID. 'data-current-user-id' attribute missing on content element.");
+        contentElement.innerHTML = '<p class="text-danger p-3">Error: Cannot identify user.</p>';
+        return;
+    }
+    // Convert to appropriate type if needed (e.g., integer) depending on API response format
+    const currentUserId = parseInt(currentUserIdStr, 10);
+    // --- End Get User ID --- 
 
     console.log("[SharedTemplateListWidget] Initializing...");
     contentElement.innerHTML = '<p class="panel-placeholder">Loading shared templates...</p>';
@@ -47,6 +58,7 @@ export async function initializeSharedTemplateList(contentElement, currentGuildI
         templates.forEach(template => {
             const templateId = template.template_id; 
             const templateName = template.template_name || 'Unnamed Shared Template';
+            const creatorUserId = template.creator_user_id; // Get creator ID from API data
             
             if (templateId === undefined || templateId === null) {
                 console.warn('[SharedTemplateListWidget] Template object missing template_id:', template);
@@ -116,6 +128,35 @@ export async function initializeSharedTemplateList(contentElement, currentGuildI
             });
             buttonGroup.appendChild(saveButton);
             // --- End Save/Copy Button ---
+
+            // --- Debugging Delete Button Logic ---
+            console.log(`[Debug Delete] Template: ${templateName} (ID: ${templateId})`);
+            console.log(`  Creator ID from API: ${creatorUserId} (Type: ${typeof creatorUserId})`);
+            console.log(`  Current User ID from Dataset: ${currentUserId} (Type: ${typeof currentUserId})`);
+            const isMatch = creatorUserId === currentUserId;
+            console.log(`  Strict Comparison (creator === current): ${isMatch}`);
+            // --- End Debugging ---
+
+            // --- Add Delete Button (Conditionally) ---
+            const isCurrentUserOwner = contentElement.dataset.isOwner === 'true';
+            if ((creatorUserId && creatorUserId === currentUserId) || isCurrentUserOwner) {
+                const deleteButton = document.createElement('button');
+                deleteButton.type = 'button';
+                deleteButton.className = 'btn btn-outline-danger btn-delete-shared-template'; // New class
+                deleteButton.title = `Delete your shared template '${templateName}'`;
+                deleteButton.dataset.templateId = templateId;
+                deleteButton.dataset.templateName = templateName;
+                const deleteIcon = document.createElement('i');
+                deleteIcon.className = 'fas fa-trash-alt'; // Trash icon
+                deleteButton.appendChild(deleteIcon);
+                deleteButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleSharedTemplateDelete(templateId, templateName, contentElement, currentGuildId);
+                });
+                buttonGroup.appendChild(deleteButton);
+            }
+            // --- End Delete Button ---
 
             // --- End Action Buttons ---
 
@@ -226,6 +267,47 @@ async function handleSharedTemplateSave(templateId, templateName, currentGuildId
     } catch (error) {
         console.error(`[SharedTemplateListWidget] Error copying shared template ${templateId}:`, error);
         // apiRequest likely showed an error toast
+    }
+}
+
+// --- NEW: Delete Handler --- 
+/**
+ * Handles deleting a specific SHARED template created by the current user.
+ * @param {number} templateId - The ID of the template to delete.
+ * @param {string} templateName - The name of the template (for confirmation).
+ * @param {HTMLElement} listContentElement - The element containing the list to refresh.
+ * @param {string} currentGuildId - The current guild ID for list refresh context.
+ */
+async function handleSharedTemplateDelete(templateId, templateName, listContentElement, currentGuildId) {
+    console.log(`[SharedTemplateListWidget] Delete requested for OWNED shared template ID: ${templateId}, Name: ${templateName}`);
+
+    // Confirmation dialog
+    if (!confirm(`Are you sure you want to permanently delete your shared template "${templateName}"?`)) {
+        console.log("[SharedTemplateListWidget] Delete cancelled by user.");
+        return;
+    }
+
+    const deleteApiUrl = `/api/v1/templates/guilds/${templateId}`;
+    console.log(`[SharedTemplateListWidget] Sending DELETE request to: ${deleteApiUrl}`);
+
+    try {
+        await apiRequest(deleteApiUrl, {
+            method: 'DELETE'
+        });
+        
+        showToast('success', `Shared template "${templateName}" deleted successfully.`);
+        console.log(`[SharedTemplateListWidget] Successfully deleted template ${templateId}.`);
+        
+        // Refresh the list
+        if (listContentElement) {
+            initializeSharedTemplateList(listContentElement, currentGuildId);
+        } else {
+            console.warn("[SharedTemplateListWidget] Could not refresh list after delete: content element missing.");
+        }
+
+    } catch (error) {
+        // apiRequest handles toast, but log details here
+        console.error(`[SharedTemplateListWidget] Error deleting shared template ID ${templateId}:`, error);
     }
 }
 

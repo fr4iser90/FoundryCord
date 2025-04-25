@@ -79,6 +79,11 @@ function populateGuildDesignerWidgets(templateData, targetWidgetId = null, targe
         }
 
         try {
+            // --- Get User ID from main container --- 
+            const mainContainer = document.getElementById('designer-main-container');
+            const currentUserId = mainContainer?.dataset.currentUserId;
+            // --- 
+
             switch (widgetId) {
                 case 'template-info':
                     initializeTemplateInfo(templateData, contentElement);
@@ -97,6 +102,15 @@ function populateGuildDesignerWidgets(templateData, targetWidgetId = null, targe
                     initializeTemplateList(contentElement, guildId);
                     break;
                 case 'shared-template-list':
+                    // --- Add user ID to the specific widget element --- 
+                    if (contentElement && currentUserId) {
+                        contentElement.dataset.currentUserId = currentUserId;
+                    } else if (!currentUserId) {
+                         console.error("[Index] Could not find currentUserId from main container data attribute.");
+                         contentElement.innerHTML = '<p class="text-danger p-3">Error: User ID missing.</p>';
+                         return; // Don't initialize if ID is missing
+                    }
+                    // --- 
                     // Call the shared template list initializer
                     initializeSharedTemplateList(contentElement, guildId);
                     break;

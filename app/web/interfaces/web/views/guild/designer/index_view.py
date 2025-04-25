@@ -50,7 +50,8 @@ class GuildDesignerIndexView(BaseView):
                 request,
                 guild_id=guild_id,
                 guild_template_data=guild_template, # Renamed keyword argument
-                active_page="guild-designer" # Example active page key
+                active_page="guild-designer", # Example active page key
+                current_user_id=current_user.id # Pass the user ID
             )
         except HTTPException as http_exc:
             # Re-raise HTTP exceptions

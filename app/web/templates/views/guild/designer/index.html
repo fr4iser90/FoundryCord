@@ -14,7 +14,7 @@
 
 {% block content %}
 {# Replace the bootstrap container with our layout-editor structure #}
-<div class="layout-editor has-panel-left has-panel-right" id="designer-main-container">
+<div class="layout-editor has-panel-left has-panel-right" id="designer-main-container" data-current-user-id="{{ current_user_id }}">
 
     {# --- Editor Toolbar --- #}
     <div class="editor-toolbar d-flex justify-content-between align-items-center p-2">

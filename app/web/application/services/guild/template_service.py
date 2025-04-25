@@ -321,6 +321,7 @@ class GuildTemplateService:
                         "template_id": template.id,
                         "template_name": template.template_name,
                         "description": template.template_description,
+                        "creator_user_id": template.creator_user_id,
                         # Add other relevant fields if needed
                     })
             
