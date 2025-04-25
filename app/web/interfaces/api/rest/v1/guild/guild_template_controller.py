@@ -186,16 +186,44 @@ class GuildTemplateController(BaseController):
     async def delete_guild_template_by_id(self, template_id: int, current_user: AppUserEntity = Depends(get_current_user)):
         """API endpoint to delete a specific guild template by its database ID."""
         try:
-            # TODO: Add permission check (e.g., only owner/creator can delete?)
-            self.logger.info(f"User {current_user.id} requesting deletion of template ID {template_id}")
+            # --- Permission Check --- 
+            # Fetch the template first to check ownership
+            # We need the service method that returns the raw entity or at least the creator ID
+            # Let's use get_template_by_id but access the underlying entity if possible, 
+            # or modify get_template_by_id in service to return creator_id if needed.
+            # Assuming template_service.get_raw_template_by_id or similar exists for simplicity
+            # For now, let's assume get_template_by_id fetches enough info (we need creator_id)
             
+            # Fetch the template data (which should include creator_user_id if structured correctly)
+            template_to_delete = await self.template_service.get_template_by_id(template_id)
+            
+            if not template_to_delete:
+                self.logger.warning(f"Delete failed: Template ID {template_id} not found.")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found.")
+            
+            # Check if the current user is the creator OR a bot owner
+            # The service returns a dict, ensure it includes creator_user_id
+            creator_id = template_to_delete.get('creator_user_id') # Get creator ID from the dict
+            
+            is_creator = (creator_id is not None and creator_id == current_user.id)
+            is_owner = current_user.is_owner # Assuming is_owner flag is available
+
+            if not is_creator and not is_owner:
+                self.logger.warning(f"Permission denied: User {current_user.id} attempted to delete template {template_id} created by {creator_id}.")
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to delete this template.")
+            
+            self.logger.info(f"Permission granted for user {current_user.id} to delete template {template_id} (Is Creator: {is_creator}, Is Owner: {is_owner}).")
+            # --- End Permission Check ---
+
             # --- Call Service Layer --- 
             # Assuming service has a delete method - needs implementation
             deleted_successfully = await self.template_service.delete_template(template_id)
 
             if not deleted_successfully:
                  self.logger.warning(f"Failed to delete template ID {template_id}. It might not exist or service failed.")
-                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found or could not be deleted.")
+                 # Keep 404 if not found, maybe 500 if service failed unexpectedly?
+                 # Since we checked existence above, this implies a service/DB error during delete
+                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not delete template due to a server error.")
 
             self.logger.info(f"Successfully deleted template ID {template_id}")
             # Return nothing for 204 No Content status

@@ -478,7 +478,6 @@ class GuildTemplateService:
                     template_description=original_template.template_description, # Copy description
                     guild_id=None, # Not tied to a specific guild initially
                     is_shared=False, # New copy is private by default
-                    structure_version=original_template.structure_version # Copy version
                     # Copy other relevant fields from original_template if they exist
                 )
                 if not new_template:

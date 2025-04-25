@@ -66,23 +66,50 @@ class GuildTemplateRepositoryImpl(BaseRepositoryImpl[GuildTemplateEntity], Guild
             logger.error(f"Error retrieving guild template by name '{template_name}' and creator {creator_user_id}: {e}", exc_info=True)
             return None
 
-    async def create(self, guild_id: str, template_name: str) -> Optional[GuildTemplateEntity]:
-        """Create a new guild template record."""
-        try:
-            # Check if one already exists for this guild_id
-            existing = await self.get_by_guild_id(guild_id)
-            if existing:
-                logger.warning(f"Attempted to create duplicate guild template for guild_id: {guild_id}")
-                return existing # Or maybe raise an error?
+    async def create(
+        self, 
+        template_name: str,
+        creator_user_id: Optional[int] = None,
+        guild_id: Optional[str] = None, 
+        template_description: Optional[str] = None,
+        is_shared: bool = False,
+        structure_version: Optional[str] = None
+        # Add other fields from GuildTemplateEntity as needed
+    ) -> Optional[GuildTemplateEntity]:
+        """Create a new guild template record.
 
-            new_template = self.model(guild_id=guild_id, template_name=template_name)
+        Handles initial snapshots (guild_id set, creator_user_id=None) 
+        and user-created templates (creator_user_id set, guild_id=None or source)."""
+        try:
+            # --- Duplicate Check (User-Saved Templates) ---
+            # Check for duplicate template name for the same creator
+            if creator_user_id:
+                existing_by_name = await self.get_by_name_and_creator(template_name, creator_user_id)
+                if existing_by_name:
+                    logger.warning(f"User {creator_user_id} attempted to create duplicate template name '{template_name}'.")
+                    # Raise an error or return None to indicate failure due to duplication
+                    # Returning None for now, service layer should handle it.
+                    return None 
+            # --- End Duplicate Check ---
+
+            new_template = self.model(
+                guild_id=guild_id,
+                template_name=template_name,
+                template_description=template_description,
+                creator_user_id=creator_user_id,
+                is_shared=is_shared,
+                # structure_version=structure_version # Uncomment if structure_version is added to model
+                # Set defaults for other fields if needed, though DB defaults often handle this
+                is_active=True 
+            )
+
             self.session.add(new_template)
             await self.session.flush() # Use flush to get the ID before commit if needed elsewhere
             await self.session.refresh(new_template)
-            logger.info(f"Created new guild template (ID: {new_template.id}) for guild_id: {guild_id}")
+            logger.info(f"Created new guild template (ID: {new_template.id}, Name: '{new_template.template_name}')")
             return new_template
         except Exception as e:
-            logger.error(f"Error creating guild template for guild_id {guild_id}: {e}", exc_info=True)
+            logger.error(f"Error creating guild template '{template_name}': {e}", exc_info=True)
             # Consider rolling back if part of a larger transaction
             # await self.session.rollback()
             return None

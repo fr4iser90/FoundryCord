@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -38,3 +38,15 @@ class GuildTemplateChannelPermissionRepositoryImpl(BaseRepositoryImpl[GuildTempl
         except Exception as e:
             logger.error(f"Error creating template channel permission for role '{role_name}' on channel template {channel_template_id}: {e}", exc_info=True)
             return None
+
+    async def get_by_channel_template_id(self, channel_template_id: int) -> List[GuildTemplateChannelPermissionEntity]:
+        """Retrieves all permission entities associated with a specific channel template ID."""
+        try:
+            stmt = select(self.model).where(self.model.channel_template_id == channel_template_id)
+            result = await self.session.execute(stmt)
+            entities = result.scalars().all()
+            logger.debug(f"Found {len(entities)} permissions for channel template ID {channel_template_id}.")
+            return entities
+        except Exception as e:
+            logger.error(f"Error retrieving permissions for channel template ID {channel_template_id}: {e}", exc_info=True)
+            raise # Re-raise the exception to be handled by the service layer
