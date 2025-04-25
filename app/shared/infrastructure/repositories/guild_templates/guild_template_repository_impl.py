@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload # If needed for relationships later
@@ -99,3 +99,20 @@ class GuildTemplateRepositoryImpl(BaseRepositoryImpl[GuildTemplateEntity], Guild
             # Consider rolling back if part of a larger transaction
             # await self.session.rollback()
             return False
+
+    # --- NEW METHOD --- 
+    async def get_shared_templates(self) -> List[GuildTemplateEntity]:
+        """Retrieves all guild templates marked as shared."""
+        try:
+            # Assuming GuildTemplateEntity has an 'is_shared' boolean field
+            stmt = select(self.model).where(self.model.is_shared == True).order_by(self.model.template_name)
+            result = await self.session.execute(stmt)
+            entities = result.scalars().all()
+            logger.debug(f"Found {len(entities)} shared templates.")
+            return entities
+        except Exception as e:
+            # Log the specific error
+            logger.error(f"Error retrieving shared guild templates: {e}", exc_info=True)
+            # Return empty list or raise the exception depending on desired handling
+            # Raising might be better to signal a DB issue upstream.
+            raise # Re-raise the exception

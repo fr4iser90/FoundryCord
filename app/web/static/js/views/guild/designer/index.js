@@ -560,6 +560,28 @@ function setupPanelToggles() {
     console.log("[Index] Panel toggles set up.");
 }
 
+// --- NEW: Event Listener for loading template data ---
+function setupTemplateLoadListener() {
+    console.log("[Index] Setting up listener for 'loadTemplateData' event...");
+    document.addEventListener('loadTemplateData', (event) => {
+        console.log("[Index] Received 'loadTemplateData' event.", event.detail);
+        if (event.detail && event.detail.templateData) {
+            const templateData = event.detail.templateData;
+            showToast('info', `Loading structure from template: ${templateData.template_name || 'Unnamed Template'}`);
+            
+            // Re-populate widgets with the new data
+            populateGuildDesignerWidgets(templateData);
+            // Re-initialize the structure tree with the new data
+            initializeStructureTree(templateData);
+        } else {
+            console.error("[Index] 'loadTemplateData' event received without valid template data in detail.");
+            showToast('error', 'Failed to load template data from event.');
+        }
+    });
+    console.log("[Index] 'loadTemplateData' event listener is active.");
+}
+// --- END NEW LISTENER ---
+
 // --- Main Execution ---
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("[Index] DOM fully loaded.");
@@ -636,8 +658,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const grid = await gridManager.initialize(templateData); // Initialize (loads/renders layout)
         console.log("[Index] GridManager initialized.");
 
-
+        // --- Setup Listeners --- 
         setupPanelToggles();
+        setupTemplateLoadListener(); // Activate the new listener
 
         console.log("[Index] Guild Designer initialization sequence complete.");
 

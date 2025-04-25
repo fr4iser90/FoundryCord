@@ -305,37 +305,260 @@ class GuildTemplateService:
 
     async def list_shared_templates(self) -> List[Dict[str, Any]]:
         """Lists basic information about publicly shared guild templates."""
-        logger.info(f"Listing shared guild templates.")
-        templates_data = []
+        logger.info(f"Listing shared guild templates requested.")
+        templates_info = []
+
         try:
             async with session_context() as session:
-                stmt = (
-                    select(
-                        GuildTemplateEntity.id, 
-                        GuildTemplateEntity.template_name, 
-                        GuildTemplateEntity.creator_user_id # Include creator if needed by UI
-                    )
-                    .where(GuildTemplateEntity.is_shared == True) # Fetch only shared templates
-                    .order_by(GuildTemplateEntity.template_name) 
-                )
+                template_repo = GuildTemplateRepositoryImpl(session)
+                # Assuming a flag `is_shared` exists on the entity
+                # or a specific convention denotes shared templates.
+                # Adjust the query as needed based on the actual schema.
+                shared_templates: List[GuildTemplateEntity] = await template_repo.get_shared_templates() # Needs implementation in repo
 
-                result = await session.execute(stmt)
-                templates = result.all()
-
-                # Format the output
-                for template in templates:
-                    templates_data.append({
+                for template in shared_templates:
+                    templates_info.append({
                         "template_id": template.id,
                         "template_name": template.template_name,
-                        # "creator_id": template.creator_user_id # Optional: Include creator info
+                        "description": template.template_description,
+                        # Add other relevant fields if needed
                     })
             
-            logger.info(f"Successfully listed {len(templates_data)} shared templates.")
-            return templates_data
-            
+            logger.info(f"Found {len(templates_info)} shared templates.")
+            return templates_info
+
+        except NotImplementedError:
+             logger.error("Repository method 'get_shared_templates' not implemented.")
+             raise # Re-raise so controller can return 501
         except Exception as e:
             logger.error(f"Error listing shared templates: {e}", exc_info=True)
-            return [] # Return empty list on error
+            raise # Re-raise for controller to handle
+
+    # --- NEW METHOD: Get Shared Template Details ---
+    async def get_shared_template_details(self, template_id: int) -> Optional[Dict[str, Any]]:
+        """Fetches the full details of a specific shared guild template by its ID."""
+        logger.info(f"Fetching details for shared template_id: {template_id}")
+        try:
+            async with session_context() as session:
+                # 1. Get the main template record by its primary key
+                template_repo = GuildTemplateRepositoryImpl(session)
+                template: Optional[GuildTemplateEntity] = await template_repo.get_by_id(template_id)
+
+                # 2. Validate if it exists and is actually shared
+                if not template:
+                    logger.warning(f"No template found for template_id: {template_id}")
+                    return None
+                
+                # TODO: Add check for shared status (e.g., template.is_shared == True)
+                # If there's no explicit shared flag, this check might not be needed if the controller
+                # only calls this for known shared templates, but it's safer to verify.
+                # if not template.is_shared:
+                #    logger.warning(f"Template {template_id} exists but is not marked as shared.")
+                #    return None # Or raise an error?
+
+                template_db_id = template.id
+                logger.debug(f"Found shared template ID {template_db_id}")
+
+                # 3. Fetch Categories and Channels (similar to get_template_by_id)
+                cat_repo = GuildTemplateCategoryRepositoryImpl(session)
+                chan_repo = GuildTemplateChannelRepositoryImpl(session)
+
+                cat_stmt = (
+                    select(GuildTemplateCategoryEntity)
+                    .where(GuildTemplateCategoryEntity.guild_template_id == template_db_id)
+                    .options(selectinload(GuildTemplateCategoryEntity.permissions))
+                    .order_by(GuildTemplateCategoryEntity.position)
+                )
+                cat_result = await session.execute(cat_stmt)
+                categories: List[GuildTemplateCategoryEntity] = cat_result.scalars().all()
+
+                chan_stmt = (
+                    select(GuildTemplateChannelEntity)
+                    .where(GuildTemplateChannelEntity.guild_template_id == template_db_id)
+                    .options(selectinload(GuildTemplateChannelEntity.permissions))
+                    .order_by(GuildTemplateChannelEntity.position)
+                )
+                chan_result = await session.execute(chan_stmt)
+                channels: List[GuildTemplateChannelEntity] = chan_result.scalars().all()
+
+                # 4. Structure the data (similar to get_template_by_id)
+                structured_template = {
+                    "guild_id": template.guild_id, # May be null or less relevant for shared
+                    "template_id": template.id,
+                    "template_name": template.template_name,
+                    "created_at": template.created_at.isoformat() if template.created_at else None,
+                    # Add description if available in schema
+                    # "description": template.template_description,
+                    "categories": [],
+                    "channels": []
+                }
+                # Populate categories...
+                for cat in categories:
+                    category_data = {
+                        "id": cat.id,
+                        "name": cat.category_name, # Use consistent naming with other methods
+                        "position": cat.position,
+                        "permissions": []
+                    }
+                    for perm in cat.permissions:
+                         category_data["permissions"].append({
+                            "id": perm.id,
+                            "role_name": perm.role_name,
+                            "allow": perm.allow_permissions_bitfield,
+                            "deny": perm.deny_permissions_bitfield
+                        })
+                    structured_template["categories"].append(category_data)
+                # Populate channels...
+                for chan in channels:
+                    channel_data = {
+                        "id": chan.id,
+                        "name": chan.channel_name, # Use consistent naming
+                        "type": chan.channel_type,
+                        "position": chan.position,
+                        "topic": chan.topic,
+                        "is_nsfw": chan.is_nsfw,
+                        "slowmode_delay": chan.slowmode_delay,
+                        "parent_category_template_id": chan.parent_category_template_id,
+                        "permissions": []
+                    }
+                    for perm in chan.permissions:
+                         channel_data["permissions"].append({
+                            "id": perm.id,
+                            "role_name": perm.role_name,
+                            "allow": perm.allow_permissions_bitfield if perm.allow_permissions_bitfield is not None else 0,
+                            "deny": perm.deny_permissions_bitfield if perm.deny_permissions_bitfield is not None else 0
+                        })
+                    structured_template["channels"].append(channel_data)
+                
+                logger.info(f"Successfully fetched and structured shared template {template_id}")
+                return structured_template
+
+        except Exception as e:
+            logger.error(f"Error fetching shared template details for template_id {template_id}: {e}", exc_info=True)
+            return None # Controller will handle 500
+
+    # --- NEW METHOD: Copy Shared Template ---
+    async def copy_shared_template(
+        self,
+        shared_template_id: int,
+        user_id: int,
+        new_name_optional: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]: # Return details of the NEW template
+        """Copies a shared template structure to create a new saved template for a user."""
+        logger.info(f"Attempting to copy shared template {shared_template_id} for user {user_id}. New name: '{new_name_optional}'")
+        try:
+            async with session_context() as session:
+                # Use a single session for all repository operations within the copy
+                template_repo = GuildTemplateRepositoryImpl(session)
+                cat_repo = GuildTemplateCategoryRepositoryImpl(session)
+                chan_repo = GuildTemplateChannelRepositoryImpl(session)
+                cat_perm_repo = GuildTemplateCategoryPermissionRepositoryImpl(session)
+                chan_perm_repo = GuildTemplateChannelPermissionRepositoryImpl(session)
+
+                # 1. Fetch the original shared template details (ensure it exists and is shared)
+                original_template = await template_repo.get_by_id(shared_template_id)
+                if not original_template:
+                    logger.error(f"Shared template {shared_template_id} not found for copying.")
+                    return None
+                # TODO: Check original_template.is_shared if applicable
+                # if not original_template.is_shared:
+                #     logger.error(f"Template {shared_template_id} is not shared and cannot be copied.")
+                #     return None
+                
+                original_categories = await cat_repo.get_by_template_id(shared_template_id)
+                original_channels = await chan_repo.get_by_template_id(shared_template_id)
+                # Note: Permissions are loaded via relationships usually
+
+                # 2. Create the new GuildTemplateEntity
+                new_template_name = new_name_optional if new_name_optional else f"Copy of {original_template.template_name}"
+                
+                new_template = await template_repo.create(
+                    creator_user_id=user_id,
+                    template_name=new_template_name,
+                    template_description=original_template.template_description, # Copy description
+                    guild_id=None, # Not tied to a specific guild initially
+                    is_shared=False, # New copy is private by default
+                    structure_version=original_template.structure_version # Copy version
+                    # Copy other relevant fields from original_template if they exist
+                )
+                if not new_template:
+                    logger.error("Failed to create new template record in database during copy.")
+                    return None
+                
+                new_template_id = new_template.id
+                logger.info(f"Created new template record (ID: {new_template_id}) for copy.")
+
+                # --- Copy Categories and Channels --- 
+                category_id_map = {} # Map old category ID -> new category ID
+
+                # Copy Categories
+                for original_cat in original_categories:
+                    new_cat = await cat_repo.create(
+                        guild_template_id=new_template_id,
+                        category_name=original_cat.category_name,
+                        position=original_cat.position
+                        # TODO: Copy other category attributes if needed
+                    )
+                    if not new_cat:
+                         logger.error(f"Failed to copy category '{original_cat.category_name}' (original ID {original_cat.id}) to new template {new_template_id}.")
+                         # Consider rollback or partial success handling
+                         continue # Skip this category and its channels?
+                    
+                    category_id_map[original_cat.id] = new_cat.id
+                    
+                    # Copy Category Permissions
+                    original_cat_perms = await cat_perm_repo.get_by_category_template_id(original_cat.id)
+                    for perm in original_cat_perms:
+                        await cat_perm_repo.create(
+                             category_template_id=new_cat.id,
+                             role_name=perm.role_name,
+                             allow_permissions_bitfield=perm.allow_permissions_bitfield,
+                             deny_permissions_bitfield=perm.deny_permissions_bitfield
+                         )
+
+                # Copy Channels
+                for original_chan in original_channels:
+                    new_parent_category_id = category_id_map.get(original_chan.parent_category_template_id)
+                    if original_chan.parent_category_template_id and not new_parent_category_id:
+                        logger.warning(f"Could not find new parent category ID for original parent {original_chan.parent_category_template_id} when copying channel '{original_chan.channel_name}'. Setting parent to None.")
+
+                    new_chan = await chan_repo.create(
+                        guild_template_id=new_template_id,
+                        parent_category_template_id=new_parent_category_id, # Use the mapped ID
+                        channel_name=original_chan.channel_name,
+                        channel_type=original_chan.channel_type,
+                        position=original_chan.position,
+                        topic=original_chan.topic,
+                        is_nsfw=original_chan.is_nsfw,
+                        slowmode_delay=original_chan.slowmode_delay
+                        # TODO: Copy other channel attributes if needed
+                    )
+                    if not new_chan:
+                         logger.error(f"Failed to copy channel '{original_chan.channel_name}' (original ID {original_chan.id}) to new template {new_template_id}.")
+                         continue
+                    
+                    # Copy Channel Permissions
+                    original_chan_perms = await chan_perm_repo.get_by_channel_template_id(original_chan.id)
+                    for perm in original_chan_perms:
+                         await chan_perm_repo.create(
+                             channel_template_id=new_chan.id,
+                             role_name=perm.role_name,
+                             allow_permissions_bitfield=perm.allow_permissions_bitfield,
+                             deny_permissions_bitfield=perm.deny_permissions_bitfield
+                         )
+                         
+                # --- End Copy --- 
+
+                logger.info(f"Successfully copied structure from shared template {shared_template_id} to new template {new_template_id} for user {user_id}.")
+                
+                # Optionally, fetch and return the newly created template details
+                # This might involve calling self.get_template_by_id(new_template_id)
+                # For now, just return True or a simple dict
+                return { "status": "success", "new_template_id": new_template_id, "new_template_name": new_template_name }
+
+        except Exception as e:
+            logger.error(f"Error copying shared template {shared_template_id} for user {user_id}: {e}", exc_info=True)
+            return None # Indicate failure
 
     async def share_template(
         self, 

@@ -87,6 +87,21 @@ class GuildTemplateController(BaseController):
                                          description="Retrieves a list of publicly shared guild structure templates."
                                          )(self.list_shared_guild_templates) # NEW method
 
+        # === NEW Get Shared Template Details Route ===
+        self.general_template_router.get("/templates/guilds/shared/{template_id}",
+                                         response_model=GuildTemplateResponseSchema, # Use the detailed schema
+                                         summary="Get Shared Guild Structure Template Details by ID",
+                                         description="Retrieves the full structure of a specific publicly shared guild template by its ID."
+                                         )(self.get_shared_guild_template_details) # NEW method
+        
+        # === NEW Copy Shared Template Route ===
+        self.general_template_router.post("/templates/guilds/copy_shared",
+                                          status_code=status.HTTP_201_CREATED,
+                                          # response_model=GuildTemplateResponseSchema, # Optional: Return the new saved template
+                                          summary="Copy Shared Template to Saved Templates",
+                                          description="Creates a copy of a shared guild structure template and saves it for the current user."
+                                          )(self.copy_shared_template) # NEW method
+
     async def get_guild_template(self, guild_id: str, current_user: AppUserEntity = Depends(get_current_user)) -> GuildTemplateResponseSchema:
         """API endpoint to retrieve the guild template structure by Guild ID."""
         try:
@@ -267,6 +282,80 @@ class GuildTemplateController(BaseController):
         except Exception as e:
             self.logger.error(f"Error listing shared guild templates: {e}", exc_info=True)
             # Use base controller handler or raise generic 500
+            return self.handle_exception(e)
+
+    # --- NEW Method for Get Shared Template Details Route ---
+    async def get_shared_guild_template_details(self, template_id: int, current_user: AppUserEntity = Depends(get_current_user)) -> GuildTemplateResponseSchema:
+        """API endpoint to retrieve the full details of a specific shared guild template by its ID."""
+        self.logger.info(f"Fetching details for shared template ID {template_id} requested by user {current_user.id}")
+        try:
+            # --- Permission Check (Example: Any logged-in user can view shared?) ---
+            pass
+
+            # --- Call Service Layer --- 
+            template_data: Optional[Dict[str, Any]] = await self.template_service.get_shared_template_details(template_id)
+
+            if not template_data:
+                self.logger.warning(f"Shared template not found for ID {template_id} by service.")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shared guild template not found.")
+            
+            self.logger.info(f"Successfully retrieved shared template data for ID {template_id}")
+            return template_data
+
+        except HTTPException as http_exc:
+            raise http_exc
+        except NotImplementedError as nie:
+             self.logger.error(f"Shared template detail fetch service method not implemented for ID {template_id}")
+             raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=str(nie))
+        except Exception as e:
+            self.logger.error(f"Error fetching shared template details for ID {template_id}: {e}", exc_info=True)
+            return self.handle_exception(e)
+            
+    # --- NEW Method for Copy Shared Template Route ---
+    async def copy_shared_template(
+        self,
+        # TODO: Define input schema if needed (e.g., just the ID, maybe new name?)
+        # For now, assume body contains { "shared_template_id": int, "new_name": str (optional) }
+        copy_request: dict, 
+        current_user: AppUserEntity = Depends(get_current_user)
+        # Optional: response_model=GuildTemplateResponseSchema
+    ):
+        """API endpoint to copy a shared template to the current user's saved templates."""
+        shared_template_id = copy_request.get('shared_template_id')
+        new_name_optional = copy_request.get('new_name') # Optional name from request
+        
+        if not shared_template_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing 'shared_template_id' in request body.")
+
+        self.logger.info(f"User {current_user.id} requested copy of shared template ID {shared_template_id}. Optional new name: '{new_name_optional}'")
+        try:
+            # --- Permission Check (Any logged-in user?) ---
+            pass
+
+            # --- Call Service Layer ---
+            new_saved_template_info = await self.template_service.copy_shared_template(
+                shared_template_id=shared_template_id,
+                user_id=current_user.id,
+                new_name_optional=new_name_optional
+            )
+
+            if not new_saved_template_info:
+                self.logger.error(f"Service failed to copy shared template ID {shared_template_id} for user {current_user.id}")
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to copy shared template. Ensure original exists and name is valid.")
+
+            self.logger.info(f"Successfully copied shared template ID {shared_template_id} for user {current_user.id}. New template info: {new_saved_template_info}")
+            # Return None for 201 No Content status (as defined in the route decorator)
+            # If you wanted to return the new template data, change the route's status_code 
+            # and add response_model=GuildTemplateResponseSchema, then return new_saved_template_info
+            return
+
+        except HTTPException as http_exc:
+            raise http_exc
+        except NotImplementedError as nie:
+            self.logger.error(f"Copy shared template service method not implemented for ID {shared_template_id}")
+            raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=str(nie))
+        except Exception as e:
+            self.logger.error(f"Error copying shared template ID {shared_template_id} for user {current_user.id}: {e}", exc_info=True)
             return self.handle_exception(e)
 
     # --- NEUE METHODE --- 

@@ -1,4 +1,6 @@
 import { apiRequest, showToast, ApiError } from '/static/js/components/common/notifications.js';
+// Import the initializer for the SAVED templates list to refresh it after saving a copy
+import { initializeTemplateList } from './template_list.js';
 
 /**
  * Fetches and displays the list of SHARED guild structure templates.
@@ -93,9 +95,28 @@ export async function initializeSharedTemplateList(contentElement, currentGuildI
             useButton.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                handleTemplateUse(templateId, templateName);
+                handleTemplateUse(templateId, templateName, currentGuildId); // Pass guildId if needed later
             });
             buttonGroup.appendChild(useButton);
+
+            // --- Add Save/Copy Button ---
+            const saveButton = document.createElement('button');
+            saveButton.type = 'button';
+            saveButton.className = 'btn btn-outline-secondary btn-save-shared-template'; // New class
+            saveButton.title = `Save a copy of '${templateName}' to your templates`;
+            saveButton.dataset.templateId = templateId;
+            saveButton.dataset.templateName = templateName;
+            const saveIcon = document.createElement('i');
+            saveIcon.className = 'fas fa-save'; // Save icon
+            saveButton.appendChild(saveIcon);
+            saveButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                handleSharedTemplateSave(templateId, templateName, currentGuildId); // Pass guildId
+            });
+            buttonGroup.appendChild(saveButton);
+            // --- End Save/Copy Button ---
+
             // --- End Action Buttons ---
 
             listItem.appendChild(buttonGroup);
@@ -119,10 +140,93 @@ export async function initializeSharedTemplateList(contentElement, currentGuildI
  * @param {string} templateId - The ID of the template to use.
  * @param {string} templateName - The name of the template.
  */
-function handleTemplateUse(templateId, templateName) {
+async function handleTemplateUse(templateId, templateName) {
     console.log(`[SharedTemplateListWidget] Use shared template selected: ${templateId}, Name: ${templateName}`);
-    // TODO: Implement logic to apply this shared structure template (e.g., load into designer, maybe confirm overwrite?)
-    showToast('info', `Using shared template '${templateName}'... (Not implemented yet)`);
+    
+    if (!confirm(`Are you sure you want to load the shared template "${templateName}"?\nThis will replace the current structure in the designer.`)) {
+        console.log("[SharedTemplateListWidget] 'Use template' action cancelled by user.");
+        return;
+    }
+
+    console.log(`[SharedTemplateListWidget] Attempting to load structure for shared template ID: ${templateId}`);
+    showToast('info', `Loading structure for "${templateName}"...`);
+
+    const apiUrl = `/api/v1/templates/guilds/shared/${templateId}`;
+    try {
+        const templateData = await apiRequest(apiUrl); // GET request by default
+        
+        if (!templateData) {
+            // apiRequest likely showed a toast, but log and show another just in case
+            console.error("[SharedTemplateListWidget] Received null or invalid data for template", templateId);
+            showToast('error', `Failed to load data for template "${templateName}".`);
+            return;
+        }
+
+        // Dispatch event for index.js to handle the update
+        document.dispatchEvent(new CustomEvent('loadTemplateData', { 
+            detail: { templateData: templateData } // Wrap in object for clarity
+        }));
+
+        showToast('success', `Template "${templateName}" loaded successfully!`);
+
+    } catch (error) {
+        console.error(`[SharedTemplateListWidget] Error loading template ${templateId}:`, error);
+        // apiRequest should have shown a toast, but we can show a generic one if needed
+        // showToast('error', `Failed to load template "${templateName}".`); 
+    }
+}
+
+/**
+ * Handles saving a copy of a SHARED template to the user's SAVED templates.
+ * @param {string} templateId - The ID of the shared template to copy.
+ * @param {string} templateName - The name of the shared template (potentially used as default for copy).
+ * @param {string} currentGuildId - The current guild context ID (needed to refresh saved list).
+ */
+async function handleSharedTemplateSave(templateId, templateName, currentGuildId) {
+    console.log(`[SharedTemplateListWidget] Save shared template selected: ${templateId}, Name: ${templateName}`);
+
+    // Optional: Prompt for a new name for the saved copy?
+    // const newName = prompt(`Enter a name for your saved copy of "${templateName}":`, templateName);
+    // if (!newName) {
+    //     console.log("[SharedTemplateListWidget] Save action cancelled by user (no name provided).");
+    //     return;
+    // }
+
+    const apiUrl = `/api/v1/templates/guilds/copy_shared`;
+    const payload = {
+        shared_template_id: templateId,
+        // new_name: newName // Include if using prompt
+    };
+
+    try {
+        // Display loading state?
+        showToast('info', `Saving a copy of "${templateName}"...`);
+
+        const response = await apiRequest(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        // API returns 201 on success with no body, apiRequest handles this.
+        // If it returned the new template info, you could use it: response.new_template_name
+        showToast('success', `Copied "${templateName}" to your saved templates!`);
+
+        // Refresh the Saved Templates list
+        const savedListEl = document.getElementById('widget-content-template-list');
+        if (savedListEl) {
+            console.log("[SharedTemplateListWidget] Refreshing saved templates list...");
+            initializeTemplateList(savedListEl, currentGuildId); // Call imported function
+        } else {
+            console.warn("[SharedTemplateListWidget] Could not find saved template list container (#widget-content-template-list) to refresh.");
+        }
+
+    } catch (error) {
+        console.error(`[SharedTemplateListWidget] Error copying shared template ${templateId}:`, error);
+        // apiRequest likely showed an error toast
+    }
 }
 
 // Removed handleTemplateShare and handleTemplateDelete functions previously here
