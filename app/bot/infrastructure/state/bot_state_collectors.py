@@ -126,7 +126,7 @@ class BotStateCollectors:
         return {
             "uptime": time.time() - self.bot.start_time if hasattr(self.bot, 'start_time') else None,
             "version": getattr(self.bot, 'version', 'unknown'),
-            "discord_py_version": discord.__version__,
+            "nextcord_version": nextcord.__version__,
             "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
             "environment": getattr(self.bot, 'env_config', {}).get('environment', 'unknown'),
             "is_development": getattr(self.bot, 'env_config', {}).get('is_development', False),

@@ -128,7 +128,7 @@ class ChannelSetupService:
         return discord_channel
     
     async def create_voice_channel(self, guild: nextcord.Guild, name: str, category_name: str, 
-                                position: int = 0) -> Optional[discord.VoiceChannel]:
+                                position: int = 0) -> Optional[nextcord.VoiceChannel]:
         """
         Helper method to create a voice channel with default settings
         """
