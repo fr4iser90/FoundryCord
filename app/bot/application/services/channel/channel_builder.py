@@ -16,7 +16,7 @@ class ChannelBuilder:
         self.channel_repository = channel_repository
         self.category_repository = category_repository
     
-    async def create_channel(self, guild: discord.Guild, channel: ChannelEntity) -> Optional[discord.abc.GuildChannel]:
+    async def create_channel(self, guild: nextcord.Guild, channel: ChannelEntity) -> Optional[discord.abc.GuildChannel]:
         """Create a Discord channel from a channel model"""
         if not channel.is_valid:
             logger.warning(f"Invalid channel configuration: {channel.name}")
@@ -143,7 +143,7 @@ class ChannelBuilder:
             logger.error(f"Failed to create channel {channel.name}: {str(e)}")
             return None
     
-    async def setup_all_channels(self, guild: discord.Guild, 
+    async def setup_all_channels(self, guild: nextcord.Guild, 
                               category_map: Dict[str, discord.CategoryChannel] = None) -> Dict[str, discord.abc.GuildChannel]:
         """Set up all enabled channels from the database"""
         channels = self.channel_repository.get_enabled_channels()
@@ -180,7 +180,7 @@ class ChannelBuilder:
         
         return created_channels
     
-    async def sync_channels(self, guild: discord.Guild) -> None:
+    async def sync_channels(self, guild: nextcord.Guild) -> None:
         """Sync database channels with existing Discord channels"""
         from app.shared.infrastructure.database.api import get_session
         

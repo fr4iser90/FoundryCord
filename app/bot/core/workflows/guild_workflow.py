@@ -280,11 +280,11 @@ class GuildWorkflow(BaseWorkflow):
                 self._guild_statuses[guild_id] = WorkflowStatus.PENDING
 
                 # --- Trigger Template Creation --- 
-                logger.debug(f"Attempting to fetch discord.Guild object for ID: {guild_id}")
+                logger.debug(f"Attempting to fetch nextcord.Guild object for ID: {guild_id}")
                 discord_guild = self.bot.get_guild(int(guild_id))
                 
                 if discord_guild:
-                    logger.debug(f"Found discord.Guild object: {discord_guild.name}")
+                    logger.debug(f"Found nextcord.Guild object: {discord_guild.name}")
                     # Get the template workflow and execute template creation
                     template_workflow = self.bot.workflow_manager.get_workflow("guild_template")
                     if template_workflow:

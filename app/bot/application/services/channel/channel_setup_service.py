@@ -28,7 +28,7 @@ class ChannelSetupService:
         # to avoid direct ORM queries that might fail
         return True
     
-    async def setup_channels(self, guild: discord.Guild) -> Dict[str, discord.abc.GuildChannel]:
+    async def setup_channels(self, guild: nextcord.Guild) -> Dict[str, discord.abc.GuildChannel]:
         """
         Set up all channels for the guild and return a mapping of channel names to Discord channels
         """
@@ -48,7 +48,7 @@ class ChannelSetupService:
         logger.info(f"Successfully set up {len(channel_map)} channels")
         return channel_map
     
-    async def sync_with_discord(self, guild: discord.Guild) -> None:
+    async def sync_with_discord(self, guild: nextcord.Guild) -> None:
         """
         Synchronize database channels with existing Discord channels
         """
@@ -100,7 +100,7 @@ class ChannelSetupService:
         for channel in channels:
             self.channels_cache[channel.name] = channel
     
-    async def create_text_channel(self, guild: discord.Guild, name: str, category_name: str, 
+    async def create_text_channel(self, guild: nextcord.Guild, name: str, category_name: str, 
                                topic: str = None, position: int = 0) -> Optional[discord.TextChannel]:
         """
         Helper method to create a text channel with default settings
@@ -127,7 +127,7 @@ class ChannelSetupService:
         discord_channel = await self.channel_builder.create_channel(guild, saved_channel)
         return discord_channel
     
-    async def create_voice_channel(self, guild: discord.Guild, name: str, category_name: str, 
+    async def create_voice_channel(self, guild: nextcord.Guild, name: str, category_name: str, 
                                 position: int = 0) -> Optional[discord.VoiceChannel]:
         """
         Helper method to create a voice channel with default settings

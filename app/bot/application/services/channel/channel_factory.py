@@ -21,7 +21,7 @@ class ChannelFactory:
     
     async def create_game_server_channel(
         self, 
-        guild: discord.Guild, 
+        guild: nextcord.Guild, 
         game_name: str,
         category_name: str = "GAME SERVERS",
         permissions: List[ChannelPermissionEntity] = None,
@@ -80,7 +80,7 @@ class ChannelFactory:
     
     async def create_project_channel(
         self, 
-        guild: discord.Guild, 
+        guild: nextcord.Guild, 
         project_name: str,
         description: str = None,
         category_name: str = "PROJECTS",
@@ -140,7 +140,7 @@ class ChannelFactory:
     
     async def create_forum_channel(
         self, 
-        guild: discord.Guild, 
+        guild: nextcord.Guild, 
         name: str,
         description: str,
         category_name: str,
