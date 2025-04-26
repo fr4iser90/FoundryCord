@@ -147,7 +147,9 @@ class SecureStateSnapshot:
         collectors = []
         
         for name, info in self.registered_collectors.items():
-            if scope and info["scope"] != scope and info["scope"] != "global":
+            # If a specific scope is requested (and it's not 'all'), 
+            # skip collectors that don't match the requested scope or 'global' scope.
+            if scope and scope != 'all' and info["scope"] != scope and info["scope"] != "global":
                 continue
                 
             collectors.append({

@@ -32,9 +32,9 @@
 }
 
 /* Style the toggle when it's expanded */
-.json-toggle.expanded {
+/*.json-toggle.expanded {
     /* Optional: Add rotation or different indicator? For now, keep simple */
-}
+/*}
 
 /* Ellipsis (...) shown when collapsed */
 .json-ellipsis {
@@ -85,7 +85,4 @@
 }
 
 /* Style the container for objects and arrays themselves (if needed) */
-.json-object,
-.json-array {
-    /* Add specific styling if needed */
-}
+/* .json-object, .json-array { Removed empty rule } */
