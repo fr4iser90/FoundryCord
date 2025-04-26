@@ -1,7 +1,7 @@
 """Seed initial app_users and app_roles
 
-Revision ID: 002
-Revises: 001
+Revision ID: 008
+Revises: 007
 Create Date: 2025-04-12
 """
 from alembic import op
@@ -14,8 +14,8 @@ from app.shared.infrastructure.constants.user_constants import (
 )
 
 # revision identifiers
-revision = '002'
-down_revision = '001'
+revision = '008'
+down_revision = '007'
 branch_labels = None
 depends_on = None
 

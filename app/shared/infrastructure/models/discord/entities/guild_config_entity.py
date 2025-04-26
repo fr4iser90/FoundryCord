@@ -20,8 +20,14 @@ class GuildConfigEntity(Base):
     # Settings
     settings = Column(String)  # JSON formatted string for additional settings
     
+    # --- Active Template --- 
+    active_template_id = Column(Integer, ForeignKey('guild_templates.id', ondelete='SET NULL'), nullable=True)
+    
     # Relationship back to guild
     guild = relationship("GuildEntity", back_populates="config", uselist=False)
+    
+    # Relationship to the active template
+    active_template = relationship("GuildTemplateEntity", foreign_keys=[active_template_id])
     
     def __repr__(self):
         return f"<GuildConfigEntity(guild_id='{self.guild_id}', name='{self.guild_name}')>"

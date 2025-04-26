@@ -1,7 +1,7 @@
 """Seed dashboard component definitions
 
-Revision ID: 003
-Revises: 002
+Revision ID: 009
+Revises: 008
 Create Date: 2025-04-12
 
 """
@@ -11,8 +11,8 @@ from sqlalchemy.sql import table, column
 import json # Import json library
 
 # revision identifiers, used by Alembic. Adjust if needed.
-revision = '003' # <-- Stelle sicher, dass das die ID ist, die Alembic generiert hat
-down_revision = '002' # <-- Muss auf die vorherige Migration zeigen
+revision = '009' # <-- Stelle sicher, dass das die ID ist, die Alembic generiert hat
+down_revision = '008' # <-- Muss auf die vorherige Migration zeigen
 branch_labels = None
 depends_on = None
 
