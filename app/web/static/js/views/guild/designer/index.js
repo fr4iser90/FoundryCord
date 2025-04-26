@@ -11,6 +11,8 @@ import { initializeTemplateList } from './widget/template_list.js';
 // Import the shared template list initializer
 import { initializeSharedTemplateList } from './widget/shared_template_list.js';
 
+let currentActiveTemplateId = null; // Module-scoped variable
+
 /**
  * Extracts the Guild ID from the current URL path.
  * Assumes URL format like /guild/{guild_id}/designer/...
@@ -99,7 +101,7 @@ function populateGuildDesignerWidgets(templateData, targetWidgetId = null, targe
                     break;
                 case 'template-list':
                     // Call the actual initializer function
-                    initializeTemplateList(contentElement, guildId);
+                    initializeTemplateList(contentElement, guildId, currentActiveTemplateId);
                     break;
                 case 'shared-template-list':
                     // --- Add user ID to the specific widget element --- 
@@ -484,20 +486,13 @@ function renderDefaultWidgets(templateData, grid) {
  * @param {object} templateData - The structured template data (categories, channels etc.).
  */
 function populateWidgetContents(templateData) {
-    console.log("Populating content of existing widgets:", templateData);
+    console.log("[Index] Populating widget content. Target: all");
     if (!templateData) {
         console.error("Template data is missing, cannot populate widget contents.");
-        // Potentially display an error, though the widgets might just stay empty
         return;
     }
     
     const guildId = getGuildIdFromUrl(); // Needed for manage links
-    // Read active template ID HERE, inside the function
-    const mainContainer = document.getElementById('designer-main-container');
-    const activeTemplateId = mainContainer?.dataset.activeTemplateId || null;
-    if(activeTemplateId) {
-        console.log(`[populateWidgetContents] Found active template ID: ${activeTemplateId}`);
-    }
 
     // --- Populate Template Info ---    
     const infoContentEl = document.getElementById('widget-content-template-info');
@@ -531,8 +526,9 @@ function populateWidgetContents(templateData) {
     // --- Populate Saved Templates List ---
     const templateListContentEl = document.getElementById('widget-content-template-list');
     if (templateListContentEl) {
-        // Pass the active template ID
-        initializeTemplateList(templateListContentEl, guildId, activeTemplateId);
+        // Pass the active template ID stored in the module variable
+        console.log(`[populateWidgetContents] Calling initializeTemplateList with currentActiveTemplateId: ${currentActiveTemplateId} (Type: ${typeof currentActiveTemplateId})`); // Use module variable
+        initializeTemplateList(templateListContentEl, guildId, currentActiveTemplateId); // Use module variable
     } else {
         console.warn("Content area for template-list widget not found.");
     }
@@ -605,7 +601,6 @@ function setupTemplateLoadListener() {
 
 // --- Main Execution ---
 document.addEventListener('DOMContentLoaded', async () => {
-    let activeTemplateId = null; // Variable to store active template ID
     console.log("[Index] DOM fully loaded.");
 
     const guildId = getGuildIdFromUrl();
@@ -635,11 +630,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         console.log("[Index] Initial template data fetched.");
 
-        // Get active template ID from main container
+        // Get active template ID from main container ONCE and store it
         const mainContainer = document.getElementById('designer-main-container');
         if (mainContainer && mainContainer.dataset.activeTemplateId) {
-            activeTemplateId = mainContainer.dataset.activeTemplateId;
-            console.log(`[Index] Found active template ID: ${activeTemplateId}`);
+            currentActiveTemplateId = mainContainer.dataset.activeTemplateId; // Store in module variable
+            console.log(`[Index] Found and stored active template ID: ${currentActiveTemplateId}`);
         }
 
         // 2. Define Widgets and Default Layout

@@ -54,7 +54,7 @@ export async function initializeTemplateList(contentElement, currentGuildId, act
         const currentActiveId = activeTemplateId ? parseInt(activeTemplateId, 10) : null;
 
         templates.forEach(template => {
-            const templateId = template.template_id; 
+            const templateId = template.template_id; // Assuming this is a number from API
             const templateName = template.template_name || 'Unnamed Template';
             
             if (templateId === undefined || templateId === null) {
@@ -125,6 +125,10 @@ export async function initializeTemplateList(contentElement, currentGuildId, act
             const activateIcon = document.createElement('i');
             // Check if this template is the active one
             const isActive = (currentActiveId !== null && templateId === currentActiveId);
+
+            // --- Debugging Active State --- 
+            console.log(`[TemplateList Debug] Template: ${templateName} (ID: ${templateId}, Type: ${typeof templateId}) - ActiveID: ${currentActiveId} (Type: ${typeof currentActiveId}) - IsActive: ${isActive}`);
+            // --- End Debugging ---
 
             if (isActive) {
                 activateButton.disabled = true;
