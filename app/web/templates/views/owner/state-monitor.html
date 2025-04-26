@@ -59,12 +59,33 @@
                 </div>
                 <div class="card-body p-0" id="collector-panel">
                     <!-- Collector items will be dynamically inserted here -->
+                    {# Placeholder structure - JS will populate this #}
+                    <div class="collector-section p-3 border-bottom">
+                        <h5>Server Collectors</h5>
+                        <div class="collector-list" id="server-collectors">
+                            <small class="text-muted">Loading...</small>
+                        </div>
+                    </div>
+                    <div class="collector-section p-3">
+                        <h5>Browser Collectors</h5>
+                        <p class="text-muted small mb-2">
+                            Note: Collectors marked "Requires Approval" access potentially sensitive browser data (e.g., DOM structure, storage keys, JS errors).
+                            Approval ensures explicit consent for this access in your browser session, even as the owner, as a security measure.
+                            (Approval mechanism TBD).
+                        </p>
+                        <div class="collector-list" id="browser-collectors">
+                            <small class="text-muted">Loading...</small>
+                        </div>
+                    </div>
+                    {# Original Loading Indicator - Keep or remove based on JS behavior #}
+                    {# 
                     <div class="loading-indicator">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Loading...</span>
                         </div>
                         <p>Loading collectors...</p>
                     </div>
+                    #}
                 </div>
             </div>
         </div>

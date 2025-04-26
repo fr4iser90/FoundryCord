@@ -17,6 +17,8 @@ from app.web.infrastructure.factories.service.web_service_factory import WebServ
 from contextlib import asynccontextmanager
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
 from app.web.core.exception_handlers import http_exception_handler, generic_exception_handler
+# Import the state collector initializer
+from app.shared.initializers.state_collectors import register_all_state_collectors
 
 logger = get_web_logger()
 
@@ -77,6 +79,9 @@ class WebApplication:
             # Initialize managers
             self.lifecycle_manager.initialize(self.app, self.service_factory)
             self.workflow_manager.initialize(self.service_factory)
+            
+            # Register state collectors early in the setup
+            register_all_state_collectors()
             
             # Then register routers
             register_routers(self.app)

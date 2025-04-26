@@ -141,6 +141,11 @@ class StateMonitorDashboard {
         browserSection.className = 'collector-section';
         browserSection.innerHTML = `
             <h3>Browser Collectors</h3>
+            <p class="text-muted small">
+                Note: Collectors marked "Requires Approval" access potentially sensitive browser data (like detailed DOM structure, storage keys, or JavaScript errors).
+                Approval ensures you explicitly permit this access for your current browser session, even as the owner, as a security measure against accidental data exposure.
+                (Approval mechanism TBD).
+            </p>
             <div class="collector-list" id="browser-collectors"></div>
         `;
         this.collectorPanel.appendChild(browserSection);
