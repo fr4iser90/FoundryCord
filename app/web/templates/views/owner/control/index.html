@@ -14,19 +14,19 @@
     </div>
 
     <!-- Bot Controls Component -->
-    {% include "views/owner/bot/bot-controls.html" %}
+    {% include "views/owner/control/bot-controls.html" %}
 
     <!-- Server List Component -->
-    {% include "views/owner/bot/server-list.html" %}
+    {% include "views/owner/control/server-list.html" %}
 
     <!-- Configuration Panel Component -->
-    {% include "views/owner/bot/config-panel.html" %}
+    {% include "views/owner/control/config-panel.html" %}
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <!-- Load modules with type="module" and defer -->
-<script type="module" defer src="{{ url_for('static', path='js/pages/owner/bot/server-management.js') }}"></script>
-<script type="module" defer src="{{ url_for('static', path='js/pages/owner/bot/bot-controls.js') }}"></script>
-<script type="module" defer src="{{ url_for('static', path='js/pages/owner/bot/config-management.js') }}"></script>
+<script type="module" defer src="{{ url_for('static', path='js/views/owner/control/server-management.js') }}"></script>
+<script type="module" defer src="{{ url_for('static', path='js/views/owner/control/bot-controls.js') }}"></script>
+<script type="module" defer src="{{ url_for('static', path='js/views/owner/control/config-management.js') }}"></script>
 {% endblock %} 

@@ -24,6 +24,7 @@ class OwnerView(BaseView):
         self.router.get("", response_class=HTMLResponse)(self.owner_dashboard)
         self.router.get("/permissions", response_class=HTMLResponse)(self.permissions)
         self.router.get("/logs", response_class=HTMLResponse)(self.logs)
+        self.router.get("/state-monitor", response_class=HTMLResponse)(self.state_monitor_page)
     
     async def owner_dashboard(self, request: Request):
         """Owner dashboard page"""
@@ -143,6 +144,27 @@ class OwnerView(BaseView):
                 },
                 status_code=500
             )
+
+    async def state_monitor_page(self, request: Request, current_user: AppUserEntity = Depends(get_current_user)):
+        """Render the state monitor page"""
+        try:
+            # Owner Check
+            if not current_user.is_owner:
+                # Using BaseView error response for consistency
+                return self.error_response(request, "Forbidden", 403)
+            
+            # Add any necessary context data here later if needed
+            context = {}
+            
+            return self.render_template(
+                "owner/state-monitor.html", # Ensure this path is correct relative to templates_dir in BaseView
+                request,
+                **context
+            )
+        except Exception as e:
+            logger.error(f"Error loading State Monitor page: {e}", exc_info=True)
+            # Using BaseView error response for consistency
+            return self.error_response(request, "An unexpected error occurred", 500)
 
 # View instance
 owner_view = OwnerView()  # Keine Services mehr übergeben!

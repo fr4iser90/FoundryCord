@@ -28,7 +28,7 @@ class BotLoggerView(BaseView):
         self.logger.info(f"User {current_user.username} accessing bot logger page.")
         # Render the specific template for the logger
         return self.render_template(
-            "owner/bot/logger/index.html",
+            "owner/control/logger/bot.html",
             request,
             title="Bot Logs" # Optional: Pass a title
         )

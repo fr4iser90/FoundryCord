@@ -65,9 +65,9 @@ class BotControlView(BaseView):
             # bot_latency = round(bot.latency * 1000, 2) if bot and hasattr(bot, "latency") else None
             
             return self.render_template(
-                "owner/bot/bot.html",
+                "owner/control/index.html",
                 request,
-                active_page="bot-control",
+                active_page="owner-control",
                 config=config, # Pass placeholder config
                 bot_status=bot_status, # Pass placeholder status
                 bot_latency=bot_latency, # Pass placeholder latency

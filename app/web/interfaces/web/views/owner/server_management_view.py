@@ -54,7 +54,7 @@ class ServerManagementView(BaseView):
                 logger.info(f"Pending server: {server['name']} (ID: {server['guild_id']}) - Status: {server['access_status']}")
             
             return self.render_template(
-                "owner/bot/server-list.html",
+                "owner/control/server-list.html",
                 {
                     "request": request,
                     "user": current_user,
@@ -101,7 +101,7 @@ class ServerManagementView(BaseView):
             server = await get_server_details(guild_id, current_user)
             
             return self.render_template(
-                "owner/bot/server-details.html",
+                "owner/control/server-details.html",
                 {
                     "request": request,
                     "user": current_user,
