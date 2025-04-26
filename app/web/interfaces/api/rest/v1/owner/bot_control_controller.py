@@ -10,7 +10,6 @@ from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_curre
 from app.web.interfaces.api.rest.v1.base_controller import BaseController
 
 logger = get_web_logger()
-router = APIRouter(prefix="/owner/bot", tags=["Bot Control"])
 
 class BotControlController(BaseController):
     """Controller for bot control functionality"""

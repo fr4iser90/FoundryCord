@@ -14,7 +14,6 @@ from app.web.interfaces.api.rest.v1.schemas.guild_schemas import GuildInfo, Guil
 
 
 logger = get_web_logger()
-router = APIRouter(prefix="/owner/servers", tags=["Server Management"])
 
 class ServerManagementController(BaseController):
     """Controller for server management functionality"""

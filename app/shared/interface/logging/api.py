@@ -9,6 +9,7 @@ import inspect
 _bot_service: Optional[LoggingService] = None
 _web_service: Optional[LoggingService] = None
 _db_service: Optional[LoggingService] = None
+_shared_service: Optional[LoggingService] = None
 
 def get_module_logger(module_name: Optional[str] = None) -> LoggingService:
     """
@@ -60,6 +61,14 @@ def get_db_logger(name: str = "homelab.db") -> LoggingService:
         from app.shared.infrastructure.logging.services.base_logging_service import BaseLoggingService
         _db_service = BaseLoggingService(name)
     return _db_service
+
+def get_shared_logger(name: str = "homelab.shared") -> LoggingService:
+    """Get the shared infrastructure logging service"""
+    global _shared_service
+    if _shared_service is None:
+        from app.shared.infrastructure.logging.services.base_logging_service import BaseLoggingService
+        _shared_service = BaseLoggingService(name)
+    return _shared_service
 
 def configure_logging(config: Dict[str, Any]) -> None:
     """Update the logging configuration"""
