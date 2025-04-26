@@ -1,10 +1,10 @@
 from fastapi import APIRouter
-from .guild_config_controller import GuildConfigController, guild_config_controller
-from .guild_selector_controller import GuildSelectorController, guild_selector_controller
+from .admin.guild_config_controller import GuildConfigController, guild_config_controller
+from .selector.guild_selector_controller import GuildSelectorController, guild_selector_controller
 # Import the new template controller
-from .guild_template_controller import GuildTemplateController, guild_template_controller
+from .designer.guild_template_controller import GuildTemplateController, guild_template_controller
 # Import the user management router
-from .guild_user_management_controller import guild_user_management_router
+from .admin.guild_user_management_controller import guild_user_management_router
 
 # Create a router for the guild module
 router = APIRouter()
