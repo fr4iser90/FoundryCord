@@ -9,11 +9,11 @@
 
 ## Phase 2: Tiefere Integration & Kontext
 
-- [ ] Implement dedicated renderers for `consoleLogs` and `javascriptErrors` in `stateMonitorRenderer.js`.
-- [ ] Implement internal backend API endpoint to trigger server snapshots and log their IDs.
-- [ ] Extend `stateBridge.collectState` and callers to pass a `context` object.
-- [ ] Implement basic server-side snapshot storage (e.g., file/temp DB) and retrieval endpoint by ID.
-- [ ] Update `state_monitor.md` with completed Phase 2 features.
+- [x] Implement dedicated renderers for `consoleLogs` and `javascriptErrors` in `stateMonitorRenderer.js`.
+- [x] Implement internal backend API endpoint to trigger server snapshots and log their IDs.
+- [x] Extend `stateBridge.collectState` and callers to pass a `context` object.
+- [x] Implement basic server-side snapshot storage (e.g., file/temp DB) and retrieval endpoint by ID.
+- [x] Update `state_monitor.md` with completed Phase 2 features.
 
 ## Phase 3: Usability & Weitere Features
 

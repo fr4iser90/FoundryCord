@@ -199,38 +199,195 @@ export function renderJsonView(elementId, data) {
     const container = document.getElementById(elementId);
     if (!container) return;
     
-    // Check if JSONViewer is available (loaded separately)
-    if (window.JSONViewer) {
+    // Clear previous content (important if called multiple times on same ID)
+    container.innerHTML = ''; 
+
+    if (typeof JSONViewer !== 'undefined') {
         try {
-            const viewer = new window.JSONViewer();
-            container.innerHTML = ''; // Clear previous content
+            // Check if data might be the full snapshot structure {timestamp, results}
+            const dataToRender = (data && typeof data === 'object' && 'results' in data && 'timestamp' in data) 
+                                 ? data.results // Render only the results part if it's the full structure
+                                 : data;       // Otherwise, render the data as is
+
+            if (dataToRender === null || typeof dataToRender !== 'object' || Object.keys(dataToRender).length === 0) {
+                 container.innerHTML = '<span class=\"text-muted\">No data available or data is empty.</span>';
+                 return;
+            }
+
+            const viewer = new JSONViewer();
+            viewer.showJSON(dataToRender);
             container.appendChild(viewer.getContainer());
-            viewer.showJSON(data, 8); // Original used maxLevel 8
-        } catch (error) {
-            console.error(`Error using JSONViewer for #${elementId}:`, error);
-            renderJsonFallback(container, data); // Use fallback if JSONViewer fails
+        } catch (e) {
+            console.error('Error using JSONViewer:', e);
+            renderJsonFallback(container, data); // Fallback to simple rendering
         }
     } else {
-        console.warn("JSONViewer library not found, using fallback display.");
+        console.warn('JSONViewer class not found. Using fallback renderer.');
         renderJsonFallback(container, data);
     }
 }
 
 /**
- * Fallback function to display JSON data as preformatted text.
- * This was part of the original renderJsonView method logic.
+ * Fallback function to render JSON data as a simple preformatted text block.
+ * Corresponds to the original renderJsonFallback method.
  * @param {HTMLElement} container - The container element.
  * @param {object} data - The JSON data to render.
  */
 function renderJsonFallback(container, data) {
-     // Fallback logic from original renderJsonView
-     const pre = document.createElement('pre');
-     pre.className = 'json-display'; // Original class name
-     try {
+    const pre = document.createElement('pre');
+    pre.className = 'json-fallback';
+    try {
         pre.textContent = JSON.stringify(data, null, 2);
-        container.appendChild(pre);
-     } catch (error) {
-        console.error("Error stringifying JSON for fallback display:", error);
-        container.innerHTML = '<p class="text-danger">Error displaying JSON data.</p>'; // Error display
+    } catch (e) {
+        pre.textContent = 'Error displaying data.';
+        console.error('Error stringifying data for fallback:', e);
+    }
+    container.appendChild(pre);
+}
+
+/**
+ * Renders console log entries in a structured list.
+ * @param {HTMLElement} container - The DOM element to render into.
+ * @param {Array<object>} logs - Array of console log objects.
+ */
+function renderConsoleLogsView(container, logs) {
+    container.innerHTML = ''; // Clear container
+
+    if (!logs || !Array.isArray(logs) || logs.length === 0) {
+        container.innerHTML = '<small class=\"text-muted\">No console logs captured.</small>';
+        return;
+    }
+
+    const list = document.createElement('ul');
+    list.className = 'list-unstyled console-log-list'; // Use Bootstrap class + custom
+
+    logs.forEach(log => {
+        const item = document.createElement('li');
+        item.className = `log-entry log-${log.level || 'log'}`; // Class based on level
+
+        const timestampSpan = document.createElement('span');
+        timestampSpan.className = 'log-timestamp';
+        timestampSpan.textContent = new Date(log.timestamp).toLocaleTimeString();
+
+        const levelSpan = document.createElement('span');
+        levelSpan.className = 'log-level';
+        levelSpan.textContent = (log.level || 'log').toUpperCase();
+
+        const messageSpan = document.createElement('span');
+        messageSpan.className = 'log-message';
+        // Attempt to format arguments nicely
+        messageSpan.textContent = log.args.map(arg => {
+            try {
+                return typeof arg === 'object' ? JSON.stringify(arg) : String(arg);
+            } catch {
+                return '[unserializable]';
+            }
+        }).join(' ');
+
+        item.appendChild(timestampSpan);
+        item.appendChild(levelSpan);
+        item.appendChild(messageSpan);
+        list.appendChild(item);
+    });
+
+    container.appendChild(list);
+}
+
+/**
+ * Renders JavaScript error entries in a structured list.
+ * @param {HTMLElement} container - The DOM element to render into.
+ * @param {Array<object>} errors - Array of JavaScript error objects.
+ */
+function renderJsErrorsView(container, errors) {
+    container.innerHTML = ''; // Clear container
+
+    if (!errors || !Array.isArray(errors) || errors.length === 0) {
+        container.innerHTML = '<small class=\"text-muted\">No JavaScript errors captured.</small>';
+        return;
+    }
+
+    const list = document.createElement('div'); // Use divs for better structure than ul
+    list.className = 'js-error-list';
+
+    errors.forEach((error, index) => {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-entry mb-3 p-2 border rounded'; // Add some styling
+
+        const header = document.createElement('div');
+        header.className = 'error-header fw-bold';
+        header.textContent = `Error #${index + 1}: ${error.type || 'Unknown Type'} (${new Date(error.timestamp).toLocaleString()})`;
+        
+        const message = document.createElement('div');
+        message.className = 'error-message';
+        message.textContent = `Message: ${error.message || 'N/A'}`;
+
+        const source = document.createElement('div');
+        source.className = 'error-source text-muted small';
+        if (error.source) {
+            source.textContent = `Source: ${error.source} (Line: ${error.lineno || '?'}, Col: ${error.colno || '?'})`;
+        } else {
+             source.textContent = 'Source: N/A';
+        }
+
+        errorDiv.appendChild(header);
+        errorDiv.appendChild(message);
+        errorDiv.appendChild(source);
+
+        if (error.stack) {
+            const stackToggle = document.createElement('a');
+            stackToggle.href = '#';
+            stackToggle.className = 'error-stack-toggle small d-block mt-1';
+            stackToggle.textContent = 'Show Stack Trace';
+            
+            const stackPre = document.createElement('pre');
+            stackPre.className = 'error-stack pre-scrollable bg-light p-2 border rounded'; // Style stack trace
+            stackPre.textContent = error.stack;
+            stackPre.style.display = 'none'; // Initially hidden
+            
+            stackToggle.onclick = (e) => {
+                e.preventDefault();
+                const isHidden = stackPre.style.display === 'none';
+                stackPre.style.display = isHidden ? 'block' : 'none';
+                stackToggle.textContent = isHidden ? 'Hide Stack Trace' : 'Show Stack Trace';
+            };
+            
+            errorDiv.appendChild(stackToggle);
+            errorDiv.appendChild(stackPre);
+        }
+
+        list.appendChild(errorDiv);
+    });
+
+    container.appendChild(list);
+}
+
+// --- Helper function to render data using JSONViewer (or fallback) ---
+// This is needed because renderJsonView expects an element ID, 
+// but here we have the container element directly.
+function renderDataInContainer(container, data) {
+     if (!container) return;
+     container.innerHTML = ''; // Clear previous content
+
+     if (typeof JSONViewer !== 'undefined') {
+         try {
+              const dataToRender = (data && typeof data === 'object' && 'results' in data && 'timestamp' in data) 
+                                  ? data.results 
+                                  : data;
+
+             if (dataToRender === null || typeof dataToRender !== 'object' || Object.keys(dataToRender).length === 0) {
+                 container.innerHTML = '<span class=\"text-muted\">No data available or data is empty.</span>';
+                 return;
+             }
+             
+             const viewer = new JSONViewer();
+             viewer.showJSON(dataToRender); // Use the JSONViewer instance
+             container.appendChild(viewer.getContainer()); // Append its element
+         } catch (e) {
+             console.error('Error using JSONViewer:', e);
+             renderJsonFallback(container, data); 
+         }
+     } else {
+         console.warn('JSONViewer class not found. Using fallback renderer.');
+         renderJsonFallback(container, data);
      }
 }

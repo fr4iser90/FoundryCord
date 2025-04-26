@@ -72,8 +72,8 @@ export async function captureSnapshot(instance) {
         const browserCollectors = Array.from(document.querySelectorAll('[data-source="browser"]:checked'))
             .map(checkbox => checkbox.dataset.name);
             
-        // Original browser state capture
-        const browserSnapshot = await stateBridge.collectState(browserCollectors);
+        // Original browser state capture - MODIFIED to pass context
+        const browserSnapshot = await stateBridge.collectState(browserCollectors, { trigger: 'user_capture' });
         
         // Original server state capture
         const response = await fetch('/api/v1/owner/state/snapshot', {

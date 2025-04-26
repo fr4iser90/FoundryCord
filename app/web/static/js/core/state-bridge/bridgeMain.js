@@ -59,7 +59,7 @@ class StateBridge {
                 (errorData) => { 
                     console.log('JS error captured, triggering state snapshot...', errorData);
                     // Trigger snapshot collection (fire and forget, but catch potential errors)
-                    this.collectState([]) // Use empty array to collect default/approved state
+                    this.collectState([], { trigger: 'js_error', error: errorData }) // Pass context
                         .catch(snapshotError => console.error('Error capturing state snapshot after JS error:', snapshotError));
                 }
             );

@@ -162,6 +162,79 @@ class SecureStateSnapshot:
             
         return collectors
 
+    # --- Snapshot Storage and Retrieval ---
+    
+    def store_snapshot(self, snapshot_data: Dict[str, Any], context: Dict[str, Any]) -> str:
+        """
+        Stores a collected snapshot to a temporary file.
+
+        Args:
+            snapshot_data: The dictionary returned by collect_state.
+            context: The context associated with the snapshot request.
+
+        Returns:
+            The unique ID assigned to the stored snapshot.
+        """
+        import os
+        import tempfile
+        import json
+        import uuid
+        
+        snapshot_id = str(uuid.uuid4())
+        storage_dir = os.path.join(tempfile.gettempdir(), "state_snapshots")
+        
+        try:
+            os.makedirs(storage_dir, exist_ok=True)
+            file_path = os.path.join(storage_dir, f"{snapshot_id}.json")
+            
+            # Include some context in the stored file for traceability
+            data_to_store = {
+                "snapshot_id": snapshot_id,
+                "capture_timestamp": snapshot_data.get("timestamp"), 
+                "trigger_context": context, # Store the trigger context
+                "snapshot": snapshot_data # Store the actual snapshot data
+            }
+            
+            with open(file_path, 'w') as f:
+                json.dump(data_to_store, f, indent=2)
+                
+            logger.info(f"Stored state snapshot with ID: {snapshot_id} to {file_path}")
+            return snapshot_id
+        except Exception as e:
+            logger.error(f"Failed to store state snapshot {snapshot_id}: {e}", exc_info=True)
+            # Decide if we should re-raise or just return None/empty string
+            raise  # Re-raise for now to make the trigger endpoint aware
+            
+    def retrieve_snapshot(self, snapshot_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieves a stored snapshot by its ID.
+
+        Args:
+            snapshot_id: The unique ID of the snapshot to retrieve.
+
+        Returns:
+            The stored snapshot data as a dictionary, or None if not found or error.
+        """
+        import os
+        import tempfile
+        import json
+        
+        storage_dir = os.path.join(tempfile.gettempdir(), "state_snapshots")
+        file_path = os.path.join(storage_dir, f"{snapshot_id}.json")
+        
+        if not os.path.exists(file_path):
+            logger.warning(f"Requested snapshot ID not found: {snapshot_id}")
+            return None
+            
+        try:
+            with open(file_path, 'r') as f:
+                data = json.load(f)
+            logger.debug(f"Retrieved snapshot ID: {snapshot_id}")
+            return data
+        except Exception as e:
+            logger.error(f"Failed to retrieve or parse snapshot {snapshot_id}: {e}", exc_info=True)
+            return None
+
 # Singleton instance
 _state_snapshot_service = SecureStateSnapshot()
 

@@ -19,6 +19,8 @@ The State Monitor is a developer and owner-facing diagnostic tool designed to ca
 5.  **Analyze Results:** The captured data will appear in the "State Snapshot" panel on the right, organized into tabs:
     *   **Server State:** Displays data collected by the selected server collectors.
     *   **Browser State:** Displays data collected by the selected *and approved* browser collectors.
+        *   Data for `consoleLogs` and `javascriptErrors` is now displayed in a structured, more readable list format instead of raw JSON.
+        *   Other browser data is shown in the interactive JSON viewer.
     *   **Combined View:** Shows the complete snapshot object, including timestamps and both server and browser results.
     *   The data is rendered using an interactive JSON viewer.
 6.  **Export/Copy (Optional):**
@@ -32,9 +34,16 @@ The State Monitor is a developer and owner-facing diagnostic tool designed to ca
 
 *   **Interactive JSON Viewer:** State data is presented in a collapsible/expandable tree view for easy navigation of complex objects and arrays.
     *   **Search/Highlighting:** A search bar within the JSON viewer allows filtering and highlighting of specific keys or values within the snapshot data.
-*   **Error Handling:**
+*   **Enhanced Browser State Rendering:**
+    *   Console logs (`consoleLogs`) are displayed as a timestamped list with log levels.
+    *   JavaScript errors (`javascriptErrors`) are shown with message, source location, timestamp, and a toggleable stack trace.
+*   **Error Handling & Context:**
     *   Recent JavaScript errors (`onerror`, `onunhandledrejection`) are captured and can be included in snapshots via the `javascriptErrors` collector.
-    *   **Automatic Snapshots on Error:** When a JavaScript error occurs in the browser, a state snapshot is automatically triggered and captured in the background, preserving the state at the time of the error for later inspection (viewable on the next manual capture or potentially via a future dedicated UI element).
+    *   **Automatic Snapshots on Error:** When a JavaScript error occurs in the browser, a state snapshot is automatically triggered and captured in the background. This snapshot now includes context indicating it was triggered by an error (`{ trigger: 'js_error', error: {...} }`).
+*   **Server-Side Enhancements:**
+    *   **Snapshot Storage:** The backend can now store snapshots triggered internally (e.g., by system events or other backend processes). These are saved as temporary files.
+    *   **Internal Trigger API:** A dedicated internal API endpoint (`POST /internal/state/trigger-snapshot`) allows triggering server-side snapshots programmatically.
+    *   **Snapshot Retrieval API:** Stored snapshots can be retrieved via their unique ID using an owner-only API endpoint (`GET /owner/state/snapshot/{snapshot_id}`).
 *   **Improved Styling:** The JSON viewer's CSS has been refined for better readability and clearer indentation.
 *   **Collector Filtering:** A search bar allows filtering the list of available server and browser collectors.
 
