@@ -34,4 +34,5 @@ class BotLoggerView(BaseView):
         )
 
 # Initialize the view with the router
-bot_logger_view = BotLoggerView(router)
+owner_bot_logger_view = BotLoggerView(router)
+router = owner_bot_logger_view.router

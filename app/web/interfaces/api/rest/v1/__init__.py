@@ -1,9 +1,15 @@
 from fastapi import APIRouter
 from app.web.interfaces.api.rest.v1.auth import router as auth_router
-#from app.web.interfaces.api.rest.v1.OLD2 import router as dashboard_router
-# Import routers from the guild module
+
 from app.web.interfaces.api.rest.v1.guild import router as guild_router, general_template_router
-from app.web.interfaces.api.rest.v1.owner import router as owner_router, bot_control_router, server_management_router, bot_logger_router
+
+from app.web.interfaces.api.rest.v1.owner import (
+    router as owner_router, 
+    bot_control_router, 
+    server_management_router, 
+    bot_logger_router,
+    state_snapshot_router
+)
 from app.web.interfaces.api.rest.v1.system import router as system_router
 from app.web.interfaces.api.rest.v1.debug import router as debug_router
 # Import generic router from home and rename
@@ -27,5 +33,6 @@ router.include_router(debug_router)
 router.include_router(home_router) # Use the aliased name
 router.include_router(ui_router) # UI routes
 router.include_router(bot_logger_router)
+router.include_router(state_snapshot_router)
 
 __all__ = ['router']

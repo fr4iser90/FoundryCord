@@ -4,10 +4,11 @@ from .main.main_view import router as main_router
 from .navbar.server_selector_view import router as server_selector_router
 from .debug.debug_view import router as debug_router
 from .guild import guild_router
-from .owner.owner_view import router as owner_router
-from .owner.bot_control_view import router as bot_control_router
-from .owner.bot_logger_view import router as bot_logger_router
-from .owner.features_view import router as owner_features_router
+from .owner.control_view import router as owner_control_router       
+from .owner.bot_logger_view import router as owner_bot_logger_router
+from .owner.features_view import router as owner_features_router     
+from .owner.server_management_view import router as owner_server_management_router 
+from .owner.state_monitor_view import router as owner_state_monitor_router
 
 # Liste aller Web-View-Router
 routers = [
@@ -17,8 +18,9 @@ routers = [
     server_selector_router,
     debug_router,   
     guild_router,
-    owner_router,
-    bot_control_router,
-    bot_logger_router,
-    owner_features_router
+    owner_control_router,
+    owner_bot_logger_router,
+    owner_features_router,
+    owner_server_management_router,
+    owner_state_monitor_router 
 ] 

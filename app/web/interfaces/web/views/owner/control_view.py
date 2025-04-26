@@ -7,11 +7,11 @@ from app.shared.interface.logging.api import get_web_logger
 
 from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
 
-class BotControlView(BaseView):
+class OwnerControlView(BaseView):
     """View for bot control functionality"""
     
     def __init__(self):
-        super().__init__(APIRouter(prefix="/owner/bot", tags=["Bot Control"]))
+        super().__init__(APIRouter(prefix="/owner/control", tags=["Bot Control"]))
         self._register_routes()
     
     def _register_routes(self):
@@ -103,5 +103,5 @@ class BotControlView(BaseView):
             )
 
 # View instance
-bot_control_view = BotControlView()
-router = bot_control_view.router
+owner_control_view = OwnerControlView()
+router = owner_control_view.router

@@ -27,7 +27,7 @@ class StateBridge {
         
         try {
             // Fetch security token from session
-            const response = await fetch('/api/v1/auth/state-token');
+            const response = await fetch('/api/v1/owner/state/token');
             if (response.ok) {
                 const data = await response.json();
                 this.securityToken = data.token;

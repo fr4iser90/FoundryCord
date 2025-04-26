@@ -52,24 +52,45 @@
                 <i class="bi bi-caret-down-fill ml-auto dropdown-indicator"></i>
             </a>
             <div class="navbar-dropdown">
-                <a class="dropdown-item {% if request.url.path == '/owner/bot' %}is-active{% endif %}" href="/owner/bot">
-                    <i class="bi bi-robot mr-2"></i>
-                    <span>Bot Control</span>
+                <a class="dropdown-item {% if request.url.path == '/owner/control' %}is-active{% endif %}" href="/owner/control">
+                    <i class="bi bi-sliders mr-2"></i>
+                    <span>Control Panel</span>
                 </a>
                 <a class="dropdown-item {% if request.url.path.startswith('/owner/servers') %}is-active{% endif %}" href="/owner/servers">
                     <i class="bi bi-hdd-stack mr-2"></i>
                     <span>Server Management</span>
                 </a>
+                <a class="dropdown-item {% if request.url.path.startswith('/owner/features') %}is-active{% endif %}" href="/owner/features">
+                    <i class="bi bi-toggles mr-2"></i>
+                    <span>Feature Management</span>
+                </a>
+                <a class="dropdown-item {% if request.url.path.startswith('/owner/state-monitor') %}is-active{% endif %}" href="/owner/state-monitor">
+                    <i class="bi bi-activity mr-2"></i>
+                    <span>State Monitor</span>
+                </a>
+                
+                <hr class="navbar-divider">
+                <p class="navbar-item has-text-grey is-size-7">Logs</p>
+                
                 <a class="dropdown-item {% if request.url.path.startswith('/owner/bot/logger') %}is-active{% endif %}" href="/owner/bot/logger">
                     <i class="bi bi-terminal mr-2"></i>
                     <span>Bot Logs</span>
                 </a>
-                {# --- Add New Features Link --- #}
-                <a class="dropdown-item {% if request.url.path.startswith('/owner/features') %}is-active{% endif %}" href="/owner/features">
-                    <i class="bi bi-toggles mr-2"></i> {# Example icon #}
-                    <span>Feature Management</span>
+                {# --- Placeholder for Web Logs --- #}
+                {#
+                <a class="dropdown-item {% if request.url.path.startswith('/owner/web/logger') %}is-active{% endif %}" href="/owner/web/logger"> 
+                    <i class="bi bi-browser-chrome mr-2"></i>
+                    <span>Web Logs</span>
                 </a>
-                {# --- End New Features Link --- #}
+                #}
+                {# --- Placeholder for DB Logs --- #}
+                {#
+                <a class="dropdown-item {% if request.url.path.startswith('/owner/db/logger') %}is-active{% endif %}" href="/owner/db/logger"> 
+                    <i class="bi bi-database mr-2"></i>
+                    <span>Database Logs</span>
+                </a>
+                #}
+                
                 {# Add other global owner links here, e.g., user management #}
                 {# Example:
                 <a class="dropdown-item {% if request.url.path.startswith('/owner/users') %}is-active{% endif %}" href="/owner/users">

@@ -84,9 +84,12 @@ class StateMonitorDashboard {
             this.setStatus('Loading collectors...');
             
             // First, try to load from backend
-            const response = await fetch(`/owner/state/collectors?scope=${this.currentScope}`);
+            const response = await fetch(`/api/v1/owner/state/collectors?scope=${this.currentScope}`);
             if (!response.ok) {
-                throw new Error(`Server responded with ${response.status}`);
+                // Try to get more info from the response if possible
+                let errorBody = await response.text();
+                logger.error("API Response Error Body:", errorBody);
+                throw new Error(`Server responded with ${response.status}: ${response.statusText}. Body: ${errorBody.substring(0, 100)}...`);
             }
             
             const collectors = await response.json();
