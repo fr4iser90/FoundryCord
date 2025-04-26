@@ -12,7 +12,7 @@ import time
 import uuid
 
 logger = get_web_logger()
-router = APIRouter(prefix="/api/v1/state", tags=["state"])
+router = APIRouter(prefix="/owner/state", tags=["state"])
 
 # Models
 class StateCollectorInfo(BaseModel):

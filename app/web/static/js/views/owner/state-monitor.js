@@ -84,7 +84,7 @@ class StateMonitorDashboard {
             this.setStatus('Loading collectors...');
             
             // First, try to load from backend
-            const response = await fetch(`/api/v1/state/collectors?scope=${this.currentScope}`);
+            const response = await fetch(`/owner/state/collectors?scope=${this.currentScope}`);
             if (!response.ok) {
                 throw new Error(`Server responded with ${response.status}`);
             }
@@ -225,7 +225,7 @@ class StateMonitorDashboard {
             const browserSnapshot = await stateBridge.collectState(browserCollectors);
             
             // Then capture server state
-            const response = await fetch('/api/v1/state/snapshot', {
+            const response = await fetch('/owner/state/snapshot', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
