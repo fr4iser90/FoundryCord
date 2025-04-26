@@ -228,7 +228,7 @@ class StateMonitorDashboard {
             const browserSnapshot = await stateBridge.collectState(browserCollectors);
             
             // Then capture server state
-            const response = await fetch('/owner/state/snapshot', {
+            const response = await fetch('/api/v1/owner/state/snapshot', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

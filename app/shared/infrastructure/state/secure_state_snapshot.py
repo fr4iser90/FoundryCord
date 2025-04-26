@@ -165,4 +165,66 @@ _state_snapshot_service = SecureStateSnapshot()
 
 def get_state_snapshot_service() -> SecureStateSnapshot:
     """Get the global state snapshot service instance"""
-    return _state_snapshot_service 
+    return _state_snapshot_service
+
+# --- Register Default Server-Side Collectors --- 
+
+# Importiere den Service
+_service_instance = get_state_snapshot_service()
+
+# Beispiel-Collector für Bot-Info
+def get_bot_status_info(context: Dict[str, Any]) -> Dict[str, Any]:
+    logger.debug("Executing bot_status state collector...")
+    # TODO: Replace with actual bot interaction or cached data
+    try:
+        # Beispiel: Versuche, Daten von einer (noch nicht existierenden) Bot-Verwaltung zu holen
+        # from app.bot.manager import get_bot_manager 
+        # bot_manager = get_bot_manager()
+        # status = bot_manager.get_status()
+        # return status 
+        return {
+            "status": "online_placeholder",
+            "uptime_seconds": 12345,
+            "guild_count": 5,
+            "command_prefix": "!",
+            "latency_ms": 50
+        }
+    except Exception as e:
+        logger.error(f"Error in bot_status collector: {e}", exc_info=True)
+        return {"error": str(e)}
+
+_service_instance.register_collector(
+    name="bot_status",
+    collector_fn=get_bot_status_info,
+    requires_approval=False, 
+    scope="bot",
+    description="Basic status information about the Discord bot (Placeholder)"
+)
+
+# Beispiel-Collector für System-Info
+import platform
+import os
+
+def get_system_info(context: Dict[str, Any]) -> Dict[str, Any]:
+    logger.debug("Executing system_info state collector...")
+    try:
+        return {
+            "os": platform.system(),
+            "os_version": platform.release(),
+            "python_version": platform.python_version(),
+            "cpu_cores": os.cpu_count()
+            # Avoid adding overly sensitive information here
+        }
+    except Exception as e:
+        logger.error(f"Error in system_info collector: {e}", exc_info=True)
+        return {"error": str(e)}
+
+_service_instance.register_collector(
+    name="system_info",
+    collector_fn=get_system_info,
+    requires_approval=False,
+    scope="web", 
+    description="Basic OS and Python environment details"
+)
+
+# Fügen Sie hier weitere Server-Collectors hinzu... 
