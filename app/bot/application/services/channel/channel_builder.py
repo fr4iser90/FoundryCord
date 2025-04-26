@@ -16,7 +16,7 @@ class ChannelBuilder:
         self.channel_repository = channel_repository
         self.category_repository = category_repository
     
-    async def create_channel(self, guild: nextcord.Guild, channel: ChannelEntity) -> Optional[discord.abc.GuildChannel]:
+    async def create_channel(self, guild: nextcord.Guild, channel: ChannelEntity) -> Optional[nextcord.abc.GuildChannel]:
         """Create a Discord channel from a channel model"""
         if not channel.is_valid:
             logger.warning(f"Invalid channel configuration: {channel.name}")
@@ -25,11 +25,11 @@ class ChannelBuilder:
         # Get the category
         category = None
         if channel.category_discord_id:
-            category = discord.utils.get(guild.categories, id=channel.category_discord_id)
+            category = nextcord.utils.get(guild.categories, id=channel.category_discord_id)
         elif channel.category_id:
             db_category = self.category_repository.get_category_by_id(channel.category_id)
             if db_category and db_category.discord_id:
-                category = discord.utils.get(guild.categories, id=db_category.discord_id)
+                category = nextcord.utils.get(guild.categories, id=db_category.discord_id)
         
         if not category and (channel.category_id or channel.category_discord_id):
             logger.warning(f"Category not found for channel: {channel.name}")
@@ -40,7 +40,7 @@ class ChannelBuilder:
         for permission in channel.permissions:
             role = guild.get_role(permission.role_id)
             if role:
-                overwrite = discord.PermissionOverwrite()
+                overwrite = nextcord.PermissionOverwrite()
                 overwrite.view_channel = permission.view
                 overwrite.send_messages = permission.send_messages
                 overwrite.read_messages = permission.read_messages
@@ -82,7 +82,7 @@ class ChannelBuilder:
                 forum_tags = []
                 if channel.thread_config and channel.thread_config.available_tags:
                     for tag_data in channel.thread_config.available_tags:
-                        forum_tags.append(discord.ForumTag(
+                        forum_tags.append(nextcord.ForumTag(
                             name=tag_data.get('name', 'Tag'),
                             emoji=tag_data.get('emoji'),
                             moderated=tag_data.get('moderated', False)
@@ -136,15 +136,15 @@ class ChannelBuilder:
                 logger.info(f"Created channel: {channel.name} (ID: {discord_channel.id})")
                 return discord_channel
             
-        except discord.Forbidden:
+        except nextcord.Forbidden:
             logger.error(f"Bot lacks permissions to create channel: {channel.name}")
             return None
-        except discord.HTTPException as e:
+        except nextcord.HTTPException as e:
             logger.error(f"Failed to create channel {channel.name}: {str(e)}")
             return None
     
     async def setup_all_channels(self, guild: nextcord.Guild, 
-                              category_map: Dict[str, discord.CategoryChannel] = None) -> Dict[str, discord.abc.GuildChannel]:
+                              category_map: Dict[str, nextcord.CategoryChannel] = None) -> Dict[str, nextcord.abc.GuildChannel]:
         """Set up all enabled channels from the database"""
         channels = self.channel_repository.get_enabled_channels()
         created_channels = {}
@@ -168,7 +168,7 @@ class ChannelBuilder:
         for channel in channels:
             # Skip if channel is already created in Discord
             if channel.discord_id:
-                existing = discord.utils.get(guild.channels, id=channel.discord_id)
+                existing = nextcord.utils.get(guild.channels, id=channel.discord_id)
                 if existing:
                     created_channels[channel.name] = existing
                     continue
@@ -194,7 +194,7 @@ class ChannelBuilder:
             
             for discord_channel in guild.channels:
                 # Skip categories
-                if isinstance(discord_channel, discord.CategoryChannel):
+                if isinstance(discord_channel, nextcord.CategoryChannel):
                     continue
                     
                 # Check if channel exists in database

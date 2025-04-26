@@ -26,7 +26,7 @@ class ChannelFactory:
         category_name: str = "GAME SERVERS",
         permissions: List[ChannelPermissionEntity] = None,
         metadata_json: Dict[str, Any] = None
-    ) -> Optional[discord.TextChannel]:
+    ) -> Optional[nextcord.TextChannel]:
         """Create a channel for a specific game server"""
         
         if permissions is None:
@@ -86,7 +86,7 @@ class ChannelFactory:
         category_name: str = "PROJECTS",
         permissions: List[ChannelPermissionEntity] = None,
         metadata_json: Dict[str, Any] = None
-    ) -> Optional[discord.TextChannel]:
+    ) -> Optional[nextcord.TextChannel]:
         """Create a channel for a specific project"""
         
         if permissions is None:
@@ -148,7 +148,7 @@ class ChannelFactory:
         require_tag: bool = True,
         permissions: List[ChannelPermissionEntity] = None,
         metadata_json: Dict[str, Any] = None
-    ) -> Optional[discord.ForumChannel]:
+    ) -> Optional[nextcord.ForumChannel]:
         """Create a forum channel with tags"""
         
         if permissions is None:

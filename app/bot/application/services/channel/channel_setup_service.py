@@ -28,7 +28,7 @@ class ChannelSetupService:
         # to avoid direct ORM queries that might fail
         return True
     
-    async def setup_channels(self, guild: nextcord.Guild) -> Dict[str, discord.abc.GuildChannel]:
+    async def setup_channels(self, guild: nextcord.Guild) -> Dict[str, nextcord.abc.GuildChannel]:
         """
         Set up all channels for the guild and return a mapping of channel names to Discord channels
         """
@@ -101,7 +101,7 @@ class ChannelSetupService:
             self.channels_cache[channel.name] = channel
     
     async def create_text_channel(self, guild: nextcord.Guild, name: str, category_name: str, 
-                               topic: str = None, position: int = 0) -> Optional[discord.TextChannel]:
+                               topic: str = None, position: int = 0) -> Optional[nextcord.TextChannel]:
         """
         Helper method to create a text channel with default settings
         """
