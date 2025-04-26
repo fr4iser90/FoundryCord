@@ -1,6 +1,6 @@
 """Dashboard embed component for displaying dashboard content."""
 
-import discord
+import nextcord
 from typing import Optional, Dict, Any, ClassVar, List, Union
 
 from app.shared.interface.logging.api import get_bot_logger
@@ -31,7 +31,7 @@ class DashboardEmbed(BaseComponent):
         default_config = {
             "title": "Dashboard",
             "description": "Dashboard information",
-            "color": discord.Color.blurple().value,
+            "color": nextcord.Color.blurple().value,
             "fields": [],
             "image_url": None,
             "thumbnail_url": None,
@@ -43,7 +43,7 @@ class DashboardEmbed(BaseComponent):
         
         super().__init__(config=config, default_config=default_config)
     
-    def build(self) -> discord.Embed:
+    def build(self) -> nextcord.Embed:
         """Build and return the Discord embed object.
         
         Returns:
@@ -51,10 +51,10 @@ class DashboardEmbed(BaseComponent):
         """
         try:
             # Create the base embed
-            embed = discord.Embed(
+            embed = nextcord.Embed(
                 title=self.config.get("title", "Dashboard"),
                 description=self.config.get("description", ""),
-                color=self.config.get("color", discord.Color.blurple().value)
+                color=self.config.get("color", nextcord.Color.blurple().value)
             )
             
             # Add fields if provided
@@ -97,17 +97,17 @@ class DashboardEmbed(BaseComponent):
             
             # Add timestamp
             if self.config.get("timestamp", True):
-                embed.timestamp = discord.utils.utcnow()
+                embed.timestamp = nextcord.utils.utcnow()
                 
             return embed
             
         except Exception as e:
             logger.error(f"Error building dashboard embed: {str(e)}")
             # Return a minimal embed if we had an error building the proper one
-            return discord.Embed(
+            return nextcord.Embed(
                 title="Dashboard Error",
                 description="An error occurred while building this dashboard embed.",
-                color=discord.Color.dark_gray()
+                color=nextcord.Color.dark_gray()
             )
     
     def add_field(self, name: str, value: str, inline: bool = True) -> None:

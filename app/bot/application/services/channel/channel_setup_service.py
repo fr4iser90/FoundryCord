@@ -1,4 +1,4 @@
-import discord
+import nextcord
 import logging
 from typing import Dict, List, Optional, Any
 from app.shared.domain.repositories.discord.channel_repository import ChannelRepository

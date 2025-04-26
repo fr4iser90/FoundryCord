@@ -1,5 +1,5 @@
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 import logging
 
 from app.shared.interface.logging.api import get_bot_logger
@@ -55,7 +55,7 @@ class HomelabBot(commands.Bot):
                 description="Standard dashboard embed",
                 default_config={
                     "title": "Dashboard",
-                    "color": discord.Color.blurple().value,
+                    "color": nextcord.Color.blurple().value,
                     "timestamp": True
                 }
             )
@@ -68,7 +68,7 @@ class HomelabBot(commands.Bot):
                 default_config={
                     "title": "Error",
                     "description": "An error occurred",
-                    "color": discord.Color.red().value,
+                    "color": nextcord.Color.red().value,
                     "error_code": None
                 }
             )

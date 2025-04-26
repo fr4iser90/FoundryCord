@@ -1,0 +1,211 @@
+/* 
+ * State Monitor Dashboard Styles
+ * Styling for the state snapshot monitoring dashboard
+ */
+
+.state-monitor-container {
+    padding: 1.5rem;
+}
+
+/* Status bar */
+.control-bar {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.status {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 1rem;
+    font-weight: 500;
+    margin-right: 1rem;
+}
+
+.status-info {
+    background-color: #e6f7ff;
+    color: #0c71c3;
+}
+
+.status-success {
+    background-color: #e6ffec;
+    color: #0f6d31;
+}
+
+.status-warning {
+    background-color: #fff8e6;
+    color: #a67c00;
+}
+
+.status-error {
+    background-color: #ffe6e6;
+    color: #c30c0c;
+}
+
+.timestamp {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+/* Action buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.action-buttons .btn-group {
+    margin-right: 0.75rem;
+}
+
+/* Collector panel */
+.collector-panel-container {
+    height: calc(100vh - 16rem);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.5rem;
+}
+
+#collector-panel {
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.collector-section {
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+    padding: 0 1rem;
+}
+
+.collector-section h3 {
+    font-size: 1.1rem;
+    margin: 1rem 0;
+    padding-bottom: 0.5rem;
+    color: #495057;
+}
+
+.collector-list {
+    margin-bottom: 1rem;
+}
+
+.collector-item {
+    display: flex;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid #f0f0f0;
+    align-items: flex-start;
+}
+
+.collector-item:hover {
+    background-color: #f8f9fa;
+}
+
+.collector-item input[type="checkbox"] {
+    margin-top: 0.25rem;
+    margin-right: 0.75rem;
+}
+
+.collector-item label {
+    flex-grow: 1;
+    margin-bottom: 0;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+}
+
+.collector-name {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    color: #212529;
+}
+
+.collector-description {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.collector-item .badge {
+    display: inline-block;
+    margin-right: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Results panel */
+.results-panel-container {
+    height: calc(100vh - 16rem);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.5rem;
+}
+
+#results-panel {
+    overflow-y: auto;
+    flex-grow: 1;
+    padding: 0.75rem;
+}
+
+.no-data-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    height: 100%;
+    color: #6c757d;
+    padding: 2rem;
+}
+
+.loading-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 2rem;
+}
+
+/* JSON View */
+.json-tree-view {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.9rem;
+    margin: 0;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    background-color: #f8f9fa;
+    max-height: 100%;
+    overflow-y: auto;
+}
+
+.json-display {
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #24292e;
+    margin: 0;
+    background-color: #f6f8fa;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    max-height: 100%;
+    overflow-y: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767.98px) {
+    .control-bar .status-area,
+    .control-bar .action-buttons {
+        width: 100%;
+        margin-bottom: 0.75rem;
+    }
+    
+    .collector-panel-container,
+    .results-panel-container {
+        height: auto;
+        max-height: 500px;
+    }
+    
+    .action-buttons {
+        justify-content: center;
+    }
+} 

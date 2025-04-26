@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict
-import discord
+import nextcord
 from app.shared.infrastructure.models.discord.entities.category_entity import CategoryEntity
 from app.shared.domain.repositories.discord.category_repository import CategoryRepository
 import logging
@@ -14,11 +14,11 @@ class CategoryBuilder:
         self.category_repository = category_repository
     
     async def create_category(
-        self, guild: discord.Guild, 
+        self, guild: nextcord.Guild, 
         name: str, 
         position: int = 0, 
         permissions: List[Dict] = None
-    ) -> Optional[discord.CategoryChannel]:
+    ) -> Optional[nextcord.CategoryChannel]:
         """Create a new category in the guild"""
         logger.info(f"Creating category {name} at position {position}")
         
@@ -27,9 +27,9 @@ class CategoryBuilder:
             overwrites = {}
             if permissions:
                 for perm in permissions:
-                    role = discord.utils.get(guild.app_roles, id=perm.get('role_id'))
+                    role = nextcord.utils.get(guild.app_roles, id=perm.get('role_id'))
                     if role:
-                        overwrites[role] = discord.PermissionOverwrite(
+                        overwrites[role] = nextcord.PermissionOverwrite(
                             view_channel=perm.get('view', False),
                             send_messages=perm.get('send_messages', False),
                             manage_messages=perm.get('manage_messages', False),
@@ -45,17 +45,17 @@ class CategoryBuilder:
             logger.info(f"Created category: {name} with ID {category.id}")
             return category
             
-        except discord.Forbidden:
+        except nextcord.Forbidden:
             logger.error(f"Bot does not have permission to create category: {name}")
             return None
-        except discord.HTTPException as e:
+        except nextcord.HTTPException as e:
             logger.error(f"Failed to create category {name}: {e}")
             return None
         except Exception as e:
             logger.error(f"Unexpected error creating category {name}: {e}")
             return None
     
-    async def setup_all_categories(self, guild: discord.Guild) -> List[discord.CategoryChannel]:
+    async def setup_all_categories(self, guild: nextcord.Guild) -> List[nextcord.CategoryChannel]:
         """Set up all enabled categories from the database"""
         categories = self.category_repository.get_enabled_categories()
         created_categories = []
@@ -66,7 +66,7 @@ class CategoryBuilder:
         for category in categories:
             # Skip if category is already created in Discord
             if category.discord_id:
-                existing = discord.utils.get(guild.categories, id=category.discord_id)
+                existing = nextcord.utils.get(guild.categories, id=category.discord_id)
                 if existing:
                     created_categories.append(existing)
                     continue
@@ -78,7 +78,7 @@ class CategoryBuilder:
         
         return created_categories
     
-    async def sync_categories(self, guild: discord.Guild) -> None:
+    async def sync_categories(self, guild: nextcord.Guild) -> None:
         """Sync database categories with existing Discord categories"""
         for discord_category in guild.categories:
             # Check if category exists in database

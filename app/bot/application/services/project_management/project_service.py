@@ -1,6 +1,6 @@
 import logging
 from typing import List, Optional, Dict
-import discord
+import nextcord
 from app.shared.infrastructure.database.service import DatabaseService
 from app.shared.infrastructure.repositories.projects.project_repository_impl import ProjectRepositoryImpl
 from app.shared.infrastructure.models.project.project import Project

@@ -16,6 +16,11 @@ from app.web.interfaces.api.rest.v1.schemas.guild_template_schemas import (
 )
 # Schema for activate request
 from pydantic import BaseModel
+# --- Add imports for permission check ---
+from app.shared.infrastructure.database.session import session_context
+from app.shared.infrastructure.models import DiscordGuildUserEntity
+from sqlalchemy import select
+# ---------------------------------------
 
 class GuildTemplateActivateSchema(BaseModel):
     template_id: int
@@ -446,13 +451,22 @@ class GuildTemplateController(BaseController):
         """API endpoint to set a template as active for the guild."""
         try:
             # --- Permission Check --- 
-            # TODO: Implement proper permission check (Guild Admin/Owner for this guild)
-            # For now, let's just check for global owner as a placeholder
-            # We need a way to check guild-specific roles efficiently here.
-            # Using `is_owner` is NOT the correct long-term check for this action.
-            if not current_user.is_owner: 
-                 self.logger.warning(f"User {current_user.id} lacks permission to activate template for guild {guild_id}")
-                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to activate templates for this guild.")
+            if not current_user.is_owner:
+                # If not global owner, check guild-specific role
+                async with session_context() as session:
+                    query = select(DiscordGuildUserEntity).where(
+                        DiscordGuildUserEntity.user_id == current_user.id,
+                        DiscordGuildUserEntity.guild_id == guild_id
+                    )
+                    result = await session.execute(query)
+                    guild_user = result.scalar_one_or_none()
+                    
+                    # Allow if role is Admin (3) or Owner (4)
+                    is_guild_admin_or_owner = guild_user and guild_user.role_id >= 3 
+                    if not is_guild_admin_or_owner:
+                        self.logger.warning(f"Permission denied: User {current_user.id} (Role ID: {getattr(guild_user, 'role_id', 'N/A')}) attempted to activate template for guild {guild_id}.")
+                        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to activate templates for this guild.")
+            # --- End Permission Check ---
             
             self.logger.info(f"User {current_user.id} attempting to activate template {activate_data.template_id} for guild {guild_id}")
             

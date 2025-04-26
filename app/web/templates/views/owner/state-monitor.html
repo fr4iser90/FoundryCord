@@ -1,0 +1,97 @@
+{% extends "layouts/base_layout.html" %}
+
+{% block title %}State Monitor - HomeLab Discord Bot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/views/admin/state-monitor.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="state-monitor-container">
+    <div class="page-header">
+        <h1>State Monitor</h1>
+        <p class="text-muted">
+            Monitor and capture state information from bot and web runtime
+        </p>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <!-- Status and controls bar -->
+            <div class="control-bar card mb-4">
+                <div class="card-body d-flex justify-content-between align-items-center flex-wrap">
+                    <div class="status-area">
+                        <span id="status-display" class="status status-info">Ready</span>
+                        <span id="snapshot-timestamp" class="timestamp">No snapshot captured yet</span>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <div class="btn-group">
+                            <button id="scope-all" class="btn btn-outline-secondary active">All</button>
+                            <button id="scope-bot" class="btn btn-outline-secondary">Bot</button>
+                            <button id="scope-web" class="btn btn-outline-secondary">Web</button>
+                        </div>
+                        
+                        <button id="refresh-collectors" class="btn btn-outline-secondary">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button id="capture-snapshot" class="btn btn-primary">
+                            <i class="fas fa-camera"></i> Capture
+                        </button>
+                        <button id="download-snapshot" class="btn btn-outline-success">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                        <button id="toggle-auto-refresh" class="btn btn-outline-info">
+                            <i class="fas fa-clock"></i> Start Auto-Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Left panel: Collector selection -->
+        <div class="col-md-4 col-lg-3">
+            <div class="card collector-panel-container">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">State Collectors</h5>
+                </div>
+                <div class="card-body p-0" id="collector-panel">
+                    <!-- Collector items will be dynamically inserted here -->
+                    <div class="loading-indicator">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p>Loading collectors...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right panel: Results -->
+        <div class="col-md-8 col-lg-9">
+            <div class="card results-panel-container">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">State Snapshot</h5>
+                </div>
+                <div class="card-body" id="results-panel">
+                    <div class="no-data-message">
+                        <i class="fas fa-info-circle fa-2x mb-3"></i>
+                        <p>No state snapshot captured yet. Select state collectors from the left panel and click 'Capture'.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Load JSON viewer library -->
+<script src="{{ url_for('static', path='js/components/common/json-viewer.js') }}"></script>
+<!-- Load state bridge -->
+<script type="module" src="{{ url_for('static', path='js/core/state_bridge.js') }}"></script>
+<!-- Load state monitor -->
+<script type="module" src="{{ url_for('static', path='js/views/owner/state-monitor.js') }}"></script>
+{% endblock %} 

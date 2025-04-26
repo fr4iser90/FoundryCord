@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict, Any
-import discord
+import nextcord
 import logging
 from app.shared.infrastructure.models.discord.entities.channel_entity import ChannelEntity
 from app.shared.infrastructure.models.discord.enums.channels import ChannelType

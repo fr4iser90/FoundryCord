@@ -1,4 +1,4 @@
-import discord
+import nextcord
 import logging
 from typing import Optional, Dict, Any, List
 from app.shared.infrastructure.models.discord.entities.channel_entity import ChannelEntity, ChannelPermissionEntity

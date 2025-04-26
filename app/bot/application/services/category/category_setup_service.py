@@ -1,4 +1,4 @@
-import discord
+import nextcord
 import logging
 from typing import Dict, List, Optional
 import asyncio
@@ -23,7 +23,7 @@ class CategorySetupService:
         """Get the category repository."""
         return self.category_repository
     
-    async def setup_categories(self, guild: discord.Guild) -> Dict[str, discord.CategoryChannel]:
+    async def setup_categories(self, guild: nextcord.Guild) -> Dict[str, nextcord.CategoryChannel]:
         """Set up all categories for the guild"""
         # Get all categories from the repository
         categories = await self.category_repository.get_enabled_categories()
@@ -43,7 +43,7 @@ class CategorySetupService:
         
         return result
     
-    async def setup_category(self, guild: discord.Guild, category_model: CategoryEntity) -> Optional[discord.CategoryChannel]:
+    async def setup_category(self, guild: nextcord.Guild, category_model: CategoryEntity) -> Optional[nextcord.CategoryChannel]:
         """Set up a single category in the guild"""
         logger.info(f"Setting up category: {category_model.name}")
         
@@ -52,10 +52,10 @@ class CategorySetupService:
         existing_by_name = None
         
         if category_model.discord_id:
-            existing_by_id = discord.utils.get(guild.categories, id=category_model.discord_id)
+            existing_by_id = nextcord.utils.get(guild.categories, id=category_model.discord_id)
             
         if not existing_by_id:
-            existing_by_name = discord.utils.get(guild.categories, name=category_model.name)
+            existing_by_name = nextcord.utils.get(guild.categories, name=category_model.name)
         
         # If the category exists, update it
         if existing_by_id:
@@ -90,7 +90,7 @@ class CategorySetupService:
                 logger.error(f"Error creating category {category_model.name}: {str(e)}")
                 return None
     
-    async def sync_with_discord(self, guild: discord.Guild) -> None:
+    async def sync_with_discord(self, guild: nextcord.Guild) -> None:
         """Sync categories with existing Discord categories"""
         
         # Get all categories from the repository

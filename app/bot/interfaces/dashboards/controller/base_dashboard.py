@@ -7,7 +7,6 @@ from app.bot.infrastructure.config.channel_config import ChannelConfig
 from app.bot.interfaces.dashboards.components.common.buttons.refresh_button import RefreshButton
 from app.bot.interfaces.dashboards.components.common.embeds import ErrorEmbed, DashboardEmbed  # Add this import
 import asyncio
-import discord
 import logging
 
 logger = logging.getLogger("homelab.dashboards")
@@ -92,7 +91,7 @@ class BaseDashboardController:
         """Refresh dashboard data. Override in subclasses."""
         pass
     
-    async def refresh(self, interaction: Optional[discord.Interaction] = None):
+    async def refresh(self, interaction: Optional[nextcord.Interaction] = None):
         """Refresh the dashboard display"""
         logger.info(f"Refreshing dashboard {self.dashboard_id}")
         # Update data
@@ -101,7 +100,7 @@ class BaseDashboardController:
         # Update display
         return await self.display_dashboard()
     
-    async def get_channel(self) -> Optional[discord.TextChannel]:
+    async def get_channel(self) -> Optional[nextcord.TextChannel]:
         """Get the channel for this dashboard"""
         if not self.bot:
             logger.error(f"Dashboard {self.dashboard_id} has no bot reference")
@@ -163,7 +162,7 @@ class BaseDashboardController:
         embed.set_footer(text=f"HomeLab Discord Bot • Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         return embed
     
-    async def check_rate_limit(self, interaction, action_type, cooldown_seconds=10):
+    async def check_rate_limit(self, interaction: nextcord.Interaction, action_type, cooldown_seconds=10):
         """Check if an action is rate limited."""
         user_id = interaction.user.id
         current_time = datetime.now().timestamp()

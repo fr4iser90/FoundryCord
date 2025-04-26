@@ -28,7 +28,7 @@ class ErrorEmbed(BaseComponent):
         default_config = {
             "title": "Error",
             "description": "An error occurred",
-            "color": nextcord.Color.red().value,
+            "color": nextcord.Color.ed().value,
             "error_code": None,
             "footer": None,
             "visible": True,
@@ -75,7 +75,7 @@ class ErrorEmbed(BaseComponent):
             return nextcord.Embed(
                 title="Error Display Failed",
                 description="An error occurred while trying to display the error message.",
-                color=nextcord.Color.dark_red()
+                color=nextcord.Color.ark_red()
             )
     
     @classmethod
