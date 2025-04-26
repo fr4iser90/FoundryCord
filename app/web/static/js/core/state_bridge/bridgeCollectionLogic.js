@@ -1,6 +1,6 @@
 // Contains the core logic for collecting state from browser collectors.
-import { requestApproval } from './bridge_approval.js';
-import { sanitizeStateData } from './bridge_utils.js'; // Assuming sanitization happens here
+import { requestApproval } from './bridgeApproval.js';
+import { sanitizeStateData } from './bridgeUtils.js'; // Assuming sanitization happens here
 
 /**
  * Collects state from the specified browser collectors, handling approvals.

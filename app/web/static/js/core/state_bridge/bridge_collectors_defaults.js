@@ -1,5 +1,5 @@
 // Defines and registers the default set of browser-side state collectors.
-import { registerCollector } from './bridge_collectors_registry.js';
+import { registerCollector } from './bridgeCollectorsRegistry.js';
 
 /**
  * Registers the default browser state collectors.

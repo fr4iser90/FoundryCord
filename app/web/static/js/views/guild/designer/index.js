@@ -1,4 +1,4 @@
-import { GridManager } from '/static/js/components/layout/grid_manager.js';
+import { GridManager } from '/static/js/components/layout/gridManager.js';
 // Keep showToast and apiRequest available if needed directly, though GridManager uses them
 import { apiRequest, showToast } from '/static/js/components/common/notifications.js';
 // Import the specific widget initializer

@@ -1,5 +1,5 @@
 // Handles the user approval workflow for state collectors.
-import { saveApprovedCollectors } from './bridge_storage.js';
+import { saveApprovedCollectors } from './bridgeStorage.js';
 
 /**
  * Displays an approval dialog to the user using window.confirm as a fallback.
