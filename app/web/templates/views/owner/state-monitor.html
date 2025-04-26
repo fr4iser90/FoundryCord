@@ -41,6 +41,9 @@
                         <button id="download-snapshot" class="btn btn-outline-success">
                             <i class="fas fa-download"></i> Download
                         </button>
+                        <button id="copy-snapshot" class="btn btn-outline-secondary">
+                            <i class="fas fa-copy"></i> Copy All
+                        </button>
                         <button id="toggle-auto-refresh" class="btn btn-outline-info">
                             <i class="fas fa-clock"></i> Start Auto-Refresh
                         </button>
@@ -54,30 +57,31 @@
         <!-- Left panel: Collector selection -->
         <div class="col-md-4 col-lg-3">
             <div class="card collector-panel-container">
-                <div class="card-header bg-light">
+                <div class="card-header">
                     <h5 class="mb-0">State Collectors</h5>
                 </div>
                 <div class="card-body p-0" id="collector-panel">
-                    <!-- Collector items will be dynamically inserted here -->
-                    {# Placeholder structure - JS will populate this #}
+                    {# Placeholder for server collectors - JS will populate #}
                     <div class="collector-section p-3 border-bottom">
                         <h5>Server Collectors</h5>
                         <div class="collector-list" id="server-collectors">
-                            <small class="text-muted">Loading...</small>
+                            <small class="text-muted">Loading...</small> {# Keep loading text? JS might overwrite #}
                         </div>
                     </div>
+                    {# Static section for browser collectors info #}
                     <div class="collector-section p-3">
-                        <h5>Browser Collectors</h5>
-                        <p class="text-muted small mb-2">
+                        <h5>Browser Collectors</h5> {# Static Heading #}
+                        <p class="mb-2"> {# Static Paragraph, mb-2 for spacing below #}
                             Note: Collectors marked "Requires Approval" access potentially sensitive browser data (e.g., DOM structure, storage keys, JS errors).
                             Approval ensures explicit consent for this access in your browser session, even as the owner, as a security measure.
                             (Approval mechanism TBD).
                         </p>
+                        {# Placeholder for browser collector list - JS will populate #}
                         <div class="collector-list" id="browser-collectors">
-                            <small class="text-muted">Loading...</small>
+                            <small class="text-muted">Loading...</small> {# Keep loading text? JS might overwrite #}
                         </div>
                     </div>
-                    {# Original Loading Indicator - Keep or remove based on JS behavior #}
+                    {# Remove Original Loading Indicator if JS handles loading states #}
                     {# 
                     <div class="loading-indicator">
                         <div class="spinner-border text-primary" role="status">
@@ -93,7 +97,7 @@
         <!-- Right panel: Results -->
         <div class="col-md-8 col-lg-9">
             <div class="card results-panel-container">
-                <div class="card-header bg-light">
+                <div class="card-header">
                     <h5 class="mb-0">State Snapshot</h5>
                 </div>
                 <div class="card-body" id="results-panel">
@@ -109,8 +113,8 @@
 {% endblock %}
 
 {% block extra_js %}
-{# Commenting out JSON viewer until path is confirmed/file is added #}
-{# <script src="{{ url_for('static', path='js/components/common/json-viewer.js') }}"></script> #}
+
+<script src="{{ url_for('static', path='js/components/json-viewer.js') }}"></script>
 <!-- Load state monitor -->
 <script type="module" src="{{ url_for('static', path='js/views/owner/state-monitor.js') }}"></script>
 {% endblock %} 

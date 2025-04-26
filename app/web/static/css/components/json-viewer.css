@@ -1,0 +1,91 @@
+/* app/web/static/css/components/json-viewer.css */
+
+/* Container for the entire JSON tree view */
+.json-viewer {
+    font-family: var(--font-monospace, monospace);
+    font-size: 0.9em;
+    line-height: 1.6;
+    color: var(--text-normal);
+    /* Padding is handled by the parent .json-tree-view in state-monitor.css */
+}
+
+/* Container for nested items (objects/arrays), provides indentation */
+.json-children {
+    margin-left: var(--spacing-md);
+    padding-left: var(--spacing-sm);
+    border-left: 1px dotted var(--border-secondary);
+    /* display: none; is handled by JS */
+}
+
+/* Represents a single item (key-value pair in object, element in array) */
+.json-item {
+    display: flex;
+    align-items: baseline; /* Align key/index and value */
+}
+
+/* Toggle for expanding/collapsing objects and arrays ({ or [ ) */
+.json-toggle {
+    cursor: pointer;
+    display: inline-block;
+    margin-right: var(--spacing-xs);
+    color: var(--text-muted);
+}
+
+/* Style the toggle when it's expanded */
+.json-toggle.expanded {
+    /* Optional: Add rotation or different indicator? For now, keep simple */
+}
+
+/* Ellipsis (...) shown when collapsed */
+.json-ellipsis {
+    color: var(--text-muted);
+    margin: 0 var(--spacing-xs);
+    /* display: inline/none; is handled by JS */
+}
+
+/* Item count comment (e.g., // 3 items) */
+.json-count {
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 0.9em;
+    margin-left: var(--spacing-sm);
+}
+
+/* Styles for different value types */
+.json-key,
+.json-index {
+    color: var(--secondary); /* Or choose another theme color like --text-secondary */
+    margin-right: var(--spacing-xs);
+    flex-shrink: 0; /* Prevent keys from shrinking */
+}
+
+.json-string {
+    color: var(--success);
+    white-space: pre-wrap; /* Wrap long strings */
+    word-break: break-all; /* Break long strings without spaces */
+}
+
+.json-number {
+    color: var(--info);
+}
+
+.json-boolean {
+    color: var(--primary);
+    font-weight: 500;
+}
+
+.json-null {
+    color: var(--danger);
+    font-style: italic;
+}
+
+.json-undefined {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Style the container for objects and arrays themselves (if needed) */
+.json-object,
+.json-array {
+    /* Add specific styling if needed */
+}

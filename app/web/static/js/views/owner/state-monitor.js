@@ -36,6 +36,7 @@ class StateMonitorDashboard {
         this.captureBtn = document.getElementById('capture-snapshot');
         this.refreshBtn = document.getElementById('refresh-collectors');
         this.downloadBtn = document.getElementById('download-snapshot');
+        this.copyBtn = document.getElementById('copy-snapshot');
         this.autoRefreshBtn = document.getElementById('toggle-auto-refresh');
         
         // Results display
@@ -72,6 +73,10 @@ class StateMonitorDashboard {
         
         if (this.downloadBtn) {
             this.downloadBtn.addEventListener('click', () => this.downloadSnapshot());
+        }
+        
+        if (this.copyBtn) {
+            this.copyBtn.addEventListener('click', () => this.copySnapshot());
         }
         
         if (this.autoRefreshBtn) {
@@ -122,99 +127,91 @@ class StateMonitorDashboard {
     }
     
     renderCollectorPanel() {
+        // Ensure the main panel container exists
         if (!this.collectorPanel) return;
         
-        // Clear the panel
-        this.collectorPanel.innerHTML = '';
+        // DO NOT CLEAR the entire panel anymore
+        // this.collectorPanel.innerHTML = '';
         
-        // Create server collectors section
-        const serverSection = document.createElement('div');
-        serverSection.className = 'collector-section';
-        serverSection.innerHTML = `
-            <h3>Server Collectors</h3>
-            <div class="collector-list" id="server-collectors"></div>
-        `;
-        this.collectorPanel.appendChild(serverSection);
-        
-        // Create browser collectors section
-        const browserSection = document.createElement('div');
-        browserSection.className = 'collector-section';
-        browserSection.innerHTML = `
-            <h3>Browser Collectors</h3>
-            <p class="text-muted small">
-                Note: Collectors marked "Requires Approval" access potentially sensitive browser data (like detailed DOM structure, storage keys, or JavaScript errors).
-                Approval ensures you explicitly permit this access for your current browser session, even as the owner, as a security measure against accidental data exposure.
-                (Approval mechanism TBD).
-            </p>
-            <div class="collector-list" id="browser-collectors"></div>
-        `;
-        this.collectorPanel.appendChild(browserSection);
-        
-        // Populate server collectors
+        // Find the server collectors list container (should exist in static HTML)
         const serverList = document.getElementById('server-collectors');
-        this.collectors.server.forEach(collector => {
-            if (this.currentScope !== 'all' && collector.scope !== this.currentScope && collector.scope !== 'global') {
-                return; // Skip collectors that don't match the current scope
-            }
-            
-            const item = document.createElement('div');
-            item.className = 'collector-item';
-            
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = `collector-${collector.name}`;
-            checkbox.dataset.name = collector.name;
-            checkbox.dataset.source = 'server';
-            checkbox.checked = collector.is_approved || !collector.requires_approval;
-            
-            const label = document.createElement('label');
-            label.htmlFor = checkbox.id;
-            label.innerHTML = `
-                <span class="collector-name">${collector.name}</span>
-                <span class="collector-description">${collector.description}</span>
-                ${collector.requires_approval ? 
-                    '<span class="badge bg-warning text-dark">Requires Approval</span>' : 
-                    '<span class="badge bg-success">Auto-approved</span>'}
-                <span class="badge bg-info">${collector.scope}</span>
-            `;
-            
-            item.appendChild(checkbox);
-            item.appendChild(label);
-            serverList.appendChild(item);
-        });
+        if (serverList) {
+            // Clear only the list content (e.g., "Loading..." text or previous items)
+            serverList.innerHTML = ''; 
+            // Populate server collectors
+            this.collectors.server.forEach(collector => {
+                if (this.currentScope !== 'all' && collector.scope !== this.currentScope && collector.scope !== 'global') {
+                    return; // Skip collectors that don't match the current scope
+                }
+                
+                const item = document.createElement('div');
+                item.className = 'collector-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `collector-${collector.name}`;
+                checkbox.dataset.name = collector.name;
+                checkbox.dataset.source = 'server';
+                checkbox.checked = collector.is_approved || !collector.requires_approval;
+                
+                const label = document.createElement('label');
+                label.htmlFor = checkbox.id;
+                label.innerHTML = `
+                    <span class="collector-name">${collector.name}</span>
+                    <span class="collector-description">${collector.description}</span>
+                    ${collector.requires_approval ? 
+                        '<span class="badge bg-warning text-dark">Requires Approval</span>' : 
+                        '<span class="badge bg-success">Auto-approved</span>'}
+                    <span class="badge bg-info">${collector.scope}</span>
+                `;
+                
+                item.appendChild(checkbox);
+                item.appendChild(label);
+                serverList.appendChild(item);
+            });
+        } else {
+            console.error("Server collector list container #server-collectors not found in HTML.");
+        }
         
-        // Populate browser collectors
+        // Find the browser collectors list container (should exist in static HTML)
         const browserList = document.getElementById('browser-collectors');
-        this.collectors.browser.forEach(collector => {
-            if (this.currentScope !== 'all' && collector.scope !== this.currentScope && collector.scope !== 'global') {
-                return; // Skip collectors that don't match the current scope
-            }
-            
-            const item = document.createElement('div');
-            item.className = 'collector-item';
-            
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = `collector-browser-${collector.name}`;
-            checkbox.dataset.name = collector.name;
-            checkbox.dataset.source = 'browser';
-            checkbox.checked = collector.is_approved || !collector.requires_approval;
-            
-            const label = document.createElement('label');
-            label.htmlFor = checkbox.id;
-            label.innerHTML = `
-                <span class="collector-name">${collector.name}</span>
-                <span class="collector-description">${collector.description}</span>
-                ${collector.requires_approval ? 
-                    '<span class="badge bg-warning text-dark">Requires Approval</span>' : 
-                    '<span class="badge bg-success">Auto-approved</span>'}
-                <span class="badge bg-info">${collector.scope}</span>
-            `;
-            
-            item.appendChild(checkbox);
-            item.appendChild(label);
-            browserList.appendChild(item);
-        });
+        if (browserList) {
+            // Clear only the list content (e.g., "Loading..." text or previous items)
+            browserList.innerHTML = ''; 
+            // Populate browser collectors
+            this.collectors.browser.forEach(collector => {
+                if (this.currentScope !== 'all' && collector.scope !== this.currentScope && collector.scope !== 'global') {
+                    return; // Skip collectors that don't match the current scope
+                }
+                
+                const item = document.createElement('div');
+                item.className = 'collector-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `collector-browser-${collector.name}`;
+                checkbox.dataset.name = collector.name;
+                checkbox.dataset.source = 'browser';
+                checkbox.checked = collector.is_approved || !collector.requires_approval;
+                
+                const label = document.createElement('label');
+                label.htmlFor = checkbox.id;
+                label.innerHTML = `
+                    <span class="collector-name">${collector.name}</span>
+                    <span class="collector-description">${collector.description}</span>
+                    ${collector.requires_approval ? 
+                        '<span class="badge bg-warning text-dark">Requires Approval</span>' : 
+                        '<span class="badge bg-success">Auto-approved</span>'}
+                    <span class="badge bg-info">${collector.scope}</span>
+                `;
+                
+                item.appendChild(checkbox);
+                item.appendChild(label);
+                browserList.appendChild(item);
+            });
+        } else {
+            console.error("Browser collector list container #browser-collectors not found in HTML.");
+        }
     }
     
     async captureSnapshot() {
@@ -341,8 +338,9 @@ class StateMonitorDashboard {
         // If we have a JSON viewer library available
         if (window.JSONViewer) {
             const viewer = new JSONViewer();
+            container.innerHTML = ''; // Clear previous content
             container.appendChild(viewer.getContainer());
-            viewer.showJSON(data);
+            viewer.showJSON(data, 8);
             return;
         }
         
@@ -443,6 +441,22 @@ class StateMonitorDashboard {
         document.body.removeChild(link);
         
         this.setStatus('Snapshot downloaded');
+    }
+    
+    async copySnapshot() {
+        if (!this.currentSnapshot) {
+            this.setStatus('No snapshot data to copy', 'warning');
+            return;
+        }
+
+        try {
+            const jsonString = JSON.stringify(this.currentSnapshot, null, 2);
+            await navigator.clipboard.writeText(jsonString);
+            this.setStatus('Snapshot copied to clipboard', 'success');
+        } catch (err) {
+            console.error('Failed to copy snapshot:', err);
+            this.setStatus('Failed to copy snapshot to clipboard', 'error');
+        }
     }
     
     initializeToggles() {

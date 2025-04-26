@@ -9,9 +9,10 @@
 
 /* Status bar */
 .control-bar {
-    background-color: #f8f9fa;
+    /* background-color: #f8f9fa; <-- Remove or replace if needed */
+    /* Assuming default card background is handled by card component styles */
     border-radius: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 4px var(--bg-overlay); /* Use theme variable for shadow */
 }
 
 .status {
@@ -23,27 +24,27 @@
 }
 
 .status-info {
-    background-color: #e6f7ff;
-    color: #0c71c3;
+    background-color: rgba(var(--info-rgb), 0.1);
+    color: var(--info);
 }
 
 .status-success {
-    background-color: #e6ffec;
-    color: #0f6d31;
+    background-color: rgba(var(--success-rgb), 0.1);
+    color: var(--success);
 }
 
 .status-warning {
-    background-color: #fff8e6;
-    color: #a67c00;
+    background-color: rgba(var(--warning-rgb), 0.1);
+    color: var(--warning);
 }
 
 .status-error {
-    background-color: #ffe6e6;
-    color: #c30c0c;
+    background-color: rgba(var(--danger-rgb), 0.1);
+    color: var(--danger);
 }
 
 .timestamp {
-    color: #6c757d;
+    color: var(--text-muted);
     font-size: 0.9rem;
 }
 
@@ -74,7 +75,7 @@
 
 .collector-section {
     margin-bottom: 1.5rem;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid var(--border-color);
     padding: 0 1rem;
 }
 
@@ -82,7 +83,14 @@
     font-size: 1.1rem;
     margin: 1rem 0;
     padding-bottom: 0.5rem;
-    color: #495057;
+    color: var(--text-secondary); /* Use secondary text color */
+}
+
+/* Explicitly style the note paragraph for better readability */
+#collector-panel .collector-section p {
+    color: var(--text-normal); /* Ensure good contrast */
+    font-size: 0.9rem;      /* Slightly smaller than base */
+    margin-bottom: var(--spacing-md); /* Ensure spacing */
 }
 
 .collector-list {
@@ -92,12 +100,12 @@
 .collector-item {
     display: flex;
     padding: 0.75rem 0.5rem;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--border-secondary); /* Use secondary border */
     align-items: flex-start;
 }
 
 .collector-item:hover {
-    background-color: #f8f9fa;
+    background-color: var(--bg-tertiary); /* Use tertiary background for hover */
 }
 
 .collector-item input[type="checkbox"] {
@@ -116,12 +124,12 @@
 .collector-name {
     font-weight: 500;
     margin-bottom: 0.25rem;
-    color: #212529;
+    color: var(--text-primary);
 }
 
 .collector-description {
     font-size: 0.875rem;
-    color: #6c757d;
+    color: var(--text-muted);
     margin-bottom: 0.5rem;
 }
 
@@ -154,7 +162,7 @@
     justify-content: center;
     text-align: center;
     height: 100%;
-    color: #6c757d;
+    color: var(--text-muted);
     padding: 2rem;
 }
 
@@ -174,7 +182,7 @@
     margin: 0;
     padding: 1rem;
     border-radius: 0.25rem;
-    background-color: #f8f9fa;
+    background-color: var(--bg-tertiary);
     max-height: 100%;
     overflow-y: auto;
 }
@@ -182,9 +190,9 @@
 .json-display {
     white-space: pre-wrap;
     word-break: break-word;
-    color: #24292e;
+    color: var(--text-primary);
     margin: 0;
-    background-color: #f6f8fa;
+    background-color: var(--bg-secondary);
     padding: 1rem;
     border-radius: 0.25rem;
     max-height: 100%;
