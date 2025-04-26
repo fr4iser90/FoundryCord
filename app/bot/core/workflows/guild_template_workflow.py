@@ -24,6 +24,8 @@ from app.shared.domain.repositories.guild_templates import (
     GuildTemplateCategoryPermissionRepository,
     GuildTemplateChannelPermissionRepository
 )
+from app.shared.infrastructure.models.discord.entities import GuildConfigEntity
+from sqlalchemy import select, update
 
 logger = get_bot_logger()
 
@@ -91,6 +93,20 @@ class GuildTemplateWorkflow(BaseWorkflow):
                 template_db_id = template_record.id
                 category_template_map = {} # To map Discord category object to template DB ID
                 logger.debug(f"Created main template record ID: {template_db_id} for guild {guild_id_str}")
+
+                # --- NEW: Update Guild Config to set this template as active --- 
+                update_stmt = (
+                    update(GuildConfigEntity)
+                    .where(GuildConfigEntity.guild_id == guild_id_str)
+                    .values(active_template_id=template_db_id)
+                )
+                update_result = await session.execute(update_stmt)
+                if update_result.rowcount == 0:
+                    logger.warning(f"Could not find GuildConfig for guild {guild_id_str} to set initial active template {template_db_id}. Configuration might need creation.")
+                    # Decide if this is a critical error. For now, log warning and continue.
+                else:
+                    logger.info(f"Set initial snapshot template {template_db_id} as active for guild {guild_id_str}")
+                # ------------------------------------------------------------
 
                 # --- Initialize Counters ---
                 category_count = 0

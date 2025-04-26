@@ -492,6 +492,12 @@ function populateWidgetContents(templateData) {
     }
     
     const guildId = getGuildIdFromUrl(); // Needed for manage links
+    // Read active template ID HERE, inside the function
+    const mainContainer = document.getElementById('designer-main-container');
+    const activeTemplateId = mainContainer?.dataset.activeTemplateId || null;
+    if(activeTemplateId) {
+        console.log(`[populateWidgetContents] Found active template ID: ${activeTemplateId}`);
+    }
 
     // --- Populate Template Info ---    
     const infoContentEl = document.getElementById('widget-content-template-info');
@@ -525,7 +531,8 @@ function populateWidgetContents(templateData) {
     // --- Populate Saved Templates List ---
     const templateListContentEl = document.getElementById('widget-content-template-list');
     if (templateListContentEl) {
-        initializeTemplateList(templateListContentEl, guildId);
+        // Pass the active template ID
+        initializeTemplateList(templateListContentEl, guildId, activeTemplateId);
     } else {
         console.warn("Content area for template-list widget not found.");
     }
@@ -598,6 +605,7 @@ function setupTemplateLoadListener() {
 
 // --- Main Execution ---
 document.addEventListener('DOMContentLoaded', async () => {
+    let activeTemplateId = null; // Variable to store active template ID
     console.log("[Index] DOM fully loaded.");
 
     const guildId = getGuildIdFromUrl();
@@ -626,6 +634,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             return; 
         }
         console.log("[Index] Initial template data fetched.");
+
+        // Get active template ID from main container
+        const mainContainer = document.getElementById('designer-main-container');
+        if (mainContainer && mainContainer.dataset.activeTemplateId) {
+            activeTemplateId = mainContainer.dataset.activeTemplateId;
+            console.log(`[Index] Found active template ID: ${activeTemplateId}`);
+        }
 
         // 2. Define Widgets and Default Layout
         console.log("[Index] Defining widgets and default layout...");
@@ -657,12 +672,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             pageIdentifier: pageIdentifier,
             widgetDefinitions: widgetDefs, // Pass definitions here
             defaultLayout: defaultLayout, // Pass default layout here
-            // Modified callback to include tree initialization
-            populateContentCallback: (initialData) => { 
-                console.log("[GridManager Callback] Populating widget content.");
-                console.log("[GridManager Callback] Received initialData:", initialData);
-                // Use the data passed by GridManager (which should be the templateData we provided)
-                populateGuildDesignerWidgets(initialData, null, null); 
+            // Modified callback to include tree initialization AND active template ID
+            populateContentCallback: (initialData) => {
+                // Pass ONLY the template data here
+                populateGuildDesignerWidgets(initialData);
                 console.log("[GridManager Callback] Initializing structure tree.");
                 initializeStructureTree(initialData);
             },

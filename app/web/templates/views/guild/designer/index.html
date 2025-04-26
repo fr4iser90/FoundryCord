@@ -14,7 +14,11 @@
 
 {% block content %}
 {# Replace the bootstrap container with our layout-editor structure #}
-<div class="layout-editor has-panel-left has-panel-right" id="designer-main-container" data-current-user-id="{{ current_user_id }}">
+<div class="layout-editor has-panel-left has-panel-right" 
+     id="designer-main-container" 
+     data-current-user-id="{{ current_user_id }}"
+    {# Conditionally add the active template ID attribute #}
+    {% if active_template_id is not none %} data-active-template-id="{{ active_template_id }}"{% endif %}>
 
     {# --- Editor Toolbar --- #}
     <div class="editor-toolbar d-flex justify-content-between align-items-center p-2">
@@ -62,9 +66,7 @@
             <div id="designer-error-container" class="mb-3"></div>
 
             {# --- Gridstack Container --- #}
-            <div class="grid-stack" id="designer-grid">
-                {# Widgets will be added here by JavaScript #}
-            </div>
+            <div class="grid-stack" id="designer-grid"></div>
         </div>
 
         {# --- Right Panel (Properties) --- #}

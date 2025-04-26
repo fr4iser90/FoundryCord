@@ -6,6 +6,8 @@ from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_curre
 from app.shared.infrastructure.database.session import session_context
 from app.shared.infrastructure.repositories.guild_templates import GuildTemplateRepositoryImpl
 from app.shared.interface.logging.api import get_web_logger
+from app.shared.infrastructure.models.discord.entities import GuildConfigEntity
+from sqlalchemy import select
 
 logger = get_web_logger() # Assuming get_web_logger is available globally or imported
 
@@ -30,9 +32,20 @@ class GuildDesignerIndexView(BaseView):
             if not current_user.is_owner:
                  raise HTTPException(status_code=403, detail="Insufficient permissions to access Guild Designer")
 
+            active_template_id = None # Default to None
             async with session_context() as session:
                 template_repo = GuildTemplateRepositoryImpl(session)
                 guild_template = await template_repo.get_by_guild_id(guild_id)
+
+                # Fetch Guild Config to get active_template_id
+                config_stmt = select(GuildConfigEntity).where(GuildConfigEntity.guild_id == guild_id)
+                config_result = await session.execute(config_stmt)
+                guild_config = config_result.scalar_one_or_none()
+                if guild_config:
+                    active_template_id = guild_config.active_template_id
+                    logger.debug(f"Found active template ID {active_template_id} for guild {guild_id}")
+                else:
+                    logger.warning(f"No GuildConfig found for guild {guild_id}. Cannot determine active template.")
 
                 if not guild_template:
                     logger.warning(f"No guild template found for guild {guild_id} for designer view.")
@@ -51,7 +64,8 @@ class GuildDesignerIndexView(BaseView):
                 guild_id=guild_id,
                 guild_template_data=guild_template, # Renamed keyword argument
                 active_page="guild-designer", # Example active page key
-                current_user_id=current_user.id # Pass the user ID
+                current_user_id=current_user.id, # Pass the user ID
+                active_template_id=active_template_id # Pass the active template ID
             )
         except HTTPException as http_exc:
             # Re-raise HTTP exceptions

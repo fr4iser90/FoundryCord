@@ -5,8 +5,9 @@ import { apiRequest, showToast, ApiError } from '/static/js/components/common/no
  * (including the initial snapshot and user-saved templates).
  * @param {HTMLElement} contentElement - The container element for the widget content.
  * @param {string} currentGuildId - The current guild ID (needed for context).
+ * @param {string|null} activeTemplateId - The ID of the currently active template (or null).
  */
-export async function initializeTemplateList(contentElement, currentGuildId) {
+export async function initializeTemplateList(contentElement, currentGuildId, activeTemplateId) {
     if (!contentElement) {
         // console.warn("[GuildTemplateListWidget] Content element not provided.");
         return;
@@ -48,6 +49,9 @@ export async function initializeTemplateList(contentElement, currentGuildId) {
         }
         
         const fragment = document.createDocumentFragment();
+
+        // Convert activeTemplateId to number for comparison, handle null/undefined
+        const currentActiveId = activeTemplateId ? parseInt(activeTemplateId, 10) : null;
 
         templates.forEach(template => {
             const templateId = template.template_id; 
@@ -119,14 +123,25 @@ export async function initializeTemplateList(contentElement, currentGuildId) {
             activateButton.dataset.templateId = templateId;
             activateButton.dataset.templateName = templateName;
             const activateIcon = document.createElement('i');
-            activateIcon.className = 'fas fa-check-circle'; // Checkmark icon
+            // Check if this template is the active one
+            const isActive = (currentActiveId !== null && templateId === currentActiveId);
+
+            if (isActive) {
+                activateButton.disabled = true;
+                activateButton.title = `Template '${templateName}' is already active`;
+                activateButton.classList.remove('btn-outline-success');
+                activateButton.classList.add('btn-success', 'active'); // Make it look pressed/active
+                activateIcon.className = 'fas fa-star'; // Change icon to star or similar
+                nameSpan.insertAdjacentHTML('beforeend', ' <span class="badge bg-success ms-1">Active</span>'); // Add badge
+            } else {
+                activateIcon.className = 'fas fa-check-circle'; // Default checkmark icon
+                activateButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleTemplateActivate(templateId, templateName, currentGuildId, listContentElement, currentActiveId);
+                });
+            }
             activateButton.appendChild(activateIcon);
-            // TODO: Add logic here to visually disable/mark if this IS the currently active template
-            activateButton.addEventListener('click', (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                handleTemplateActivate(templateId, templateName, currentGuildId); // Pass guildId
-            });
             buttonGroup.appendChild(activateButton);
 
             // Delete Button
@@ -276,8 +291,10 @@ async function handleTemplateDelete(templateId, templateName, listContentElement
  * @param {number} templateId - The ID of the template to activate.
  * @param {string} templateName - The name of the template (for confirmation).
  * @param {string} guildId - The ID of the current guild.
+ * @param {HTMLElement} listContentElement - The element containing the list to refresh.
+ * @param {string|null} initialActiveId - The active ID when the list was loaded.
  */
-async function handleTemplateActivate(templateId, templateName, guildId) {
+async function handleTemplateActivate(templateId, templateName, guildId, listContentElement, initialActiveId) {
     console.log(`[GuildTemplateListWidget] Activate requested for template ID: ${templateId}, Name: ${templateName}, Guild: ${guildId}`);
 
     if (!guildId) {
@@ -309,14 +326,13 @@ async function handleTemplateActivate(templateId, templateName, guildId) {
         showToast('success', `Template "${templateName}" is now set as active.`);
         console.log(`[GuildTemplateListWidget] Successfully activated template ${templateId} for guild ${guildId}.`);
         
-        // TODO: Refresh the list or update UI to show the new active state
-        // Potential refresh:
-        // const listContentElement = document.getElementById('widget-content-template-list');
-        // if (listContentElement) {
-        //     initializeTemplateList(listContentElement, guildId);
-        // } else {
-        //     console.warn("[GuildTemplateListWidget] Could not refresh list after activation: content element missing.");
-        // }
+        // Refresh the list to show the updated active state
+        if (listContentElement) {
+            // Pass the NEWLY activated template ID for the refresh
+            initializeTemplateList(listContentElement, guildId, String(templateId)); 
+        } else {
+            console.warn("[GuildTemplateListWidget] Could not refresh list after activation: content element missing.");
+        }
 
     } catch (error) {
         // apiRequest handles basic toast, but log details here
