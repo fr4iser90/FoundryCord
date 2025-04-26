@@ -2,7 +2,7 @@
  * State Monitoring Dashboard
  * Displays collected state information from bot and web runtime
  */
-import stateBridge from '/static/js/core/state_bridge.js';
+import stateBridge from '/static/js/core/state_bridge/bridge_main.js';
 
 class StateMonitorDashboard {
     constructor() {
@@ -88,7 +88,7 @@ class StateMonitorDashboard {
             if (!response.ok) {
                 // Try to get more info from the response if possible
                 let errorBody = await response.text();
-                logger.error("API Response Error Body:", errorBody);
+                console.error("API Response Error Body:", errorBody);
                 throw new Error(`Server responded with ${response.status}: ${response.statusText}. Body: ${errorBody.substring(0, 100)}...`);
             }
             

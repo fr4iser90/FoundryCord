@@ -109,10 +109,8 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Load JSON viewer library -->
-<script src="{{ url_for('static', path='js/components/common/json-viewer.js') }}"></script>
-<!-- Load state bridge -->
-<script type="module" src="{{ url_for('static', path='js/core/state_bridge.js') }}"></script>
+{# Commenting out JSON viewer until path is confirmed/file is added #}
+{# <script src="{{ url_for('static', path='js/components/common/json-viewer.js') }}"></script> #}
 <!-- Load state monitor -->
 <script type="module" src="{{ url_for('static', path='js/views/owner/state-monitor.js') }}"></script>
 {% endblock %} 

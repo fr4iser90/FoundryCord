@@ -167,29 +167,29 @@ class StateBridge {
             : Object.keys(this.collectors);
 
         // --- Phase 1: Request Approvals ---
-        logger.debug("StateBridge Collect - Phase 1: Checking Approvals for", collectorsToRun);
+        console.debug("StateBridge Collect - Phase 1: Checking Approvals for", collectorsToRun);
         for (const name of collectorsToRun) {
             if (!this.collectors[name]) {
-                logger.warn(`Unknown state collector during approval check: ${name}`);
+                console.warn(`Unknown state collector during approval check: ${name}`);
                 continue;
             }
             const collector = this.collectors[name];
             // If it requires approval and is not currently approved
             if (collector.options.requiresApproval && !this.approvedCollectors.has(name)) {
-                logger.info(`Requesting approval for collector: ${name}`);
+                console.info(`Requesting approval for collector: ${name}`);
                 // Request approval. This function handles the dialog and saving if approved.
                 // We await it to ensure popups don't overlap uncontrollably,
                 // but we don't need the immediate boolean result here.
                 await this.requestApproval(name);
             }
         }
-        logger.debug("StateBridge Collect - Phase 1: Approval checks complete. Current approved:", Array.from(this.approvedCollectors));
+        console.debug("StateBridge Collect - Phase 1: Approval checks complete. Current approved:", Array.from(this.approvedCollectors));
 
         // --- Phase 2: Collect Data ---
-        logger.debug("StateBridge Collect - Phase 2: Collecting Data...");
+        console.debug("StateBridge Collect - Phase 2: Collecting Data...");
         for (const name of collectorsToRun) {
             if (!this.collectors[name]) {
-                logger.warn(`Unknown state collector during collection: ${name}`);
+                console.warn(`Unknown state collector during collection: ${name}`);
                 results[name] = { error: 'unknown_collector' };
                 continue;
             }
@@ -198,7 +198,7 @@ class StateBridge {
 
             // Check if collector is usable (doesn't require approval OR is now approved)
             if (!collector.options.requiresApproval || this.approvedCollectors.has(name)) {
-                 logger.debug(`Collecting data for approved collector: ${name}`);
+                 console.debug(`Collecting data for approved collector: ${name}`);
                 try {
                     const collectorFn = collector.function;
                     // Check if the collector function is actually a function
@@ -221,20 +221,20 @@ class StateBridge {
                         // Use console.log for successful operation confirmation
                         console.log(`Successfully collected state with: ${name}`);
                     } else {
-                        logger.error(`Collector function for ${name} is not a function.`);
+                        console.error(`Collector function for ${name} is not a function.`);
                         results[name] = { error: 'collector_not_function' };
                     }
                 } catch (error) {
-                    logger.error(`Error executing state collector ${name}:`, error);
+                    console.error(`Error executing state collector ${name}:`, error);
                     results[name] = { error: error.message || 'Unknown error', stack: error.stack }; // Include stack if available
                 }
             } else {
                 // If it required approval but is still not approved after Phase 1
-                logger.warn(`Skipping collection for unapproved collector: ${name}`);
+                console.warn(`Skipping collection for unapproved collector: ${name}`);
                 results[name] = { error: 'not_approved', requiresApproval: true };
             }
         }
-         logger.debug("StateBridge Collect - Phase 2: Data collection complete.");
+         console.debug("StateBridge Collect - Phase 2: Data collection complete.");
 
         const snapshot = {
             timestamp,
@@ -525,7 +525,7 @@ class StateBridge {
             // event.preventDefault(); 
         };
         
-        logger.info("StateBridge global error handlers initialized.");
+        console.info("StateBridge global error handlers initialized.");
     }
     // --- End new method ---
     
@@ -572,7 +572,7 @@ class StateBridge {
                  console[level] = (...args) => storeLog(level, args);
             }
         });
-        logger.info("StateBridge console methods wrapped.");
+        console.info("StateBridge console methods wrapped.");
     }
     // --- End new method ---
 }
