@@ -111,6 +111,24 @@ export async function initializeTemplateList(contentElement, currentGuildId) {
             });
             buttonGroup.appendChild(shareButton);
 
+            // Activate Button
+            const activateButton = document.createElement('button');
+            activateButton.type = 'button';
+            activateButton.className = 'btn btn-outline-success btn-activate-template'; // New class
+            activateButton.title = `Set template '${templateName}' as active for this guild`;
+            activateButton.dataset.templateId = templateId;
+            activateButton.dataset.templateName = templateName;
+            const activateIcon = document.createElement('i');
+            activateIcon.className = 'fas fa-check-circle'; // Checkmark icon
+            activateButton.appendChild(activateIcon);
+            // TODO: Add logic here to visually disable/mark if this IS the currently active template
+            activateButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                handleTemplateActivate(templateId, templateName, currentGuildId); // Pass guildId
+            });
+            buttonGroup.appendChild(activateButton);
+
             // Delete Button
             const deleteButton = document.createElement('button');
             deleteButton.type = 'button';
@@ -250,5 +268,59 @@ async function handleTemplateDelete(templateId, templateName, listContentElement
 
     } catch (error) {
         console.error(`[GuildTemplateListWidget] Error deleting template ID ${templateId}:`, error);
+    }
+}
+
+/**
+ * Handles activating a specific template for the current guild.
+ * @param {number} templateId - The ID of the template to activate.
+ * @param {string} templateName - The name of the template (for confirmation).
+ * @param {string} guildId - The ID of the current guild.
+ */
+async function handleTemplateActivate(templateId, templateName, guildId) {
+    console.log(`[GuildTemplateListWidget] Activate requested for template ID: ${templateId}, Name: ${templateName}, Guild: ${guildId}`);
+
+    if (!guildId) {
+        console.error("[GuildTemplateListWidget] Cannot activate template: Guild ID is missing.");
+        showToast('error', 'Cannot activate template: Guild context missing.');
+        return;
+    }
+
+    // Confirmation dialog
+    if (!confirm(`Are you sure you want to set "${templateName}" as the active template for this guild?\n(This won't apply changes immediately, but marks it for future application).`)) {
+        console.log("[GuildTemplateListWidget] Activation cancelled by user.");
+        return;
+    }
+
+    const activateApiUrl = `/api/v1/guilds/${guildId}/template/activate`;
+    const payload = { template_id: templateId };
+
+    console.log(`[GuildTemplateListWidget] Sending POST request to: ${activateApiUrl} with payload:`, payload);
+
+    try {
+        await apiRequest(activateApiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        showToast('success', `Template "${templateName}" is now set as active.`);
+        console.log(`[GuildTemplateListWidget] Successfully activated template ${templateId} for guild ${guildId}.`);
+        
+        // TODO: Refresh the list or update UI to show the new active state
+        // Potential refresh:
+        // const listContentElement = document.getElementById('widget-content-template-list');
+        // if (listContentElement) {
+        //     initializeTemplateList(listContentElement, guildId);
+        // } else {
+        //     console.warn("[GuildTemplateListWidget] Could not refresh list after activation: content element missing.");
+        // }
+
+    } catch (error) {
+        // apiRequest handles basic toast, but log details here
+        console.error(`[GuildTemplateListWidget] Error activating template ID ${templateId} for guild ${guildId}:`, error);
+        // Optionally provide more specific feedback if needed based on error type/status
     }
 }

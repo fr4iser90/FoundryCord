@@ -709,6 +709,42 @@ class GuildTemplateService:
             # Consider specific exception types if repo raises them (e.g., IntegrityError)
             return False
 
+    async def activate_template(self, guild_id: str, template_id: int) -> bool:
+        """Sets the specified template as the 'active' template for the given guild."""
+        logger.info(f"Attempting to set template {template_id} as active for guild {guild_id}")
+        try:
+            async with session_context() as session:
+                # 1. Find the Guild Configuration
+                # Need GuildConfigRepository or query directly
+                from app.shared.infrastructure.models.discord.entities import GuildConfigEntity
+                config_stmt = select(GuildConfigEntity).where(GuildConfigEntity.guild_id == guild_id)
+                config_result = await session.execute(config_stmt)
+                guild_config: Optional[GuildConfigEntity] = config_result.scalar_one_or_none()
+
+                if not guild_config:
+                    logger.warning(f"No GuildConfigEntity found for guild {guild_id}. Cannot activate template.")
+                    # Optionally create a default config here? For now, fail.
+                    return False
+                
+                # 2. Check if the target template actually exists (optional but good practice)
+                template_repo = GuildTemplateRepositoryImpl(session)
+                target_template = await template_repo.get_by_id(template_id)
+                if not target_template:
+                    logger.warning(f"Target template ID {template_id} does not exist. Cannot activate.")
+                    return False
+
+                # 3. Update the active_template_id
+                guild_config.active_template_id = template_id
+                session.add(guild_config) # Mark as dirty
+                await session.flush() # Ensure update is reflected before commit
+
+                logger.info(f"Successfully set template {template_id} as active for guild {guild_id}")
+                return True
+
+        except Exception as e:
+            logger.error(f"Error activating template {template_id} for guild {guild_id}: {e}", exc_info=True)
+            return False
+
 # Instantiate the service if needed globally (e.g., for factory)
 # Or instantiate it where needed
 # guild_template_service = GuildTemplateService() 

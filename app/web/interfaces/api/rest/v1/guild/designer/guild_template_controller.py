@@ -14,6 +14,11 @@ from app.web.interfaces.api.rest.v1.schemas.guild_template_schemas import (
     GuildTemplateListResponseSchema,
     GuildTemplateShareSchema
 )
+# Schema for activate request
+from pydantic import BaseModel
+
+class GuildTemplateActivateSchema(BaseModel):
+    template_id: int
 
 class GuildTemplateController(BaseController):
     """Controller for managing guild structure templates via API."""
@@ -48,6 +53,13 @@ class GuildTemplateController(BaseController):
                          summary="Save Guild Structure as New Template",
                          description="Saves the structure of the specified guild as a new named template."
                         )(self.create_guild_template)
+
+        # --- NEW Activate Route ---
+        self.router.post("/activate",
+                         status_code=status.HTTP_200_OK,
+                         summary="Set Guild Template as Active",
+                         description="Marks a specific template as the active one for this guild's configuration."
+                         )(self.activate_guild_template) # NEW method
 
         # === General Template Routes (using separate router, NO prefix) ===
 
@@ -423,6 +435,51 @@ class GuildTemplateController(BaseController):
         except Exception as e:
             self.logger.error(f"Error creating guild template '{template_data.template_name}' from {guild_id}: {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create guild template due to an unexpected error.")
+
+    # --- NEW METHOD for Activate Route --- 
+    async def activate_guild_template(
+        self,
+        guild_id: str,
+        activate_data: GuildTemplateActivateSchema, # Use the new schema for body
+        current_user: AppUserEntity = Depends(get_current_user)
+    ):
+        """API endpoint to set a template as active for the guild."""
+        try:
+            # --- Permission Check --- 
+            # TODO: Implement proper permission check (Guild Admin/Owner for this guild)
+            # For now, let's just check for global owner as a placeholder
+            # We need a way to check guild-specific roles efficiently here.
+            # Using `is_owner` is NOT the correct long-term check for this action.
+            if not current_user.is_owner: 
+                 self.logger.warning(f"User {current_user.id} lacks permission to activate template for guild {guild_id}")
+                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to activate templates for this guild.")
+            
+            self.logger.info(f"User {current_user.id} attempting to activate template {activate_data.template_id} for guild {guild_id}")
+            
+            # --- Call Service Layer --- 
+            success = await self.template_service.activate_template(
+                guild_id=guild_id,
+                template_id=activate_data.template_id
+                # user_id=current_user.id # Service method doesn't currently need user_id
+            )
+            
+            if not success:
+                # Service layer handles logging specifics (not found, error etc.)
+                # Determine appropriate status code based on potential failure reasons
+                # If service returns False because config or template not found, 404 is reasonable.
+                # If service returns False due to other error, 500 might be better.
+                # Let's assume 404 for now if config/template missing. Controller could check template existence first?
+                # For simplicity, let's return 400 Bad Request, implying issue with request (e.g., bad template ID or guild config issue)
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to activate template. Ensure guild and template exist.")
+            
+            self.logger.info(f"Successfully activated template {activate_data.template_id} for guild {guild_id}")
+            return {"message": "Template activated successfully"} # Return success message
+            
+        except HTTPException as http_exc:
+            raise http_exc
+        except Exception as e:
+            self.logger.error(f"Error activating template {activate_data.template_id} for guild {guild_id}: {e}", exc_info=True)
+            return self.handle_exception(e) # Use base handler
 
 # Instantiate the controller for registration
 guild_template_controller = GuildTemplateController() 
