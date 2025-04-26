@@ -2,11 +2,13 @@
 // to capture JavaScript errors and store them.
 
 /**
- * Sets up global error handlers that store captured errors in the provided array.
+ * Sets up global error handlers that store captured errors in the provided array
+ * and optionally trigger a callback.
  * @param {Array} errorStorage - The array where captured errors should be stored.
  * @param {number} maxErrors - The maximum number of errors to store.
+ * @param {Function} [onCaptureCallback] - Optional callback function to execute after an error is captured.
  */
-export function setupGlobalErrorHandlers(errorStorage, maxErrors) {
+export function setupGlobalErrorHandlers(errorStorage, maxErrors, onCaptureCallback) {
     const storeError = (errorData) => {
         // Add timestamp
         errorData.timestamp = new Date().toISOString();
@@ -17,6 +19,15 @@ export function setupGlobalErrorHandlers(errorStorage, maxErrors) {
             errorStorage.pop();
         }
         console.warn("StateBridge captured JS Error:", errorData); // Log captured error
+
+        // Trigger the callback if provided
+        if (typeof onCaptureCallback === 'function') {
+            try {
+                onCaptureCallback(errorData); // Pass the captured error data to the callback
+            } catch (callbackError) {
+                console.error("Error executing onCaptureCallback:", callbackError);
+            }
+        }
     };
 
     // Handle synchronous errors

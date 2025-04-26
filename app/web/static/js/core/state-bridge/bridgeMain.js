@@ -52,8 +52,17 @@ class StateBridge {
             // Load approved collectors from storage
             this.approvedCollectors = loadApprovedCollectors();
 
-            // Setup global error handlers (pass storage array and limit)
-            setupGlobalErrorHandlers(this.jsErrors, this.maxJsErrors);
+            // Setup global error handlers (pass storage array, limit, and snapshot callback)
+            setupGlobalErrorHandlers(
+                this.jsErrors, 
+                this.maxJsErrors, 
+                (errorData) => { 
+                    console.log('JS error captured, triggering state snapshot...', errorData);
+                    // Trigger snapshot collection (fire and forget, but catch potential errors)
+                    this.collectState([]) // Use empty array to collect default/approved state
+                        .catch(snapshotError => console.error('Error capturing state snapshot after JS error:', snapshotError));
+                }
+            );
 
             // Wrap console methods (pass storage array, limit, and original storage)
             wrapConsoleMethods(this.consoleLogs, this.maxConsoleLogs, this.originalConsole);

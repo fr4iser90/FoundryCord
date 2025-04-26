@@ -14,6 +14,40 @@ export function renderCollectorPanel(instance) {
     // Ensure the main panel container exists on the instance's UI property
     if (!instance.ui || !instance.ui.collectorPanel) return;
     
+    // Create and prepend the search input
+    const searchInput = document.createElement('div');
+    searchInput.className = 'mb-3'; // Add some margin below the input
+    searchInput.innerHTML = `
+        <input type="search" 
+               id="collector-search-input" 
+               class="form-control form-control-sm" 
+               placeholder="Filter collectors...">
+    `;
+    // Prepend the search input to the collector panel, if it's empty, otherwise insert after potential existing header
+    if (instance.ui.collectorPanel.firstChild) {
+        instance.ui.collectorPanel.insertBefore(searchInput, instance.ui.collectorPanel.firstChild.nextSibling); // Attempt to place after a header, if one exists
+    } else {
+         instance.ui.collectorPanel.prepend(searchInput);
+    }
+    
+    // Add event listener for the search input
+    const searchInputElement = document.getElementById('collector-search-input');
+    if (searchInputElement) {
+        searchInputElement.addEventListener('input', (event) => {
+            const searchTerm = event.target.value.toLowerCase();
+            const collectorItems = instance.ui.collectorPanel.querySelectorAll('li'); // Assuming collectors are list items
+
+            collectorItems.forEach(item => {
+                const collectorName = item.textContent.toLowerCase();
+                if (collectorName.includes(searchTerm)) {
+                    item.style.display = ''; // Show item
+                } else {
+                    item.style.display = 'none'; // Hide item
+                }
+            });
+        });
+    }
+    
     // Find the server collectors list container (should exist in static HTML)
     const serverList = document.getElementById('server-collectors');
     if (serverList) {

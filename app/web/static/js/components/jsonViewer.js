@@ -1,11 +1,13 @@
 /**
  * Simple JSON Viewer Component
- * Renders JSON data as an expandable/collapsible tree structure.
+ * Renders JSON data as an expandable/collapsible tree structure with search highlighting.
  */
 class JSONViewer {
     constructor() {
         this._container = document.createElement('div');
         this._container.className = 'json-viewer';
+        this._searchInput = null; // Reference to the search input
+        this._highlightClass = 'json-highlight'; // CSS class for highlighting
     }
 
     // Public method to get the container element
@@ -17,12 +19,87 @@ class JSONViewer {
     showJSON(jsonData, maxLevel = 4, startLevel = 0) {
         // Clear previous content
         this._container.innerHTML = '';
+
+        // Add search input
+        this._renderSearchInput();
+
         // Start rendering the JSON tree
         const treeRoot = this._renderValue(jsonData, maxLevel, startLevel);
         if (treeRoot) {
             this._container.appendChild(treeRoot);
         } else {
-            this._container.textContent = 'Invalid JSON data or empty.';
+            this._container.appendChild(document.createTextNode('Invalid JSON data or empty.'));
+        }
+    }
+
+    // Creates and prepends the search input field
+    _renderSearchInput() {
+        const searchContainer = document.createElement('div');
+        searchContainer.className = 'json-search-container';
+
+        this._searchInput = document.createElement('input');
+        this._searchInput.type = 'search'; // Use type="search" for potential browser UI like a clear button
+        this._searchInput.placeholder = 'Search JSON...';
+        this._searchInput.className = 'json-search-input';
+
+        this._searchInput.addEventListener('input', (e) => {
+            this._applySearch(e.target.value);
+        });
+         this._searchInput.addEventListener('search', (e) => { // Handles clearing via the 'x' button in type="search"
+            this._applySearch(e.target.value);
+        });
+
+        searchContainer.appendChild(this._searchInput);
+        this._container.appendChild(searchContainer);
+    }
+
+    // Applies search highlighting based on the input term
+    _applySearch(term) {
+        const searchTerm = term.trim().toLowerCase();
+
+        // Clear previous highlights
+        this._container.querySelectorAll(`.${this._highlightClass}`).forEach(el => {
+            el.classList.remove(this._highlightClass);
+        });
+
+        if (!searchTerm) {
+            return; // Nothing to search for
+        }
+
+        // Select elements that can contain searchable text
+        const searchableElements = this._container.querySelectorAll(
+            '.json-key, .json-index, .json-string, .json-number, .json-boolean, .json-null, .json-undefined'
+        );
+
+        searchableElements.forEach(el => {
+            const text = el.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                el.classList.add(this._highlightClass);
+                // Ensure the highlighted element is visible by expanding its ancestors
+                this._expandAncestors(el);
+            }
+        });
+    }
+
+    // Expands parent nodes of a given element
+    _expandAncestors(element) {
+        let parent = element.closest('.json-children');
+        while (parent) {
+            // Make the children container visible
+            if (parent.style.display === 'none') {
+                parent.style.display = 'block';
+                // Find the corresponding toggle header and update its state
+                const header = parent.previousElementSibling;
+                if (header && header.classList.contains('json-toggle')) {
+                    header.classList.add('expanded');
+                    const ellipsis = header.querySelector('.json-ellipsis');
+                    if (ellipsis) {
+                        ellipsis.style.display = 'none';
+                    }
+                }
+            }
+            // Move up to the next parent collection
+            parent = parent.parentElement.closest('.json-children');
         }
     }
 

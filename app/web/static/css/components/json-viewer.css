@@ -1,5 +1,30 @@
 /* app/web/static/css/components/json-viewer.css */
 
+/* Container for the search input */
+.json-search-container {
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Style for the search input itself */
+.json-search-input {
+    width: 100%; /* Make input take full width of container */
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.9em;
+    border: 1px solid var(--border-input);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--background-input);
+    color: var(--text-input);
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+.json-search-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-transparent);
+}
+
 /* Container for the entire JSON tree view */
 .json-viewer {
     font-family: var(--font-monospace, monospace);
@@ -13,7 +38,7 @@
 .json-children {
     margin-left: var(--spacing-md);
     padding-left: var(--spacing-sm);
-    border-left: 1px dotted var(--border-secondary);
+    border-left: 1px solid var(--border-secondary);
     /* display: none; is handled by JS */
 }
 
@@ -82,6 +107,16 @@
 .json-undefined {
     color: var(--text-muted);
     font-style: italic;
+}
+
+/* Style for highlighted search results */
+.json-highlight {
+    background-color: var(--highlight-bg); /* Use a theme variable for highlight background */
+    color: var(--highlight-text); /* Use a theme variable for highlight text color */
+    font-weight: bold;
+    padding: 1px 2px; /* Add slight padding for better visibility */
+    border-radius: var(--border-radius-xs);
+    display: inline; /* Ensure it doesn't break flow */
 }
 
 /* Style the container for objects and arrays themselves (if needed) */
