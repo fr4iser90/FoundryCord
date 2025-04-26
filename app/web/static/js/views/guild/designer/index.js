@@ -2,14 +2,14 @@ import { GridManager } from '/static/js/components/layout/gridManager.js';
 // Keep showToast and apiRequest available if needed directly, though GridManager uses them
 import { apiRequest, showToast } from '/static/js/components/common/notifications.js';
 // Import the specific widget initializer
-import { initializeStructureTree } from './widget/structure_tree.js';
-import { initializeTemplateInfo } from './widget/template_info.js';
-import { initializeCategoriesList } from './widget/categories_list.js';
-import { initializeChannelsList } from './widget/channels_list.js';
+import { initializeStructureTree } from './widget/structureTree.js';
+import { initializeTemplateInfo } from './widget/templateInfo.js';
+import { initializeCategoriesList } from './widget/categoriesList.js';
+import { initializeChannelsList } from './widget/channelsList.js';
 // Import the new template list initializer
-import { initializeTemplateList } from './widget/template_list.js';
+import { initializeTemplateList } from './widget/templateList.js';
 // Import the shared template list initializer
-import { initializeSharedTemplateList } from './widget/shared_template_list.js';
+import { initializeSharedTemplateList } from './widget/sharedTemplateList.js';
 
 let currentActiveTemplateId = null; // Module-scoped variable
 

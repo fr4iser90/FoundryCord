@@ -1,6 +1,6 @@
 import { apiRequest, showToast, ApiError } from '/static/js/components/common/notifications.js';
 // Import the initializer for the SAVED templates list to refresh it after saving a copy
-import { initializeTemplateList } from './template_list.js';
+import { initializeTemplateList } from './templateList.js';
 
 /**
  * Fetches and displays the list of SHARED guild structure templates.
