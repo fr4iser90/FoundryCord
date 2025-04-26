@@ -3,7 +3,7 @@ import { loadApprovedCollectors } from './bridgeStorage.js';
 import { setupGlobalErrorHandlers } from './bridgeErrorHandler.js';
 import { wrapConsoleMethods } from './bridgeConsoleWrapper.js';
 import { registerCollector as registerCollectorFunc } from './bridgeCollectorsRegistry.js';
-import { registerDefaultCollectors as registerDefaultsFunc } from './bridge_collectors_defaults.js';
+import { registerDefaultCollectors as registerDefaultsFunc } from './bridgeCollectorsDefaults.js';
 import { collectBrowserState } from './bridgeCollectionLogic.js';
 // Note: requestApproval and sanitizeStateData are primarily used internally by collectBrowserState
 // and might not need to be public methods on the StateBridge instance itself.

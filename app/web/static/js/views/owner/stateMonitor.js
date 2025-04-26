@@ -2,7 +2,7 @@
  * State Monitoring Dashboard
  * Displays collected state information from bot and web runtime
  */
-import stateBridge from '/static/js/core/state_bridge/bridgeMain.js';
+import stateBridge from '/static/js/core/state-bridge/bridgeMain.js';
 
 class StateMonitorDashboard {
     constructor() {
