@@ -112,11 +112,11 @@ class StateMonitorController {
             }
 
             console.log("[StateMonitorIndex] Combined and processed collectors structure:", collectors);
-             // --- End CORRECTED Collectors Parsing ---
+
+            const recentSnapshots = (snapshotsResponse && Array.isArray(snapshotsResponse)) 
+                                      ? snapshotsResponse 
+                                      : [];
             
-            // --- Snapshots Parsing (Keep as is) ---
-            const recentSnapshots = (snapshotsResponse && Array.isArray(snapshotsResponse.snapshots)) ? snapshotsResponse.snapshots : [];
-            // --- End Snapshots Parsing ---
             
             this.isLoading = false;
             this.setStatus('Ready');
@@ -379,8 +379,8 @@ class StateMonitorController {
         this.setStatus(`Loading snapshot ${snapshotId}...`);
         
         try {
-            // Use the correct API endpoint
-            const responseData = await apiRequest(`/api/v1/owner/state/snapshot/${snapshotId}`, 'GET');
+            // Use the correct API endpoint (plural)
+            const responseData = await apiRequest(`/api/v1/owner/state/snapshots/${snapshotId}`, 'GET');
 
             // Validate response structure (StoredSnapshotResponse)
             if (!responseData || !responseData.snapshot || !responseData.snapshot.results) {
@@ -741,14 +741,62 @@ class StateMonitorController {
 
         switch (widgetId) {
             case 'snapshotSummary':
-                initializeSnapshotSummaryWidget(this.currentSnapshot, contentElement);
+                initializeSnapshotSummaryWidget(this, this.currentSnapshot, contentElement);
                 break;
             case 'snapshotResults':
-                initializeSnapshotResultsTabs(this.currentSnapshot, contentElement);
+                initializeSnapshotResultsTabs(this, this.currentSnapshot, contentElement);
                 break;
             default:
                 console.warn(`[StateMonitorIndex] Unknown widget ID for grid population: ${widgetId}`);
                 contentElement.innerHTML = `<p class="p-2 text-muted small">Widget content for '${widgetId}' not implemented.</p>`;
+        }
+    }
+
+    /**
+     * Handles the deletion of a specific snapshot.
+     * @param {string} snapshotId - The ID of the snapshot to delete.
+     * @param {HTMLElement} listItemElement - The <li> element in the UI to remove on success.
+     */
+    async deleteSnapshot(snapshotId, listItemElement) {
+        console.log(`[StateMonitorController] Attempting to delete snapshot: ${snapshotId}`);
+        if (!snapshotId) {
+            showToast('Cannot delete snapshot: Invalid ID provided.', 'error');
+            return;
+        }
+
+        this.setStatus(`Deleting snapshot ${snapshotId}...`);
+        this.isLoading = true;
+
+        try {
+            const apiUrl = `/api/v1/owner/state/snapshots/${snapshotId}`;
+            await apiRequest(apiUrl, { method: 'DELETE' });
+
+            showToast(`Snapshot ${snapshotId} deleted successfully.`, 'success');
+            
+            // Remove the item from the UI
+            if (listItemElement) {
+                listItemElement.remove();
+            } else {
+                // Fallback: Refresh the list if the element wasn't passed correctly
+                console.warn("[StateMonitorController] List item element not provided for removal, refreshing list as fallback.");
+                this.refreshData(); // This re-fetches collectors and snapshots
+            }
+
+             // If the deleted snapshot was the currently loaded one, clear the view
+             if (this.currentSnapshot && this.currentSnapshot.id === snapshotId) {
+                this.currentSnapshot = null;
+                this._updateSnapshotWidgets();
+                this.setStatus('Ready (deleted snapshot cleared)');
+             } else {
+                 this.setStatus('Ready');
+             }
+
+        } catch (error) {
+            console.error(`[StateMonitorController] Failed to delete snapshot ${snapshotId}:`, error);
+            showToast(`Error deleting snapshot ${snapshotId}. See console.`, 'error');
+            this.setStatus('Error deleting snapshot!', true);
+        } finally {
+            this.isLoading = false;
         }
     }
 }

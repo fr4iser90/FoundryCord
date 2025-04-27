@@ -12,7 +12,7 @@ from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_curre
 from app.shared.interface.logging.api import get_web_logger
 from app.web.interfaces.api.rest.v1.base_controller import BaseController
 from app.shared.infrastructure.models.auth import AppUserEntity
-from app.shared.application.services.monitoring.state_snapshot_service import save_snapshot_with_limit, get_snapshot_by_id, list_recent_snapshots
+from app.shared.application.services.monitoring.state_snapshot_service import save_snapshot_with_limit, get_snapshot_by_id, list_recent_snapshots, delete_snapshot_by_id
 import time
 import uuid
 
@@ -90,18 +90,30 @@ class StateSnapshotController(BaseController):
         # Endpoint for frontend-triggered snapshots (e.g., JS errors)
         self.router.post("/log-browser-snapshot", status_code=status.HTTP_202_ACCEPTED)(self.log_browser_snapshot)
         self.router.get("/token", response_model=StateSecurityToken)(self.get_state_token)
-        # Add route to retrieve stored snapshot
+        
+        # --- Snapshot Routes (Order Matters!) ---
+        
+        # List route FIRST (more specific)
         self.router.get(
-            "/snapshot/{snapshot_id}", 
+            "/snapshots/list",
+            response_model=List[StoredSnapshotResponse], 
+            summary="List Recent Stored Snapshots"
+        )(self.list_snapshots)
+        
+        # Retrieve single route SECOND (less specific)
+        self.router.get(
+            "/snapshots/{snapshot_id}", 
             response_model=StoredSnapshotResponse,
             summary="Retrieve a Stored Snapshot by ID"
         )(self.get_stored_snapshot)
-        # Add route to list recent snapshots
-        self.router.get(
-            "/snapshots/list",
-            response_model=List[StoredSnapshotResponse], # Return a list of snapshots
-            summary="List Recent Stored Snapshots"
-        )(self.list_snapshots)
+        
+        # Delete route (also uses ID)
+        self.router.delete(
+            "/snapshots/{snapshot_id}",
+            status_code=status.HTTP_204_NO_CONTENT,
+            summary="Delete a Stored Snapshot by ID"
+        )(self.delete_snapshot)
+        # --- End Snapshot Routes ---
 
     def _register_internal_routes(self):
         """Register routes intended for internal system use."""
@@ -418,6 +430,44 @@ class StateSnapshotController(BaseController):
                 continue 
 
         return response_list
+
+    async def delete_snapshot(
+        self,
+        snapshot_id: str = Path(..., title="Snapshot ID", description="The unique ID of the snapshot to delete"),
+        current_user: AppUserEntity = Depends(get_current_user),
+        db: AsyncSession = Depends(get_web_db_session)
+    ):
+        """Deletes a stored state snapshot by its ID."""
+        if not current_user:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+        if not current_user.is_owner:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+
+        logger.info(f"User {current_user.username} requesting deletion of snapshot ID: {snapshot_id}")
+
+        deleted = await delete_snapshot_by_id(db, snapshot_id)
+
+        if not deleted:
+            # This could mean not found or failed to delete
+            # Check if it existed first?
+            snapshot = await get_snapshot_by_id(db, snapshot_id)
+            if snapshot is None:
+                # Raise 404 if it never existed
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Snapshot with ID '{snapshot_id}' not found."
+                )
+            else:
+                # It existed but deletion failed
+                logger.error(f"Failed to delete snapshot {snapshot_id} from database.")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Failed to delete snapshot {snapshot_id}. Check server logs."
+                )
+                
+        logger.info(f"Successfully deleted snapshot ID: {snapshot_id}")
+        # Return 204 No Content on success, which FastAPI handles by returning None
+        return None
 
 # Instantiate the controller class for export
 state_snapshot_controller = StateSnapshotController() 

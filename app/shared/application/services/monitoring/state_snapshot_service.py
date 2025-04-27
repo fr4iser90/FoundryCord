@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import desc
+from sqlalchemy import desc, delete, func
 import logging
 from typing import Dict, Any, Optional, List
 
@@ -136,4 +136,50 @@ async def list_recent_snapshots(db: AsyncSession, count: int = 10) -> List[State
         return snapshots
     except Exception as e:
         logger.error(f"Error listing recent snapshots: {e}", exc_info=True)
-        return [] # Return empty list on error 
+        return [] # Return empty list on error
+        
+async def delete_snapshot_by_id(db: AsyncSession, snapshot_id: str) -> bool:
+    """
+    Deletes a state snapshot by its unique ID asynchronously.
+
+    :param db: The SQLAlchemy database session.
+    :param snapshot_id: The UUID string of the snapshot to delete.
+    :return: True if the snapshot was found and deleted, False otherwise.
+    """
+    logger.info(f"Attempting to delete snapshot with ID: {snapshot_id}")
+    try:
+        # Validate if snapshot_id is a valid UUID format first
+        parsed_id = uuid.UUID(snapshot_id)
+    except ValueError:
+        logger.error(f"Invalid UUID format provided for deletion: '{snapshot_id}'")
+        return False
+
+    try:
+        # Use the existing get_snapshot_by_id to check if it exists first
+        # Although not strictly necessary with delete, it helps confirm existence before attempting delete
+        snapshot_to_delete = await get_snapshot_by_id(db, snapshot_id) # Use the already validated parsed_id? No, get_snapshot_by_id handles string
+
+        if snapshot_to_delete is None:
+            logger.warning(f"Snapshot with ID '{snapshot_id}' not found for deletion.")
+            return False # Return False if not found
+
+        # If found, proceed with deletion
+        logger.debug(f"Snapshot {snapshot_id} found. Proceeding with deletion.")
+        # Option 1: Delete the object directly
+        await db.delete(snapshot_to_delete)
+        # Option 2: Use a delete query (might be slightly more efficient if object not needed)
+        # delete_stmt = delete(StateSnapshot).where(StateSnapshot.id == parsed_id)
+        # result = await db.execute(delete_stmt)
+        # if result.rowcount == 0: # Check if any row was actually deleted
+        #     logger.warning(f"Snapshot with ID '{snapshot_id}' was found but delete query affected 0 rows.")
+        #     await db.rollback() # Rollback if delete seemed to fail
+        #     return False
+
+        await db.commit() # Commit the deletion
+        logger.info(f"Successfully deleted snapshot with ID: {snapshot_id}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Error deleting snapshot {snapshot_id}: {e}", exc_info=True)
+        await db.rollback() # Roll back the transaction on any error during delete/commit
+        return False 
