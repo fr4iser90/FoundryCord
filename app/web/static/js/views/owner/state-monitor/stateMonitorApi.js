@@ -72,8 +72,11 @@ export async function captureSnapshot(instance) {
         const browserCollectors = Array.from(document.querySelectorAll('[data-source="browser"]:checked'))
             .map(checkbox => checkbox.dataset.name);
             
-        // Original browser state capture - MODIFIED to pass context
-        const browserSnapshot = await stateBridge.collectState(browserCollectors, { trigger: 'user_capture' });
+        // --- Prepare Context and Collect Browser State --- 
+        const baseContext = { trigger: 'user_capture' };
+        
+        const browserSnapshot = await stateBridge.collectState(browserCollectors, baseContext); // Use original browserCollectors
+        // --- End Prepare Context --- 
         
         // Original server state capture
         const response = await fetch('/api/v1/owner/state/snapshot', {
@@ -117,6 +120,9 @@ export async function captureSnapshot(instance) {
             const date = new Date(instance.currentSnapshot.timestamp);
             instance.ui.snapshotTimestamp.textContent = `Last captured: ${date.toLocaleString()}`;
         }
+        
+        // Reload recent snapshots list after successful capture
+        await loadRecentSnapshots(instance);
     } catch (error) {
         console.error('Error capturing snapshot:', error);
          // Call setStatus via imported function (as in original)

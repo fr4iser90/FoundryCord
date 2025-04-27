@@ -4,7 +4,7 @@
  */
 
 .state-monitor-container {
-    padding: 1.5rem;
+    padding: 20px;
 }
 
 /* Status bar */
@@ -251,4 +251,18 @@
     .action-buttons {
         justify-content: center;
     }
-} 
+}
+
+.card.recent-snapshots-panel-container,
+.card.collector-panel-container {
+    /* Limit height and allow scrolling */
+    max-height: 400px; /* Adjust as needed */
+    overflow-y: auto;
+    margin-bottom: 1.5rem; /* Add margin below the boxes */
+}
+
+/* Remove padding from inner content if parent box has padding */
+/* 
+#recent-snapshots-box .box-content,
+#state-collectors-box .box-content {
+    padding: 0; /* Remove inner padding if parent box handles it */

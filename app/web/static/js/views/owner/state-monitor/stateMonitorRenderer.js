@@ -2,6 +2,8 @@
  * stateMonitorRenderer.js: Handles rendering UI updates for the State Monitor.
  */
 
+import stateBridge from '/static/js/core/state-bridge/bridgeMain.js';
+
 // Import the function needed for the load button event listener
 import { loadAndDisplaySnapshot } from './stateMonitorApi.js'; 
 
@@ -122,13 +124,35 @@ export function renderCollectorPanel(instance) {
              // HTML structure from original method
             label.innerHTML = `
                 <span class="collector-name">${collector.name}</span>
-                <span class="collector-description">${collector.description}</span>
+                <span class="collector-description">${collector.description || 'No description provided'}</span>
                 ${collector.requires_approval ? '<span class="badge bg-warning text-dark">Requires Approval</span>' : '<span class="badge bg-success">Auto-approved</span>'}
                 <span class="badge bg-info">${collector.scope}</span>
             `;
             
             item.appendChild(checkbox);
             item.appendChild(label);
+            
+            // --- Special handling for computedStyles --- 
+            if (collector.name === 'computedStyles') {
+                // Input field for the selector
+                const csInput = document.createElement('input');
+                csInput.type = 'text';
+                csInput.id = 'computedStyles-selector-input'; // Keep ID consistent
+                csInput.className = 'form-control form-control-sm mt-2'; // Add margin-top
+                csInput.placeholder = 'CSS Selector (e.g., #recent-snapshots-list)';
+                // Show if the checkbox is checked (respecting loaded approved state)
+                csInput.style.display = checkbox.checked ? 'block' : 'none'; 
+                
+                // Event listener to toggle input visibility
+                checkbox.addEventListener('change', (event) => {
+                    csInput.style.display = event.target.checked ? 'block' : 'none';
+                });
+                
+                // Append input AFTER the label within the item
+                item.appendChild(csInput);
+            }
+            // --- End special handling --- 
+            
             browserList.appendChild(item);
         });
          // Add message if list is empty after filtering/loading
@@ -173,6 +197,9 @@ export function renderResults(instance, snapshotData = null) {
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="combined-tab" data-bs-toggle="tab" data-bs-target="#combined-data" type="button" role="tab" aria-controls="combined-data" aria-selected="false">Combined View</button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="computed-styles-tab" data-bs-toggle="tab" data-bs-target="#computed-styles-data" type="button" role="tab" aria-controls="computed-styles-data" aria-selected="false">Computed Styles</button>
+            </li>
         </ul>
     `;
     
@@ -180,13 +207,36 @@ export function renderResults(instance, snapshotData = null) {
     tabContent.className = 'tab-content'; // Add p-3 class? Original didn't have it here.
     tabContent.innerHTML = `
         <div class="tab-pane fade show active" id="server-data" role="tabpanel" aria-labelledby="server-tab">
-            <div class="json-tree-view" id="server-json-view"></div>
+            <div class="d-flex justify-content-end pt-2 pe-2">
+                <button class="btn btn-sm btn-outline-secondary copy-tab-btn" data-target-view="server" title="Copy Server State JSON">
+                    <i class="fas fa-copy me-1"></i>Copy Server JSON
+                </button>
+            </div>
+            <div class="json-tree-view p-3" id="server-json-view"></div>
         </div>
         <div class="tab-pane fade" id="browser-data" role="tabpanel" aria-labelledby="browser-tab">
-            <div class="json-tree-view" id="browser-json-view"></div>
+            <div class="d-flex justify-content-end pt-2 pe-2">
+                <button class="btn btn-sm btn-outline-secondary copy-tab-btn" data-target-view="browser" title="Copy Browser State JSON">
+                    <i class="fas fa-copy me-1"></i>Copy Browser JSON
+                </button>
+            </div>
+            <div class="json-tree-view p-3" id="browser-json-view"></div>
         </div>
         <div class="tab-pane fade" id="combined-data" role="tabpanel" aria-labelledby="combined-tab">
-            <div class="json-tree-view" id="combined-json-view"></div>
+             <div class="d-flex justify-content-end pt-2 pe-2">
+                <button class="btn btn-sm btn-outline-secondary copy-tab-btn" data-target-view="combined" title="Copy Combined Snapshot JSON">
+                    <i class="fas fa-copy me-1"></i>Copy Combined JSON
+                </button>
+            </div>
+            <div class="json-tree-view p-3" id="combined-json-view"></div>
+        </div>
+        <div class="tab-pane fade" id="computed-styles-data" role="tabpanel" aria-labelledby="computed-styles-tab">
+             <div class="d-flex justify-content-end pt-2 pe-2">
+                <button class="btn btn-sm btn-outline-secondary copy-tab-btn" data-target-view="computedStyles" title="Copy Computed Styles JSON">
+                    <i class="fas fa-copy me-1"></i>Copy Styles JSON
+                </button>
+            </div>
+            <div class="json-tree-view p-3" id="computed-styles-json-view"></div>
         </div>
     `;
     
@@ -194,10 +244,64 @@ export function renderResults(instance, snapshotData = null) {
     instance.ui.resultsPanel.appendChild(tabsContainer);
     instance.ui.resultsPanel.appendChild(tabContent);
     
+    // Add event listeners to the new copy buttons
+    instance.ui.resultsPanel.querySelectorAll('.copy-tab-btn').forEach(button => {
+        button.addEventListener('click', async (event) => {
+            const targetView = event.currentTarget.dataset.targetView;
+            let dataToCopy = null;
+            let dataType = 'Data'; // For status message
+
+            switch (targetView) {
+                case 'server':
+                    dataToCopy = dataToDisplay.server;
+                    dataType = 'Server State';
+                    break;
+                case 'browser':
+                    dataToCopy = dataToDisplay.browser;
+                    dataType = 'Browser State';
+                    break;
+                case 'combined':
+                    dataToCopy = dataToDisplay; // The whole snapshot
+                    dataType = 'Combined Snapshot';
+                    break;
+                case 'computedStyles':
+                    dataToCopy = dataToDisplay.browser?.results?.computedStyles;
+                    dataType = 'Computed Styles';
+                    break;
+            }
+
+            if (dataToCopy) {
+                try {
+                    const jsonString = JSON.stringify(dataToCopy, null, 2);
+                    await navigator.clipboard.writeText(jsonString);
+                    setStatus(instance.ui.statusDisplay, `${dataType} JSON copied to clipboard`, 'success');
+                } catch (err) {
+                    console.error(`Failed to copy ${dataType} JSON:`, err);
+                    setStatus(instance.ui.statusDisplay, `Failed to copy ${dataType} JSON`, 'error');
+                }
+            } else {
+                 setStatus(instance.ui.statusDisplay, `No ${dataType} data available to copy`, 'warning');
+            }
+        });
+    });
+
     // Now populate the JSON views - calling the exported function below
     renderJsonView('server-json-view', dataToDisplay.server);
     renderJsonView('browser-json-view', dataToDisplay.browser);
     renderJsonView('combined-json-view', dataToDisplay);
+    
+    // Render computed styles if available
+    const computedStylesData = dataToDisplay.browser?.results?.computedStyles;
+    if (computedStylesData) {
+        // Pass the whole object (including potential error) to the viewer
+        renderJsonView('computed-styles-json-view', computedStylesData);
+    } else {
+        // Handle case where collector wasn't run or included
+        const csContainer = document.getElementById('computed-styles-json-view');
+        if (csContainer) {
+            csContainer.innerHTML = '<span class="text-muted">Computed Styles collector not run or no selector provided.</span>';
+        }
+    }
 }
 
 /**

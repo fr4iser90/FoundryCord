@@ -15,8 +15,8 @@
 - [x] **DB Storage:** Create Alembic migration `010_create_state_snapshots_table.py`.
 - [x] **DB Storage:** Implement backend service `save_snapshot` with logic to limit stored snapshots (e.g., delete oldest if count > N).
 - [x] **DB Storage:** Integrate `save_snapshot` into manual capture endpoint (`/api/v1/owner/state/snapshot` POST, trigger: 'user_capture').
-- [x] **DB Storage:** Create new backend endpoint (`/api/v1/internal/state/log-browser-snapshot`) for frontend triggers (e.g., JS errors) to call, which then uses `save_snapshot` (trigger: 'js_error').
-# TODO: Add proper auth/security to /log-browser-snapshot endpoint later.
+- [x] **DB Storage:** Create new backend endpoint (`/api/v1/owner/state/log-browser-snapshot`) for frontend triggers (e.g., JS errors) to call, which then uses `save_snapshot` (trigger: 'js_error').
+- [ ] TODO: Add proper auth/security to /log-browser-snapshot endpoint later.
 - [x] Implement internal backend API endpoint to trigger server snapshots and log their IDs.
 - [x] **DB Storage:** Ensure internal trigger endpoint also uses `save_snapshot` (trigger: 'internal_api').
 - [-] ~~Implement basic server-side snapshot storage (e.g., file/temp DB) and retrieval endpoint by ID.~~ (Superseded by DB approach)
@@ -32,12 +32,9 @@
 - [ ] **DB Retrieval:** Implement UI functionality to load and display a selected snapshot from the list.
 - [ ] Add specific collectors for key features/modules as needed.
 - [ ] (Optional) Implement snapshot comparison functionality.
+- [ ] Add a collector/display mechanism for computed CSS styles of selected DOM elements.
 - [ ] (Optional) Implement configurable auto-refresh interval/collectors.
 - [ ] (Optional) Implement configurable snapshot limit (N) for storage.
 - [ ] Update `state_monitor.md` with completed Phase 3 features.
 
 
-
-Vorschlag:
-Ich füge eine neue Methode log_browser_snapshot zum StateSnapshotController hinzu und registriere sie unter dem Pfad POST /log-browser-snapshot (relativ zum Prefix /owner/state). Dieser Endpunkt wird die Snapshot-Daten aus dem Request Body nehmen und save_snapshot_with_limit aufrufen.
-Anmerkung: Dieser Endpunkt sollte idealerweise keine volle Benutzerauthentifizierung benötigen (da er vom Fehlerhandler getriggert wird, wo der Benutzerkontext vielleicht nicht sofort verfügbar ist), aber er sollte anderweitig abgesichert sein (z.B. nur aus dem internen Netz oder mit einem speziellen Token erreichbar sein). Wir implementieren ihn erstmal ohne spezielle Auth, aber das sollte man im Hinterkopf behalten.
