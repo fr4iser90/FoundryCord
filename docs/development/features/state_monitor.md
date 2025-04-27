@@ -13,7 +13,7 @@ The State Monitor is a developer and owner-facing diagnostic tool designed to ca
     *   **Server Collectors:** These run on the backend (e.g., `bot_status`, `system_info`). They typically do not require special permissions beyond owner access to the page.
     *   **Browser Collectors:** These run in your browser via the `StateBridge` system.
         *   Collectors marked **Auto-approved** (green badge) are considered safe and run automatically when selected.
-        *   Collectors marked **Requires Approval** (yellow badge) access potentially more sensitive browser information. The first time you select one of these and click "Capture" in a browser session, a confirmation dialog will appear. You **must approve** this dialog for the collector to run and gather data. Your approval is remembered for the duration of the browser session (using localStorage).
+        *   Collectors marked **Requires Approval** (yellow badge) access potentially more sensitive browser information. The first time you select one of these and click "Capture" in a browser session, a confirmation dialog will appear (batch approval for multiple). Your approval is remembered for the duration of the browser session (using localStorage).
 4.  **Capture Snapshot:** Click the "Capture" button.
     *   The process involves collecting browser state, sending selected server collector names to the backend, executing server collectors, and combining the results.
 5.  **Analyze Results:** The captured data will appear in the "State Snapshot" panel on the right, organized into tabs:
@@ -46,6 +46,30 @@ The State Monitor is a developer and owner-facing diagnostic tool designed to ca
     *   **Snapshot Retrieval API:** Stored snapshots can be retrieved via their unique ID using an owner-only API endpoint (`GET /owner/state/snapshot/{snapshot_id}`).
 *   **Improved Styling:** The JSON viewer's CSS has been refined for better readability and clearer indentation.
 *   **Collector Filtering:** A search bar allows filtering the list of available server and browser collectors.
+
+## Debugging Use Cases
+
+The primary goal of the State Monitor is to aid developers and owners in diagnosing issues. Here are key scenarios:
+
+1.  **Live Debugging (Manual Trigger):**
+    *   **Scenario:** An owner observes unexpected behavior in the UI or bot.
+    *   **Action:** Navigate to the State Monitor, select relevant collectors (e.g., `navigation`, `consoleLogs`, `bot_status`, specific module states), and click "Capture".
+    *   **Benefit:** Provides an immediate "X-ray" view of both frontend and backend state at that exact moment, helping to understand the cause of the issue.
+
+2.  **Frontend Error Analysis (Automatic Trigger):**
+    *   **Scenario:** A JavaScript error occurs in a user's browser.
+    *   **Action:** The system automatically captures a state snapshot (including `javascriptErrors` and `consoleLogs`) with the trigger context set to `js_error`. This snapshot is ideally sent to the backend for storage.
+    *   **Benefit:** Allows developers to retrospectively analyze the state (URL, viewport, preceding logs, server status) leading up to the error, even without being present.
+
+3.  **Backend Error Analysis (Internal/Manual Trigger):**
+    *   **Scenario:** A backend process fails (e.g., task queue error, API exception, bot disconnect).
+    *   **Action:** An internal system component or an owner triggers a server-side snapshot capture (containing only server collector data) with trigger context `internal_api` or similar. This snapshot is stored server-side.
+    *   **Benefit:** Captures the backend state precisely when the issue occurred, independent of any browser interaction. Snapshots can be retrieved later by ID for analysis.
+
+4.  **Bug Report Enrichment (Manual Trigger):**
+    *   **Scenario:** An owner identifies a reproducible bug.
+    *   **Action:** Capture a relevant state snapshot, download the JSON, and attach it to the bug report (e.g., in GitLab/GitHub).
+    *   **Benefit:** Provides developers with rich, structured context far beyond screenshots, significantly speeding up diagnosis and fixing.
 
 ## Available Collectors (Default)
 

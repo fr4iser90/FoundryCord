@@ -7,19 +7,36 @@
 - [x] Implement automatic snapshot trigger on JS errors in `bridgeErrorHandler.js`.
 - [x] Update `state_monitor.md` with completed Phase 1 features.
 
-## Phase 2: Tiefere Integration & Kontext
+## Phase 2: Tiefere Integration & Kontext & DB Storage
 
 - [x] Implement dedicated renderers for `consoleLogs` and `javascriptErrors` in `stateMonitorRenderer.js`.
-- [x] Implement internal backend API endpoint to trigger server snapshots and log their IDs.
 - [x] Extend `stateBridge.collectState` and callers to pass a `context` object.
-- [x] Implement basic server-side snapshot storage (e.g., file/temp DB) and retrieval endpoint by ID.
-- [x] Update `state_monitor.md` with completed Phase 2 features.
+- [ ] **DB Storage:** Define SQLAlchemy model `StateSnapshot` (`id`, `timestamp`, `trigger`, `context`, `snapshot_data`).
+- [ ] **DB Storage:** Create Alembic migration `010_create_state_snapshots_table.py`.
+- [ ] **DB Storage:** Implement backend service `save_snapshot` with logic to limit stored snapshots (e.g., delete oldest if count > N).
+- [ ] **DB Storage:** Integrate `save_snapshot` into manual capture endpoint (`/api/v1/owner/state/snapshot` POST, trigger: 'user_capture').
+- [ ] **DB Storage:** Create new backend endpoint (`/api/v1/internal/state/log-browser-snapshot`) for frontend triggers (e.g., JS errors) to call, which then uses `save_snapshot` (trigger: 'js_error').
+- [x] Implement internal backend API endpoint to trigger server snapshots and log their IDs.
+- [ ] **DB Storage:** Ensure internal trigger endpoint also uses `save_snapshot` (trigger: 'internal_api').
+- [-] ~~Implement basic server-side snapshot storage (e.g., file/temp DB) and retrieval endpoint by ID.~~ (Superseded by DB approach)
+- [ ] **DB Storage:** Implement backend service/repository functions `get_snapshot_by_id` and `list_recent_snapshots`.
+- [ ] **DB Storage:** Implement/Update retrieval API endpoints (`/api/v1/owner/state/snapshot/{snapshot_id}` GET and `/api/v1/owner/state/snapshots/list` GET).
+- [ ] Update `state_monitor.md` with completed Phase 2 features.
 
 ## Phase 3: Usability & Weitere Features
 
 - [x] Implement a custom modal component for browser collector approval.
 - [x] Implement Summary Panel in the UI.
+- [ ] **DB Retrieval:** Implement UI widget/section to list recent snapshots from the `/list` endpoint.
+- [ ] **DB Retrieval:** Implement UI functionality to load and display a selected snapshot from the list.
 - [ ] Add specific collectors for key features/modules as needed.
 - [ ] (Optional) Implement snapshot comparison functionality.
 - [ ] (Optional) Implement configurable auto-refresh interval/collectors.
+- [ ] (Optional) Implement configurable snapshot limit (N) for storage.
 - [ ] Update `state_monitor.md` with completed Phase 3 features.
+
+
+
+Vorschlag:
+Ich füge eine neue Methode log_browser_snapshot zum StateSnapshotController hinzu und registriere sie unter dem Pfad POST /log-browser-snapshot (relativ zum Prefix /owner/state). Dieser Endpunkt wird die Snapshot-Daten aus dem Request Body nehmen und save_snapshot_with_limit aufrufen.
+Anmerkung: Dieser Endpunkt sollte idealerweise keine volle Benutzerauthentifizierung benötigen (da er vom Fehlerhandler getriggert wird, wo der Benutzerkontext vielleicht nicht sofort verfügbar ist), aber er sollte anderweitig abgesichert sein (z.B. nur aus dem internen Netz oder mit einem speziellen Token erreichbar sein). Wir implementieren ihn erstmal ohne spezielle Auth, aber das sollte man im Hinterkopf behalten.
