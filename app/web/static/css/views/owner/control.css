@@ -1,6 +1,6 @@
 /* 
- * Bot Control Page Specific Styles
- * Layout-only styles for the bot control page
+ * Bot/Guild Control Page Specific Styles
+ * Layout-only styles for the bot and guild control page
  */
 
 /* Page Layout */
@@ -10,16 +10,16 @@
     margin: 0 auto;
 }
 
-/* Server Lists Layout */
-.server-lists-container {
+/* Guild Lists Layout */
+.guild-lists-container {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-lg);
     margin-bottom: var(--spacing-xl);
 }
 
-/* Server Management Layout */
-.server-section {
+/* Guild Management Layout */
+.guild-section {
     margin-bottom: var(--spacing-lg);
 }
 
@@ -38,21 +38,21 @@
     gap: var(--spacing-sm);
 }
 
-/* Server Status Layout */
-.server-status {
+/* Guild Status Layout */
+.guild-status {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
 }
 
-/* Server List Table */
-.server-list-table {
+/* Guild List Table */
+.guild-list-table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
 }
 
-.server-list-table th {
+.guild-list-table th {
     background-color: var(--bg-tertiary);
     padding: var(--spacing-md);
     text-align: left;
@@ -60,59 +60,59 @@
     color: var(--text-primary);
 }
 
-.server-list-table td {
+.guild-list-table td {
     padding: var(--spacing-md);
     border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
 }
 
-.server-list-table tr:hover {
+.guild-list-table tr:hover {
     background-color: var(--bg-tertiary);
 }
 
-/* Server Actions */
-.server-actions {
+/* Guild Actions */
+.guild-actions {
     display: flex;
     gap: var(--spacing-sm);
 }
 
-/* Server Details Modal */
-.server-details-modal .modal-content {
+/* Guild Details Modal */
+.guild-details-modal .modal-content {
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-color);
 }
 
-.server-details-modal .modal-header {
+.guild-details-modal .modal-header {
     background-color: var(--bg-tertiary);
     border-bottom: 1px solid var(--border-color);
 }
 
-.server-details-modal .modal-body {
+.guild-details-modal .modal-body {
     padding: var(--spacing-lg);
 }
 
-/* Server Info Grid */
-.server-info-grid {
+/* Guild Info Grid (in Modal) */
+.guild-info-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-lg);
 }
 
-.server-info-item {
+.guild-info-item {
     background-color: var(--bg-tertiary);
     padding: var(--spacing-md);
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
 }
 
-.server-info-label {
+.guild-info-label {
     color: var(--text-secondary);
     font-size: 0.875rem;
     margin-bottom: var(--spacing-xs);
 }
 
-.server-info-value {
+.guild-info-value {
     color: var(--text-primary);
     font-weight: 500;
 }
@@ -164,15 +164,15 @@
         align-items: flex-start;
     }
     
-    .server-section {
+    .guild-section {
         margin-bottom: var(--spacing-md);
     }
 
-    .server-info-grid {
+    .guild-info-grid {
         grid-template-columns: 1fr;
     }
 
-    .server-actions {
+    .guild-actions {
         flex-direction: column;
     }
 }

@@ -1,11 +1,11 @@
-{% from "views/owner/control/server-actions.html" import server_status_badge, server_action_buttons, server_connection_status %}
+{% from "views/owner/control/guild-actions.html" import server_status_badge, server_action_buttons, server_connection_status %}
 
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h2>Server Management</h2>
+        <h2>Guild Management</h2>
         <div class="btn-group">
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addServerModal">
-                <i class="bi bi-plus-circle"></i> Add Server
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGuildModal">
+                <i class="bi bi-plus-circle"></i> Add Guild
             </button>
             <button class="btn btn-info">
                 <i class="bi bi-arrow-clockwise"></i> Refresh
@@ -14,17 +14,17 @@
     </div>
     
     <div class="card-body">
-        <!-- Combined Server List Section -->
-        <div class="server-section all-servers mb-4">
+        <!-- Combined Guild List Section -->
+        <div class="guild-section all-guilds mb-4">
             <div class="section-header d-flex justify-content-between align-items-center mb-3">
-                <h3><i class="bi bi-hdd-stack"></i> All Servers</h3>
-                <span class="badge bg-primary" id="total-server-count">0</span>
+                <h3><i class="bi bi-hdd-stack"></i> All Guilds</h3>
+                <span class="badge bg-primary" id="total-guild-count">0</span>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead>
                         <tr>
-                            <th>Server</th>
+                            <th>Guild</th>
                             <th>Status</th>
                             <th>Members</th>
                             <th>Last Updated</th> {# Combined date column #}
@@ -32,9 +32,9 @@
                         </tr>
                     </thead>
                     {# Give the table body a unique ID for JS targeting #}
-                    <tbody id="all-servers-tbody"> 
+                    <tbody id="all-guilds-tbody"> 
                         {# Rows will be dynamically inserted here by JavaScript #}
-                        <tr><td colspan="5" class="text-center">Loading servers...</td></tr>
+                        <tr><td colspan="5" class="text-center">Loading guilds...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -45,21 +45,21 @@
     </div>
 </div>
 
-<!-- Server Details Modal -->
-<div class="modal fade" id="serverDetailsModal" tabindex="-1" aria-labelledby="serverDetailsModalLabel" aria-hidden="true">
+<!-- Guild Details Modal -->
+<div class="modal fade" id="guildDetailsModal" tabindex="-1" aria-labelledby="guildDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="serverDetailsModalLabel">Server Details</h5>
+                <h5 class="modal-title" id="guildDetailsModalLabel">Guild Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="server-info mb-4">
+                <div class="guild-info mb-4">
                     <h6>Basic Information</h6>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <p><strong>Name:</strong> <span class="server-name"></span></p>
-                            <p><strong>ID:</strong> <span class="server-id"></span></p>
+                            <p><strong>Name:</strong> <span class="guild-name"></span></p>
+                            <p><strong>ID:</strong> <span class="guild-id"></span></p>
                             <p><strong>Members:</strong> <span class="member-count"></span></p>
                         </div>
                         <div class="col-md-6">
@@ -82,7 +82,7 @@
                 </div>
                 
                 <div class="features-section">
-                    <h6>Server Features</h6>
+                    <h6>Guild Features</h6>
                     <ul class="features-list list-group"></ul>
                 </div>
             </div>
@@ -93,4 +93,4 @@
     </div>
 </div>
 
-{% include "views/owner/control/add-server-modal.html" %} 
+{% include "views/owner/control/add-guild-modal.html" %} 

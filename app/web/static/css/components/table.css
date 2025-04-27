@@ -201,4 +201,15 @@ body.dark-theme table.table > tbody > tr.active {
 /* Also apply even background directly to TD for higher specificity if needed */
 body.light-theme .card .table-striped > tbody > tr:nth-of-type(even) > td {
     background-color: var(--bg-secondary);
+}
+
+/* Ensure text-muted applies correctly to small tags inside table cells */
+body.dark-theme .table td small.text-muted,
+body.light-theme .table td small.text-muted { 
+  color: var(--text-muted); 
+}
+
+/* Ensure sufficient contrast for small text within table cells in dark theme */
+.dark-theme td small {
+    color: var(--text-primary); /* Use primary text color (white) for max contrast */
 } 

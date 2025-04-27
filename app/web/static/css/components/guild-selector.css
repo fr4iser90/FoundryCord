@@ -32,8 +32,8 @@
     border-color: var(--primary);
 }
 
-/* Server Icon - Renamed parent class */
-.guild-selector .server-icon {
+/* Server Icon - Using renamed parent class and target class */
+.guild-selector .guild-icon {
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -70,14 +70,14 @@
     transition: opacity 0.15s ease-out, transform 0.15s ease-out, visibility 0.15s;
 }
 
-/* Server List - Using consistent ID */
-#guild-selector-dropdown .server-list {
+/* Guild List - Using consistent ID */
+#guild-selector-dropdown .guild-list {
     max-height: 300px;
     overflow-y: auto;
 }
 
-/* Server List Items - Using consistent ID */
-#guild-selector-dropdown .server-list-item {
+/* Guild List Items - Using consistent ID */
+#guild-selector-dropdown .guild-list-item {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
@@ -89,32 +89,32 @@
 }
 
 /* Using consistent ID */
-#guild-selector-dropdown .server-list-item:hover {
+#guild-selector-dropdown .guild-list-item:hover {
     background: var(--dropdown-hover-bg);
 }
 
 /* Using consistent ID */
-#guild-selector-dropdown .server-list-item.active {
+#guild-selector-dropdown .guild-list-item.active {
     background: var(--primary-light);
     color: var(--text-primary);
     border-left: 3px solid var(--primary);
 }
 
 /* Using consistent ID */
-#guild-selector-dropdown .server-list-item .server-icon {
+#guild-selector-dropdown .guild-list-item .guild-icon {
     width: 24px;
     height: 24px;
     border-width: 1px;
 }
 
 /* Using consistent ID */
-#guild-selector-dropdown .server-list-item .server-info {
+#guild-selector-dropdown .guild-list-item .guild-info {
     flex: 1;
     min-width: 0;
 }
 
 /* Using consistent ID */
-#guild-selector-dropdown .server-list-item .server-name {
+#guild-selector-dropdown .guild-list-item .guild-name {
     font-size: 0.9rem;
     font-weight: 500;
     white-space: nowrap;
@@ -123,13 +123,13 @@
 }
 
 /* Using consistent ID */
-#guild-selector-dropdown .server-list-item .server-id {
+#guild-selector-dropdown .guild-list-item .guild-id {
     font-size: 0.75rem;
     color: var(--text-muted);
 }
 
 /* Using consistent ID */
-#guild-selector-dropdown .server-list-item .active-indicator {
+#guild-selector-dropdown .guild-list-item .active-indicator {
     margin-left: auto;
     color: var(--primary);
     display: flex;
@@ -137,12 +137,12 @@
 }
 
 /* Using consistent ID */
-#guild-selector-dropdown .server-list-item .active-indicator i {
+#guild-selector-dropdown .guild-list-item .active-indicator i {
     font-size: 1.2rem;
 }
 
 /* Loading State - Using consistent ID */
-#guild-selector-dropdown .server-list.loading {
+#guild-selector-dropdown .guild-list.loading {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -151,12 +151,12 @@
 }
 
 /* Using consistent ID */
-#guild-selector-dropdown .server-list.loading::after {
-    content: 'Loading servers...';
+#guild-selector-dropdown .guild-list.loading::after {
+    content: 'Loading guilds...';
 }
 
 /* Empty State - Using consistent ID */
-#guild-selector-dropdown .server-list.empty {
+#guild-selector-dropdown .guild-list.empty {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -165,8 +165,8 @@
 }
 
 /* Using consistent ID */
-#guild-selector-dropdown .server-list.empty::after {
-    content: 'No servers available';
+#guild-selector-dropdown .guild-list.empty::after {
+    content: 'No guilds available';
 }
 
 /* Dropdown Arrow - Renamed class */

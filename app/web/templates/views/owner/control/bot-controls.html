@@ -1,10 +1,10 @@
-{% from "views/owner/control/server-actions.html" import server_status_badge %}
+{% from "views/owner/control/guild-actions.html" import guild_status_badge %}
 
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h2>Bot Controls</h2>
         <div class="status-badge">
-            {{ server_status_badge(bot_status if bot_status else 'offline') }}
+            {{ guild_status_badge(bot_status if bot_status else 'offline') }}
         </div>
     </div>
     <div class="card-body">

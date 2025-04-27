@@ -140,12 +140,12 @@
     --dropdown-item-color: var(--text-secondary);
     --dropdown-item-hover-color: var(--text-primary);
 
-    /* Server Selector */
-    --server-selector-bg: var(--bg-primary);
-    --server-selector-border: var(--border-color);
-    --server-selector-hover: var(--bg-secondary);
-    --server-icon-border: var(--border-color);
-    --server-icon-bg: var(--bg-secondary);
+    /* Guild Selector */
+    --guild-selector-bg: var(--bg-primary);
+    --guild-selector-border: var(--border-color);
+    --guild-selector-hover: var(--bg-secondary);
+    --guild-icon-border: var(--border-color);
+    --guild-icon-bg: var(--bg-secondary);
 
     /* User Menu */
     --user-menu-bg: var(--bg-primary);

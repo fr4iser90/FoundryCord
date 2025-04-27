@@ -10,41 +10,41 @@ class GuildSelectorController(BaseController):
     """Controller for guild selection functionality"""
     
     def __init__(self):
-        super().__init__(prefix="/servers", tags=["Guild Selection"])
-        # Get ServerService from the factory
+        super().__init__(prefix="/guilds", tags=["Guild Selection"])
+        # Get GuildService from the factory
         services = WebServiceFactory.get_instance().get_services()
-        self.server_service = services.get('server_service') 
-        if not self.server_service:
-            self.logger.error("ServerService could not be initialized.")
-            raise RuntimeError("ServerService is unavailable")
+        self.guild_service = services.get('guild_service') 
+        if not self.guild_service:
+            self.logger.error("GuildService could not be initialized.")
+            raise RuntimeError("GuildService is unavailable")
         self._register_routes()
     
     def _register_routes(self):
         """Register all routes for guild selection"""
-        self.router.get("/", response_model=List[GuildInfo])(self.get_servers)  # List all guilds
-        self.router.get("/current", response_model=Optional[GuildInfo])(self.get_current_server)  # Get current selection
-        self.router.post("/select/{guild_id}")(self.select_server)  # Select a guild
+        self.router.get("/", response_model=List[GuildInfo])(self.get_guilds)  # List all guilds
+        self.router.get("/current", response_model=Optional[GuildInfo])(self.get_current_guild)  # Get current selection
+        self.router.post("/select/{guild_id}")(self.select_guild)  # Select a guild
     
-    async def get_servers(self, current_user: AppUserEntity = Depends(get_current_user)) -> List[GuildInfo]:
+    async def get_guilds(self, current_user: AppUserEntity = Depends(get_current_user)) -> List[GuildInfo]:
         """Get list of available guilds for the current user"""
         try:
-            servers = await self.server_service.get_available_servers(current_user)
-            return servers
+            guilds = await self.guild_service.get_available_guilds(current_user)
+            return guilds
         except Exception as e:
             raise e
     
-    async def get_current_server(self, request: Request, current_user: AppUserEntity = Depends(get_current_user)) -> Optional[GuildInfo]:
+    async def get_current_guild(self, request: Request, current_user: AppUserEntity = Depends(get_current_user)) -> Optional[GuildInfo]:
         """Get currently selected guild from session"""
         try:
-            server = await self.server_service.get_current_server(request, current_user)
-            return server
+            guild = await self.guild_service.get_current_guild(request, current_user)
+            return guild
         except Exception as e:
             raise e
     
-    async def select_server(self, request: Request, guild_id: str, current_user: AppUserEntity = Depends(get_current_user)):
+    async def select_guild(self, request: Request, guild_id: str, current_user: AppUserEntity = Depends(get_current_user)):
         """Select a guild and store it in session"""
         try:
-            result = await self.server_service.select_server(request, guild_id, current_user)
+            await self.guild_service.select_guild(request, guild_id, current_user)
             return {"message": "Guild selected successfully"}
         except Exception as e:
             raise e

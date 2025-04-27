@@ -1,11 +1,11 @@
 {% extends "layouts/base_layout.html" %}
-{% from "views/owner/control/server-actions.html" import server_status_badge, server_action_buttons, server_connection_status, server_permissions_info %}
+{% from "views/owner/control/guild-actions.html" import guild_status_badge, guild_action_buttons, guild_connection_status, guild_permissions_info %}
 
-{% block title %}Server Details - {{ server.name }}{% endblock %}
+{% block title %}Guild Details - {{ guild.name }}{% endblock %}
 
 {% block extra_css %}
 {# Add specific CSS if needed later #}
-{# <link rel="stylesheet" href="{{ url_for('static', path='css/views/owner/server_details.css') }}"> #}
+{# <link rel="stylesheet" href="{{ url_for('static', path='css/views/owner/guild_details.css') }}"> #}
 <style>
     .details-card .card-header {
         background-color: #f8f9fa; /* Light background for headers */
@@ -23,11 +23,11 @@
 <div class="container mt-4">
     <div class="page-header mb-4 d-flex justify-content-between align-items-center">
         <h1>
-            <img src="{{ server.icon_url if server.icon_url else url_for('static', path='img/discord_default.png') }}" alt="Server Icon" class="rounded me-2" width="40" height="40">
-            Server Details: {{ server.name }}
+            <img src="{{ guild.icon_url if guild.icon_url else url_for('static', path='img/discord_default.png') }}" alt="Guild Icon" class="rounded me-2" width="40" height="40">
+            Guild Details: {{ guild.name }}
         </h1>
-        <a href="{{ url_for('owner_server_management_page') }}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Server List
+        <a href="{{ url_for('owner_guild_management_page') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Guild List
         </a>
     </div>
 
@@ -39,11 +39,11 @@
                     <h5><i class="bi bi-info-circle-fill me-2"></i>Basic Information</h5>
                 </div>
                 <div class="card-body">
-                    <p><strong>Server ID:</strong> {{ server.guild_id }}</p>
-                    <p><strong>Members:</strong> {{ server.member_count if server.member_count is not none else 'N/A' }}</p>
-                    <p><strong>Owner ID:</strong> {{ server.owner_id if server.owner_id else 'N/A' }}</p>
-                    <p><strong>Joined Date:</strong> {{ server.join_date|datetimeformat if server.join_date else 'N/A' }}</p> {# Assuming join_date is datetime #}
-                    <p><strong>Last Updated:</strong> {{ server.last_updated|datetimeformat if server.last_updated else 'N/A' }}</p> {# Assuming last_updated exists #}
+                    <p><strong>Guild ID:</strong> {{ guild.guild_id }}</p>
+                    <p><strong>Members:</strong> {{ guild.member_count if guild.member_count is not none else 'N/A' }}</p>
+                    <p><strong>Owner ID:</strong> {{ guild.owner_id if guild.owner_id else 'N/A' }}</p>
+                    <p><strong>Joined Date:</strong> {{ guild.join_date|datetimeformat if guild.join_date else 'N/A' }}</p> {# Assuming join_date is datetime #}
+                    <p><strong>Last Updated:</strong> {{ guild.last_updated|datetimeformat if guild.last_updated else 'N/A' }}</p> {# Assuming last_updated exists #}
                 </div>
             </div>
         </div>
@@ -57,16 +57,15 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <strong>Access Status:</strong> 
-                        {{ server_status_badge(server.access_status) }}
+                        {{ guild_status_badge(guild.access_status) }}
                     </div>
                     <div class="mb-3">
                         <strong>Connection Status:</strong> 
-                        {{ server_connection_status(server) }}
+                        {{ guild_connection_status(guild) }}
                     </div>
                     <div class="mt-4">
                         <h6>Manage Access:</h6>
-                        {# Use the macro from server-actions.html for consistency #}
-                        {{ server_action_buttons(server) }}
+                        {{ guild_action_buttons(guild) }}
                     </div>
                 </div>
             </div>
@@ -79,7 +78,7 @@
                     <h5><i class="bi bi-shield-check me-2"></i>Bot Permissions</h5>
                 </div>
                 <div class="card-body permissions-list">
-                    {{ server_permissions_info(server) }} {# Use macro for permissions #}
+                    {{ guild_permissions_info(guild) }}
                 </div>
             </div>
         </div>
@@ -91,28 +90,28 @@
                     <h5><i class="bi bi-toggles me-2"></i>Enabled Features</h5>
                 </div>
                 <div class="card-body features-list">
-                    {% if server.features %}
-                        {% for feature in server.features %}
+                    {% if guild.features %}
+                        {% for feature in guild.features %}
                             <span class="badge bg-info me-1 mb-1"><i class="bi bi-check-circle-fill"></i> {{ feature }}</span>
                         {% endfor %}
                     {% else %}
-                        <span class="text-muted">No specific features listed for this server.</span>
+                        <span class="text-muted">No specific features listed for this guild.</span>
                     {% endif %}
                 </div>
             </div>
         </div>
 
         <!-- Full Width: Ban Info (Conditional) -->
-        {% if server.access_status == 'banned' and server.ban_info %}
+        {% if guild.access_status == 'banned' and guild.ban_info %}
         <div class="col-12">
             <div class="card details-card border-danger">
                 <div class="card-header bg-danger text-white">
                     <h5><i class="bi bi-exclamation-octagon-fill me-2"></i>Ban Information</h5>
                 </div>
                 <div class="card-body">
-                    <p><strong>Reason:</strong> {{ server.ban_info.reason | default('No reason provided') }}</p>
-                    <p><strong>Banned By:</strong> {{ server.ban_info.banned_by_user | default('Unknown') }}</p>
-                    <p><strong>Banned At:</strong> {{ server.ban_info.banned_at | datetimeformat if server.ban_info.banned_at else 'Unknown' }}</p>
+                    <p><strong>Reason:</strong> {{ guild.ban_info.reason | default('No reason provided') }}</p>
+                    <p><strong>Banned By:</strong> {{ guild.ban_info.banned_by_user | default('Unknown') }}</p>
+                    <p><strong>Banned At:</strong> {{ guild.ban_info.banned_at | datetimeformat if guild.ban_info.banned_at else 'Unknown' }}</p>
                 </div>
             </div>
         </div>
@@ -123,6 +122,5 @@
 {% endblock %}
 
 {% block extra_js %}
-{# Load server management JS if needed for actions, ensure functions like updateAccess are global or imported #}
-<script type="module" defer src="{{ url_for('static', path='js/views/owner/control/serverManagement.js') }}"></script>
+<script type="module" defer src="{{ url_for('static', path='js/views/owner/control/guildManagement.js') }}"></script>
 {% endblock %}

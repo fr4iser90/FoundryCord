@@ -43,7 +43,7 @@
 
     /* Text Colors */
     --text-normal: #DCDDDE;
-    --text-muted: #8E9297;
+    --text-muted: #DCDDDE;
     --text-link: #00B0F4;
     --text-positive: #57F287;
     --text-warning: #FEE75C;
@@ -51,6 +51,10 @@
     --text-brand: #5865F2;
     --text-primary: #ffffff;
     --text-secondary: #2676ed;
+    /* Override Bootstrap default */
+    --bs-body-color: var(--text-primary);
+    /* Override Bootstrap's secondary color used for .text-muted */
+    --bs-secondary-color: var(--text-normal);
 
     /* Border Colors */
     --border-primary: #242628;
@@ -162,12 +166,12 @@
     --dropdown-item-color: var(--text-secondary);
     --dropdown-item-hover-color: var(--text-primary);
 
-    /* Server Selector */
-    --server-selector-bg: var(--bg-tertiary);
-    --server-selector-border: var(--border-color);
-    --server-selector-hover: var(--bg-secondary);
-    --server-icon-border: var(--border-color);
-    --server-icon-bg: var(--bg-tertiary);
+    /* Guild Selector */
+    --guild-selector-bg: var(--bg-tertiary);
+    --guild-selector-border: var(--border-color);
+    --guild-selector-hover: var(--bg-secondary);
+    --guild-icon-border: var(--border-color);
+    --guild-icon-bg: var(--bg-tertiary);
 
     /* User Menu */
     --user-menu-bg: var(--bg-secondary);

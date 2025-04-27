@@ -1,21 +1,21 @@
 import { showToast, apiRequest } from '/static/js/components/common/notifications.js';
 
-// Server Selector Component
-export class ServerSelector {
+// Guild Selector Component
+export class GuildSelector {
     constructor() {
         this.button = document.getElementById('guild-selector-button');
         this.dropdown = document.getElementById('guild-selector-dropdown');
-        this.serverList = document.getElementById('server-list');
+        this.guildList = document.getElementById('guild-list');
         this.currentGuildId = null;
 
         // Check if essential elements exist before proceeding
-        if (!this.button || !this.dropdown || !this.serverList) {
-            console.warn('ServerSelector: Required HTML elements not found. Skipping initialization.');
+        if (!this.button || !this.dropdown || !this.guildList) {
+            console.warn('GuildSelector: Required HTML elements not found. Skipping initialization.');
             // Optionally log which elements are missing
             // console.debug('Missing elements:', { 
             //     button: !this.button, 
             //     dropdown: !this.dropdown, 
-            //     serverList: !this.serverList 
+            //     guildList: !this.guildList 
             // });
             return; // Stop initialization if elements are missing
         }
@@ -25,14 +25,14 @@ export class ServerSelector {
 
     init() {
         // Check again (defensive programming)
-        if (!this.button || !this.dropdown || !this.serverList) {
-             console.error("ServerSelector init called without required elements.");
+        if (!this.button || !this.dropdown || !this.guildList) {
+             console.error("GuildSelector init called without required elements.");
              return;
         }
         
-        console.log('Initializing ServerSelector');
+        console.log('Initializing GuildSelector');
         this.setupEventListeners();
-        this.loadServers();
+        this.loadGuilds();
     }
 
     setupEventListeners() {
@@ -52,106 +52,106 @@ export class ServerSelector {
         });
     }
 
-    async loadServers() {
+    async loadGuilds() {
         try {
-            console.log('Loading servers...');
-            this.serverList.classList.add('loading');
+            console.log('Loading guilds...');
+            this.guildList.classList.add('loading');
             
-            // Get current server first
-            const currentServer = await apiRequest('/api/v1/servers/current');
+            // Get current guild first
+            const currentGuild = await apiRequest('/api/v1/guilds/current');
             
             // --- Safely set currentGuildId ---
             this.currentGuildId = null; // Default to null
-            if (currentServer && currentServer.guild_id) {
-                this.currentGuildId = currentServer.guild_id;
-                // Update button only if we have a current server
+            if (currentGuild && currentGuild.guild_id) {
+                this.currentGuildId = currentGuild.guild_id;
+                // Update button only if we have a current guild
                 const button = document.getElementById('guild-selector-button');
                 if (button) {
                     const img = button.querySelector('img');
                     const span = button.querySelector('span');
                     if (img) {
-                        img.src = currentServer.icon_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
-                        img.alt = currentServer.name;
+                        img.src = currentGuild.icon_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
+                        img.alt = currentGuild.name;
                     }
                     if (span) {
-                        span.textContent = currentServer.name;
+                        span.textContent = currentGuild.name;
                     }
                 }
             }
             // --- End safe handling ---
             
-            // Fetch ALL servers
-            const response = await apiRequest('/api/v1/servers');
-            console.log('Raw API Response for /api/v1/servers:', response);
+            // Fetch ALL available guilds
+            const response = await apiRequest('/api/v1/guilds/');
+            console.log('Raw API Response for /api/v1/guilds/:', response);
             
-            // Adjust based on actual response structure - assuming response IS the array for now
-            const servers = response || []; 
-            console.log('Servers array used for filtering:', servers);
+            // Adjust based on actual response structure - assuming response IS the array 
+            const guilds = response || [];
+            console.log('Guilds array used for filtering:', guilds);
 
-            // Filter for approved servers only
-            const approvedServers = servers.filter(server => server?.access_status === 'approved');
-            console.log('Approved servers after filtering:', approvedServers);
+            // No need to filter for 'approved' here, as the backend /api/v1/guilds endpoint already returns only available (approved) guilds
+            const availableGuilds = guilds;
+            console.log('Available guilds:', availableGuilds);
             
-            this.serverList.classList.remove('loading');
-            if (approvedServers.length === 0) {
-                this.serverList.classList.add('empty');
-                this.serverList.innerHTML = '<div class="server-list-item">No approved servers available</div>';
+            this.guildList.classList.remove('loading');
+            if (availableGuilds.length === 0) {
+                this.guildList.classList.add('empty');
+                this.guildList.innerHTML = '<div class="guild-list-item">No available guilds</div>';
                 return;
             }
             
-            this.updateServerList(approvedServers);
+            this.updateGuildList(availableGuilds);
         } catch (error) {
-            console.error('Error loading servers:', error);
-            this.serverList.classList.remove('loading');
-            this.serverList.innerHTML = '<div class="server-list-item">Error loading servers</div>';
+            console.error('Error loading guilds:', error);
+            this.guildList.classList.remove('loading');
+            this.guildList.innerHTML = '<div class="guild-list-item">Error loading guilds</div>';
             throw error; // Let apiRequest handle the error display
         }
     }
 
-    updateServerList(servers) {
-        console.log('Updating server list with:', servers);
-        this.serverList.innerHTML = '';
+    updateGuildList(guilds) {
+        console.log('Updating guild list with:', guilds);
+        this.guildList.innerHTML = '';
         
-        if (!Array.isArray(servers) || servers.length === 0) {
-            this.serverList.classList.add('empty');
-            this.serverList.innerHTML = '<div class="server-list-item">No servers available</div>';
+        if (!Array.isArray(guilds) || guilds.length === 0) {
+            this.guildList.classList.add('empty');
+            this.guildList.innerHTML = '<div class="guild-list-item">No guilds available</div>';
             return;
         }
 
-        // Sort servers to put current server first
-        const sortedServers = [...servers].sort((a, b) => {
+        // Sort guilds to put current guild first
+        const sortedGuilds = [...guilds].sort((a, b) => {
             if (a.guild_id === this.currentGuildId) return -1;
             if (b.guild_id === this.currentGuildId) return 1;
-            return 0;
+            return a.name.localeCompare(b.name);
         });
 
-        this.serverList.classList.remove('empty');
-        sortedServers.forEach(server => {
-            const serverItem = document.createElement('div');
-            serverItem.className = 'server-list-item';
-            if (server.guild_id === this.currentGuildId) {
-                serverItem.classList.add('active');
+        this.guildList.classList.remove('empty');
+        sortedGuilds.forEach(guild => {
+            const guildItem = document.createElement('div');
+            guildItem.className = 'guild-list-item';
+            if (guild.guild_id === this.currentGuildId) {
+                guildItem.classList.add('active');
             }
-            serverItem.innerHTML = `
-                <img src="${server.icon_url || 'https://cdn.discordapp.com/embed/avatars/0.png'}" 
-                     alt="${server.name}" 
-                     class="server-icon">
-                <div class="server-info">
-                    <div class="server-name">${server.name}</div>
-                    <div class="server-id">${server.guild_id}</div>
+            guildItem.innerHTML = `
+                <img src="${guild.icon_url || 'https://cdn.discordapp.com/embed/avatars/0.png'}" 
+                     alt="${guild.name}" 
+                     class="guild-icon">
+                <div class="guild-info">
+                    <div class="guild-name">${guild.name}</div>
+                    <div class="guild-id">${guild.guild_id}</div>
                 </div>
-                ${server.guild_id === this.currentGuildId ? '<div class="active-indicator"><i class="bi bi-check2"></i></div>' : ''}
+                ${guild.guild_id === this.currentGuildId ? '<div class="active-indicator"><i class="bi bi-check2"></i></div>' : ''}
             `;
             
-            serverItem.addEventListener('click', () => this.switchServer(server));
-            this.serverList.appendChild(serverItem);
+            guildItem.addEventListener('click', () => this.switchGuild(guild));
+            this.guildList.appendChild(guildItem);
         });
     }
 
-    async switchServer(server) {
+    async switchGuild(guild) {
         try {
-            console.log('Switching to server:', server);
-            await apiRequest(`/api/v1/servers/select/${server.guild_id}`, {
+            console.log('Switching to guild:', guild);
+            await apiRequest(`/api/v1/guilds/select/${guild.guild_id}`, {
                 method: 'POST'
             });
 
@@ -161,18 +161,18 @@ export class ServerSelector {
                 const img = button.querySelector('img');
                 const span = button.querySelector('span');
                 if (img) {
-                    img.src = server.icon_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
-                    img.alt = server.name;
+                    img.src = guild.icon_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
+                    img.alt = guild.name;
                 }
                 if (span) {
-                    span.textContent = server.name;
+                    span.textContent = guild.name;
                 }
             }
             
-            this.currentGuildId = server.guild_id;
+            this.currentGuildId = guild.guild_id;
             this.dropdown.classList.remove('show');
             
-            showToast('success', `Switched to server: ${server.name}`);
+            showToast('success', `Switched to guild: ${guild.name}`);
 
             // --- Revised Redirect Logic ---
             const currentPathname = window.location.pathname;
@@ -184,7 +184,7 @@ export class ServerSelector {
             
             if (guildPathRegex.test(currentPathname)) {
                 // If current path IS a guild path, replace ID and redirect
-                const newPathname = currentPathname.replace(guildPathRegex, `$1${server.guild_id}$2`);
+                const newPathname = currentPathname.replace(guildPathRegex, `$1${guild.guild_id}$2`);
                 console.log(`Redirecting: Keeping guild structure, new path: ${newPathname}`);
                 // Combine the new path with original search params and hash
                 window.location.href = newPathname + currentSearch + currentHash;
@@ -206,6 +206,6 @@ export class ServerSelector {
 if (!window.guildSelector) {
     document.addEventListener('DOMContentLoaded', () => {
         console.log('DOM loaded, initializing GuildSelector');
-        window.guildSelector = new ServerSelector();
+        window.guildSelector = new GuildSelector();
     });
 } 

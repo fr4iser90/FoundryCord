@@ -1,3 +1,3 @@
-from .server_selector_view import router as server_selector_router
+from .guild_selector_view import router as guild_selector_router
 
-__all__ = ['server_selector_router'] 
+__all__ = ['guild_selector_router'] 

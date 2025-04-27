@@ -1,7 +1,7 @@
 from app.web.infrastructure.factories.base.base_factory import BaseFactory
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
 from app.shared.domain.auth.services import AuthenticationService, AuthorizationService
-from app.web.application.services.server.server_service import ServerService
+from app.web.application.services.guild.guild_service import GuildService
 from app.shared.interface.logging.api import get_web_logger
 
 logger = get_web_logger()
@@ -31,12 +31,12 @@ class WebServiceFactory(BaseFactory):
             key_service = KeyManagementService()
             auth_service = AuthenticationService(key_service)  # Domain service
             authz_service = AuthorizationService(auth_service) # Domain service
-            server_service = ServerService()
+            guild_service = GuildService()
             
             services['key_service'] = key_service
             services['auth_service'] = auth_service
             services['authz_service'] = authz_service
-            services['server_service'] = server_service
+            services['guild_service'] = guild_service
             
             logger.info("Web services created successfully")
             return services

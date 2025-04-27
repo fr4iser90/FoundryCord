@@ -26,7 +26,7 @@ class GuildInfo(BaseModel):
 class GuildAccessUpdateResponse(BaseModel):
     """Schema for the response after updating guild access status."""
     message: str
-    server: GuildInfo # Embed the GuildInfo schema
+    guild: GuildInfo # Embed the GuildInfo schema
 
 # You might want to add other guild-related schemas here in the future,
 # e.g., GuildDetails, GuildSettings, etc.

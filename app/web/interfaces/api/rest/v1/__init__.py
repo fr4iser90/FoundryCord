@@ -6,7 +6,7 @@ from app.web.interfaces.api.rest.v1.guild import router as guild_router, general
 from app.web.interfaces.api.rest.v1.owner import (
     router as owner_router, 
     bot_control_router, 
-    server_management_router, 
+    guild_management_router, 
     bot_logger_router,
     state_snapshot_router
 )
@@ -27,7 +27,7 @@ router.include_router(guild_router) # Guild-specific routes
 router.include_router(general_template_router) # General template routes
 router.include_router(owner_router)
 router.include_router(bot_control_router)
-router.include_router(server_management_router)
+router.include_router(guild_management_router)
 router.include_router(system_router)
 router.include_router(debug_router)
 router.include_router(home_router) # Use the aliased name

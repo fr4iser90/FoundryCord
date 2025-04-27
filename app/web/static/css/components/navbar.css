@@ -165,12 +165,13 @@
     border-top: 1px solid var(--border-color);
 }
 
-/* Server Selector */
-.server-selector {
+/* Guild Selector */
+.guild-selector {
     min-width: 200px;
 }
 
-.server-icon {
+/* Guild Icon (general usage in navbar, potentially server selector button) */
+.guild-icon {
     width: 24px;
     height: 24px;
     border-radius: 50%;

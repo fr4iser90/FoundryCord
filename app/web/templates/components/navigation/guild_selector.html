@@ -2,17 +2,17 @@
 <div class="navbar-item has-dropdown">
     <button class="navbar-link guild-selector" id="guild-selector-button" aria-haspopup="true" aria-expanded="false">
         {% if request.session.get('selected_guild') %}
-            <img src="{{ request.session.selected_guild.icon_url }}" alt="{{ request.session.selected_guild.name }}" class="server-icon">
-            <span class="server-name">{{ request.session.selected_guild.name }}</span>
+            <img src="{{ request.session.selected_guild.icon_url }}" alt="{{ request.session.selected_guild.name }}" class="guild-icon">
+            <span class="guild-name">{{ request.session.selected_guild.name }}</span>
         {% else %}
-            <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Select Server" class="server-icon">
-            <span class="server-name">Select Server</span>
+            <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Select Guild" class="guild-icon">
+            <span class="guild-name">Select Guild</span>
         {% endif %}
     </button>
     
     <div class="navbar-dropdown" id="guild-selector-dropdown" aria-labelledby="guild-selector-button">
-        <div class="server-list loading" id="server-list">
-            <!-- Server list will be populated by JavaScript (only approved servers) -->
+        <div class="guild-list loading" id="guild-list">
+            <!-- Guild list will be populated by JavaScript (only approved guilds) -->
         </div>
     </div>
 </div> 
