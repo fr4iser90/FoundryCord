@@ -21,7 +21,11 @@ from app.shared.infrastructure.models.guild_templates import (
     GuildTemplateCategoryPermissionEntity,
     GuildTemplateChannelPermissionEntity
 )
-from app.web.interfaces.api.rest.v1.schemas.guild_template_schemas import GuildStructureUpdatePayload
+from app.web.interfaces.api.rest.v1.schemas.guild_template_schemas import GuildStructureUpdatePayload, GuildStructureTemplateCreateFromStructure
+# --- Add User Repo/Entity Imports --- 
+from app.shared.infrastructure.repositories.auth.user_repository_impl import UserRepositoryImpl
+from app.shared.infrastructure.models.auth import AppUserEntity
+# -----------------------------------
 
 logger = get_web_logger()
 
@@ -921,6 +925,126 @@ class GuildTemplateService:
     #     )
     #     result = await self.session.execute(stmt)
     #     return result.scalar_one_or_none()
+
+    # --- NEW Method to Create Template from Structure --- 
+    async def create_template_from_structure(
+        self, 
+        db: AsyncSession, 
+        creator_user_id: int, 
+        payload: GuildStructureTemplateCreateFromStructure
+    ) -> GuildTemplateEntity: # Return the newly created template entity
+        """Creates a new template entity based on name, description, and a structure payload."""
+        logger.info(f"Attempting to create template '{payload.new_template_name}' from structure for user {creator_user_id}")
+
+        # Use provided session directly
+        session = db
+        template_repo = GuildTemplateRepositoryImpl(session)
+        category_repo = GuildTemplateCategoryRepositoryImpl(session)
+        channel_repo = GuildTemplateChannelRepositoryImpl(session)
+
+        # 1. Basic Validation (e.g., check for name uniqueness if required)
+        existing_by_name = await template_repo.get_by_name_and_creator(payload.new_template_name, creator_user_id)
+        if existing_by_name:
+             logger.warning(f"Template name '{payload.new_template_name}' already exists for user {creator_user_id}. Cannot create.")
+             raise ValueError(f"You already have a template named '{payload.new_template_name}'.")
+
+        # 2. Create the main Template Entity
+        new_template = GuildTemplateEntity(
+            template_name=payload.new_template_name,
+            template_description=payload.new_template_description,
+            creator_user_id=creator_user_id,
+            is_shared=False, # Default to not shared
+        )
+        session.add(new_template)
+        # We need the ID of the new template *before* creating children, so flush.
+        try:
+            await session.flush()
+            await session.refresh(new_template)
+            logger.info(f"Flushed new template '{new_template.template_name}'. Assigned ID: {new_template.id}")
+        except Exception as e:
+            logger.error(f"Database error flushing new template '{payload.new_template_name}': {e}", exc_info=True)
+            await session.rollback()
+            raise ValueError(f"Could not save initial template record: {e}") 
+
+        # 3. Process Nodes and Create Categories/Channels
+        created_categories_map = {} # Map jsTree ID ("category_XYZ") -> DB Entity
+        nodes_to_create = []
+
+        # First pass: Create Categories
+        for node_data in payload.structure.nodes:
+            if node_data.id.startswith("category_"):
+                # TODO: Extract real name/permissions from payload if available
+                new_category = GuildTemplateCategoryEntity(
+                    guild_template_id=new_template.id,
+                    category_name=f"Category {node_data.id}", # Placeholder name - needs frontend support
+                    position=node_data.position
+                )
+                created_categories_map[node_data.id] = new_category # Store entity before flush
+                nodes_to_create.append(new_category)
+                logger.debug(f"Prepared category: {node_data.id}, Pos: {node_data.position}")
+
+        # Add all categories first
+        if nodes_to_create:
+            session.add_all(nodes_to_create)
+            try:
+                await session.flush() # Flush to get category IDs
+                logger.info(f"Flushed {len(created_categories_map)} new categories for template {new_template.id}")
+                # Refresh categories to get their assigned IDs
+                for js_id, cat_entity in created_categories_map.items():
+                    await session.refresh(cat_entity)
+                    logger.debug(f"Refreshed category '{cat_entity.category_name}' (jsID: {js_id}), got DB ID: {cat_entity.id}")
+            except Exception as e:
+                logger.error(f"Database error flushing categories for template {new_template.id}: {e}", exc_info=True)
+                await session.rollback()
+                raise ValueError(f"Could not save categories: {e}")
+            nodes_to_create.clear() # Clear list for channels
+        
+        # Second pass: Create Channels
+        for node_data in payload.structure.nodes:
+            if node_data.id.startswith("channel_"):
+                parent_category_db_id: Optional[int] = None
+                if node_data.parent_id and node_data.parent_id.startswith("category_"):
+                    parent_category_entity = created_categories_map.get(node_data.parent_id)
+                    if parent_category_entity:
+                        parent_category_db_id = parent_category_entity.id # Use the DB ID
+                    else:
+                        logger.warning(f"Channel {node_data.id} refers to parent {node_data.parent_id} which was not found/created. Setting parent to NULL.")
+                
+                # TODO: Extract real name/type/topic/permissions from payload if available
+                new_channel = GuildTemplateChannelEntity(
+                    guild_template_id=new_template.id,
+                    channel_name=f"Channel {node_data.id}", # Placeholder name
+                    channel_type="text", # Placeholder type - needs frontend support
+                    position=node_data.position,
+                    parent_category_template_id=parent_category_db_id,
+                    topic=None # Placeholder topic
+                )
+                nodes_to_create.append(new_channel)
+                logger.debug(f"Prepared channel: {node_data.id}, ParentDBID: {parent_category_db_id}, Pos: {node_data.position}")
+
+        # Add all channels
+        if nodes_to_create:
+            session.add_all(nodes_to_create)
+            try:
+                await session.flush() # Flush to get channel IDs (optional)
+                logger.info(f"Flushed {len(nodes_to_create)} new channels for template {new_template.id}")
+            except Exception as e:
+                logger.error(f"Database error flushing channels for template {new_template.id}: {e}", exc_info=True)
+                await session.rollback()
+                raise ValueError(f"Could not save channels: {e}")
+
+        # 4. Commit the transaction
+        try:
+            await session.commit()
+            logger.info(f"Successfully committed new template '{new_template.template_name}' (ID: {new_template.id}) and its structure.")
+            # Refresh the main template entity to ensure relationships are loaded if accessed immediately after
+            # Using options might be more efficient if only certain relationships are needed
+            await session.refresh(new_template, attribute_names=['categories', 'channels'])
+            return new_template
+        except Exception as e:
+            logger.error(f"Database error committing new template {new_template.id}: {e}", exc_info=True)
+            await session.rollback()
+            raise ValueError(f"Failed to commit new template: {e}") # Raise specific error
 
 
 # Instantiate the service if needed globally (e.g., for factory)

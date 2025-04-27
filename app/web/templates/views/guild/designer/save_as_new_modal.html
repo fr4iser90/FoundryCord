@@ -1,0 +1,31 @@
+{# --- Save As New Template Modal --- #}
+<div class="modal fade" id="saveAsNewTemplateModal" tabindex="-1" aria-labelledby="saveAsNewTemplateModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="saveAsNewTemplateModalLabel">Save Changes as New Template</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>You don't have permission to modify the original template. Save your changes as a new template instead.</p>
+        {# Hidden input to store the original template NAME for suggesting a new name? (Optional) #}
+        {# <input type="hidden" id="originalTemplateNameInput" value=""> #}
+        
+        {# Form fields #}
+        <div class="mb-3">
+          <label for="newTemplateNameInput" class="form-label">New Template Name <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="newTemplateNameInput" required minlength="3" maxlength="100" placeholder="Enter a unique name for your new template">
+          <div class="invalid-feedback">Please enter a unique name (3-100 characters).</div>
+        </div>
+        <div class="mb-3">
+          <label for="newTemplateDescriptionInput" class="form-label">Description (Optional)</label>
+          <textarea class="form-control" id="newTemplateDescriptionInput" rows="3" maxlength="500" placeholder="Briefly describe this new template..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmSaveAsNewButton">Save as New Template</button>
+      </div>
+    </div>
+  </div>
+</div> 

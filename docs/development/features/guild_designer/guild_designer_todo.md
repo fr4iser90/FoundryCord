@@ -5,18 +5,20 @@
 ### Phase 1: Saving Edited Structure
 
 *   [x] **Implement Frontend Save Logic:**
-    *   [x] **Capture Moves:** Enhance the `move_node.jstree` event handler in `app/web/static/js/views/guild/designer/widget/structureTree.js` to gather the new parent and position data for the moved node.
-    *   [x] **Track Changes:** Implement a mechanism (perhaps in `app/web/static/js/views/guild/designer/index.js`) to track that changes have been made and need saving.
-    *   [ ] **Format Data:** Create a function (e.g., in `structureTree.js` or a new utility file) to traverse the current jsTree instance (`$(treeContainer).jstree(true).get_json('#', { flat: true })` might be useful) and format the *entire* structure (nodes with IDs, parents, positions) into a JSON payload suitable for the backend API.
-    *   [x] **Add Save Button:** Add a "Save Structure" button to `app/web/templates/views/guild/designer/index.html` (e.g., in the toolbar).
-    *   [x] **Trigger Save:** Add an event listener in `app/web/static/js/views/guild/designer/index.js` for the save button that calls the formatting function and sends the data to the new backend API endpoint. Handle loading/disabled states for the button. (Basic listener added, actual API call pending).
-*   [ ] **Create Backend Save API Endpoint:**
-    *   **API Route:** Define a new route like `PUT /api/v1/templates/guilds/{template_id}/structure` in `app/api/v1/endpoints/guild_templates.py`. (Using PUT as we are replacing the structure of an existing template).
-    *   **Payload Schema:** Create a Pydantic schema (e.g., `GuildStructureUpdatePayload` in `app/schemas/guild_template.py`) to validate the incoming JSON structure data (expecting a list of nodes with IDs, parent references, positions, potentially names/types if editing those too).
-    *   **Service Logic:** Implement a service function (e.g., `update_template_structure` in `app/services/guild_template_service.py`) that:
-        *   Takes the template ID and the validated payload.
-        *   Carefully updates the `GuildCategoryTemplate` and `GuildChannelTemplate` records in the database based on the received structure. This might involve updating `parent_category_template_id` and `position` for existing items. Consider how to handle new/deleted items if the properties/toolbox panels are implemented. For now, focus on reordering/re-parenting existing items based on the tree data.
-    *   **Database Interaction:** Ensure `guild_template_service.py` uses the SQLAlchemy session and models (`app/models/guild_template.py`) correctly to commit the changes.
+    *   [x] **Capture Moves:** Enhance the `move_node.jstree` event handler in `app/web/static/js/views/guild/designer/widget/structureTree.js`.
+    *   [x] **Track Changes:** Implement dirty state tracking (`designerState.js`) and enable/disable save button (`designerEvents.js`).
+    *   [x] **Format Data:** Create `formatStructureForApi` in `designerUtils.js` to format tree data for the API.
+    *   [x] **Add Save Button:** Added in `app/web/templates/views/guild/designer/index.html`.
+    *   [x] **Trigger Save:** Implemented `handleSaveStructureClick` in `designerEvents.js` for the save button (PUT request).
+    *   [x] **Save As New Modal:** Implement modal (`saveAsNewModal.js`) triggered on 403 error, dispatching `saveAsNewConfirmed` event.
+    *   [x] **Handle Save As New:** Implement listener for `saveAsNewConfirmed` in `designerEvents.js` to trigger POST request.
+*   [x] **Create Backend Save API Endpoints:**
+    *   [x] **API Route (PUT):** Defined `PUT /api/v1/templates/guilds/{template_id}/structure` in `guild_template_controller.py`.
+    *   [x] **API Route (POST):** Defined `POST /api/v1/templates/guilds/from_structure` in `guild_template_controller.py`.
+    *   [x] **Payload Schemas:** Created `GuildStructureUpdatePayload` and `GuildStructureTemplateCreateFromStructure` in `guild_template_schemas.py`.
+    *   [x] **Service Logic (PUT):** Implemented `update_template_structure` in `template_service.py` to handle reordering/re-parenting based on payload.
+    *   [x] **Service Logic (POST):** Implemented `create_template_from_structure` in `template_service.py` to create a new template from structure payload.
+    *   [x] **Database Interaction:** Ensured services use session and models correctly.
 
 ### Phase 2: Applying Template to Discord
 

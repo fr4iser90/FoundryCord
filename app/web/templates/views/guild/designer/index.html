@@ -81,36 +81,8 @@
 
 {# Add Modals specific to the designer #}
 {% block panel_layout_modals %}
-<div class="modal fade" id="shareTemplateModal" tabindex="-1" aria-labelledby="shareTemplateModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="shareTemplateModalLabel">Share Layout as Template</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        {# Hidden input to store the original template ID #}
-        <input type="hidden" id="shareTemplateIdInput" value="">
-        
-        {# Form fields #}
-        <div class="mb-3">
-          <label for="shareTemplateNameInput" class="form-label">Template Name <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" id="shareTemplateNameInput" required minlength="3" maxlength="100" placeholder="Enter a unique name for the template">
-          <div class="invalid-feedback">Please enter a unique name (3-100 characters).</div>
-        </div>
-        <div class="mb-3">
-          <label for="shareTemplateDescriptionInput" class="form-label">Description (Optional)</label>
-          <textarea class="form-control" id="shareTemplateDescriptionInput" rows="3" maxlength="500" placeholder="Briefly describe this template..."></textarea>
-        </div>
-        <small class="text-muted">This template will be available for others to use if sharing is enabled globally.</small>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" id="confirmShareTemplateBtn">Share Template</button>
-      </div>
-    </div>
-  </div>
-</div>
+    {% include "views/guild/designer/share_modal.html" %}
+    {% include "views/guild/designer/save_as_new_modal.html" %}
 {% endblock %}
 
 

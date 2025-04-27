@@ -10,6 +10,12 @@ The Guild Structure Designer provides a web interface to manage and visualize Di
     *   List View for Categories (`categoriesList.js`).
     *   List View for Channels (`channelsList.js`).
     *   Basic Template Information (`templateInfo.js`).
+*   **Editing (Structure):**
+    *   Supports drag-and-drop reordering and re-parenting of existing categories and channels in the Tree View.
+    *   Changes trigger a "dirty" state, enabling the "Save Structure" button.
+*   **Saving Structures:**
+    *   **Save Structure:** Saves the modified structure (node order and parentage) back to the *currently loaded template* using a `PUT` request. This fails with a permission error (403) if attempting to modify the initial guild snapshot.
+    *   **Save As New Template:** If saving the initial snapshot fails due to permissions, a modal prompts the user to save the modified structure as a *new, separate template* under their account using a `POST` request.
 *   **Template Management:**
     *   Lists user-saved templates and the initial guild snapshot (`templateList.js`).
     *   Lists globally shared templates (`sharedTemplateList.js`).
@@ -31,6 +37,6 @@ The Guild Structure Designer provides a web interface to manage and visualize Di
 
 ## Current Limitations
 
-*   **Editing:** While the Tree View visually supports drag-and-drop, the **logic to save the modified structure is not implemented**.
+*   **Property/Element Editing:** The designer currently only supports **reordering and re-parenting** existing elements via drag-and-drop. Editing properties (like names, topics) or adding/deleting categories/channels directly within the designer UI is **not implemented**.
 *   **Applying Edits:** The bot's `apply_template` function is **incomplete** and cannot yet translate a saved template structure into actual changes on the Discord server.
 *   **Visual Accuracy:** The current views (especially the Tree View) do not perfectly replicate the Discord standard where uncategorized channels appear strictly at the top of the list.

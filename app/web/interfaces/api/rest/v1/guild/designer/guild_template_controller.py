@@ -14,7 +14,9 @@ from app.web.interfaces.api.rest.v1.schemas.guild_template_schemas import (
     GuildTemplateListResponseSchema,
     GuildTemplateShareSchema,
     GuildStructureUpdatePayload,
-    GuildStructureUpdateResponse
+    GuildStructureUpdateResponse,
+    GuildStructureTemplateCreateFromStructure,
+    GuildStructureTemplateInfo
 )
 # Schema for activate request
 from pydantic import BaseModel
@@ -131,6 +133,16 @@ class GuildTemplateController(BaseController):
             status_code=status.HTTP_200_OK,
             dependencies=[Depends(get_current_user)] # Add dependency here for route protection
         )(self.update_guild_template_structure)
+
+        # --- REGISTER NEW POST Route for Creating from Structure --- 
+        self.general_template_router.post(
+            "/templates/guilds/from_structure",
+            summary="Create Guild Template from Structure Payload",
+            description="Creates a new guild template based on a provided structure payload (typically from the designer).",
+            response_model=GuildStructureTemplateInfo, # Return info of the new template
+            status_code=status.HTTP_201_CREATED,
+            dependencies=[Depends(get_current_user)]
+        )(self.create_template_from_structure)
 
     async def get_guild_template(self, guild_id: str, current_user: AppUserEntity = Depends(get_current_user)) -> GuildTemplateResponseSchema:
         """API endpoint to retrieve the guild template structure by Guild ID."""
@@ -562,6 +574,55 @@ class GuildTemplateController(BaseController):
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred while updating the template structure."
+            )
+
+    # --- NEW Method for Creating Template from Structure --- 
+    async def create_template_from_structure(
+        self,
+        payload: GuildStructureTemplateCreateFromStructure,
+        current_user: AppUserEntity = Depends(get_current_user),
+        db: AsyncSession = Depends(get_web_db_session)
+    ) -> GuildStructureTemplateInfo:
+        """Creates a new guild template based on the provided structure data."""
+        self.logger.info(f"User {current_user.id} attempting to create new template '{payload.new_template_name}' from structure.")
+
+        try:
+            # Call the new service method
+            new_template_entity = await self.template_service.create_template_from_structure(
+                db=db,
+                creator_user_id=current_user.id,
+                payload=payload
+            )
+            
+            # Convert entity to response schema (assuming service returns entity)
+            # Manual mapping or use Pydantic's from_orm if service returns the full entity
+            # For now, construct manually or assume service returns a dict matching the schema
+            # Let's assume service returns an object with needed fields
+            response_data = GuildStructureTemplateInfo(
+                template_id=new_template_entity.id,
+                template_name=new_template_entity.template_name,
+                description=new_template_entity.template_description,
+                is_shared=new_template_entity.is_shared,
+                is_initial_snapshot=False, # Newly created is never initial snapshot
+                creator_user_id=new_template_entity.creator_user_id,
+                created_at=new_template_entity.created_at
+            )
+
+            self.logger.info(f"Successfully created template '{response_data.template_name}' (ID: {response_data.template_id}) from structure.")
+            return response_data
+
+        except ValueError as e:
+            # Handle potential errors like invalid structure or duplicate name from service
+            self.logger.warning(f"Failed to create template from structure: {e}")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        except NotImplementedError:
+             self.logger.error(f"Create template from structure service method not implemented.")
+             raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Creating template from structure not implemented.")
+        except Exception as e:
+            self.logger.error(f"Error creating template from structure: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred while creating the template."
             )
 
 # Instantiate the controller for registration
