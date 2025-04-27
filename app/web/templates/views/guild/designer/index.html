@@ -1,88 +1,79 @@
-{% extends "layouts/base_layout.html" %}
+{% extends "layouts/three_column_layout.html" %}
 
-{% block title %}Guild Designer - {{ guild_template_data.template_name }}{% endblock %}
+{% block title %}Guild Designer - {{ guild_template_data.template_name }} - HomeLab Discord Bot{% endblock %}
 
 {% block extra_css %}
-{# Add Gridstack CSS #}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack.min.css"/>
-<link rel="stylesheet" href="{{ url_for('static', path='css/components/widgets.css') }}">
-{# Add jsTree default theme CSS #}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/themes/default/style.min.css" />
-{# Load editor-specific CSS #}
-<link rel="stylesheet" href="{{ url_for('static', path='css/views/guild/designer.css') }}">
+    {{ super() }} {# Include CSS from layout (panels.css) #}
+    {# Add Gridstack CSS #}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack.min.css"/>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/components/widgets.css') }}">
+    {# Add jsTree default theme CSS #}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/themes/default/style.min.css" />
+    {# Load designer-specific CSS #}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/views/guild/designer.css') }}">
 {% endblock %}
 
-{% block content %}
-{# Replace the bootstrap container with our layout-editor structure #}
-<div class="layout-editor has-panel-left has-panel-right" 
-     id="designer-main-container" 
+{# Designer uses left and right panels #}
+{% block panel_layout_container_classes %}has-panel-left has-panel-right{% endblock %}
+
+{# Specific ID for the designer container #}
+{% block panel_layout_container_id %}designer-main-container{% endblock %}
+
+{# Add data attributes needed by JS #}
+{% block panel_layout_container_data %}
      data-current-user-id="{{ current_user_id }}"
     {# Conditionally add the active template ID attribute #}
-    {% if active_template_id is not none %} data-active-template-id="{{ active_template_id }}"{% endif %}>
+    {% if active_template_id is not none %} data-active-template-id="{{ active_template_id }}"{% endif %}
+{% endblock %}
 
-    {# --- Editor Toolbar --- #}
-    <div class="editor-toolbar d-flex justify-content-between align-items-center p-2">
-        {# Panel Toggle Buttons #}
-        <div class="panel-toggle-buttons">
-            <button id="toggle-left-panel-btn" class="btn btn-sm btn-outline-secondary" title="Toggle Toolbox Panel">
-                <i class="bi bi-layout-sidebar-inset"></i> <span class="d-none d-md-inline">Toolbox</span>
-            </button>
-            <button id="toggle-right-panel-btn" class="btn btn-sm btn-outline-secondary" title="Toggle Properties Panel">
-                <i class="bi bi-layout-sidebar-inset-reverse"></i> <span class="d-none d-md-inline">Properties</span>
-            </button>
-        </div>
+{# Add page-specific toolbar actions for the designer #}
+{% block panel_layout_toolbar_actions %}
+    {# Add/Save buttons specific to designer could go here if needed #}
+    {# Example: <button id="add-category-btn" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Add Category</button> #}
+    {# Gridstack Controls #}
+    <button id="toggle-lock-btn" class="btn btn-sm btn-outline-secondary" title="Lock/Unlock Layout Editing">
+        <i class="bi bi-unlock-fill"></i> <span class="btn-text d-none d-md-inline">Lock Layout</span>
+    </button>
+    <button id="reset-layout-btn" class="btn btn-sm btn-outline-danger" title="Reset Layout to Default">
+         <i class="bi bi-arrow-repeat"></i> <span class="d-none d-md-inline">Reset Layout</span>
+    </button>
+{% endblock %}
 
-        {# Moved buttons here - Wrapped in a div for alignment #}
-        <div class="page-header-actions">
-            <button id="toggle-lock-btn" class="btn btn-sm btn-outline-secondary" title="Lock/Unlock Layout Editing">
-                <i class="bi bi-unlock-fill"></i> <span class="btn-text d-none d-md-inline">Lock Layout</span> {# Hide text on smaller screens #}
-            </button>
-            <button id="reset-layout-btn" class="btn btn-sm btn-outline-danger" title="Reset Layout to Default">
-                 <i class="bi bi-arrow-repeat"></i> <span class="d-none d-md-inline">Reset Layout</span> {# Hide text on smaller screens #}
-            </button>
-        </div>
+{# Content for the Left Panel (Toolbox) #}
+{% block panel_left_content %}
+    <h5 class="panel-title mb-2"><i class="bi bi-tools me-2"></i>Toolbox</h5>
+    <hr>
+    <p class="panel-placeholder">Drag elements from here later...</p>
+    {# Placeholder for drag-and-drop categories/channels/jsTree #}
+{% endblock %}
+
+{# Content for the Main Area (Gridstack Canvas) #}
+{% block main_area_content %}
+     {# Page Title/Header specific to designer #}
+     <div class="page-header mb-3">
+        <h1 class="h4">Guild Structure Designer</h1>
+        <p class="text-muted mb-0 small">Manage the saved template for Guild ID: {{ guild_id }}</p>
     </div>
 
-    {# --- Editor Body (Main Area + Panels) --- #}
-    <div class="editor-body">
+    {# Container for potential error messages (already in layout, but can add specific ones) #}
+    {# <div id="designer-error-container" class="mb-3"></div> #}
 
-        {# --- Left Panel (Toolbox) --- #}
-        <div class="editor-panel-left p-3">
-            <h5><i class="bi bi-tools me-2"></i>Toolbox</h5>
-            <hr>
-            <p class="panel-placeholder">Drag elements from here later...</p>
-            {# Placeholder for drag-and-drop categories/channels #}
-        </div>
+    {# --- Gridstack Container --- #}
+    <div class="grid-stack" id="designer-grid">
+        {# Widgets will be added by JS #}
+    </div>
+{% endblock %}
 
-        {# --- Main Editor Area --- #}
-        <div class="editor-main-area">
-            {# Page Title #}
-             <div class="mb-3">
-                <h1 class="h4">Guild Structure Designer</h1> {# Smaller header #}
-                <p class="text-muted mb-0 small">Manage the saved template for Guild ID: {{ guild_id }}</p>
-            </div>
+{# Content for the Right Panel (Properties) #}
+{% block panel_right_content %}
+    <h5 class="panel-title mb-2"><i class="bi bi-sliders me-2"></i>Properties</h5>
+    <hr>
+    <p class="panel-placeholder">Edit selected widget properties here later...</p>
+    {# Placeholder for property editor #}
+{% endblock %}
 
-             {# Container for potential error messages #}
-            <div id="designer-error-container" class="mb-3"></div>
-
-            {# --- Gridstack Container --- #}
-            <div class="grid-stack" id="designer-grid"></div>
-        </div>
-
-        {# --- Right Panel (Properties) --- #}
-        <div class="editor-panel-right p-3">
-            <h5><i class="bi bi-sliders me-2"></i>Properties</h5>
-            <hr>
-            <p class="panel-placeholder">Edit selected widget properties here later...</p>
-            {# Placeholder for property editor #}
-        </div>
-
-    </div> {# End editor-body #}
-
-</div> {# End layout-editor #}
-
-{# --- Add Share Template Modal HTML --- #}
-{# Moved the modal definition here, BEFORE extra_js block #}
+{# Add Modals specific to the designer #}
+{% block panel_layout_modals %}
 <div class="modal fade" id="shareTemplateModal" tabindex="-1" aria-labelledby="shareTemplateModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -113,17 +104,17 @@
     </div>
   </div>
 </div>
-{# --- End Share Template Modal --- #}
-
 {% endblock %}
 
+
 {% block extra_js %}
-{# Include Gridstack JS #}
-<script src="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack-all.js"></script>
-{# Include jQuery (dependency for jsTree) #}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-{# Include jsTree JS #}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/jstree.min.js"></script>
-{# Include the JavaScript file for this page (using /views/ path and type="module") #}
-<script type="module" src="{{ url_for('static', path='js/views/guild/designer/index.js') }}"></script>
+    {# {{ super() }} -- No super needed unless base_layout adds JS #}
+    {# Include Gridstack JS #}
+    <script src="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack-all.js"></script>
+    {# Include jQuery (dependency for jsTree) #}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    {# Include jsTree JS #}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/jstree.min.js"></script>
+    {# Include the JavaScript file for this page (using /views/ path and type="module") #}
+    <script type="module" src="{{ url_for('static', path='js/views/guild/designer/index.js') }}"></script>
 {% endblock %}

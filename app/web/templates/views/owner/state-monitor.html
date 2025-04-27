@@ -1,150 +1,110 @@
-{% extends "layouts/base_layout.html" %}
+{% extends "layouts/three_column_layout.html" %}
 
 {% block title %}State Monitor - HomeLab Discord Bot{% endblock %}
 
+{# Specify CSS needed for this specific page (gridstack, widgets, json-viewer, modal, page-specific) #}
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', path='css/views/owner/state-monitor.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', path='css/components/modalComponent.css') }}">
+    {{ super() }} {# Include CSS from layout (panels.css) #}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack.min.css"/>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/components/widgets.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/components/json-viewer.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/components/modalComponent.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/views/owner/state-monitor.css') }}">
 {% endblock %}
 
-{% block content %}
-<div class="state-monitor-container">
-    <div class="page-header">
+{# Define the classes for the main container #}
+{% block panel_layout_container_classes %}has-panel-left has-panel-right{% endblock %}
+
+{# Define the ID for the main container #}
+{% block panel_layout_container_id %}state-monitor-container{% endblock %}
+
+{# Add page-specific toolbar actions #}
+{% block panel_layout_toolbar_actions %}
+    {# Status Area #}
+    <div class="status-area d-flex align-items-center gap-2">
+        <span id="status-display" class="status status-info ms-2">Initializing...</span>
+        <span id="snapshot-timestamp" class="timestamp text-muted small">No snapshot captured yet</span>
+    </div>
+
+    {# Scope Buttons #}
+    <div class="btn-group btn-group-sm">
+        <button id="scope-all" class="btn btn-outline-secondary active">All</button>
+        <button id="scope-bot" class="btn btn-outline-secondary">Bot</button>
+        <button id="scope-web" class="btn btn-outline-secondary">Web</button>
+    </div>
+
+    {# Main Action Buttons #}
+    <button id="refresh-btn" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-sync-alt"></i> Refresh
+    </button>
+    <button id="capture-snapshot-btn" class="btn btn-sm btn-primary">
+        <i class="fas fa-camera"></i> Capture
+    </button>
+    <button id="download-snapshot-btn" class="btn btn-sm btn-outline-success">
+        <i class="fas fa-download"></i> Download
+    </button>
+    <button id="copy-snapshot-btn" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-copy"></i> Copy Snapshot
+    </button>
+    <button id="toggle-auto-refresh" class="btn btn-sm btn-outline-info">
+        <i class="fas fa-clock"></i> Auto-Refresh
+    </button>
+
+    {# Gridstack Controls #}
+    <button id="toggle-lock-btn" class="btn btn-sm btn-outline-secondary" title="Lock/Unlock Layout Editing">
+        <i class="bi bi-unlock-fill"></i> <span class="btn-text d-none d-md-inline">Lock</span>
+    </button>
+    <button id="reset-layout-btn" class="btn btn-sm btn-outline-danger" title="Reset Layout to Default">
+        <i class="bi bi-arrow-repeat"></i> <span class="d-none d-md-inline">Reset</span>
+    </button>
+{% endblock %}
+
+{# Content for the Left Panel (Collectors ONLY) #}
+{% block panel_left_content %}
+    <div id="collectors-list-container"> 
+        {# Simple title, no widget-header class #}
+        <h5 class="panel-title mb-2"><i class="fas fa-list-check me-2"></i>Available Collectors</h5>
+        {# Simple div for content, no widget-content class #}
+        <div id="collectors-list-content-area"> 
+            <p class="text-muted p-2 small">Loading collectors...</p>
+        </div>
+    </div>
+{% endblock %}
+
+{# Content for the Main Area (Grid: Summary, Results) #}
+{% block main_area_content %}
+     {# Page Title moved inside main area block #}
+     <div class="page-header mb-3">
         <h1>State Monitor</h1>
         <p class="text-muted">
             Monitor and capture state information from bot and web runtime
         </p>
     </div>
     
-    <div class="row">
-        <div class="col-12">
-            <!-- Status and controls bar -->
-            <div class="control-bar card mb-4">
-                <div class="card-body d-flex justify-content-between align-items-center flex-wrap">
-                    <div class="status-area">
-                        <span id="status-display" class="status status-info">Ready</span>
-                        <span id="snapshot-timestamp" class="timestamp">No snapshot captured yet</span>
-                    </div>
-                    
-                    <div class="action-buttons">
-                        <div class="btn-group">
-                            <button id="scope-all" class="btn btn-outline-secondary active">All</button>
-                            <button id="scope-bot" class="btn btn-outline-secondary">Bot</button>
-                            <button id="scope-web" class="btn btn-outline-secondary">Web</button>
-                        </div>
-                        
-                        <button id="refresh-collectors" class="btn btn-outline-secondary">
-                            <i class="fas fa-sync-alt"></i> Refresh
-                        </button>
-                        <button id="capture-snapshot" class="btn btn-primary">
-                            <i class="fas fa-camera"></i> Capture
-                        </button>
-                        <button id="download-snapshot" class="btn btn-outline-success">
-                            <i class="fas fa-download"></i> Download
-                        </button>
-                        <button id="copy-snapshot" class="btn btn-outline-secondary">
-                            <i class="fas fa-copy"></i> Copy All
-                        </button>
-                        <button id="toggle-auto-refresh" class="btn btn-outline-info">
-                            <i class="fas fa-clock"></i> Start Auto-Refresh
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+    {# Gridstack container #}
+    <div class="grid-stack" id="state-monitor-grid">
+        {# Widgets (Summary, Results) will be added here by GridManager via JS #}
     </div>
-    
-    <div class="row">
-        <!-- Left panel: Collector selection -->
-        <div class="col-md-4 col-lg-3">
-            <div class="card collector-panel-container">
-                <div class="card-header">
-                    <h5 class="mb-0">State Collectors</h5>
-                </div>
-                <div class="card-body p-0" id="collector-panel">
-                    {# Placeholder for server collectors - JS will populate #}
-                    <div class="collector-section p-3 border-bottom">
-                        <h5>Server Collectors</h5>
-                        <div class="collector-list" id="server-collectors">
-                            <small class="text-muted">Loading...</small> {# Keep loading text? JS might overwrite #}
-                        </div>
-                    </div>
-                    {# Static section for browser collectors info #}
-                    <div class="collector-section p-3">
-                        <h5>Browser Collectors</h5> {# Static Heading #}
-                        <p class="mb-2"> {# Static Paragraph, mb-2 for spacing below #}
-                            Note: Collectors marked "Requires Approval" access potentially sensitive browser data (e.g., DOM structure, storage keys, JS errors).
-                            Approval ensures explicit consent for this access in your browser session, even as the owner, as a security measure.
-                            (Approval mechanism TBD).
-                        </p>
-                        {# Placeholder for browser collector list - JS will populate #}
-                        <div class="collector-list" id="browser-collectors">
-                            <small class="text-muted">Loading...</small> {# Keep loading text? JS might overwrite #}
-                        </div>
-                    </div>
-                    {# Remove Original Loading Indicator if JS handles loading states #}
-                    {# 
-                    <div class="loading-indicator">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p>Loading collectors...</p>
-                    </div>
-                    #}
-                </div>
-            </div>
-        </div>
-        
-        <!-- NEW: Recent Snapshots Panel -->
-        <div class="col-md-4 col-lg-3 mt-4"> {# Use mt-4 for spacing #}
-            <div class="card recent-snapshots-panel-container">
-                <div class="card-header">
-                    <h5 class="mb-0">Recent Snapshots</h5>
-                </div>
-                <div class="card-body p-0" id="recent-snapshots-panel-content">
-                    {# Content will be populated by JS #}
-                    <div class="list-group list-group-flush" id="recent-snapshots-list">
-                        <p class="text-muted p-3 mb-0">Loading recent snapshots...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- END: Recent Snapshots Panel -->
-        
-        <!-- Right panel: Results -->
-        <div class="col-md-8 col-lg-9">
-            
-            <!-- Summary Panel (NEW) -->
-            <div class="card mb-4 summary-panel-container">
-                <div class="card-header">
-                    <h5 class="mb-0">Snapshot Summary</h5>
-                </div>
-                <div class="card-body" id="summary-panel">
-                    <p class="text-muted">Capture a snapshot to see the summary.</p>
-                </div>
-            </div>
-            <!-- End Summary Panel -->
-            
-            <div class="card results-panel-container">
-                <div class="card-header">
-                    <h5 class="mb-0">State Snapshot Details</h5> {# Renamed for clarity #}
-                </div>
-                <div class="card-body" id="results-panel">
-                    <div class="no-data-message">
-                        <i class="fas fa-info-circle fa-2x mb-3"></i>
-                        <p>No state snapshot captured yet. Select state collectors from the left panel and click 'Capture'.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
-{% block extra_js %}
+{# Content for the Right Panel (Snapshots ONLY) #}
+{% block panel_right_content %}
+     <div id="recent-snapshots-container">
+         {# Simple title, no widget-header class #}
+        <h5 class="panel-title mb-2"><i class="fas fa-history me-2"></i>Recent Snapshots</h5>
+        {# Simple div for content, no widget-content class #}
+        <div id="recent-snapshots-content-area">
+            <p class="text-muted p-2 small">Loading snapshots...</p>
+        </div>
+    </div>
+{% endblock %}
 
-<script src="{{ url_for('static', path='js/components/jsonViewer.js') }}"></script>
-<script src="{{ url_for('static', path='js/components/modalComponent.js') }}"></script>
-<!-- Load state monitor -->
-<script type="module" src="{{ url_for('static', path='js/views/owner/state-monitor/stateMonitor.js') }}"></script>
+
+{# Add page-specific JS dependencies #}
+{% block extra_js %}
+    {{ super() }} {# Include JS from layout if any #}
+    <script src="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack-all.js"></script>
+    <script src="{{ url_for('static', path='js/components/jsonViewer.js') }}"></script>
+    <script src="{{ url_for('static', path='js/components/modalComponent.js') }}"></script>
+    <script type="module" src="{{ url_for('static', path='js/views/owner/state-monitor/index.js') }}"></script>
 {% endblock %} 

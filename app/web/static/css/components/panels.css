@@ -1,17 +1,9 @@
 /* Panel Component Styles */
 
-/* Base Panel Structure */
-.panel {
-    flex: 0 0 300px;
-    padding: var(--spacing-md);
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    overflow-y: auto;
-    overflow-x: hidden;
-    z-index: 0;
-}
+/* Base Panel Structure (Used for generic panels, might not be needed by layout) */
+/* .panel { ... keep if needed elsewhere ... } */
 
-/* Panel Header */
+/* Panel Header (Used within panels) */
 .panel-header {
     display: flex;
     align-items: center;
@@ -31,38 +23,86 @@
     color: var(--text-muted);
 }
 
-/* Panel Content */
+/* Panel Content (Used within panels) */
 .panel-content {
     color: var(--text-normal);
 }
 
-/* Panel Placeholder Text */
+/* Panel Placeholder Text (Used within panels) */
 .panel-placeholder {
     color: var(--text-muted);
     font-size: 0.875rem;
     opacity: 0.8;
 }
 
-/* Editor-specific Panel Styles */
-.editor-panel-left,
-.editor-panel-right {
-    transition: flex-basis 0.3s ease-in-out, 
-                padding 0.3s ease-in-out, 
-                opacity 0.3s ease-in-out;
+/* --- Three Column Layout Styles --- */
+
+/* Main body containing panels and main area */
+.panel-layout-body {
+    display: flex;
+    flex-direction: row; /* Arrange items horizontally */
+    flex-grow: 1; /* Allow body to grow and fill space */
+    overflow: hidden; /* Prevent content overflow issues */
+    height: calc(100vh - var(--header-height) - 40px); /* Adjust height based on header/toolbar */
+    /* Assuming header height and toolbar height are fixed */
 }
 
-/* Collapsed State */
-.editor-panel-left.collapsed,
-.editor-panel-right.collapsed {
+/* Base styles for Left and Right Panels */
+.panel-layout-panel-left,
+.panel-layout-panel-right {
+    flex: 0 0 280px; /* Default panel width */
+    background-color: var(--bg-secondary);
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: flex-basis 0.3s ease-in-out, 
+                padding 0.3s ease-in-out, 
+                opacity 0.3s ease-in-out,
+                border-width 0.3s ease-in-out;
+    border-color: var(--border-color);
+    border-style: solid;
+    border-width: 0;
+    /* Padding is applied to the inner .panel-content-area in the layout */
+}
+
+/* Add border only where needed */
+.panel-layout-panel-left {
+    border-right-width: 1px;
+}
+
+.panel-layout-panel-right {
+    border-left-width: 1px;
+}
+
+/* Main content area */
+.panel-layout-main-area {
+    flex-grow: 1; /* Allow main area to take remaining space */
+    overflow-y: auto; /* Allow scrolling within main area */
+    padding: var(--spacing-md); /* Add padding to main area */
+}
+
+/* Collapsed State for Panels */
+.panel-layout-panel-left.collapsed,
+.panel-layout-panel-right.collapsed {
     flex-basis: 0;
-    padding: 0;
+    padding-left: 0;
+    padding-right: 0;
     border-width: 0;
     overflow: hidden;
     opacity: 0;
 }
 
-/* Panel Divider */
+/* Panel Divider (Keep if used within panels) */
 .panel-divider {
     border-top: 1px solid var(--border-color);
     margin: var(--spacing-md) 0;
 } 
+
+/* REMOVE OLD STYLES */
+/* 
+.editor-panel-left,
+.editor-panel-right { ... }
+.editor-panel-left { ... }
+.editor-panel-right { ... }
+.editor-panel-left.collapsed,
+.editor-panel-right.collapsed { ... }
+*/ 

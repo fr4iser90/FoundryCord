@@ -86,3 +86,19 @@
 .modal-footer .btn-primary:hover {
     filter: brightness(90%);
 }
+
+/* --- Custom Confirmation Modal Specific Styles --- */
+/* Apply to the modal root element along with .modal */
+.modal.modal-confirm {
+    z-index: 1060; /* Ensure it appears above other elements if needed */
+}
+
+.modal.modal-confirm .modal-dialog {
+    max-width: 500px; /* Specific width */
+    margin-top: 10%; /* Specific top margin */
+}
+
+/* Add minimum width to footer buttons */
+.modal.modal-confirm .modal-footer .btn {
+    min-width: 80px;
+}

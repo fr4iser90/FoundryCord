@@ -1,0 +1,96 @@
+{% extends "layouts/base_layout.html" %}
+
+{# Define base title block, child templates can override #}
+{% block title %}Panel Layout{% endblock %}
+
+{# Block for extra CSS specific to panel pages (e.g., panels.css) #}
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/components/panels.css') }}">
+    {# Add other common CSS dependencies here if needed #}
+{% endblock %}
+
+{% block content %}
+{# Main container for the panel layout #}
+{# Child templates can add specific data attributes here if needed #}
+<div class="panel-layout {% block panel_layout_container_classes %}has-panel-left has-panel-right{% endblock %}" 
+     id="{% block panel_layout_container_id %}panel-layout-main-container{% endblock %}"
+     {% block panel_layout_container_data %}{% endblock %}>
+
+    {# --- Layout Toolbar --- #}
+    <div class="panel-layout-toolbar d-flex justify-content-between align-items-center p-2">
+        {# Left side of toolbar: Panel Toggles #}
+        <div class="panel-toggle-buttons">
+            {% block panel_layout_toolbar_toggles %}
+            <button id="toggle-left-panel-btn" class="btn btn-sm btn-outline-secondary" title="Toggle Left Panel">
+                <i class="bi bi-layout-sidebar-inset"></i> <span class="d-none d-md-inline">Panel</span>
+            </button>
+            {# Add right panel toggle only if needed by child template #}
+             {% if self.panel_layout_container_classes() and 'has-panel-right' in self.panel_layout_container_classes() %}
+             <button id="toggle-right-panel-btn" class="btn btn-sm btn-outline-secondary" title="Toggle Right Panel">
+                <i class="bi bi-layout-sidebar-inset-reverse"></i> <span class="d-none d-md-inline">Panel</span>
+            </button>
+             {% endif %}
+            {% endblock %}
+        </div>
+
+        {# Right side of toolbar: Page-specific Actions #}
+        <div class="page-header-actions d-flex flex-wrap gap-2">
+            {% block panel_layout_toolbar_actions %}{# Child templates fill this #}
+            {% endblock %}
+        </div>
+    </div>
+
+    {# --- Layout Body (Main Area + Panels) --- #}
+    <div class="panel-layout-body">
+
+        {# --- Left Panel --- #}
+         {% if self.panel_layout_container_classes() and 'has-panel-left' in self.panel_layout_container_classes() %}
+        <div class="panel-layout-panel-left p-2"> 
+             <div class="panel-content-area"> {# Wrapper for content #}
+                {% block panel_left_content %}{# Child templates fill this #}
+                <p class="panel-placeholder">Left panel content goes here.</p>
+                {% endblock %}
+            </div>
+        </div>
+         {% endif %}
+
+        {# --- Main Area --- #}
+        <div class="panel-layout-main-area">
+            {# Optional: Page title/header specific to the view #}
+             {% block panel_layout_page_header %}{% endblock %}
+             
+             {# Container for potential error messages #}
+             <div id="{% block panel_layout_error_container_id %}panel-layout-error-container{% endblock %}" class="mb-3"></div>
+
+            {# Main content area, often a gridstack container #}
+             <div class="main-content-area"> {# Wrapper for content #}
+                 {% block main_area_content %}{# Child templates fill this #}
+                 <p>Main content goes here.</p>
+                 {% endblock %}
+             </div>
+        </div>
+
+        {# --- Right Panel (Optional) --- #}
+         {% if self.panel_layout_container_classes() and 'has-panel-right' in self.panel_layout_container_classes() %}
+        <div class="panel-layout-panel-right p-2"> 
+             <div class="panel-content-area"> {# Wrapper for content #}
+                {% block panel_right_content %}{# Child templates fill this #}
+                <p class="panel-placeholder">Right panel content goes here.</p>
+                {% endblock %}
+            </div>
+        </div>
+         {% endif %}
+
+    </div> {# End panel-layout-body #}
+
+</div> {# End panel-layout #}
+
+{# Modals or other elements outside the main layout flow #}
+{% block panel_layout_modals %}{% endblock %}
+
+{% endblock %} {# End block content #}
+
+{# Block for extra JS specific to panel pages #}
+{% block extra_js %}
+    {# Child templates should add their specific JS dependencies here #}
+{% endblock %} 
