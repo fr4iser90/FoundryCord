@@ -12,6 +12,8 @@ import { initializeTemplateList } from './widget/templateList.js';
 import { initializeSharedTemplateList } from './widget/sharedTemplateList.js';
 
 let currentActiveTemplateId = null; // Module-scoped variable
+let isStructureDirty = false; // NEW: Track if the structure needs saving
+let currentTemplateData = null; // Store the currently loaded template data
 
 /**
  * Extracts the Guild ID from the current URL path.
@@ -587,9 +589,15 @@ function setupTemplateLoadListener() {
             showToast('info', `Loading structure from template: ${templateData.template_name || 'Unnamed Template'}`);
             
             // Re-populate widgets with the new data
+            currentTemplateData = templateData; // Store the newly loaded data
             populateGuildDesignerWidgets(templateData);
             // Re-initialize the structure tree with the new data
             initializeStructureTree(templateData);
+
+            // Reset dirty flag and disable save button
+            isStructureDirty = false;
+            updateSaveButtonState(); 
+
         } else {
             console.error("[Index] 'loadTemplateData' event received without valid template data in detail.");
             showToast('error', 'Failed to load template data from event.');
@@ -598,6 +606,107 @@ function setupTemplateLoadListener() {
     console.log("[Index] 'loadTemplateData' event listener is active.");
 }
 // --- END NEW LISTENER ---
+
+// --- NEW: Listener for structure changes from the tree --- 
+function setupStructureChangeListener() {
+    console.log("[Index] Setting up listener for 'structureChanged' event...");
+    document.addEventListener('structureChanged', (event) => {
+        console.log("[Index] Received 'structureChanged' event.", event.detail);
+        isStructureDirty = true;
+        updateSaveButtonState();
+        // Optionally, provide more details in the event if needed
+        // showToast('warning', 'Structure modified. Remember to save.'); // Maybe too noisy
+    });
+    console.log("[Index] 'structureChanged' event listener is active.");
+}
+
+// --- NEW: Function to update save button state --- 
+function updateSaveButtonState() {
+    const saveButton = document.getElementById('save-structure-btn');
+    if (saveButton) {
+        saveButton.disabled = !isStructureDirty;
+        // console.log(`[Index] Save button state updated. Disabled: ${saveButton.disabled}`);
+    } else {
+        // console.warn("[Index] Save button not found during state update.");
+    }
+}
+
+// --- NEW: Function to handle save button click --- 
+async function handleSaveStructure() {
+    const saveButton = document.getElementById('save-structure-btn');
+    if (!saveButton || !isStructureDirty) {
+        console.log("[Index] Save button clicked but not dirty or button missing.");
+        return;
+    }
+    
+    console.log("[Index] Save Structure button clicked.");
+    showToast('info', 'Attempting to save structure... (API not implemented yet)');
+
+    // 1. Get the current tree data structure
+    const treeContainer = document.getElementById('widget-content-structure-tree');
+    if (!treeContainer || !$(treeContainer).jstree(true)) {
+        console.error("[Index] Cannot get tree data: Tree container or instance not found.");
+        showToast('error', 'Failed to get structure data for saving.');
+        return;
+    }
+    
+    // Get data in a flat format, easier for backend processing
+    // Ensure it includes necessary data like parent and position implicitly
+    // const treeJsonData = $(treeContainer).jstree(true).get_json('#', { flat: true }); 
+    // TODO: Refine data extraction based on backend needs (get_json might need adjustment)
+    // For now, just log a placeholder
+    const treeJsonData = { placeholder: 'Structure data would go here' }; 
+    console.log("[Index] Formatted Tree Data (Placeholder):", treeJsonData);
+    
+    // TODO: 2. Format this data into the payload required by the backend API
+    const payload = formatStructureForApi(treeJsonData, currentTemplateData?.id);
+    if (!payload) {
+        showToast('error', 'Failed to format structure data for saving.');
+        return;
+    }
+
+    // TODO: 3. Get the current template ID
+    // Assuming currentTemplateData holds the loaded template info
+    const templateId = currentTemplateData?.id;
+    if (!templateId) {
+         console.error("[Index] Cannot save: Current template ID is unknown.");
+         showToast('error', 'Cannot determine which template to save.');
+         return;
+    }
+    
+    // TODO: 4. Call the backend API endpoint (PUT /api/v1/templates/guilds/{template_id}/structure)
+    const apiUrl = `/api/v1/templates/guilds/${templateId}/structure`;
+    console.log(`[Index] Sending PUT request to: ${apiUrl} with payload:`, payload);
+
+    // Simulate API call for now
+    saveButton.disabled = true; // Disable during 'save'
+    try {
+        // *** Replace with actual apiRequest call when backend is ready ***
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+        // const response = await apiRequest(apiUrl, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        
+        showToast('success', 'Structure saved successfully! (Simulated)');
+        isStructureDirty = false; // Reset flag on successful save
+        updateSaveButtonState(); // Update button state
+
+    } catch (error) {
+        console.error("[Index] Error saving structure (Simulated):", error);
+        // apiRequest will handle its own toasts, but maybe add a general one here
+        // showToast('error', 'Failed to save structure.'); // Already handled by apiRequest
+    } finally {
+         saveButton.disabled = !isStructureDirty; // Re-enable button if save failed and it's still dirty
+    }
+}
+
+// TODO: Create this function based on backend requirements
+function formatStructureForApi(treeJsonData, templateId) {
+    // This is a placeholder. Actual implementation needs to:
+    // - Iterate through treeJsonData (which needs to be structured correctly)
+    // - Extract node IDs (stripping 'channel_' or 'category_'), parent IDs, positions.
+    // - Map them into the format expected by the Pydantic schema for the PUT endpoint.
+    console.warn("[Index] formatStructureForApi is a placeholder.");
+    return { nodes: treeJsonData }; // Example placeholder structure
+}
 
 // --- Main Execution ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -683,6 +792,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         // --- Setup Listeners --- 
         setupPanelToggles();
         setupTemplateLoadListener(); // Activate the new listener
+        setupStructureChangeListener(); // Activate listener for tree changes
+
+        // --- Add Listener for Save Button --- 
+        const saveButton = document.getElementById('save-structure-btn');
+        if (saveButton) {
+            saveButton.addEventListener('click', handleSaveStructure);
+            console.log("[Index] Save button event listener attached.");
+        } else {
+             console.warn("[Index] Save structure button not found, cannot attach listener.");
+        }
+        // --- End Save Button Listener ---
 
         console.log("[Index] Guild Designer initialization sequence complete.");
 

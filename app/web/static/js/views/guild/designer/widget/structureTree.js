@@ -147,9 +147,29 @@ export function initializeStructureTree(templateData) { // Export the function
             }
         })
         .on('move_node.jstree', function (e, data) {
-            // console.log("[TreeWidget] Node moved:", data); // AUSKOMMENTIERT
-            showToast('info', `Moved ${data.node.text}. Saving structure not implemented yet.`);
-            // TODO: Implement save logic here or trigger a save action
+            // console.log("[TreeWidget] Raw move_node data:", data);
+            const movedNodeId = data.node.id; // e.g., "channel_123" or "category_456"
+            const newParentId = data.parent; // e.g., "category_456" or "template_root"
+            const newPosition = data.position; // Index among siblings (0-based)
+            const oldParentId = data.old_parent;
+            const oldPosition = data.old_position;
+
+            console.log(`[TreeWidget] Node Moved: ID=${movedNodeId}`);
+            console.log(`  New Parent: ID=${newParentId}, Position: ${newPosition}`);
+            console.log(`  Old Parent: ID=${oldParentId}, Position: ${oldPosition}`);
+
+            // Dispatch a custom event to notify index.js
+            document.dispatchEvent(new CustomEvent('structureChanged', {
+                detail: {
+                    nodeId: movedNodeId,
+                    newParentId: newParentId,
+                    newPosition: newPosition,
+                    oldParentId: oldParentId,
+                    oldPosition: oldPosition
+                }
+            }));
+
+            showToast('info', `Moved ${data.node.text}. Remember to save changes.`);
         });
         // console.log("[TreeWidget] jsTree initialized successfully."); // AUSKOMMENTIERT
     } catch (error) {

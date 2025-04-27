@@ -30,6 +30,13 @@
 {% block panel_layout_toolbar_actions %}
     {# Add/Save buttons specific to designer could go here if needed #}
     {# Example: <button id="add-category-btn" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Add Category</button> #}
+    
+    {# --- Designer Specific Buttons --- #}
+    <button id="save-structure-btn" class="btn btn-sm btn-primary me-2" title="Save Changes to this Template Structure" disabled>
+        <i class="bi bi-save-fill"></i> <span class="d-none d-md-inline">Save Structure</span>
+    </button>
+    {# TODO: Add Apply to Discord Button later #}
+
     {# Gridstack Controls #}
     <button id="toggle-lock-btn" class="btn btn-sm btn-outline-secondary" title="Lock/Unlock Layout Editing">
         <i class="bi bi-unlock-fill"></i> <span class="btn-text d-none d-md-inline">Lock Layout</span>
