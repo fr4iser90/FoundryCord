@@ -265,7 +265,6 @@ class StateMonitorController {
         this.updateTimestamp(this.currentSnapshot?.timestamp ? new Date(this.currentSnapshot.timestamp).toLocaleString() : 'Snapshot Loaded (No Timestamp)');
 
         try {
-            // --- CORRECTED (FOR REAL THIS TIME): Use this.gridManager.grid.el --- 
             const gridElement = this.gridManager.grid.el; // Get the grid's root DOM element from the Gridstack instance
 
             // Find and update Snapshot Summary widget
@@ -295,7 +294,7 @@ class StateMonitorController {
             } else {
                  console.log("[StateMonitorIndex] Snapshot Results widget container not found in current layout (gs-id=snapshotResults).");
             }
-            // --- End CORRECTION (FOR REAL THIS TIME) ---
+            
         } catch (error) {
             console.error("[StateMonitorIndex] Error updating snapshot widgets:", error);
             showToast('Error updating snapshot display. See console.', 'error');
@@ -585,8 +584,11 @@ class StateMonitorController {
              const snapshotsContent = document.getElementById('recent-snapshots-content-area');
              if (snapshotsContent) {
                  try {
-                     const refreshedSnapshotsData = await apiRequest('/api/v1/owner/state/snapshots/list?limit=10', 'GET');
-                     const recentSnapshots = (refreshedSnapshotsData && Array.isArray(refreshedSnapshotsData.snapshots)) ? refreshedSnapshotsData.snapshots : [];
+                     // --- CORRECTED: API returns the list directly --- 
+                     const refreshedSnapshotsList = await apiRequest('/api/v1/owner/state/snapshots/list?limit=10', 'GET');
+                     // Ensure it's an array before assigning
+                     const recentSnapshots = Array.isArray(refreshedSnapshotsList) ? refreshedSnapshotsList : [];
+                     // --- End CORRECTION ---
                      this.recentSnapshots = recentSnapshots; // Update state
                      initializeRecentSnapshotsList(this, this.recentSnapshots, snapshotsContent);
                  } catch (refreshError) {

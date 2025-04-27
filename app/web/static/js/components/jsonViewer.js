@@ -139,15 +139,15 @@ class JSONViewer {
         element.appendChild(header);
 
         // Stop rendering children if max level is reached or collection is empty
-        if (level >= maxLevel || count === 0) {
+        if (count === 0) {
             return element;
         }
 
-        // Create the container for child elements (initially hidden)
+        // Create the container for child elements
         const childrenContainer = document.createElement('div');
         childrenContainer.className = 'json-children';
-        childrenContainer.style.display = 'none'; // Initially collapsed
-        childrenContainer.style.marginLeft = '20px';
+        childrenContainer.style.display = 'block'; // Default to expanded
+        childrenContainer.style.marginLeft = '20px'; // Restore margin for visual structure
         element.appendChild(childrenContainer);
 
         // Populate children container
@@ -183,44 +183,39 @@ class JSONViewer {
     // Creates the clickable header for objects/arrays
     _createCollapsibleHeader(type, openBracket, closeBracket, count, level, maxLevel) {
         const headerSpan = document.createElement('span');
-        headerSpan.className = `json-toggle ${type}`;
+        headerSpan.className = `json-toggle ${type} expanded`; // Add 'expanded' class by default
         headerSpan.textContent = openBracket;
 
-        // Add ellipsis and item count if content is hidden/collapsible
-        if (count > 0 && level < maxLevel) {
-             const ellipsis = document.createElement('span');
-             ellipsis.className = 'json-ellipsis';
-             ellipsis.textContent = ' ... ';
-             headerSpan.appendChild(ellipsis);
-             headerSpan.appendChild(document.createTextNode(closeBracket)); // Closing bracket
+        // Add ellipsis and item count 
+        // Ellipsis should be hidden initially if expanded
+        const ellipsis = document.createElement('span');
+        ellipsis.className = 'json-ellipsis';
+        ellipsis.textContent = ' ... ';
+        ellipsis.style.display = 'none'; // Hidden by default when expanded
+        headerSpan.appendChild(ellipsis);
+        headerSpan.appendChild(document.createTextNode(closeBracket)); // Closing bracket
 
-             const countSpan = document.createElement('span');
-             countSpan.className = 'json-count';
-             countSpan.textContent = ` // ${count} item${count !== 1 ? 's' : ''}`;
-             headerSpan.appendChild(countSpan);
+        const countSpan = document.createElement('span');
+        countSpan.className = 'json-count';
+        countSpan.textContent = ` // ${count} item${count !== 1 ? 's' : ''}`;
+        headerSpan.appendChild(countSpan);
 
-             headerSpan.style.cursor = 'pointer';
-             headerSpan.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent event bubbling
-                const children = headerSpan.nextElementSibling; // Assumes childrenContainer is the next sibling
-                if (children && children.classList.contains('json-children')) {
-                    const isHidden = children.style.display === 'none';
-                    children.style.display = isHidden ? 'block' : 'none';
-                    ellipsis.style.display = isHidden ? 'none' : 'inline'; // Toggle ellipsis visibility
-                    headerSpan.classList.toggle('expanded', isHidden);
-                }
-             });
-        } else {
-             // No items or max level reached, just show brackets
-             headerSpan.appendChild(document.createTextNode(closeBracket));
-             if (count === 0) {
-                 const countSpan = document.createElement('span');
-                 countSpan.className = 'json-count';
-                 countSpan.textContent = ` // 0 items`;
-                 headerSpan.appendChild(countSpan);
-             }
-        }
-
+        // Add click listener ONLY if there are children to toggle
+        if (count > 0) { 
+            headerSpan.style.cursor = 'pointer';
+            headerSpan.addEventListener('click', (e) => {
+               e.stopPropagation(); 
+               const children = headerSpan.nextElementSibling;
+               if (children && children.classList.contains('json-children')) {
+                   const isHidden = children.style.display === 'none';
+                   children.style.display = isHidden ? 'block' : 'none';
+                   ellipsis.style.display = isHidden ? 'none' : 'inline'; 
+                   headerSpan.classList.toggle('expanded', isHidden);
+               }
+            });
+        } 
+        // Removed the complex conditional logic based on maxLevel for header creation,
+        // always create the full header with count and make it clickable if count > 0.
 
         return headerSpan;
     }
