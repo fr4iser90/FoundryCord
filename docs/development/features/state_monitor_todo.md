@@ -17,8 +17,8 @@
 
 ## Phase 3: Usability & Weitere Features
 
-- [ ] Implement a custom modal component for browser collector approval.
-- [ ] Implement Summary Panel in the UI.
+- [x] Implement a custom modal component for browser collector approval.
+- [x] Implement Summary Panel in the UI.
 - [ ] Add specific collectors for key features/modules as needed.
 - [ ] (Optional) Implement snapshot comparison functionality.
 - [ ] (Optional) Implement configurable auto-refresh interval/collectors.

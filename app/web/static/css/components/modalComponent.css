@@ -1,0 +1,49 @@
+/**
+ * modalComponent.css: Basic styles for the custom confirmation modal.
+ */
+
+/* Ensure custom modal is above other content if not using Bootstrap z-index */
+.custom-confirm-modal {
+    z-index: 1060; /* Higher than standard Bootstrap modal backdrop (1050) if needed */
+}
+
+/* Add a slightly darker backdrop if Bootstrap\'s default isn\'t sufficient */
+.modal-backdrop.show {
+    opacity: 0.6;
+}
+
+/* Optional: Style the modal dialog itself */
+.custom-confirm-modal .modal-dialog {
+    max-width: 500px;
+    margin-top: 10%;
+}
+
+/* Style the header */
+.custom-confirm-modal .modal-header {
+    /* background-color: #f8f9fa; /* Optional: light background */
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem 1.5rem;
+}
+
+.custom-confirm-modal .modal-title {
+    font-size: 1.25rem;
+    font-weight: 500;
+}
+
+/* Style the body */
+.custom-confirm-modal .modal-body {
+    padding: 1.5rem;
+    line-height: 1.6;
+}
+
+/* Style the footer */
+.custom-confirm-modal .modal-footer {
+    border-top: 1px solid #dee2e6;
+    padding: 0.75rem 1.5rem;
+    justify-content: flex-end; /* Align buttons to the right */
+}
+
+.custom-confirm-modal .modal-footer .btn {
+    margin-left: 0.5rem;
+    min-width: 80px; /* Give buttons a minimum width */
+} 

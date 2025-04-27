@@ -199,6 +199,41 @@
     overflow-y: auto;
 }
 
+/* --- NEW: Summary Panel Styles --- */
+#summary-panel {
+    padding: 1rem 1.5rem;
+    font-size: 0.9rem;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Responsive columns */
+    gap: 1rem;
+}
+
+.summary-item {
+    /* Add some visual separation if needed */
+    /* border-left: 3px solid var(--border-secondary); */
+    /* padding-left: 0.75rem; */
+}
+
+.summary-item strong {
+    display: block;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.summary-item span {
+    color: var(--text-normal);
+}
+
+.summary-item .badge {
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+}
+/* --- End Summary Panel Styles --- */
+
 /* Responsive adjustments */
 @media (max-width: 767.98px) {
     .control-bar .status-area,

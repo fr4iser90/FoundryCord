@@ -391,3 +391,83 @@ function renderDataInContainer(container, data) {
          renderJsonFallback(container, data);
      }
 }
+
+/**
+ * Renders the summary panel with key information from the snapshot.
+ * @param {object} instance - The StateMonitorDashboard instance.
+ */
+export function renderSummaryPanel(instance) {
+    const panel = instance.ui.summaryPanel;
+    if (!panel) return;
+    if (!instance.currentSnapshot) {
+        panel.innerHTML = '<p class="text-muted">Capture a snapshot to see the summary.</p>';
+        return;
+    }
+
+    const snap = instance.currentSnapshot;
+    const browserResults = snap.browser?.results || {};
+    const serverResults = snap.server?.results || {};
+    const browserContext = snap.browser?.context || {}; // Assumes context is passed here eventually
+    const serverContext = snap.server?.context || {};   // Context from server API call
+
+    // Determine trigger (try server context first, then browser)
+    let trigger = serverContext.trigger || browserContext.trigger || 'Unknown';
+    if (trigger === 'user_capture') trigger = 'User Capture';
+    else if (trigger === 'js_error') trigger = 'JS Error';
+    else if (trigger === 'internal_api') trigger = 'Internal API';
+
+    // Helper to get nested data safely
+    const getData = (obj, path, defaultValue = 'N/A') => {
+        const keys = path.split('.');
+        let current = obj;
+        for (const key of keys) {
+            if (current && typeof current === 'object' && key in current) {
+                current = current[key];
+            } else {
+                return defaultValue;
+            }
+        }
+        // Handle cases where value might be empty string or null
+        return (current === null || current === '') ? defaultValue : current;
+    };
+
+    const errors = browserResults.javascriptErrors || [];
+    const logs = browserResults.consoleLogs || [];
+
+    panel.innerHTML = `
+        <div class="summary-grid">
+            <div class="summary-item">
+                <strong>Timestamp:</strong>
+                <span>${new Date(snap.timestamp).toLocaleString()}</span>
+            </div>
+            <div class="summary-item">
+                <strong>Trigger:</strong>
+                <span>${trigger}</span>
+            </div>
+            <div class="summary-item">
+                <strong>URL:</strong>
+                <span>${getData(browserResults, 'navigation.href', 'N/A')}</span>
+            </div>
+            <div class="summary-item">
+                <strong>Viewport:</strong>
+                <span>${getData(browserResults, 'viewport.width')}x${getData(browserResults, 'viewport.height')}</span>
+            </div>
+            <div class="summary-item">
+                <strong>JS Errors:</strong>
+                <span class="badge bg-${errors.length > 0 ? 'danger' : 'secondary'}">${errors.length}</span>
+            </div>
+             <div class="summary-item">
+                <strong>Console Logs:</strong>
+                <span class="badge bg-secondary">${logs.length}</span>
+            </div>
+            <div class="summary-item">
+                <strong>Bot Status:</strong>
+                <span>${getData(serverResults, 'bot_status.status', 'N/A')}</span>
+            </div>
+            <div class="summary-item">
+                <strong>Platform:</strong>
+                <span>${getData(serverResults, 'system_info.platform', 'N/A')}</span>
+            </div>
+        </div>
+    `;
+}

@@ -23,6 +23,7 @@ export function initElements() {
         autoRefreshBtn: document.getElementById('toggle-auto-refresh'),
         // Results display
         resultsPanel: document.getElementById('results-panel'),
+        summaryPanel: document.getElementById('summary-panel'),
         statusDisplay: document.getElementById('status-display'),
         snapshotTimestamp: document.getElementById('snapshot-timestamp')
     };

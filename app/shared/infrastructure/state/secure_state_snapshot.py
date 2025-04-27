@@ -247,6 +247,57 @@ def get_state_snapshot_service() -> SecureStateSnapshot:
 # Importiere den Service
 _service_instance = get_state_snapshot_service()
 
+# --- Database Status Collector ---
+
+async def get_database_status(context: Dict[str, Any]) -> Dict[str, Any]:
+    """Checks the database connection status."""
+    logger.debug("Executing database_status state collector...")
+    
+    from sqlalchemy import text
+    from app.shared.infrastructure.database.api import session_context
+    import time
+
+    start_time = time.perf_counter()
+    try:
+        async with session_context() as session:
+            # Execute a simple query to check connectivity
+            result = await session.execute(text("SELECT 1"))
+            scalar_result = result.scalar_one()
+            end_time = time.perf_counter()
+            latency_ms = (end_time - start_time) * 1000
+            
+            if scalar_result == 1:
+                return {
+                    "status": "connected",
+                    "latency_ms": round(latency_ms, 2)
+                }
+            else:
+                 logger.warning(f"Database status check query returned unexpected result: {scalar_result}")
+                 return {
+                     "status": "error",
+                     "error": "Unexpected query result",
+                     "latency_ms": round(latency_ms, 2)
+                 }
+                 
+    except Exception as e:
+        end_time = time.perf_counter()
+        latency_ms = (end_time - start_time) * 1000
+        logger.error(f"Database connection error in state collector: {e}", exc_info=False)
+        return {
+            "status": "error",
+            "error": str(e),
+            "latency_ms": round(latency_ms, 2)
+        }
+
+_service_instance.register_collector(
+    name="database_status",
+    collector_fn=get_database_status,
+    requires_approval=False,  # Typically doesn't expose sensitive data
+    scope="web",              # Relevant for the web server/backend
+    description="Checks database connectivity and basic query latency."
+)
+
+# --- Bot Status Collector (Existing Example) ---
 # Beispiel-Collector für Bot-Info
 def get_bot_status_info(context: Dict[str, Any]) -> Dict[str, Any]:
     logger.debug("Executing bot_status state collector...")

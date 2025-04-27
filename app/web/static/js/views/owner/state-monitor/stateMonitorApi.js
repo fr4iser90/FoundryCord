@@ -6,7 +6,7 @@ import stateBridge from '/static/js/core/state-bridge/bridgeMain.js';
 // Import setStatus function from the UI module to replicate original behavior
 import { setStatus } from './stateMonitorUi.js'; 
 // Import rendering functions needed by API calls based on original structure
-import { renderCollectorPanel, renderResults } from './stateMonitorRenderer.js';
+import { renderCollectorPanel, renderResults, renderSummaryPanel } from './stateMonitorRenderer.js';
 
 /**
  * Loads available collectors from the backend and browser.
@@ -107,6 +107,7 @@ export async function captureSnapshot(instance) {
         };
         
         // Call renderer via imported function (as in original)
+        renderSummaryPanel(instance);
         renderResults(instance);
         // Call setStatus via imported function (as in original)
         setStatus(instance.ui.statusDisplay, 'Snapshot captured successfully');
