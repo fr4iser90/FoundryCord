@@ -55,3 +55,14 @@
     *   **Task:** Add validation and feedback.
 *   [ ] **Visual Feedback:** Provide clearer visual cues during drag-and-drop, saving, and applying operations across relevant JS files.
 *   [ ] **Error Handling:** Improve user-facing error messages for API failures during save/apply operations in relevant JS files and potentially backend services.
+
+## Specific Component TODOs
+
+*   [ ] **Deletion Safety:**
+    *   [ ] **Prevent Initial Snapshot Deletion:** In `templateList.js`, disable the delete button for templates marked as `is_initial_snapshot`.
+    *   [ ] **Add Delete Confirmation Modal:** 
+        *   Create a Bootstrap modal (`delete_confirmation_modal.html`).
+        *   Create associated JS (`modal/deleteModal.js`) with `initializeDeleteModal` and `openDeleteModal(id, name)` functions.
+        *   Modify `templateList.js` and `sharedTemplateList.js` delete handlers to call `openDeleteModal`.
+        *   The modal's confirm button should trigger the actual DELETE API call.
+    *   [ ] **(Optional) Refresh List after Delete:** Ensure the template list widgets correctly refresh after a successful deletion triggered via the modal.

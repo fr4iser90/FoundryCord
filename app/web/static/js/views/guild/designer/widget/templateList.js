@@ -165,9 +165,11 @@ export async function initializeTemplateList(contentElement, currentGuildId, act
                 deleteButton.title = 'Cannot delete the initial guild snapshot.';
                 deleteButton.classList.add('disabled'); // Optional: visual cue
             } else {
+                // Keep existing event listener for non-snapshot templates
                 deleteButton.addEventListener('click', (event) => {
                     event.preventDefault();
                     event.stopPropagation();
+                    // TODO: Change this to call openDeleteModal(templateId, templateName) later
                     handleTemplateDelete(templateId, templateName, contentElement, currentGuildId);
                 });
             }
