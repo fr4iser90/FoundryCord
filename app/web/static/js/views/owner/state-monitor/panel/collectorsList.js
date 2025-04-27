@@ -6,15 +6,20 @@
 
 /**
  * Initializes the Collectors List widget.
- * @param {object} controller - The main StateMonitorController instance.
  * @param {object} collectorsData - The collector data ({ server: [], browser: [] }).
  * @param {HTMLElement} contentElement - The container element for the widget's content.
+ * @param {object} controller - The main StateMonitorController instance.
  */
-export function initializeCollectorsList(controller, collectorsData, contentElement) {
+export function initializeCollectorsList(collectorsData, contentElement, controller) {
     console.log("[CollectorsList] Initializing with data:", collectorsData);
     if (!contentElement) {
         console.error("[CollectorsList] Content element not provided.");
         return;
+    }
+    // Add check for controller if needed by event listeners later
+    if (!controller) {
+         console.warn("[CollectorsList] Controller instance not provided (needed for event handling).");
+         // Proceeding without controller for display, but interactions might fail
     }
 
     // Clear any existing content (e.g., "Loading...")
@@ -55,6 +60,11 @@ export function initializeCollectorsList(controller, collectorsData, contentElem
     const populateList = (listElement, collectors, source, currentScope) => {
         listElement.innerHTML = ''; // Clear previous items
         let count = 0;
+        // Check if collectors array exists before iterating
+        if (!collectors || !Array.isArray(collectors)) {
+             listElement.innerHTML = '<small class="text-muted">No data provided for this list.</small>';
+             return;
+        }
         collectors.forEach(collector => {
             // TODO: Re-integrate scope filtering once controller.currentScope is available
             // if (currentScope !== 'all' && collector.scope !== currentScope && collector.scope !== 'global') {
@@ -74,11 +84,16 @@ export function initializeCollectorsList(controller, collectorsData, contentElem
             checkbox.dataset.name = collector.name;
             checkbox.dataset.source = source;
             checkbox.checked = collector.is_approved || !collector.requires_approval; // Assuming these properties exist
-            // TODO: Add event listener for checkbox changes to handle approval requests
-            checkbox.addEventListener('change', (event) => {
-                // Call the controller method to handle the logic
-                controller.handleCollectorApprovalChange(event);
-            });
+            
+            // Check if controller exists before adding listener
+            if (controller) {
+                checkbox.addEventListener('change', (event) => {
+                    // Call the controller method to handle the logic
+                    controller.handleCollectorApprovalChange(event);
+                });
+            } else {
+                checkbox.disabled = true; // Disable if no controller to handle changes
+            }
 
             const label = document.createElement('label');
             label.className = 'form-check-label'; // Bootstrap styling
@@ -102,9 +117,10 @@ export function initializeCollectorsList(controller, collectorsData, contentElem
     };
 
     // Initial population
-    const currentScope = controller.currentScope || 'all'; // Use controller scope when available
-    populateList(serverList, collectorsData.server || [], 'server', currentScope);
-    populateList(browserList, collectorsData.browser || [], 'browser', currentScope);
+    const currentScope = controller?.currentScope || 'all'; // Use controller scope safely
+    // Pass the correct parts of the collectorsData object
+    populateList(serverList, collectorsData?.server || [], 'server', currentScope);
+    populateList(browserList, collectorsData?.browser || [], 'browser', currentScope);
 
     // 4. Setup Search Filter
     const searchInputElement = contentElement.querySelector('#collector-search-input');

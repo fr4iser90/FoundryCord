@@ -116,6 +116,7 @@ class StateMonitorController {
                      // Reset current snapshot when layout resets
                      this.currentSnapshot = null; 
                      this.updateTimestamp(); // Update timestamp display
+                     this._populateStaticPanels(refreshedData); 
                      return refreshedData; 
                  }
             });
@@ -123,6 +124,10 @@ class StateMonitorController {
             // Initialize GridManager - it will call _populateGridWidgetContent internally via callback
             const grid = await this.gridManager.initialize(initialData); 
             console.log("[StateMonitorIndex] GridManager initialized.");
+            
+            console.log("[StateMonitorIndex] Populating static panels...");
+            this._populateStaticPanels(initialData);
+            console.log("[StateMonitorIndex] Static panels population initiated.");
             
             this._setupControlBarListeners();
             this.setStatus('Ready'); // Status set after successful init
