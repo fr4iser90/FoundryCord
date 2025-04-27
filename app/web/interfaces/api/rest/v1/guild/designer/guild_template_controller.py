@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Any, Dict, Optional, List
 from app.web.interfaces.api.rest.v1.base_controller import BaseController
 from app.shared.infrastructure.models.auth import AppUserEntity
-from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
+from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user, get_web_db_session
 # Import the new GuildTemplateService
 from app.web.application.services.guild.template_service import GuildTemplateService 
 # TODO: Define response model schema when created
@@ -12,7 +12,9 @@ from app.web.interfaces.api.rest.v1.schemas.guild_template_schemas import (
     GuildTemplateCreateSchema, 
     GuildTemplateResponseSchema, 
     GuildTemplateListResponseSchema,
-    GuildTemplateShareSchema
+    GuildTemplateShareSchema,
+    GuildStructureUpdatePayload,
+    GuildStructureUpdateResponse
 )
 # Schema for activate request
 from pydantic import BaseModel
@@ -21,6 +23,7 @@ from app.shared.infrastructure.database.session import session_context
 from app.shared.infrastructure.models import DiscordGuildUserEntity
 from sqlalchemy import select
 # ---------------------------------------
+from sqlalchemy.ext.asyncio import AsyncSession # Import AsyncSession
 
 class GuildTemplateActivateSchema(BaseModel):
     template_id: int
@@ -118,6 +121,16 @@ class GuildTemplateController(BaseController):
                                           summary="Copy Shared Template to Saved Templates",
                                           description="Creates a copy of a shared guild structure template and saves it for the current user."
                                           )(self.copy_shared_template) # NEW method
+
+        # --- REGISTER NEW PUT Route for Structure Update --- 
+        self.general_template_router.put(
+            "/templates/guilds/{template_id}/structure",
+            summary="Update Guild Template Structure",
+            description="Updates the categories and channels structure of a specific guild template based on provided node list.",
+            response_model=GuildStructureUpdateResponse,
+            status_code=status.HTTP_200_OK,
+            dependencies=[Depends(get_current_user)] # Add dependency here for route protection
+        )(self.update_guild_template_structure)
 
     async def get_guild_template(self, guild_id: str, current_user: AppUserEntity = Depends(get_current_user)) -> GuildTemplateResponseSchema:
         """API endpoint to retrieve the guild template structure by Guild ID."""
@@ -494,6 +507,62 @@ class GuildTemplateController(BaseController):
         except Exception as e:
             self.logger.error(f"Error activating template {activate_data.template_id} for guild {guild_id}: {e}", exc_info=True)
             return self.handle_exception(e) # Use base handler
+
+    # --- Method Definition for Structure Update --- 
+    async def update_guild_template_structure(
+        self,
+        template_id: int, # From path parameter
+        payload: GuildStructureUpdatePayload, # From request body
+        current_user: AppUserEntity = Depends(get_current_user), # From dependency
+        db: AsyncSession = Depends(get_web_db_session) # Use the correct session dependency
+    ) -> GuildStructureUpdateResponse:
+        """Updates the structure (categories and channels) of a specific guild template."""
+        # 1. Authorization Check (Ensure user can edit this template)
+        # Placeholder for actual permission logic
+        try:
+            can_edit = await self.template_service.check_user_can_edit_template(
+                db=db, # Pass db session
+                user_id=current_user.id, 
+                template_id=template_id
+            )
+            if not can_edit:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You do not have permission to edit this template."
+                )
+        except ValueError as e: # Handle if template not found during permission check
+             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+        # 2. Call the service layer to perform the update
+        try:
+            # Assuming the service method returns the updated template *entity* or ID
+            updated_template = await self.template_service.update_template_structure(
+                db=db, # Pass db session
+                template_id=template_id,
+                structure_payload=payload
+            )
+            # Construct response based on what the service returns
+            # If it returns the entity: updated_template.id
+            # If it just returns the ID: updated_template
+            # Assuming it returns an object with an 'id' attribute for now
+            return GuildStructureUpdateResponse(
+                message=f"Successfully updated structure for template ID {template_id}",
+                updated_template_id=updated_template.id 
+            )
+        except ValueError as e:
+            # Handle specific errors from the service layer (e.g., template not found)
+            self.logger.warning(f"Update structure failed for template {template_id}: {e}")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        except NotImplementedError:
+             self.logger.error(f"Template structure update service method not implemented for ID {template_id}")
+             raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Template structure update not implemented.")
+        except Exception as e:
+            # Generic error handling
+            self.logger.error(f"Error updating template structure for ID {template_id}: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred while updating the template structure."
+            )
 
 # Instantiate the controller for registration
 guild_template_controller = GuildTemplateController() 

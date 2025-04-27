@@ -640,72 +640,126 @@ async function handleSaveStructure() {
     }
     
     console.log("[Index] Save Structure button clicked.");
-    showToast('info', 'Attempting to save structure... (API not implemented yet)');
+    showToast('info', 'Attempting to save structure...');
 
-    // 1. Get the current tree data structure
-    const treeContainer = document.getElementById('widget-content-structure-tree');
-    if (!treeContainer || !$(treeContainer).jstree(true)) {
-        console.error("[Index] Cannot get tree data: Tree container or instance not found.");
-        showToast('error', 'Failed to get structure data for saving.');
-        return;
-    }
-    
-    // Get data in a flat format, easier for backend processing
-    // Ensure it includes necessary data like parent and position implicitly
-    // const treeJsonData = $(treeContainer).jstree(true).get_json('#', { flat: true }); 
-    // TODO: Refine data extraction based on backend needs (get_json might need adjustment)
-    // For now, just log a placeholder
-    const treeJsonData = { placeholder: 'Structure data would go here' }; 
-    console.log("[Index] Formatted Tree Data (Placeholder):", treeJsonData);
-    
-    // TODO: 2. Format this data into the payload required by the backend API
-    const payload = formatStructureForApi(treeJsonData, currentTemplateData?.id);
-    if (!payload) {
-        showToast('error', 'Failed to format structure data for saving.');
-        return;
-    }
-
-    // TODO: 3. Get the current template ID
-    // Assuming currentTemplateData holds the loaded template info
-    const templateId = currentTemplateData?.id;
+    // 1. Get the current template ID
+    const templateId = currentTemplateData?.template_id; // Use template_id from stored data
     if (!templateId) {
          console.error("[Index] Cannot save: Current template ID is unknown.");
          showToast('error', 'Cannot determine which template to save.');
          return;
     }
+
+    // 2. Get and format the structure data
+    const payload = formatStructureForApi(templateId);
+    if (!payload) {
+        // Error message shown by formatStructureForApi
+        return;
+    }
     
-    // TODO: 4. Call the backend API endpoint (PUT /api/v1/templates/guilds/{template_id}/structure)
+    // 3. Call the backend API endpoint
     const apiUrl = `/api/v1/templates/guilds/${templateId}/structure`;
     console.log(`[Index] Sending PUT request to: ${apiUrl} with payload:`, payload);
 
-    // Simulate API call for now
-    saveButton.disabled = true; // Disable during 'save'
+    saveButton.disabled = true; // Disable during save
+    saveButton.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...`; // Indicate loading
+
     try {
-        // *** Replace with actual apiRequest call when backend is ready ***
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-        // const response = await apiRequest(apiUrl, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        // Make the actual API request
+        const response = await apiRequest(apiUrl, { 
+            method: 'PUT', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(payload) 
+        });
         
-        showToast('success', 'Structure saved successfully! (Simulated)');
+        // apiRequest handles success toasts based on response
+        // We just need to reset the state if successful
         isStructureDirty = false; // Reset flag on successful save
         updateSaveButtonState(); // Update button state
 
+        // Optional: You could re-fetch the template data to ensure UI is fully consistent
+        // currentTemplateData = await fetchGuildTemplate(getGuildIdFromUrl());
+        // populateGuildDesignerWidgets(currentTemplateData);
+        // initializeStructureTree(currentTemplateData);
+
     } catch (error) {
-        console.error("[Index] Error saving structure (Simulated):", error);
-        // apiRequest will handle its own toasts, but maybe add a general one here
-        // showToast('error', 'Failed to save structure.'); // Already handled by apiRequest
+        console.error("[Index] Error saving structure:", error);
+        // apiRequest should have shown an error toast
+        // No need for additional generic toast unless providing specific recovery info
     } finally {
-         saveButton.disabled = !isStructureDirty; // Re-enable button if save failed and it's still dirty
+         // Restore button text regardless of success/failure
+         saveButton.innerHTML = `<i class="bi bi-save-fill"></i> <span class="d-none d-md-inline">Save Structure</span>`;
+         // Re-enable button only if still dirty (save failed)
+         updateSaveButtonState(); 
     }
 }
 
-// TODO: Create this function based on backend requirements
-function formatStructureForApi(treeJsonData, templateId) {
-    // This is a placeholder. Actual implementation needs to:
-    // - Iterate through treeJsonData (which needs to be structured correctly)
-    // - Extract node IDs (stripping 'channel_' or 'category_'), parent IDs, positions.
-    // - Map them into the format expected by the Pydantic schema for the PUT endpoint.
-    console.warn("[Index] formatStructureForApi is a placeholder.");
-    return { nodes: treeJsonData }; // Example placeholder structure
+/**
+ * Formats the current structure from jsTree into the payload for the API.
+ * @param {number} templateId - The ID of the template being saved (for logging).
+ * @returns {object|null} The payload object { nodes: [...] } or null on error.
+ */
+function formatStructureForApi(templateId) {
+    console.log(`[Index] Formatting structure for template ID: ${templateId}`);
+    const treeContainer = document.getElementById('widget-content-structure-tree');
+    const treeInstance = treeContainer ? $(treeContainer).jstree(true) : null;
+
+    if (!treeInstance) {
+        console.error("[Index] Cannot format structure: Tree container or jsTree instance not found.");
+        showToast('error', 'Failed to access structure data for saving.');
+        return null;
+    }
+
+    try {
+        // Get the entire tree structure as JSON objects
+        // We need parent and position info, so default get_json is better than flat here.
+        const rootNode = treeInstance.get_json('#'); // Get the whole tree from the root ('#')
+        
+        // Check if we got the expected root structure (should be an array with one root element)
+        if (!Array.isArray(rootNode) || rootNode.length !== 1) {
+             console.error("[Index] Unexpected tree structure format from get_json.", rootNode);
+             showToast('error', 'Failed to read structure data.');
+             return null;
+        }
+
+        const nodesPayload = [];
+        // Recursive function to traverse the tree data and format nodes
+        function traverseNodes(nodes) {
+            if (!Array.isArray(nodes)) return;
+
+            nodes.forEach((node, index) => {
+                const nodeId = node.id;
+                // Skip the root node itself (usually 'template_...')
+                if (nodeId && !nodeId.startsWith('category_') && !nodeId.startsWith('channel_')) {
+                    // console.log(`[Index] Skipping root node: ${nodeId}`);
+                } else if (nodeId) {
+                    // Add the valid category or channel node to the payload
+                    nodesPayload.push({
+                        id: nodeId,           // Keep the prefix (e.g., "category_123") - Service will parse
+                        parent_id: node.parent === '#' ? `template_${templateId || 'root'}` : node.parent, // Map '#' root to template ID or default
+                        position: index       // Position is the index among siblings in the current array
+                    });
+                    // console.log(`[Index] Added node: ${nodeId}, Parent: ${nodesPayload[nodesPayload.length - 1].parent_id}, Position: ${index}`);
+                }
+
+                // Recursively process children
+                if (node.children && node.children.length > 0) {
+                    traverseNodes(node.children);
+                }
+            });
+        }
+
+        // Start traversal from the children of the single root node
+        traverseNodes(rootNode[0].children);
+
+        console.log(`[Index] Formatted ${nodesPayload.length} nodes for API payload.`);
+        return { nodes: nodesPayload };
+
+    } catch (error) {
+        console.error("[Index] Error formatting tree data for API:", error);
+        showToast('error', 'Failed to prepare structure data for saving.');
+        return null;
+    }
 }
 
 // --- Main Execution ---

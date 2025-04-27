@@ -105,3 +105,21 @@ class GuildTemplateListItemSchema(BaseModel):
 class GuildTemplateListResponseSchema(BaseModel):
     """Schema for the response when listing guild templates."""
     templates: List[GuildTemplateListItemSchema]
+
+# --- NEW Schemas for Structure Update --- 
+
+class GuildStructureNodeUpdate(BaseModel):
+    id: str = Field(..., description="Node ID from jsTree (e.g., 'category_123', 'channel_456')")
+    parent_id: Optional[str] = Field(None, description="Parent Node ID from jsTree (e.g., 'category_123', 'template_root') or None for root-level items")
+    position: int = Field(..., ge=0, description="New 0-based index position among siblings")
+    # Add other fields if frontend supports editing them via tree/properties, e.g.:
+    # name: Optional[str] = None 
+    # topic: Optional[str] = None
+
+class GuildStructureUpdatePayload(BaseModel):
+    nodes: List[GuildStructureNodeUpdate] = Field(..., description="List of all nodes representing the desired structure")
+
+# Schema for the response (if any)
+class GuildStructureUpdateResponse(BaseModel):
+    message: str
+    updated_template_id: int

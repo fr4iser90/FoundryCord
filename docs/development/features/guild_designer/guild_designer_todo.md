@@ -4,12 +4,12 @@
 
 ### Phase 1: Saving Edited Structure
 
-*   [ ] **Implement Frontend Save Logic:**
-    *   **Capture Moves:** Enhance the `move_node.jstree` event handler in `app/web/static/js/views/guild/designer/widget/structureTree.js` to gather the new parent and position data for the moved node.
-    *   **Track Changes:** Implement a mechanism (perhaps in `app/web/static/js/views/guild/designer/index.js`) to track that changes have been made and need saving.
-    *   **Format Data:** Create a function (e.g., in `structureTree.js` or a new utility file) to traverse the current jsTree instance (`$(treeContainer).jstree(true).get_json('#', { flat: true })` might be useful) and format the *entire* structure (nodes with IDs, parents, positions) into a JSON payload suitable for the backend API.
-    *   **Add Save Button:** Add a "Save Structure" button to `app/web/templates/views/guild/designer/index.html` (e.g., in the toolbar).
-    *   **Trigger Save:** Add an event listener in `app/web/static/js/views/guild/designer/index.js` for the save button that calls the formatting function and sends the data to the new backend API endpoint. Handle loading/disabled states for the button.
+*   [x] **Implement Frontend Save Logic:**
+    *   [x] **Capture Moves:** Enhance the `move_node.jstree` event handler in `app/web/static/js/views/guild/designer/widget/structureTree.js` to gather the new parent and position data for the moved node.
+    *   [x] **Track Changes:** Implement a mechanism (perhaps in `app/web/static/js/views/guild/designer/index.js`) to track that changes have been made and need saving.
+    *   [ ] **Format Data:** Create a function (e.g., in `structureTree.js` or a new utility file) to traverse the current jsTree instance (`$(treeContainer).jstree(true).get_json('#', { flat: true })` might be useful) and format the *entire* structure (nodes with IDs, parents, positions) into a JSON payload suitable for the backend API.
+    *   [x] **Add Save Button:** Add a "Save Structure" button to `app/web/templates/views/guild/designer/index.html` (e.g., in the toolbar).
+    *   [x] **Trigger Save:** Add an event listener in `app/web/static/js/views/guild/designer/index.js` for the save button that calls the formatting function and sends the data to the new backend API endpoint. Handle loading/disabled states for the button. (Basic listener added, actual API call pending).
 *   [ ] **Create Backend Save API Endpoint:**
     *   **API Route:** Define a new route like `PUT /api/v1/templates/guilds/{template_id}/structure` in `app/api/v1/endpoints/guild_templates.py`. (Using PUT as we are replacing the structure of an existing template).
     *   **Payload Schema:** Create a Pydantic schema (e.g., `GuildStructureUpdatePayload` in `app/schemas/guild_template.py`) to validate the incoming JSON structure data (expecting a list of nodes with IDs, parent references, positions, potentially names/types if editing those too).
