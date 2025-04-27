@@ -7,6 +7,9 @@ import stateBridge from '/static/js/core/state-bridge/bridgeMain.js';
 // Import the function needed for the load button event listener
 import { loadAndDisplaySnapshot } from './stateMonitorApi.js'; 
 
+// Import setStatus for use in event listeners
+import { setStatus } from './stateMonitorUi.js';
+
 // Note: JSONViewer is expected to be available globally via window.JSONViewer 
 // as it's loaded by a separate script tag in the HTML.
 
@@ -131,27 +134,6 @@ export function renderCollectorPanel(instance) {
             
             item.appendChild(checkbox);
             item.appendChild(label);
-            
-            // --- Special handling for computedStyles --- 
-            if (collector.name === 'computedStyles') {
-                // Input field for the selector
-                const csInput = document.createElement('input');
-                csInput.type = 'text';
-                csInput.id = 'computedStyles-selector-input'; // Keep ID consistent
-                csInput.className = 'form-control form-control-sm mt-2'; // Add margin-top
-                csInput.placeholder = 'CSS Selector (e.g., #recent-snapshots-list)';
-                // Show if the checkbox is checked (respecting loaded approved state)
-                csInput.style.display = checkbox.checked ? 'block' : 'none'; 
-                
-                // Event listener to toggle input visibility
-                checkbox.addEventListener('change', (event) => {
-                    csInput.style.display = event.target.checked ? 'block' : 'none';
-                });
-                
-                // Append input AFTER the label within the item
-                item.appendChild(csInput);
-            }
-            // --- End special handling --- 
             
             browserList.appendChild(item);
         });
