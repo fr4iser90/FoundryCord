@@ -372,6 +372,13 @@
     flex-grow: 1;
     min-height: 0;
     height: 100%;
+    /* Force flex behavior for direct children (the UL) */
+    display: flex; 
+    flex-direction: column;
+}
+
+#recent-snapshots-content-area > .list-group {
+    flex-shrink: 0; /* Prevent the UL itself from shrinking? */
 }
 
 .collector-lists-container {
@@ -421,12 +428,51 @@
      border: none; /* Remove default list group item borders */
      border-bottom: 1px solid var(--border-subtle); /* Add subtle bottom border */
      padding: var(--spacing-sm) var(--spacing-xs); /* Adjust padding */
+     /* Add Flexbox properties */
+     display: flex;
+     justify-content: space-between;
+     align-items: flex-start;
+     gap: var(--spacing-sm);
+     overflow: hidden; /* Hide overflow on the item itself */
 }
 
 #recent-snapshots-content-area .list-group-item:last-child {
     border-bottom: none;
 }
 
+/* Container for timestamp and ID */
+#recent-snapshots-content-area .snapshot-info {
+    flex: 1 1 auto; /* Allow grow/shrink */
+    min-width: 0;   /* Allow shrinking below content */
+    overflow: hidden; /* Hide overflow FROM THIS CONTAINER (keep) */
+    /* REMOVE ellipsis rules from container */
+    /* white-space: nowrap; */
+    /* text-overflow: ellipsis; */
+}
+
+/* Timestamp styling (no changes needed here typically) */
+#recent-snapshots-content-area .snapshot-info .timestamp {
+     display: block; /* Force block */
+     /* white-space: nowrap; /* Not strictly needed if parent handles overflow */
+     margin-bottom: 2px; 
+     /* Inherit color or set specifically if needed */
+     /* color: var(--text-normal); */ 
+}
+
+/* ID text styling - RE-APPLY ellipsis rules here */
+#recent-snapshots-content-area .snapshot-info .snapshot-id-text {
+     display: block;          /* Ensure block context for ellipsis */
+     white-space: nowrap;     /* Prevent wrapping */
+     overflow: hidden;        /* Hide overflow */
+     text-overflow: ellipsis; /* Show ... */
+     /* Inherit color or set specifically if needed */
+     /* color: var(--text-normal); */ 
+}
+
+/* Button group container */
+#recent-snapshots-content-area .snapshot-button-group {
+    flex-shrink: 0; /* Prevent buttons from shrinking */
+}
 
 /* Results Panel specific styling */
 /* .results-panel-container { ... } */

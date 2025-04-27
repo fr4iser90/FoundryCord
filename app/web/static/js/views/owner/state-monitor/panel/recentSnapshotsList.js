@@ -36,7 +36,7 @@ export function initializeRecentSnapshotsList(controller, recentSnapshotsData, c
         // --- End Check ---
         
         const listItem = document.createElement('li');
-        listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+        listItem.className = 'list-group-item';
         
         // Format timestamp nicely
         let timestampStr = 'Invalid Date';
@@ -51,10 +51,11 @@ export function initializeRecentSnapshotsList(controller, recentSnapshotsData, c
         }
 
         const snapshotInfo = document.createElement('div');
+        snapshotInfo.className = 'snapshot-info';
         snapshotInfo.innerHTML = `
-            <small class="d-block">${timestampStr}</small>
-            <small>ID: ${snapshot.snapshot_id || 'N/A'}</small> 
-        `; // Use snapshot_id
+            <small class="d-block timestamp">${timestampStr}</small>
+            <small class="snapshot-id-text">ID: ${snapshot.snapshot_id || 'N/A'}</small> 
+        `; // Added class snapshot-id-text
 
         const loadButton = document.createElement('button');
         loadButton.className = 'btn btn-sm btn-outline-primary';
@@ -100,7 +101,7 @@ export function initializeRecentSnapshotsList(controller, recentSnapshotsData, c
 
         // Append elements
         const buttonGroup = document.createElement('div'); // Group buttons for alignment
-        buttonGroup.className = 'd-flex align-items-center'; // Use flex for buttons
+        buttonGroup.className = 'd-flex align-items-center snapshot-button-group';
         buttonGroup.appendChild(loadButton);
         buttonGroup.appendChild(deleteButton); // Add delete button next to load
 

@@ -1,3 +1,4 @@
+
 /* Panel Component Styles */
 
 /* Base Panel Structure (Used for generic panels, might not be needed by layout) */
@@ -81,21 +82,44 @@
 .panel-layout .panel-content-area .list-group-item {
     background-color: transparent;
     color: var(--text-normal);
-    border-color: var(--border-color); /* Removed !important */
+    border-color: var(--border-color);
+    display: flex; 
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-sm); 
+    padding-top: var(--spacing-xs);
+    padding-bottom: var(--spacing-xs);
 }
 
 /* Target the specific elements in recent snapshots (Increased Specificity) */
+
+/* Container for timestamp and ID */
+.panel-layout-panel-right .panel-content-area .list-group-item .snapshot-info {
+    flex: 1 1 auto; /* Allow grow/shrink */
+    min-width: 0;   /* Allow shrinking below content */
+    overflow: hidden; /* Hide overflow FROM THIS CONTAINER */
+}
+
+/* Timestamp styling */
 .panel-layout-panel-right .panel-content-area .snapshot-info .timestamp {
      color: var(--text-normal); 
+     display: block; /* Force block */
+     white-space: nowrap; /* Prevent timestamp wrapping */
+     margin-bottom: 2px; 
 }
-.panel-layout-panel-right .panel-content-area .snapshot-info .snapshot-id.text-muted {
-    color: var(--text-normal); 
-}
-.panel-layout-panel-right .panel-content-area .snapshot-info .snapshot-id small {
+
+/* ID text styling - Ellipsis rules here */
+.panel-layout-panel-right .panel-content-area .snapshot-info .snapshot-id-text {
+     display: block; /* Needs block context for ellipsis */
      color: var(--text-normal); 
-     word-break: break-all; /* Break long IDs within the small tag */
-     display: inline-block; /* Ensure word-break applies correctly */
-     max-width: 100%; /* Prevent overflow */
+     white-space: nowrap;     /* Prevent wrapping */
+     overflow: hidden;        /* Hide overflow */
+     text-overflow: ellipsis; /* Show ... */
+}
+
+/* Button group container */
+.panel-layout-panel-right .panel-content-area .list-group-item .snapshot-button-group {
+    flex-shrink: 0; /* Prevent buttons from shrinking */
 }
 
 /* Adjust collector list text if needed (Increased Specificity) */
@@ -104,13 +128,6 @@
 }
 .panel-layout-panel-left .panel-content-area .collector-description {
      color: var(--text-normal); 
-}
-
-/* Add word break to specific elements if needed */
-.panel-content-area .snapshot-id small {
-    word-break: break-all; /* Break long IDs within the small tag */
-    display: inline-block; /* Ensure word-break applies correctly */
-    max-width: 100%; /* Prevent overflow */
 }
 
 /* Add border only where needed */
@@ -159,13 +176,3 @@
     border-top: 1px solid var(--border-color);
     margin: var(--spacing-md) 0;
 } 
-
-/* REMOVE OLD STYLES */
-/* 
-.editor-panel-left,
-.editor-panel-right { ... }
-.editor-panel-left { ... }
-.editor-panel-right { ... }
-.editor-panel-left.collapsed,
-.editor-panel-right.collapsed { ... }
-*/ 
