@@ -7,7 +7,7 @@ import { apiRequest, showToast, formatDateTime } from '/static/js/components/com
 // Import widget initializers
 import { initializeCollectorsList } from './panel/collectorsList.js';
 import { initializeRecentSnapshotsList } from './panel/recentSnapshotsList.js';
-import { initializeSnapshotSummaryPanel } from './widget/snapshotSummaryPanel.js';
+import { initializeSnapshotSummaryWidget } from './widget/snapshotSummary.js';
 import { initializeSnapshotResultsTabs } from './widget/snapshotResultsTabs.js';
 
 // Import StateBridge and storage helper for browser approvals
@@ -231,7 +231,7 @@ class StateMonitorController {
                         break;
                     case 'snapshotSummary':
                         // Summary depends on currentSnapshot, which is initially null
-                        initializeSnapshotSummaryPanel(this, this.currentSnapshot, contentElement);
+                        initializeSnapshotSummaryWidget(this, this.currentSnapshot, contentElement);
                         break;
                     case 'snapshotResults':
                         // Results depend on currentSnapshot, which is initially null
@@ -254,30 +254,48 @@ class StateMonitorController {
      * Called after a snapshot is loaded.
      */
     _updateSnapshotWidgets() {
-        if (!this.gridManager) return; // Grid not initialized
+        // Check for grid manager AND the initialized grid instance AND its element
+        if (!this.gridManager || !this.gridManager.grid?.el) { 
+             console.warn("[StateMonitorIndex] Cannot update snapshot widgets, GridManager or grid instance/element not ready.");
+             return; 
+        }
         console.log("[StateMonitorIndex] Updating snapshot widgets with data:", this.currentSnapshot);
         
         // Update timestamp display in the header
         this.updateTimestamp(this.currentSnapshot?.timestamp ? new Date(this.currentSnapshot.timestamp).toLocaleString() : 'Snapshot Loaded (No Timestamp)');
 
         try {
+            // --- CORRECTED (FOR REAL THIS TIME): Use this.gridManager.grid.el --- 
+            const gridElement = this.gridManager.grid.el; // Get the grid's root DOM element from the Gridstack instance
+
             // Find and update Snapshot Summary widget
-            const summaryWidgetElement = this.gridManager.getWidgetContentElementById('snapshotSummary');
-            if (summaryWidgetElement) {
-                console.log("[StateMonitorIndex] Re-initializing Snapshot Summary.");
-                initializeSnapshotSummaryPanel(this, this.currentSnapshot, summaryWidgetElement);
+            const summaryWidgetContainer = gridElement.querySelector(`.grid-stack-item[gs-id="snapshotSummary"]`);
+            if (summaryWidgetContainer) {
+                const summaryWidgetContent = summaryWidgetContainer.querySelector('.widget-content');
+                if (summaryWidgetContent) {
+                    console.log("[StateMonitorIndex] Re-initializing Snapshot Summary.");
+                    initializeSnapshotSummaryWidget(this, this.currentSnapshot, summaryWidgetContent);
+                } else {
+                     console.error("[StateMonitorIndex] Could not find .widget-content in Snapshot Summary widget container.");
+                }
             } else {
-                console.warn("[StateMonitorIndex] Snapshot Summary widget not found in current layout.");
+                console.log("[StateMonitorIndex] Snapshot Summary widget container not found in current layout (gs-id=snapshotSummary).");
             }
 
             // Find and update Snapshot Results widget
-            const resultsWidgetElement = this.gridManager.getWidgetContentElementById('snapshotResults');
-            if (resultsWidgetElement) {
-                console.log("[StateMonitorIndex] Re-initializing Snapshot Results.");
-                initializeSnapshotResultsTabs(this, this.currentSnapshot, resultsWidgetElement);
+            const resultsWidgetContainer = gridElement.querySelector(`.grid-stack-item[gs-id="snapshotResults"]`);
+            if (resultsWidgetContainer) {
+                 const resultsWidgetContent = resultsWidgetContainer.querySelector('.widget-content');
+                 if (resultsWidgetContent) {
+                    console.log("[StateMonitorIndex] Re-initializing Snapshot Results.");
+                    initializeSnapshotResultsTabs(this, this.currentSnapshot, resultsWidgetContent);
+                 } else {
+                     console.error("[StateMonitorIndex] Could not find .widget-content in Snapshot Results widget container.");
+                 }
             } else {
-                 console.warn("[StateMonitorIndex] Snapshot Results widget not found in current layout.");
+                 console.log("[StateMonitorIndex] Snapshot Results widget container not found in current layout (gs-id=snapshotResults).");
             }
+            // --- End CORRECTION (FOR REAL THIS TIME) ---
         } catch (error) {
             console.error("[StateMonitorIndex] Error updating snapshot widgets:", error);
             showToast('Error updating snapshot display. See console.', 'error');
@@ -506,15 +524,17 @@ class StateMonitorController {
         this.setStatus('Capturing state snapshot...');
 
         try {
-            // 1. Get selected collectors from the UI
-            // We need to look inside the collectorsList widget content
-            const collectorsWidget = this.gridManager?.getWidgetContentElementById('collectorsList');
-            if (!collectorsWidget) throw new Error("Collectors list widget not found.");
+            // --- CORRECTED: Get selected collectors from the static panel --- 
+            const collectorsPanelContent = document.getElementById('collectors-list-content-area');
+            if (!collectorsPanelContent) {
+                 throw new Error("Collectors list panel content (#collectors-list-content-area) not found.");
+            }
             
-            const serverCollectors = Array.from(collectorsWidget.querySelectorAll('input[data-source="server"]:checked'))
+            const serverCollectors = Array.from(collectorsPanelContent.querySelectorAll('input[data-source="server"]:checked'))
                 .map(checkbox => checkbox.dataset.name);
-            const browserCollectors = Array.from(collectorsWidget.querySelectorAll('input[data-source="browser"]:checked'))
+            const browserCollectors = Array.from(collectorsPanelContent.querySelectorAll('input[data-source="browser"]:checked'))
                 .map(checkbox => checkbox.dataset.name);
+            // --- End CORRECTION ---
                 
             console.log("Selected Server Collectors:", serverCollectors);
             console.log("Selected Browser Collectors:", browserCollectors);
@@ -529,7 +549,7 @@ class StateMonitorController {
             const serverSnapshotRequest = { 
                 collectors: serverCollectors,
                 context: {
-                    browser_snapshot: browserSnapshot,
+                    browser_snapshot: browserSnapshot, // Pass the whole browser result object
                     source: 'state-monitor-dashboard'
                  } 
             };
@@ -551,17 +571,31 @@ class StateMonitorController {
                 id: serverResponse.snapshot_id || `temp-${Date.now()}`, // Use ID from response if available
                 timestamp: serverResponse.timestamp ? serverResponse.timestamp * 1000 : Date.now(), // Server likely sends float timestamp
                 metadata: serverSnapshotRequest.context, // Use the request context
-                server: serverResponse.results || { info: "No server data" }, // Data is likely in response.results
+                // Correctly access results if the server wraps them
+                server: serverResponse.results || serverResponse || { info: "No server data" }, 
                 browser: browserSnapshot.results || { info: "No browser data" } // Data is in browserSnapshot.results
             };
 
             this._updateSnapshotWidgets(); // Update summary & results
             this.setStatus('Snapshot captured successfully.');
 
-            // 5. Refresh recent snapshots list (optional, could be heavy)
-            // TODO: Implement refreshRecentSnapshots method or integrate into _fetchInitialData?
-            // For now, just log
-             console.log("TODO: Refresh recent snapshots list after capture.");
+            // 5. Refresh recent snapshots list after capture
+             console.log("[StateMonitorIndex] Refreshing recent snapshots list after capture...");
+             const snapshotsContainer = document.getElementById('recent-snapshots-container');
+             const snapshotsContent = document.getElementById('recent-snapshots-content-area');
+             if (snapshotsContent) {
+                 try {
+                     const refreshedSnapshotsData = await apiRequest('/api/v1/owner/state/snapshots/list?limit=10', 'GET');
+                     const recentSnapshots = (refreshedSnapshotsData && Array.isArray(refreshedSnapshotsData.snapshots)) ? refreshedSnapshotsData.snapshots : [];
+                     this.recentSnapshots = recentSnapshots; // Update state
+                     initializeRecentSnapshotsList(this, this.recentSnapshots, snapshotsContent);
+                 } catch (refreshError) {
+                     console.error("[StateMonitorIndex] Failed to refresh recent snapshots list after capture:", refreshError);
+                     // Don't block the capture flow, just log the error
+                 }
+             } else {
+                  console.warn("[StateMonitorIndex] Could not find recent snapshots panel to refresh.");
+             }
 
         } catch (error) {
             console.error("[StateMonitorIndex] Failed to capture snapshot:", error);
@@ -705,7 +739,7 @@ class StateMonitorController {
 
         switch (widgetId) {
             case 'snapshotSummary':
-                initializeSnapshotSummaryPanel(this.currentSnapshot, contentElement);
+                initializeSnapshotSummaryWidget(this.currentSnapshot, contentElement);
                 break;
             case 'snapshotResults':
                 initializeSnapshotResultsTabs(this.currentSnapshot, contentElement);

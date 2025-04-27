@@ -1,19 +1,19 @@
 /**
- * snapshotSummaryPanel.js: Widget for displaying summary information about the loaded snapshot.
+ * snapshotSummary.js: Widget for displaying summary information about the loaded snapshot.
  */
 
 // TODO: Import helper functions if needed
 
 /**
- * Initializes the Snapshot Summary Panel widget.
+ * Initializes the Snapshot Summary widget.
  * @param {object} controller - The main StateMonitorController instance.
  * @param {object|null} snapshotData - The currently loaded snapshot data, or null.
  * @param {HTMLElement} contentElement - The container element for the widget's content.
  */
-export function initializeSnapshotSummaryPanel(controller, snapshotData, contentElement) {
-    console.log("[SnapshotSummaryPanel] Initializing with data:", snapshotData);
+export function initializeSnapshotSummaryWidget(controller, snapshotData, contentElement) {
+    console.log("[SnapshotSummary] Initializing with data:", snapshotData);
     if (!contentElement) {
-        console.error("[SnapshotSummaryPanel] Content element not provided.");
+        console.error("[SnapshotSummary] Content element not provided.");
         return;
     }
 
@@ -89,5 +89,5 @@ export function initializeSnapshotSummaryPanel(controller, snapshotData, content
              .replace(/'/g, "&#039;");
      }
 
-    console.log("[SnapshotSummaryPanel] Initialization complete.");
+    console.log("[SnapshotSummary] Initialization complete.");
 } 
