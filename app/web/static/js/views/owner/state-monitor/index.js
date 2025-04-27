@@ -25,7 +25,7 @@ class StateMonitorController {
         this.currentSnapshot = null; // Holds the data of the currently loaded snapshot
         this.pageIdentifier = 'state-monitor-owner';
         this.isLoading = false;
-        this.currentScope = 'all'; // TODO: Add scope selection UI later
+        this.currentScope = 'all'; // Initialize currentScope
 
         // Define the widgets that can be added to the grid
         // Key: Unique ID for the widget type
@@ -62,28 +62,72 @@ class StateMonitorController {
     async _fetchInitialData() {
         this.isLoading = true;
         this.setStatus('Fetching initial data...');
-        console.log("[StateMonitorIndex] Fetching initial data...");
+        console.log(`[StateMonitorIndex] Fetching initial data with scope: ${this.currentScope}...`); // Log scope
         try {
-            const [collectorsData, snapshotsData] = await Promise.all([
-                apiRequest('/api/v1/owner/state/collectors', 'GET'),
-                apiRequest('/api/v1/owner/state/snapshots/list?limit=10', 'GET') // Assuming limit param
+            // Add scope parameter to collectors API call
+            const collectorsApiUrl = `/api/v1/owner/state/collectors?scope=${this.currentScope}`;
+            const snapshotsApiUrl = '/api/v1/owner/state/snapshots/list?limit=10';
+            
+            const [serverCollectorsResponse, snapshotsResponse] = await Promise.all([
+                apiRequest(collectorsApiUrl, 'GET'), // Returns FLAT LIST of SERVER collectors
+                apiRequest(snapshotsApiUrl, 'GET') 
             ]);
             
-            console.log("[StateMonitorIndex] Initial data received:", { collectorsData, snapshotsData });
+            console.log("[StateMonitorIndex] Raw initial data responses:", { serverCollectorsResponse, snapshotsResponse });
             
-             // Basic validation
-            const collectors = (collectorsData && collectorsData.collectors) ? collectorsData.collectors : { server: [], browser: [] };
-            const recentSnapshots = (snapshotsData && Array.isArray(snapshotsData.snapshots)) ? snapshotsData.snapshots : [];
+            // --- CORRECTED Collectors Parsing --- 
+            let collectors = { server: [], browser: [] }; // Final structure
+            
+            // Process SERVER collectors from API response
+            if (serverCollectorsResponse && Array.isArray(serverCollectorsResponse)) {
+                // Assume these are all server collectors
+                collectors.server = serverCollectorsResponse.map(c => ({ ...c, source: 'server' })); // Ensure source is set
+            } else {
+                console.warn("[StateMonitorIndex] Received unexpected format for server collectors data:", serverCollectorsResponse);
+            }
+            
+            // Process BROWSER collectors from StateBridge
+            try {
+                await stateBridge.ready(); // Ensure bridge is ready
+                collectors.browser = Object.keys(stateBridge.collectors).map(name => {
+                    const collector = stateBridge.collectors[name];
+                    return {
+                        name,
+                        description: collector.options?.description || 'No description',
+                        requires_approval: collector.options?.requiresApproval || false,
+                        scope: collector.options?.scope || 'global', // Assume global if not specified
+                        is_approved: stateBridge.approvedCollectors?.has(name) || false,
+                        source: 'browser' // Explicitly set source
+                    };
+                });
+                // Apply scope filtering for browser collectors client-side
+                if (this.currentScope !== 'all') {
+                    collectors.browser = collectors.browser.filter(c => 
+                        c.scope === this.currentScope || c.scope === 'global'
+                    );
+                }
+            } catch (bridgeError) {
+                console.error("[StateMonitorIndex] Error getting browser collectors from StateBridge:", bridgeError);
+                // Continue without browser collectors if StateBridge fails
+            }
+
+            console.log("[StateMonitorIndex] Combined and processed collectors structure:", collectors);
+             // --- End CORRECTED Collectors Parsing ---
+            
+            // --- Snapshots Parsing (Keep as is) ---
+            const recentSnapshots = (snapshotsResponse && Array.isArray(snapshotsResponse.snapshots)) ? snapshotsResponse.snapshots : [];
+            // --- End Snapshots Parsing ---
             
             this.isLoading = false;
             this.setStatus('Ready');
-            return { collectors, recentSnapshots };
+            // Return the correctly structured data
+            return { collectors, recentSnapshots }; 
         } catch (error) {
             console.error("[StateMonitorIndex] Failed to fetch initial data:", error);
             showToast('Error fetching initial data. Please check console.', 'error');
             this.setStatus('Error fetching data!', true);
             this.isLoading = false;
-            // Return default empty structure on error to prevent breaking GridManager init
+            // Return default empty structure on error
             return { collectors: { server: [], browser: [] }, recentSnapshots: [] }; 
         }
     }
@@ -271,14 +315,26 @@ class StateMonitorController {
              }
          });
          
-         // Scope buttons (Existing logic)
+         // --- CORRECTED Scope buttons --- 
          document.querySelectorAll('.btn-group button[id^="scope-"]').forEach(button => {
             button.addEventListener('click', (event) => {
+                if (this.isLoading) return; // Prevent scope change during loading
+                
                 document.querySelectorAll('.btn-group button[id^="scope-"]').forEach(btn => btn.classList.remove('active'));
-                event.target.classList.add('active');
-                const scope = event.target.id.split('-')[1];
-                console.log(`Scope changed to: ${scope}`);
-                showToast('info', `Scope set to: ${scope}. Filtering not yet implemented.`);
+                const targetButton = event.currentTarget; // Use currentTarget
+                targetButton.classList.add('active');
+                
+                const newScope = targetButton.id.split('-')[1];
+                if (newScope !== this.currentScope) {
+                    console.log(`Scope changed to: ${newScope}`);
+                    this.currentScope = newScope;
+                    // Refresh data to apply the new scope
+                    this.refreshData(); 
+                } else {
+                    console.log(`Scope already set to: ${newScope}`);
+                }
+                // Remove placeholder toast
+                // showToast('info', `Scope set to: ${scope}. Filtering not yet implemented.`);
             });
         });
          
@@ -529,23 +585,21 @@ class StateMonitorController {
         this.setStatus('Refreshing data...');
 
         try {
-            const refreshedData = await this._fetchInitialData();
+            // Fetch data using the CURRENT scope
+            const refreshedData = await this._fetchInitialData(); 
             
             // Update controller state
             this.collectors = refreshedData.collectors;
             this.recentSnapshots = refreshedData.recentSnapshots;
             
-            // Re-populate relevant widgets (Collectors, Recent Snapshots)
-            const collectorsWidget = this.gridManager?.getWidgetContentElementById('collectorsList');
-            if (collectorsWidget) initializeCollectorsList(this, this.collectors, collectorsWidget);
-            
-            const recentSnapshotsWidget = this.gridManager?.getWidgetContentElementById('recentSnapshots');
-            if (recentSnapshotsWidget) initializeRecentSnapshotsList(this, this.recentSnapshots, recentSnapshotsWidget);
+            // --- CORRECTED: Re-populate static panels, NOT grid widgets --- 
+            this._populateStaticPanels(refreshedData);
+            // --- End CORRECTION ---
             
             this.setStatus('Data refreshed.');
         } catch (error) {
             console.error("[StateMonitorIndex] Failed to refresh data:", error);
-            // Error handled/shown by _fetchInitialData
+            // Error should be handled/shown by _fetchInitialData
             this.setStatus('Failed to refresh data!', true);
         } finally {
             this.isLoading = false;
@@ -608,10 +662,10 @@ class StateMonitorController {
         // Populate Collectors List (Left Panel)
         const collectorsContainer = document.getElementById('collectors-list-container');
         if (collectorsContainer) {
-            // Target the specific content area div by its new ID
             const collectorsContent = document.getElementById('collectors-list-content-area'); 
             if (collectorsContent) {
-                initializeCollectorsList(data.collectorsData || [], collectorsContent, this);
+                // Pass the collectors object { server: [], browser: [] }
+                initializeCollectorsList(data.collectors || { server: [], browser: [] }, collectorsContent, this);
             } else {
                 console.error("Could not find content area #collectors-list-content-area");
             }
@@ -622,10 +676,10 @@ class StateMonitorController {
         // Populate Recent Snapshots List (Right Panel)
         const snapshotsContainer = document.getElementById('recent-snapshots-container');
         if (snapshotsContainer) {
-             // Target the specific content area div by its new ID
              const snapshotsContent = document.getElementById('recent-snapshots-content-area');
             if (snapshotsContent) {
-                initializeRecentSnapshotsList(data.snapshotsData || [], snapshotsContent, this);
+                // Pass controller, snapshot list, element
+                initializeRecentSnapshotsList(this, data.recentSnapshots || [], snapshotsContent);
             } else {
                 console.error("Could not find content area #recent-snapshots-content-area");
             }

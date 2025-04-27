@@ -66,10 +66,12 @@ export function initializeCollectorsList(collectorsData, contentElement, control
              return;
         }
         collectors.forEach(collector => {
-            // TODO: Re-integrate scope filtering once controller.currentScope is available
-            // if (currentScope !== 'all' && collector.scope !== currentScope && collector.scope !== 'global') {
-            //     return;
-            // }
+            // --- Apply Scope Filtering --- 
+            // Scope filtering logic moved here
+            if (currentScope !== 'all' && collector.scope !== currentScope && collector.scope !== 'global') {
+                 return; // Skip this collector if it doesn't match the scope
+            }
+            // --- End Scope Filtering ---
             count++;
 
             const item = document.createElement('div');
@@ -112,13 +114,17 @@ export function initializeCollectorsList(collectorsData, contentElement, control
         });
 
         if (count === 0) {
-            listElement.innerHTML = '<small class="text-muted">No collectors available.</small>'; // Simplified message
+            // Display a more informative message if filtering resulted in empty list
+            if (currentScope === 'all') {
+                listElement.innerHTML = '<small class="text-muted">No collectors available.</small>';
+            } else {
+                listElement.innerHTML = `<small class="text-muted">No ${source} collectors available for scope '${currentScope}'.</small>`;
+            }
         }
     };
 
-    // Initial population
-    const currentScope = controller?.currentScope || 'all'; // Use controller scope safely
-    // Pass the correct parts of the collectorsData object
+    // Initial population - Pass the controller's current scope
+    const currentScope = controller?.currentScope || 'all'; 
     populateList(serverList, collectorsData?.server || [], 'server', currentScope);
     populateList(browserList, collectorsData?.browser || [], 'browser', currentScope);
 
@@ -152,6 +158,7 @@ export function initializeCollectorsList(collectorsData, contentElement, control
      }
 
     console.log("[CollectorsList] Initialization complete.");
+    // Remove TODOs as scope filtering is now implemented
     // TODO: Add logic for handling collector selection/approval changes.
     // TODO: Connect scope filtering (if needed within the widget) to controller state.
 }
