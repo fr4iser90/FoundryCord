@@ -2,8 +2,6 @@
  * snapshotSummary.js: Widget for displaying summary information about the loaded snapshot.
  */
 
-// TODO: Import helper functions if needed
-
 /**
  * Initializes the Snapshot Summary widget.
  * @param {object} controller - The main StateMonitorController instance.

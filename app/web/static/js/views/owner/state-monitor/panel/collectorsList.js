@@ -2,8 +2,6 @@
  * collectorsList.js: Widget for displaying available server and browser state collectors.
  */
 
-// TODO: Import any necessary helper functions (e.g., for event handling)
-
 /**
  * Initializes the Collectors List widget.
  * @param {object} collectorsData - The collector data ({ server: [], browser: [] }).
@@ -103,7 +101,7 @@ export function initializeCollectorsList(collectorsData, contentElement, control
             // Use textContent for safety, construct HTML carefully
             label.innerHTML = `
                 <span class="collector-name fw-bold">${escapeHtml(collector.name)}</span>
-                <small class="collector-description d-block text-muted">${escapeHtml(collector.description || 'No description')}</small>
+                <small class="collector-description d-block">${escapeHtml(collector.description || 'No description')}</small>
                 ${collector.requires_approval ? '<span class="badge bg-warning text-dark me-1">Requires Approval</span>' : '<span class="badge bg-success me-1">Auto-approved</span>'}
                 ${collector.scope ? `<span class="badge bg-info">${escapeHtml(collector.scope)}</span>` : ''}
             `;

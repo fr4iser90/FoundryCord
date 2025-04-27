@@ -115,7 +115,8 @@ export class GridManager {
          console.log(`Initializing Gridstack for element #${this.options.gridElementId}`);
         try {
             const grid = GridStack.init({
-                cellHeight: 70,
+                cellHeight: 'auto',
+                autoHeight: true,
                 margin: 10,
                 float: true,
                 disableResize: false, // Initial state set after loading data

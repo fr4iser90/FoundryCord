@@ -45,7 +45,7 @@ export function initializeRecentSnapshotsList(controller, recentSnapshotsData, c
         const snapshotInfo = document.createElement('div');
         snapshotInfo.innerHTML = `
             <small class="d-block">${timestampStr}</small>
-            <small class="text-muted">ID: ${snapshot.id || 'N/A'}</small>
+            <small>ID: ${snapshot.id || 'N/A'}</small>
         `;
 
         const loadButton = document.createElement('button');

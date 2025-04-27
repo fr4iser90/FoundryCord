@@ -183,8 +183,9 @@
     padding: 1rem;
     border-radius: 0.25rem;
     background-color: var(--bg-tertiary);
-    max-height: 100%;
     overflow-y: auto;
+    flex-grow: 1;
+    min-height: 0;
 }
 
 .json-display {
@@ -367,13 +368,18 @@
 /* Styling for the lists inside the panels */
 #collectors-list-content-area, 
 #recent-snapshots-content-area {
-    /* Add overflow if lists get long */
-    max-height: calc(50vh - 60px); /* Example max height, adjust as needed */
     overflow-y: auto;
+    flex-grow: 1;
+    min-height: 0;
+    height: 100%;
 }
 
-.collector-lists-container { /* Container added by JS */
-    /* Styles for the inner container holding server/browser lists */
+.collector-lists-container {
+    margin-bottom: 1.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 .collector-item {
@@ -478,10 +484,11 @@
 
 /* JSON Tree View styling (if needed beyond component CSS) */
 .json-tree-view {
-    max-height: 60vh; /* Limit height */
-    overflow: auto; /* Enable scroll */
-    background-color: var(--bg-tertiary); /* Specific background for JSON view */
+    overflow: auto;
+    background-color: var(--bg-tertiary);
     border-radius: var(--border-radius);
+    flex-grow: 1;
+    min-height: 0;
 }
 
 /* Make Gridstack widgets use theme background */
@@ -491,9 +498,40 @@
     border: 1px solid var(--border-color);
 }
 
+/* Ensure main content area and gridstack fill height */
+.panel-layout-main-area .main-content-area {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.panel-layout-main-area .grid-stack {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+/* Widget Content adjustments */
+.state-monitor-container .grid-stack-item-content {
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
 
 /* Responsive adjustments */
 @media (max-width: 767.98px) {
-    /* Stack panels or hide them */
-    /* .control-bar .status-area, ... */
+    .control-bar .status-area,
+    .control-bar .action-buttons {
+        width: 100%;
+        margin-bottom: 0.75rem;
+    }
+    
+    .panel-layout-main-area {
+        padding: var(--spacing-sm);
+    }
+
+    .panel-layout-main-area .grid-stack {
+        /* Example: Maybe remove min-height or adjust */
+    }
 }

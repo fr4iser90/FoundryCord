@@ -43,17 +43,17 @@
     flex-direction: row; /* Arrange items horizontally */
     flex-grow: 1; /* Allow body to grow and fill space */
     overflow: hidden; /* Prevent content overflow issues */
-    height: calc(100vh - var(--header-height) - 40px); /* Adjust height based on header/toolbar */
-    /* Assuming header height and toolbar height are fixed */
+    /* Adjust height based on header/toolbar. Example: */
+    height: calc(100vh - var(--header-height, 60px) - var(--toolbar-height, 50px)); 
 }
 
 /* Base styles for Left and Right Panels */
 .panel-layout-panel-left,
 .panel-layout-panel-right {
-    flex: 0 0 280px; /* Default panel width */
+    flex-shrink: 0; /* Prevent panels from shrinking */
+    flex-basis: 280px; /* Consistent base width, adjust as needed */
     background-color: var(--bg-secondary);
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden; /* Hide overflow on the panel itself */
     transition: flex-basis 0.3s ease-in-out, 
                 padding 0.3s ease-in-out, 
                 opacity 0.3s ease-in-out,
@@ -61,7 +61,56 @@
     border-color: var(--border-color);
     border-style: solid;
     border-width: 0;
-    /* Padding is applied to the inner .panel-content-area in the layout */
+    display: flex; /* Use flex to make inner content area fill height */
+    flex-direction: column; /* Stack title and content area */
+}
+
+/* Container within panels for content and padding */
+/* Select more specifically to avoid conflicts if .panel-content-area is used elsewhere */
+.panel-layout-panel-left > .panel-content-area,
+.panel-layout-panel-right > .panel-content-area {
+    padding: var(--spacing-md); /* Add padding here */
+    flex-grow: 1; /* Allow content area to fill remaining height */
+    overflow-y: auto; /* Allow vertical scrolling */
+    overflow-x: hidden; /* Prevent horizontal scrolling */
+    min-height: 0; /* Necessary for flex-grow with overflow */
+    color: var(--text-normal); /* Default text color */
+}
+
+/* Specific adjustments for common elements within panels */
+.panel-layout .panel-content-area .list-group-item {
+    background-color: transparent;
+    color: var(--text-normal);
+    border-color: var(--border-color); /* Removed !important */
+}
+
+/* Target the specific elements in recent snapshots (Increased Specificity) */
+.panel-layout-panel-right .panel-content-area .snapshot-info .timestamp {
+     color: var(--text-normal); 
+}
+.panel-layout-panel-right .panel-content-area .snapshot-info .snapshot-id.text-muted {
+    color: var(--text-normal); 
+}
+.panel-layout-panel-right .panel-content-area .snapshot-info .snapshot-id small {
+     color: var(--text-normal); 
+     word-break: break-all; /* Break long IDs within the small tag */
+     display: inline-block; /* Ensure word-break applies correctly */
+     max-width: 100%; /* Prevent overflow */
+}
+
+/* Adjust collector list text if needed (Increased Specificity) */
+.panel-layout-panel-left .panel-content-area .collector-item label {
+     color: var(--text-normal);
+}
+.panel-layout-panel-left .panel-content-area .collector-description {
+     color: var(--text-normal); 
+}
+
+/* Add word break to specific elements if needed */
+.panel-content-area .snapshot-id small {
+    word-break: break-all; /* Break long IDs within the small tag */
+    display: inline-block; /* Ensure word-break applies correctly */
+    max-width: 100%; /* Prevent overflow */
 }
 
 /* Add border only where needed */
@@ -76,19 +125,33 @@
 /* Main content area */
 .panel-layout-main-area {
     flex-grow: 1; /* Allow main area to take remaining space */
-    overflow-y: auto; /* Allow scrolling within main area */
+    overflow: auto; /* Allow scrolling within main area (both x and y if needed) */
     padding: var(--spacing-md); /* Add padding to main area */
+    min-width: 0; /* Ensure main area can shrink if needed */
+}
+
+/* Gridstack Specific adjustments within main area */
+.panel-layout-main-area .grid-stack {
+    /* Ensure gridstack doesn't cause overflow itself if not needed */
+    /* background-color: rgba(0, 255, 0, 0.1); */ /* Debug background */
 }
 
 /* Collapsed State for Panels */
 .panel-layout-panel-left.collapsed,
 .panel-layout-panel-right.collapsed {
     flex-basis: 0;
-    padding-left: 0;
-    padding-right: 0;
     border-width: 0;
     overflow: hidden;
     opacity: 0;
+    /* Remove padding when collapsed */
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* Ensure content within collapsed panels is hidden */
+.panel-layout-panel-left.collapsed > .panel-content-area,
+.panel-layout-panel-right.collapsed > .panel-content-area {
+    display: none;
 }
 
 /* Panel Divider (Keep if used within panels) */
