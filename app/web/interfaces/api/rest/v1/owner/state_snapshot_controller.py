@@ -14,7 +14,7 @@ from app.web.interfaces.api.rest.v1.base_controller import BaseController
 from app.shared.infrastructure.models.auth import AppUserEntity
 from app.shared.application.services.monitoring.state_snapshot_service import save_snapshot_with_limit, get_snapshot_by_id, list_recent_snapshots, delete_snapshot_by_id
 from app.web.interfaces.api.rest.v1.schemas.state_monitor_schemas import (
-    StateSnapshotMetadata, StoredSnapshotResponse # Import needed schemas
+    StateSnapshotMetadata, StoredSnapshotResponse, BrowserSnapshotResults, FullSnapshotData # Import needed schemas
 )
 import time
 import uuid
@@ -415,17 +415,34 @@ class StateSnapshotController(BaseController):
             
         # Validate/parse the stored data into the response model
         try:
-            # Construct the response based on the retrieved snapshot object
-            # Assuming SnapshotResult can be created from snapshot.snapshot_data
-            snapshot_result_data = SnapshotResult(
-                timestamp=snapshot.timestamp.timestamp(), # Convert datetime to float timestamp
-                results=snapshot.snapshot_data
+            # Extract server and browser data from the stored snapshot_data dict
+            snapshot_dict = snapshot.snapshot_data or {}
+            server_data = snapshot_dict.get('server')
+            browser_data_dict = snapshot_dict.get('browser')
+            
+            # Parse browser data using the existing schema if available
+            browser_results = None
+            if browser_data_dict:
+                try:
+                    browser_results = BrowserSnapshotResults(**browser_data_dict)
+                except Exception as parse_err:
+                    logger.warning(f"Failed to parse browser results for snapshot {snapshot_id}: {parse_err}")
+                    # Decide how to handle - maybe keep the raw dict?
+                    # For now, let's proceed without parsed browser data if it fails
+
+            # Construct the nested FullSnapshotData object
+            full_snapshot_data_obj = FullSnapshotData(
+                server=server_data,
+                browser=browser_results # Assign the parsed BrowserSnapshotResults object
             )
+
+            # Construct the final StoredSnapshotResponse object correctly
             response_data = StoredSnapshotResponse(
                 snapshot_id=str(snapshot.id),
                 capture_timestamp=snapshot.timestamp.timestamp(), # Use float timestamp
-                trigger_context=snapshot.context or {},
-                snapshot=snapshot_result_data
+                trigger=snapshot.trigger, # Add the missing trigger field
+                context=snapshot.context or {}, # Use context from DB
+                snapshot=full_snapshot_data_obj # Assign the correctly typed object
             )
             return response_data
         except Exception as e:
