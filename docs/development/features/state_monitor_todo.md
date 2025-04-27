@@ -32,7 +32,6 @@
 - [ ] **DB Retrieval:** Implement UI functionality to load and display a selected snapshot from the list.
 - [ ] Add specific collectors for key features/modules as needed.
 - [ ] (Optional) Implement snapshot comparison functionality.
-- [ ] Add a collector/display mechanism for computed CSS styles of selected DOM elements.
 - [ ] (Optional) Implement configurable auto-refresh interval/collectors.
 - [ ] (Optional) Implement configurable snapshot limit (N) for storage.
 - [ ] Update `state_monitor.md` with completed Phase 3 features.

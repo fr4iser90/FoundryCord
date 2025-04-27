@@ -179,9 +179,6 @@ export function renderResults(instance, snapshotData = null) {
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="combined-tab" data-bs-toggle="tab" data-bs-target="#combined-data" type="button" role="tab" aria-controls="combined-data" aria-selected="false">Combined View</button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="computed-styles-tab" data-bs-toggle="tab" data-bs-target="#computed-styles-data" type="button" role="tab" aria-controls="computed-styles-data" aria-selected="false">Computed Styles</button>
-            </li>
         </ul>
     `;
     
@@ -212,14 +209,6 @@ export function renderResults(instance, snapshotData = null) {
             </div>
             <div class="json-tree-view p-3" id="combined-json-view"></div>
         </div>
-        <div class="tab-pane fade" id="computed-styles-data" role="tabpanel" aria-labelledby="computed-styles-tab">
-             <div class="d-flex justify-content-end pt-2 pe-2">
-                <button class="btn btn-sm btn-outline-secondary copy-tab-btn" data-target-view="computedStyles" title="Copy Computed Styles JSON">
-                    <i class="fas fa-copy me-1"></i>Copy Styles JSON
-                </button>
-            </div>
-            <div class="json-tree-view p-3" id="computed-styles-json-view"></div>
-        </div>
     `;
     
     // Add tabs and content to the panel
@@ -246,10 +235,6 @@ export function renderResults(instance, snapshotData = null) {
                     dataToCopy = dataToDisplay; // The whole snapshot
                     dataType = 'Combined Snapshot';
                     break;
-                case 'computedStyles':
-                    dataToCopy = dataToDisplay.browser?.results?.computedStyles;
-                    dataType = 'Computed Styles';
-                    break;
             }
 
             if (dataToCopy) {
@@ -271,19 +256,6 @@ export function renderResults(instance, snapshotData = null) {
     renderJsonView('server-json-view', dataToDisplay.server);
     renderJsonView('browser-json-view', dataToDisplay.browser);
     renderJsonView('combined-json-view', dataToDisplay);
-    
-    // Render computed styles if available
-    const computedStylesData = dataToDisplay.browser?.results?.computedStyles;
-    if (computedStylesData) {
-        // Pass the whole object (including potential error) to the viewer
-        renderJsonView('computed-styles-json-view', computedStylesData);
-    } else {
-        // Handle case where collector wasn't run or included
-        const csContainer = document.getElementById('computed-styles-json-view');
-        if (csContainer) {
-            csContainer.innerHTML = '<span class="text-muted">Computed Styles collector not run or no selector provided.</span>';
-        }
-    }
 }
 
 /**

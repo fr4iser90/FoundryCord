@@ -93,33 +93,5 @@ export function registerDefaultCollectors(collectorsRegistry, jsErrorStorage, co
         scope: 'browser'
     });
 
-    // Computed Styles Collector (Requires Approval and context.selector)
-    registerCollector(collectorsRegistry, 'computedStyles', async (context) => {
-        const selector = context?.selector || 'body'; // Default to 'body' if no selector provided
-        try {
-            const element = document.querySelector(selector);
-            if (!element) {
-                return { error: `Element not found for selector: ${selector}`, styles: null };
-            }
-            const styles = window.getComputedStyle(element);
-            const stylesObj = {};
-            for (let i = 0; i < styles.length; i++) {
-                const prop = styles[i];
-                stylesObj[prop] = styles.getPropertyValue(prop);
-            }
-            return { styles: stylesObj };
-        } catch (error) {
-            console.error(`Error collecting computed styles for selector "${selector}":`, error);
-            return { error: `Error collecting styles for selector ${selector}: ${error.message}`, styles: null };
-        }
-    }, {
-        name: 'computedStyles',
-        description: 'Computed CSS styles for element matching context.selector (defaults to body)',
-        requiresApproval: true,
-        context: { selector: 'body' }, // Default context - still useful for metadata?
-        source: 'browser', // Although source/scope might be implied by the registry
-        scope: 'browser' // Explicitly define scope if needed by registry logic
-    });
-
     console.info("Default browser collectors registered.");
 }
