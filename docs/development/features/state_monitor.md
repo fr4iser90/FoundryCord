@@ -2,80 +2,82 @@
 
 ## Purpose
 
-The State Monitor is a developer and owner-facing diagnostic tool designed to capture and display the internal state of both the backend (Python server) and the frontend (browser JavaScript) at a specific point in time. It acts like an X-ray, providing valuable insights for debugging issues, understanding application behavior, and generating context for bug reports.
-
-## Usage
-
-1.  **Navigation:** Access the tool via the `/owner/state-monitor/` route in the web interface.
-2.  **Scope Selection (Optional):** Use the "All", "Bot", "Web" buttons at the top right to filter the list of available collectors displayed below. "All" shows collectors from all scopes.
-3.  **Collector Selection:**
-    *   In the "State Collectors" panel on the left, check the boxes next to the specific server-side and browser-side states you wish to include in the snapshot.
-    *   **Server Collectors:** These run on the backend (e.g., `bot_status`, `system_info`). They typically do not require special permissions beyond owner access to the page.
-    *   **Browser Collectors:** These run in your browser via the `StateBridge` system.
-        *   Collectors marked **Auto-approved** (green badge) are considered safe and run automatically when selected.
-        *   Collectors marked **Requires Approval** (yellow badge) access potentially more sensitive browser information. The first time you select one of these and click "Capture" in a browser session, a confirmation dialog will appear (batch approval for multiple). Your approval is remembered for the duration of the browser session (using localStorage).
-4.  **Capture Snapshot:** Click the "Capture" button.
-    *   The process involves collecting browser state, sending selected server collector names to the backend, executing server collectors, and combining the results.
-5.  **Analyze Results:** The captured data will appear in the "State Snapshot" panel on the right, organized into tabs:
-    *   **Server State:** Displays data collected by the selected server collectors.
-    *   **Browser State:** Displays data collected by the selected *and approved* browser collectors.
-        *   Data for `consoleLogs` and `javascriptErrors` is now displayed in a structured, more readable list format instead of raw JSON.
-        *   Other browser data is shown in the interactive JSON viewer.
-    *   **Combined View:** Shows the complete snapshot object, including timestamps and both server and browser results.
-    *   The data is rendered using an interactive JSON viewer.
-    *   **CSS Style Inspection:** Computed CSS styles for specific elements can be viewed.
-6.  **Export/Copy (Optional):**
-    *   **Copy All:** Copies the full JSON of the combined snapshot to the clipboard.
-    *   **Download:** Saves the full JSON of the combined snapshot to a `.json` file.
-7.  **Other Controls:**
-    *   **Refresh:** Reloads the list of available collectors from the backend.
-    *   **Start/Stop Auto-Refresh:** Automatically captures a new snapshot every 10 seconds (default interval).
+The State Monitor is a developer and owner-facing diagnostic tool designed to capture and display the internal state of both the backend (Python server) and the frontend (browser JavaScript) at a specific point in time. It acts like an X-ray, providing valuable insights for debugging issues, understanding application behavior, and generating context for bug reports. Snapshots can be triggered manually, automatically on frontend errors, or internally by backend processes, and are stored persistently in the database.
 
 ## Key Features
 
-*   **Interactive JSON Viewer:** State data is presented in a collapsible/expandable tree view for easy navigation of complex objects and arrays.
-    *   **Search/Highlighting:** A search bar within the JSON viewer allows filtering and highlighting of specific keys or values within the snapshot data.
-*   **Enhanced Browser State Rendering:**
-    *   Console logs (`consoleLogs`) are displayed as a timestamped list with log levels.
-    *   JavaScript errors (`javascriptErrors`) are shown with message, source location, timestamp, and a toggleable stack trace.
-*   **Error Handling & Context:**
-    *   Recent JavaScript errors (`onerror`, `onunhandledrejection`) are captured and can be included in snapshots via the `javascriptErrors` collector.
-    *   **Automatic Snapshots on Error:** When a JavaScript error occurs in the browser, a state snapshot is automatically triggered and captured in the background. This snapshot now includes context indicating it was triggered by an error (`{ trigger: 'js_error', error: {...} }`).
-*   **Server-Side Enhancements:**
-    *   **Snapshot Storage:** The backend can now store snapshots triggered internally (e.g., by system events or other backend processes). These are saved as temporary files.
-    *   **Internal Trigger API:** A dedicated internal API endpoint (`POST /internal/state/trigger-snapshot`) allows triggering server-side snapshots programmatically.
-    *   **Snapshot Retrieval API:** Stored snapshots can be retrieved via their unique ID using an owner-only API endpoint (`GET /owner/state/snapshot/{snapshot_id}`).
-*   **Improved Styling:** The JSON viewer's CSS has been refined for better readability and clearer indentation.
-*   **Collector Filtering:** A search bar allows filtering the list of available server and browser collectors.
-*   **`computedStyles` (Scope: browser, Requires Approval):** Captures the computed CSS styles (resulting styles after all CSS rules are applied) for a single DOM element specified by a CSS selector. To use, check the box and enter a valid CSS selector (e.g., `#my-element-id`, `.my-class-name`, `div.card > p`) into the input field that appears. The results are shown in the "Computed Styles" tab.
+*   **Persistent Storage:** Captured snapshots are stored in the database, allowing for later retrieval and analysis.
+*   **Snapshot Management:**
+    *   **Automatic Deletion:** To prevent excessive storage usage, the system automatically deletes the oldest snapshots when a configurable limit is reached.
+    *   **Manual Deletion:** Snapshots can be manually deleted from the "Recent Snapshots" panel.
+*   **Multiple Trigger Mechanisms:**
+    *   **Manual Capture:** Initiate snapshots directly from the UI.
+    *   **Automatic on JS Error:** Captures frontend state automatically when a JavaScript error occurs.
+    *   **Internal Backend Trigger:** Allows backend systems to capture server state programmatically.
+*   **Interactive JSON Viewer:** State data is presented in a collapsible/expandable tree view.
+    *   **Search/Highlighting:** Filter and highlight specific keys or values.
+*   **Enhanced Browser State Rendering:** Console logs (`consoleLogs`) and JavaScript errors (`javascriptErrors`) are displayed in structured, readable formats.
+*   **Contextual Information:** Snapshots include metadata about their trigger (`user_capture`, `js_error`, `internal_api`) and context.
+*   **Collector Filtering:** Search bar to filter the list of available collectors.
+*   **`computedStyles` Collector:** Capture computed CSS styles for specific DOM elements.
+*   **UI Panels:**
+    *   **Collectors List (Left):** Select server and browser collectors.
+    *   **Recent Snapshots (Right):** View a list of recently captured snapshots, load them for analysis, or delete them.
+    *   **Main Area (Grid Layout):**
+        *   **Snapshot Summary:** Displays key metadata about the currently loaded snapshot.
+        *   **Snapshot Results:** Shows the detailed snapshot data in tabs (Server, Browser, Combined).
+
+## Usage Workflow
+
+1.  **Navigation:** Access the tool via `/owner/state-monitor/`.
+2.  **View Recent Snapshots (Right Panel):**
+    *   A list of recently captured snapshots is displayed with timestamps and IDs.
+    *   Click **"Load"** to view a specific snapshot's details in the main area (Summary and Results panels).
+    *   Click the **Trash Icon** <i class="fas fa-trash-alt"></i> to delete a snapshot (confirmation required).
+3.  **Capture a New Snapshot (Manual):**
+    *   **Scope Selection (Toolbar):** Optionally filter collectors by "All", "Bot", or "Web".
+    *   **Collector Selection (Left Panel):** Check the desired server and browser collectors. Handle browser collector approval prompts if necessary (using the custom modal).
+    *   **Click "Capture" (Toolbar):** This triggers the capture process, stores the snapshot in the database, and updates the "Recent Snapshots" list. The new snapshot is *not* automatically loaded for viewing.
+4.  **Analyze Loaded Snapshot (Main Area):**
+    *   **Summary Panel:** View timestamp, trigger source, and basic collector info.
+    *   **Results Panel:** Explore the detailed data using the tabs and the interactive JSON viewer (including search).
+5.  **Other Controls (Toolbar):**
+    *   **Refresh:** Reloads collector and recent snapshot lists.
+    *   **Download:** Saves the *currently loaded* snapshot as a JSON file.
+    *   **Copy Snapshot:** Copies the *currently loaded* snapshot JSON to the clipboard.
+    *   **(Layout Controls):** Lock/Unlock and Reset the grid layout of the main area panels.
+
+## Trigger Scenarios & Data Flow
+
+1.  **Manual Capture (`user_capture`):**
+    *   Triggered by: Owner clicking "Capture" button.
+    *   Process: Browser collects selected/approved state -> Sends collector names + browser state to `POST /api/v1/owner/state/snapshot` -> Backend runs server collectors -> Backend combines data -> Backend saves to DB via `save_snapshot` (checks limit, deletes oldest if needed) -> Backend returns snapshot ID -> UI refreshes "Recent Snapshots" list.
+2.  **JS Error Capture (`js_error`):**
+    *   Triggered by: Global JavaScript error handler (`bridgeErrorHandler.js`).
+    *   Process: Browser automatically collects state (incl. `javascriptErrors`, `consoleLogs`) -> Sends snapshot data to `POST /api/v1/owner/state/log-browser-snapshot` -> Backend **verifies owner authentication** -> Backend saves to DB via `save_snapshot`. *(Note: Snapshots are only saved if the error occurs while the owner is logged in)*.
+3.  **Internal Backend Capture (`internal_api`, etc.):**
+    *   Triggered by: Backend code calling `POST /internal/state/trigger-snapshot` with collector list and context.
+    *   Process: Backend runs specified server collectors -> Backend saves to DB via `save_snapshot`.
+
+## Snapshot Retrieval & Management APIs
+
+*   `GET /api/v1/owner/state/snapshots/list?limit=N`: Retrieves metadata for the N most recent snapshots. (Owner-only)
+*   `GET /api/v1/owner/state/snapshot/{snapshot_id}`: Retrieves the full data for a specific snapshot by its ID. (Owner-only)
+*   `DELETE /api/v1/owner/state/snapshot/{snapshot_id}`: Deletes a specific snapshot by its ID. (Owner-only)
+*   `POST /api/v1/owner/state/log-browser-snapshot`: Endpoint for browser to send automatically triggered snapshots. (Owner-only)
 
 ## Debugging Use Cases
 
-The primary goal of the State Monitor is to aid developers and owners in diagnosing issues. Here are key scenarios:
+*(This section remains largely the same but benefits from the context of persistent storage and multiple triggers)*
 
-1.  **Live Debugging (Manual Trigger):**
-    *   **Scenario:** An owner observes unexpected behavior in the UI or bot.
-    *   **Action:** Navigate to the State Monitor, select relevant collectors (e.g., `navigation`, `consoleLogs`, `bot_status`, specific module states), and click "Capture".
-    *   **Benefit:** Provides an immediate "X-ray" view of both frontend and backend state at that exact moment, helping to understand the cause of the issue.
-
-2.  **Frontend Error Analysis (Automatic Trigger):**
-    *   **Scenario:** A JavaScript error occurs in a user's browser.
-    *   **Action:** The system automatically captures a state snapshot (including `javascriptErrors` and `consoleLogs`) with the trigger context set to `js_error`. This snapshot is ideally sent to the backend for storage.
-    *   **Benefit:** Allows developers to retrospectively analyze the state (URL, viewport, preceding logs, server status) leading up to the error, even without being present.
-
-3.  **Backend Error Analysis (Internal/Manual Trigger):**
-    *   **Scenario:** A backend process fails (e.g., task queue error, API exception, bot disconnect).
-    *   **Action:** An internal system component or an owner triggers a server-side snapshot capture (containing only server collector data) with trigger context `internal_api` or similar. This snapshot is stored server-side.
-    *   **Benefit:** Captures the backend state precisely when the issue occurred, independent of any browser interaction. Snapshots can be retrieved later by ID for analysis.
-
-4.  **Bug Report Enrichment (Manual Trigger):**
-    *   **Scenario:** An owner identifies a reproducible bug.
-    *   **Action:** Capture a relevant state snapshot, download the JSON, and attach it to the bug report (e.g., in GitLab/GitHub).
-    *   **Benefit:** Provides developers with rich, structured context far beyond screenshots, significantly speeding up diagnosis and fixing.
+1.  **Live Debugging (Manual Trigger):** Capture state instantly when observing issues. Load the snapshot immediately or later via the "Recent Snapshots" panel.
+2.  **Frontend Error Analysis (Automatic Trigger):** Retrospectively analyze the state leading up to a JS error by finding the corresponding `js_error` snapshot in the list and loading it.
+3.  **Backend Error Analysis (Internal Trigger):** Retrieve server-side snapshots (triggered by `internal_api`) by their known ID (e.g., logged during the backend event) using the retrieval API or potentially a future UI element.
+4.  **Bug Report Enrichment (Manual/Automatic):** Capture or find a relevant snapshot, download the JSON, and attach it to bug reports for comprehensive context.
 
 ## Available Collectors (Default)
 
-This list may expand as the application grows.
+*(List remains the same as previous version)*
 
 ### Server Collectors
 
@@ -91,7 +93,13 @@ This list may expand as the application grows.
 *   **`storageKeys` (Scope: browser, Requires Approval):** Lists the *names* (keys) stored in localStorage and sessionStorage. *Values are redacted for security.*
 *   **`javascriptErrors` (Scope: browser, Requires Approval):** Captures recent JavaScript errors caught by global handlers (`onerror`, `onunhandledrejection`).
 *   **`consoleLogs` (Scope: browser, Requires Approval):** Captures recent messages logged to the browser console (`log`, `warn`, `error`, etc.), including those generated by StateBridge itself.
+*   **`computedStyles` (Scope: browser, Requires Approval):** Captures computed CSS styles for a specified element.
 
 ## Future Enhancements (Ideas)
 
-*   Implement a custom, styled modal for browser collector approval instead of the basic `
+*(Keep existing ideas, remove custom modal as it's done)*
+*   Add specific collectors for key features/modules as needed.
+*   Implement snapshot comparison functionality.
+*   Implement configurable snapshot limit (N) for storage via UI/config file.
+*   Add UI for retrieving internally triggered snapshots by ID.
+*   Improve auth/security for the `/log-browser-snapshot` endpoint.

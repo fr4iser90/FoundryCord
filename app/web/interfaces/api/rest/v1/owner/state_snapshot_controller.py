@@ -13,6 +13,9 @@ from app.shared.interface.logging.api import get_web_logger
 from app.web.interfaces.api.rest.v1.base_controller import BaseController
 from app.shared.infrastructure.models.auth import AppUserEntity
 from app.shared.application.services.monitoring.state_snapshot_service import save_snapshot_with_limit, get_snapshot_by_id, list_recent_snapshots, delete_snapshot_by_id
+from app.web.interfaces.api.rest.v1.schemas.state_monitor_schemas import (
+    StateSnapshotMetadata, StoredSnapshotResponse # Import needed schemas
+)
 import time
 import uuid
 
@@ -56,18 +59,18 @@ class InternalSnapshotTriggerResponse(BaseModel):
     status: str
     snapshot_id: str
 
-class StoredSnapshotResponse(BaseModel):
-    """Response containing a previously stored snapshot"""
-    # Define structure based on what store_snapshot saves
-    snapshot_id: str
-    capture_timestamp: Optional[float] = None
-    trigger_context: Dict[str, Any]
-    snapshot: SnapshotResult # Re-use existing model
-
 # Dependency to get state snapshot service
 def get_snapshot_service():
     """Dependency to get the state snapshot service"""
     return get_state_snapshot_service()
+
+# Dependency for owner check (assuming it uses get_current_user like others)
+def verify_owner(current_user: AppUserEntity = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+    if not current_user.is_owner:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+    return current_user
 
 # Define the Controller Class
 class StateSnapshotController(BaseController):
@@ -87,8 +90,15 @@ class StateSnapshotController(BaseController):
         self.router.get("/collectors", response_model=List[StateCollectorInfo])(self.get_available_collectors)
         self.router.post("/approve", status_code=status.HTTP_200_OK)(self.approve_collector)
         self.router.post("/snapshot", response_model=SnapshotResult)(self.create_snapshot)
+        
         # Endpoint for frontend-triggered snapshots (e.g., JS errors)
-        self.router.post("/log-browser-snapshot", status_code=status.HTTP_202_ACCEPTED)(self.log_browser_snapshot)
+        # NOW REQUIRES OWNER AUTH
+        self.router.post(
+            "/log-browser-snapshot", 
+            status_code=status.HTTP_202_ACCEPTED,
+            dependencies=[Depends(verify_owner)] # ADD OWNER AUTH DEPENDENCY
+        )(self.log_browser_snapshot)
+        
         self.router.get("/token", response_model=StateSecurityToken)(self.get_state_token)
         
         # --- Snapshot Routes (Order Matters!) ---
@@ -96,22 +106,26 @@ class StateSnapshotController(BaseController):
         # List route FIRST (more specific)
         self.router.get(
             "/snapshots/list",
-            response_model=List[StoredSnapshotResponse], 
-            summary="List Recent Stored Snapshots"
+            # response_model=List[StoredSnapshotResponse], <-- Use StateSnapshotMetadata for list
+            response_model=List[StateSnapshotMetadata],
+            summary="List Recent Stored Snapshots",
+            dependencies=[Depends(verify_owner)] # Secure list endpoint
         )(self.list_snapshots)
         
         # Retrieve single route SECOND (less specific)
         self.router.get(
             "/snapshots/{snapshot_id}", 
             response_model=StoredSnapshotResponse,
-            summary="Retrieve a Stored Snapshot by ID"
+            summary="Retrieve a Stored Snapshot by ID",
+            dependencies=[Depends(verify_owner)] # Secure retrieve endpoint
         )(self.get_stored_snapshot)
         
         # Delete route (also uses ID)
         self.router.delete(
             "/snapshots/{snapshot_id}",
             status_code=status.HTTP_204_NO_CONTENT,
-            summary="Delete a Stored Snapshot by ID"
+            summary="Delete a Stored Snapshot by ID",
+            dependencies=[Depends(verify_owner)] # Secure delete endpoint
         )(self.delete_snapshot)
         # --- End Snapshot Routes ---
 
@@ -214,53 +228,83 @@ class StateSnapshotController(BaseController):
             )
             if saved_snapshot:
                 logger.info(f"Snapshot successfully saved to DB with ID: {saved_snapshot.id}")
+                # Add snapshot_id to the result returned to frontend? Optional.
+                result['snapshot_id'] = str(saved_snapshot.id)
             else:
                 logger.error("Failed to save snapshot to DB after collection.")
-                # Decide if we should raise an error here or just log?
-                # For now, just log, as the frontend primarily needs the collected data.
+                
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Snapshot collected but failed to save to database. Check server logs."
+                )
         else:
             logger.warning("Snapshot collection did not return valid results, skipping save.")
+            # Raise an error here too? If results are expected but missing.
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Snapshot collection failed or returned no results."
+            )
         # ------------------------------------------
 
+        # Only return result if saving was successful (or if saving is not critical)
         return result
 
     async def log_browser_snapshot(
         self,
-        request: Request, # To potentially get IP, User-Agent if needed
-        snapshot: SnapshotResult = Body(...), # Expect the snapshot data in the body
-        db: AsyncSession = Depends(get_web_db_session)
+        request: Request, # Keep for IP/User-Agent if still desired
+        # REMOVE specific SnapshotLogPayload validation
+        # payload: SnapshotLogPayload, 
+        # Use a more generic dict or simple BaseModel if basic check is needed
+        payload: Dict[str, Any] = Body(...), # Accept generic dictionary
+        db: AsyncSession = Depends(get_web_db_session),
+        # REMOVE Header check 
+        # x_snapshot_source: Optional[str] = Header(None),
+        # Auth is now handled by Depends(verify_owner) in the route decorator
+        current_owner: AppUserEntity = Depends(verify_owner) # Inject verified owner 
     ):
-        """Receives and logs a snapshot captured by the browser (e.g., on JS error)."""
-        logger.info("Received request to log browser-captured snapshot.")
+        """Receives and logs a snapshot captured by the browser (e.g., on JS error). REQUIRES OWNER AUTH."""
+        logger.info(f"Owner {current_owner.id} logging browser-captured snapshot.")
+        
+        # REMOVE Header validation
+        # if x_snapshot_source != "JS-Error-Handler": 
+        #     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing or invalid snapshot source header")
 
-        # Basic context, could be enhanced with data from request headers if necessary
-        context = snapshot.results.get('context', {}) # Try to get context from snapshot itself
-        context['request_ip'] = request.client.host
-        context['user_agent'] = request.headers.get("User-Agent", "")
-        # Ensure the trigger is set correctly
-        trigger = context.get('trigger', 'js_error') # Default to js_error if not provided
+        # Basic context extraction (less critical now with auth)
+        # Extract results and context carefully from the generic payload dict
+        results_data = payload.get('results')
+        context_data = payload.get('context', {}) # Default to empty dict
+        trigger = context_data.get('trigger', 'js_error') # Still useful to record trigger
+        
+        if not results_data:
+            logger.warning("Received browser snapshot log request with missing 'results' data.")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing snapshot results data")
+        
+        # Add owner ID to context if not present?
+        context_data['owner_id'] = str(current_owner.id) 
+        context_data['request_ip'] = request.client.host
+        context_data['user_agent'] = request.headers.get("User-Agent", "")
+
+        # Ensure trigger is js_error if coming through this route
         if trigger != 'js_error':
-            logger.warning(f"log_browser_snapshot called with unexpected trigger '{trigger}' in context. Forcing to 'js_error'.")
-            trigger = 'js_error'
+             logger.warning(f"log_browser_snapshot called by owner {current_owner.id} with unexpected trigger '{trigger}'. Forcing to 'js_error'.")
+             trigger = 'js_error'
+             context_data['trigger'] = trigger # Update context
 
         saved_snapshot = await save_snapshot_with_limit(
             db=db,
             trigger=trigger,
-            snapshot_data=snapshot.results, # Pass the results dict
-            context=context
+            snapshot_data=results_data, # Pass the extracted results dict
+            context=context_data # Pass the potentially modified context dict
         )
 
-        if saved_snapshot:
-            logger.info(f"Browser snapshot successfully saved to DB with ID: {saved_snapshot.id}")
-            return {"status": "logged", "snapshot_id": str(saved_snapshot.id)}
-        else:
-            logger.error("Failed to save browser snapshot to DB.")
-            # Return 202 Accepted anyway? Or a 500? 
-            # Let's return 500 as saving failed.
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to save snapshot."
-            )
+        if not saved_snapshot:
+            # Consider different error if save fails
+            logger.error(f"Failed to save browser snapshot logged by owner {current_owner.id}.")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to save snapshot")
+
+        logger.info(f"Browser snapshot logged by owner {current_owner.id} saved with ID: {saved_snapshot.id}")
+        # Return 202 Accepted - we took the data, processing happened
+        return Response(status_code=status.HTTP_202_ACCEPTED)
 
     async def get_state_token(
         self,
@@ -393,62 +437,49 @@ class StateSnapshotController(BaseController):
 
     async def list_snapshots(
         self,
-        limit: int = 10, # Allow specifying limit via query parameter, default to 10
-        current_user: AppUserEntity = Depends(get_current_user),
-        db: AsyncSession = Depends(get_web_db_session)
+        limit: int = 10,
+        # current_user: AppUserEntity = Depends(get_current_user), # Already checked by route dependency
+        db: AsyncSession = Depends(get_web_db_session),
+        # Ensure verify_owner dependency is implicitly handled by the route decorator
     ):
-        """Lists the most recent stored snapshots."""
-        if not current_user:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
-        if not current_user.is_owner:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
-
-        logger.info(f"User {current_user.username} requesting list of recent snapshots (limit: {limit})")
+        """Lists the most recent stored snapshots (metadata only)."""
+        # logger.info(f"User {current_user.username} requesting list of recent snapshots (limit: {limit})")
         
-        # Use the service function
+        # Use the service function to get full snapshot objects
         snapshots = await list_recent_snapshots(db, count=limit)
 
-        # Convert the list of StateSnapshot objects to a list of StoredSnapshotResponse objects
-        response_list = []
+        # Convert the list of StateSnapshot objects to a list of StateSnapshotMetadata objects
+        metadata_list = []
         for snapshot in snapshots:
             try:
-                snapshot_result_data = SnapshotResult(
-                    timestamp=snapshot.timestamp.timestamp(),
-                    results=snapshot.snapshot_data
-                )
-                response_data = StoredSnapshotResponse(
+                metadata = StateSnapshotMetadata(
                     snapshot_id=str(snapshot.id),
-                    capture_timestamp=snapshot.timestamp.timestamp(),
-                    trigger_context=snapshot.context or {},
-                    snapshot=snapshot_result_data
+                    capture_timestamp=snapshot.timestamp.timestamp(), # Use float timestamp
+                    trigger=snapshot.trigger,
+                    context=snapshot.context or {} # Ensure context is at least an empty dict
                 )
-                response_list.append(response_data)
+                metadata_list.append(metadata)
             except Exception as e:
-                logger.error(f"Failed to parse snapshot data for list (ID: {snapshot.id}): {e}", exc_info=True)
-                # Optionally skip this snapshot or add a placeholder?
-                # Let's skip it for now to avoid sending malformed data.
+                logger.error(f"Failed to parse snapshot metadata for list (ID: {snapshot.id}): {e}", exc_info=True)
+                # Skip this snapshot if parsing fails
                 continue 
-
-        return response_list
+        
+        # logger.debug(f"Returning metadata for {len(metadata_list)} snapshots.")
+        return metadata_list
 
     async def delete_snapshot(
         self,
         snapshot_id: str = Path(..., title="Snapshot ID", description="The unique ID of the snapshot to delete"),
-        current_user: AppUserEntity = Depends(get_current_user),
-        db: AsyncSession = Depends(get_web_db_session)
+        # current_user: AppUserEntity = Depends(get_current_user), # Checked by route dependency
+        db: AsyncSession = Depends(get_web_db_session),
+        current_owner: AppUserEntity = Depends(verify_owner) # Inject owner for logging context
     ):
         """Deletes a stored state snapshot by its ID."""
-        if not current_user:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
-        if not current_user.is_owner:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
-
-        logger.info(f"User {current_user.username} requesting deletion of snapshot ID: {snapshot_id}")
+        # logger.info(f"User {current_owner.username} requesting deletion of snapshot ID: {snapshot_id}")
 
         deleted = await delete_snapshot_by_id(db, snapshot_id)
 
         if not deleted:
-            # This could mean not found or failed to delete
             # Check if it existed first?
             snapshot = await get_snapshot_by_id(db, snapshot_id)
             if snapshot is None:
@@ -465,7 +496,7 @@ class StateSnapshotController(BaseController):
                     detail=f"Failed to delete snapshot {snapshot_id}. Check server logs."
                 )
                 
-        logger.info(f"Successfully deleted snapshot ID: {snapshot_id}")
+        # logger.info(f"Successfully deleted snapshot ID: {snapshot_id}")
         # Return 204 No Content on success, which FastAPI handles by returning None
         return None
 
