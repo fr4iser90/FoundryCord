@@ -9,6 +9,10 @@ import time
 import logging
 from app.shared.interface.logging.api import get_shared_logger
 
+# Import collector functions from their new locations
+from .collectors.system_info import get_system_info
+from .collectors.database_status import get_database_status
+
 logger = get_shared_logger()
 
 class SecureStateSnapshot:
@@ -249,46 +253,6 @@ _service_instance = get_state_snapshot_service()
 
 # --- Database Status Collector ---
 
-async def get_database_status(context: Dict[str, Any]) -> Dict[str, Any]:
-    """Checks the database connection status."""
-    logger.debug("Executing database_status state collector...")
-    
-    from sqlalchemy import text
-    from app.shared.infrastructure.database.api import session_context
-    import time
-
-    start_time = time.perf_counter()
-    try:
-        async with session_context() as session:
-            # Execute a simple query to check connectivity
-            result = await session.execute(text("SELECT 1"))
-            scalar_result = result.scalar_one()
-            end_time = time.perf_counter()
-            latency_ms = (end_time - start_time) * 1000
-            
-            if scalar_result == 1:
-                return {
-                    "status": "connected",
-                    "latency_ms": round(latency_ms, 2)
-                }
-            else:
-                 logger.warning(f"Database status check query returned unexpected result: {scalar_result}")
-                 return {
-                     "status": "error",
-                     "error": "Unexpected query result",
-                     "latency_ms": round(latency_ms, 2)
-                 }
-                 
-    except Exception as e:
-        end_time = time.perf_counter()
-        latency_ms = (end_time - start_time) * 1000
-        logger.error(f"Database connection error in state collector: {e}", exc_info=False)
-        return {
-            "status": "error",
-            "error": str(e),
-            "latency_ms": round(latency_ms, 2)
-        }
-
 _service_instance.register_collector(
     name="database_status",
     collector_fn=get_database_status,
@@ -300,20 +264,20 @@ _service_instance.register_collector(
 # --- Bot Status Collector (Existing Example) ---
 # Beispiel-Collector für Bot-Info
 def get_bot_status_info(context: Dict[str, Any]) -> Dict[str, Any]:
+    """Collects basic status information about the bot.
+    
+    Note: This is an example. Actual bot status likely requires access
+    to the bot instance, making it a 'bot' scope collector typically
+    registered during bot startup.
+    """
     logger.debug("Executing bot_status state collector...")
-    # TODO: Replace with actual bot interaction or cached data
+    # Placeholder implementation
     try:
-        # Beispiel: Versuche, Daten von einer (noch nicht existierenden) Bot-Verwaltung zu holen
-        # from app.bot.manager import get_bot_manager 
-        # bot_manager = get_bot_manager()
-        # status = bot_manager.get_status()
-        # return status 
         return {
             "status": "online_placeholder",
             "uptime_seconds": 12345,
-            "guild_count": 5,
-            "command_prefix": "!",
-            "latency_ms": 50
+            "guild_count": 5, # Placeholder
+            "command_prefix": "!" # Placeholder
         }
     except Exception as e:
         logger.error(f"Error in bot_status collector: {e}", exc_info=True)
@@ -322,35 +286,19 @@ def get_bot_status_info(context: Dict[str, Any]) -> Dict[str, Any]:
 _service_instance.register_collector(
     name="bot_status",
     collector_fn=get_bot_status_info,
-    requires_approval=False, 
-    scope="bot",
-    description="Basic status information about the Discord bot (Placeholder)"
+    requires_approval=False,
+    scope="bot", # Marked as bot scope
+    description="Basic status information about the Discord bot (Placeholder)."
 )
 
-# Beispiel-Collector für System-Info
-import platform
-import os
-
-def get_system_info(context: Dict[str, Any]) -> Dict[str, Any]:
-    logger.debug("Executing system_info state collector...")
-    try:
-        return {
-            "os": platform.system(),
-            "os_version": platform.release(),
-            "python_version": platform.python_version(),
-            "cpu_cores": os.cpu_count()
-            # Avoid adding overly sensitive information here
-        }
-    except Exception as e:
-        logger.error(f"Error in system_info collector: {e}", exc_info=True)
-        return {"error": str(e)}
+# --- System Info Collector ---
 
 _service_instance.register_collector(
     name="system_info",
     collector_fn=get_system_info,
     requires_approval=False,
-    scope="web", 
-    description="Basic OS and Python environment details"
+    scope="web", # Runs on the web server host
+    description="Basic OS and Python environment details."
 )
 
 # Fügen Sie hier weitere Server-Collectors hinzu... 
