@@ -12,11 +12,15 @@ class StateBridge {
     constructor() {
         this.collectors = {};          // Registry for collector functions and options
         this.approvedCollectors = new Set(); // Set of names of approved collectors
-        this.pendingApprovals = {};      // Tracks pending approval requests
+        this.pendingApprovals = {};      // Tracks pending approval requests (currently unused)
         this.lastSnapshot = null;        // Stores the last collected browser snapshot
         this.apiEndpoint = '/api/v1/owner/state/snapshot'; // Endpoint to send server snapshot requests
         
         // --- JS Error Tracking --- 
+        this._resolveReadyPromise = null;
+        this._readyPromise = new Promise(resolve => {
+            this._resolveReadyPromise = resolve;
+        });
         this.jsErrors = [];
         this.maxJsErrors = 20; 
         // -------------------------
@@ -38,6 +42,7 @@ class StateBridge {
      */
     async _initialize() {
         console.log('Initializing StateBridge (Modular)');
+        let success = false;
         try {
             // Fetch security token
             const response = await fetch('/api/v1/owner/state/token');
@@ -70,9 +75,30 @@ class StateBridge {
             // Register default browser collectors (pass registry and storages)
             this.registerDefaultCollectors(); 
 
+            success = true; // Mark initialization as successful
         } catch (error) {
             console.error('Error initializing StateBridge:', error);
+        } finally {
+            // Resolve the ready promise regardless of success/failure, 
+            // so code waiting on it doesn't hang indefinitely.
+            // Calling resolve multiple times has no effect.
+            if (this._resolveReadyPromise) {
+                console.log(`[StateBridge] Resolving ready promise (Success: ${success}).`);
+                this._resolveReadyPromise();
+            } else {
+                console.error("[StateBridge] Cannot resolve ready promise - resolve function missing!");
+            }
+            console.log('[StateBridge] _initialize finished.');
         }
+    }
+
+    /**
+     * Public getter to access the ready promise.
+     * Code can await this promise to ensure StateBridge is initialized.
+     * @returns {Promise<void>}
+     */
+    ready() {
+        return this._readyPromise;
     }
 
     /**

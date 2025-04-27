@@ -11,6 +11,9 @@ export function initElements() {
     const elements = {
         // Collector selection panel
         collectorPanel: document.getElementById('collector-panel'),
+        // Specific list containers WITHIN the panel
+        serverCollectorList: document.getElementById('server-collectors'),
+        browserCollectorList: document.getElementById('browser-collectors'),
         // Scope selection buttons
         scopeAllBtn: document.getElementById('scope-all'),
         scopeBotBtn: document.getElementById('scope-bot'),
@@ -29,7 +32,8 @@ export function initElements() {
     };
     
     // Basic check if essential elements are missing
-    if (!elements.collectorPanel || !elements.resultsPanel || !elements.statusDisplay) {
+    if (!elements.collectorPanel || !elements.resultsPanel || !elements.statusDisplay || 
+        !elements.serverCollectorList || !elements.browserCollectorList) {
          console.warn('State Monitor: Essential UI elements not found during initialization.');
     }
     

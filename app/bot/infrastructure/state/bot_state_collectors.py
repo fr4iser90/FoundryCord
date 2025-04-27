@@ -10,7 +10,8 @@ from app.shared.infrastructure.state.secure_state_snapshot import get_state_snap
 
 # Import collector functions
 from .collectors.basic_info import collect_basic_info_func
-from .collectors.system_info import collect_system_info_func
+# Import system_info from SHARED infrastructure
+from app.shared.infrastructure.state.collectors.system_info import get_system_info as collect_system_info_func
 from .collectors.performance import collect_performance_metrics_func
 from .collectors.discord_api import (
     collect_discord_connection_info_func, 
@@ -61,10 +62,10 @@ class BotStateCollectors:
         
         self.snapshot_service.register_collector(
             name="bot_system_info",
-            collector_fn=self.collect_system_info, # Register the method
+            collector_fn=self.collect_system_info, # Still register the method wrapper
             requires_approval=False,
             scope="bot",
-            description="Bot host system information"
+            description="Bot host system information (uses shared collector logic)" # Updated description
         )
         
         self.snapshot_service.register_collector(
@@ -136,10 +137,10 @@ class BotStateCollectors:
         return collect_basic_info_func(self.bot)
     
     async def collect_system_info(self, context: Dict[str, Any] = None) -> Dict[str, Any]:
-        """Collect system information by calling the refactored function."""
+        """Collect system information by calling the SHARED refactored function."""
         # Context is not used by the underlying function
-        # Note: This function is now async to match the signature, but the work isn't async
-        return collect_system_info_func()
+        # Call the imported function directly
+        return await collect_system_info_func() # Use await as the shared function is async
     
     async def collect_performance_metrics(self, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """Collect performance metrics by calling the refactored function."""

@@ -13,28 +13,46 @@ import { loadAvailableCollectors, captureSnapshot, downloadSnapshot, copySnapsho
 
 class StateMonitorDashboard {
     constructor() {
-        // --- Instance properties (from original) ---
-        // Note: Original used this.collectors = {} initially, API call populates .server/.browser
+        // Use async init pattern to allow await
+        this._asyncInit();
+    }
+
+    async _asyncInit() {
+        console.log("[StateMonitorDashboard] _asyncInit started.");
+
+        // --- Instance properties (moved here) ---
         this.collectors = { server: [], browser: [] }; 
         this.currentScope = 'all';
         this.currentSnapshot = null;
         this.refreshInterval = null;
         this.autoRefreshEnabled = false;
         this.autoRefreshIntervalMs = 10000; // 10 seconds
-        
+
         // --- Initialization using imported functions ---
-        // Call initElements and store result on instance.ui 
-        // (original stored elements directly on 'this', now nested under 'ui')
-        this.ui = initElements(); 
-        
-        // Call initializeToggles (original was empty)
+        this.ui = initElements();
+        console.log("[StateMonitorDashboard] UI elements initialized.");
         initializeToggles();
-        
-        // Initial load of collectors - call the instance method which uses the imported API fn
-        this.loadAvailableCollectors(); 
-        
-        // Set up event listeners - pass 'this' instance to the imported function
-        setupEventListeners(this); 
+        console.log("[StateMonitorDashboard] Toggles initialized.");
+
+        console.log("[StateMonitorDashboard] Waiting for StateBridge.ready()...");
+        try {
+            await stateBridge.ready(); // Wait for the promise
+            console.log("[StateMonitorDashboard] StateBridge.ready() resolved. Proceeding to load collectors."); 
+            // Initial load of collectors - MUST be awaited as it's async
+            await this.loadAvailableCollectors(); // Call instance method
+            console.log("[StateMonitorDashboard] Initial loadAvailableCollectors finished.");
+        } catch (error) {
+            console.error("[StateMonitorDashboard] Error during async init (waiting for StateBridge or loading collectors):", error);
+            // Use setStatus via the instance's UI cache
+            if (this.ui && this.ui.statusDisplay) {
+                setStatus(this.ui.statusDisplay, 'Error during initialization.', 'error');
+            } else {
+                console.error("Cannot set status, ui.statusDisplay not found.");
+            }
+        }
+
+        setupEventListeners(this);
+        console.log("[StateMonitorDashboard] _asyncInit finished."); 
     }
     
     // --- Methods calling the imported API functions --- 

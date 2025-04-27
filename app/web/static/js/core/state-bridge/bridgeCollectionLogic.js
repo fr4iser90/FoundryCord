@@ -14,10 +14,12 @@ import { sanitizeStateData } from './bridgeUtils.js'; // Assuming sanitization h
 export async function collectBrowserState(collectorsRegistry, approvedCollectorsSet, pendingApprovalsMap, collectorNames = [], context = {}) {
     const results = {};
     const timestamp = Date.now();
-    // If no collectors specified, use all registered ones from the registry
     const collectorsToRun = collectorNames.length > 0 
         ? collectorNames 
         : Object.keys(collectorsRegistry);
+
+    const collectorsToRunApproved = []; // Collectors ready to run
+    const collectorsNeedingApproval = []; // Collectors needing approval first
 
     // --- Phase 1: Request Approvals --- 
     console.debug("StateBridge Collect - Phase 1: Checking Approvals for", collectorsToRun);
@@ -28,16 +30,34 @@ export async function collectBrowserState(collectorsRegistry, approvedCollectors
         }
         const collector = collectorsRegistry[name];
         if (collector.options.requiresApproval && !approvedCollectorsSet.has(name)) {
-            console.info(`Requesting approval for collector: ${name}`);
-            // Pass necessary state to requestApproval
-            await requestApproval(name, collectorsRegistry, approvedCollectorsSet, pendingApprovalsMap);
+            collectorsNeedingApproval.push(name); // Add to list for batch approval
+        } else {
+            collectorsToRunApproved.push(name); // Can run immediately
         }
     }
     console.debug("StateBridge Collect - Phase 1: Approval checks complete. Current approved:", Array.from(approvedCollectorsSet));
 
+    // --- Request Batch Approval if needed --- 
+    if (collectorsNeedingApproval.length > 0) {
+        console.info(`Requesting batch approval for collectors: ${collectorsNeedingApproval.join(', ')}`);
+        // Call requestApproval ONCE with the array
+        const granted = await requestApproval(collectorsNeedingApproval, collectorsRegistry, approvedCollectorsSet, pendingApprovalsMap);
+        if (granted) {
+            // If batch approved, add them to the list to run
+            collectorsToRunApproved.push(...collectorsNeedingApproval);
+            console.info("Batch approval granted.");
+        } else {
+            // If batch rejected, mark them as errors
+            console.warn("Batch approval rejected.");
+            collectorsNeedingApproval.forEach(name => {
+                results[name] = { error: 'approval_rejected', requiresApproval: true };
+            });
+        }
+    }
+
     // --- Phase 2: Collect Data ---
     console.debug("StateBridge Collect - Phase 2: Collecting Data...");
-    for (const name of collectorsToRun) {
+    for (const name of collectorsToRunApproved) {
         if (!collectorsRegistry[name]) {
             console.warn(`Unknown state collector during collection: ${name}`);
             results[name] = { error: 'unknown_collector' };
@@ -72,9 +92,6 @@ export async function collectBrowserState(collectorsRegistry, approvedCollectors
                 console.error(`Error executing state collector ${name}:`, error);
                 results[name] = { error: error.message || 'Unknown error', stack: error.stack };
             }
-        } else {
-            console.warn(`Skipping collection for unapproved collector: ${name}`);
-            results[name] = { error: 'not_approved', requiresApproval: true };
         }
     }
      console.debug("StateBridge Collect - Phase 2: Data collection complete.");

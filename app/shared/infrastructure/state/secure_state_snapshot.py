@@ -7,6 +7,7 @@ import json
 import hashlib
 import time
 import logging
+import inspect
 from app.shared.interface.logging.api import get_shared_logger
 
 # Import collector functions from their new locations
@@ -114,7 +115,12 @@ class SecureStateSnapshot:
             try:
                 collector_fn = collector["function"]
                 if callable(collector_fn):
-                    result = await collector_fn(context) if hasattr(collector_fn, "__await__") else collector_fn(context)
+                    # Use inspect.iscoroutinefunction for robust check
+                    if inspect.iscoroutinefunction(collector_fn):
+                        result = await collector_fn(context)
+                    else:
+                        result = collector_fn(context)
+                        
                     results[name] = result
                     
                     # Store in history
