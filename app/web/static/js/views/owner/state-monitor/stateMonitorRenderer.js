@@ -2,6 +2,9 @@
  * stateMonitorRenderer.js: Handles rendering UI updates for the State Monitor.
  */
 
+// Import the function needed for the load button event listener
+import { loadAndDisplaySnapshot } from './stateMonitorApi.js'; 
+
 // Note: JSONViewer is expected to be available globally via window.JSONViewer 
 // as it's loaded by a separate script tag in the HTML.
 
@@ -141,10 +144,18 @@ export function renderCollectorPanel(instance) {
  * Renders the results panel with tabs for server, browser, and combined snapshots.
  * Corresponds to the original renderResults method.
  * @param {object} instance - The StateMonitorDashboard instance (needed for resultsPanel, currentSnapshot).
+ * @param {object} [snapshotData=null] - Optional snapshot data to display. If null, uses instance.currentSnapshot.
  */
-export function renderResults(instance) {
+export function renderResults(instance, snapshotData = null) {
     // Use instance.ui.resultsPanel and instance.currentSnapshot
-    if (!instance.ui || !instance.ui.resultsPanel || !instance.currentSnapshot) return;
+    const dataToDisplay = snapshotData || instance.currentSnapshot;
+
+    if (!instance.ui || !instance.ui.resultsPanel || !dataToDisplay) {
+        console.warn("renderResults called without instance.ui.resultsPanel or snapshot data.");
+        // Optionally clear the panel or show a message
+        if (instance.ui.resultsPanel) instance.ui.resultsPanel.innerHTML = '<p class="text-muted p-3">No snapshot data available to display.</p>';
+        return;
+    }
     
     // Clear the results panel
     instance.ui.resultsPanel.innerHTML = '';
@@ -184,9 +195,9 @@ export function renderResults(instance) {
     instance.ui.resultsPanel.appendChild(tabContent);
     
     // Now populate the JSON views - calling the exported function below
-    renderJsonView('server-json-view', instance.currentSnapshot.server);
-    renderJsonView('browser-json-view', instance.currentSnapshot.browser);
-    renderJsonView('combined-json-view', instance.currentSnapshot);
+    renderJsonView('server-json-view', dataToDisplay.server);
+    renderJsonView('browser-json-view', dataToDisplay.browser);
+    renderJsonView('combined-json-view', dataToDisplay);
 }
 
 /**
@@ -361,57 +372,27 @@ function renderJsErrorsView(container, errors) {
     container.appendChild(list);
 }
 
-// --- Helper function to render data using JSONViewer (or fallback) ---
-// This is needed because renderJsonView expects an element ID, 
-// but here we have the container element directly.
-function renderDataInContainer(container, data) {
-     if (!container) return;
-     container.innerHTML = ''; // Clear previous content
-
-     if (typeof JSONViewer !== 'undefined') {
-         try {
-              const dataToRender = (data && typeof data === 'object' && 'results' in data && 'timestamp' in data) 
-                                  ? data.results 
-                                  : data;
-
-             if (dataToRender === null || typeof dataToRender !== 'object' || Object.keys(dataToRender).length === 0) {
-                 container.innerHTML = '<span class=\"text-muted\">No data available or data is empty.</span>';
-                 return;
-             }
-             
-             const viewer = new JSONViewer();
-             viewer.showJSON(dataToRender); // Use the JSONViewer instance
-             container.appendChild(viewer.getContainer()); // Append its element
-         } catch (e) {
-             console.error('Error using JSONViewer:', e);
-             renderJsonFallback(container, data); 
-         }
-     } else {
-         console.warn('JSONViewer class not found. Using fallback renderer.');
-         renderJsonFallback(container, data);
-     }
-}
-
 /**
  * Renders the summary panel with key information from the snapshot.
  * @param {object} instance - The StateMonitorDashboard instance.
+ * @param {object} [snapshotData=null] - Optional snapshot data to display. If null, uses instance.currentSnapshot.
  */
-export function renderSummaryPanel(instance) {
+export function renderSummaryPanel(instance, snapshotData = null) {
     const panel = instance.ui.summaryPanel;
     if (!panel) return;
-    if (!instance.currentSnapshot) {
-        panel.innerHTML = '<p class="text-muted">Capture a snapshot to see the summary.</p>';
+    const snap = snapshotData || instance.currentSnapshot;
+
+    if (!snap) {
+        panel.innerHTML = '<p class="text-muted">Capture or load a snapshot to see the summary.</p>';
         return;
     }
 
-    const snap = instance.currentSnapshot;
     const browserResults = snap.browser?.results || {};
     const serverResults = snap.server?.results || {};
-    const browserContext = snap.browser?.context || {}; // Assumes context is passed here eventually
-    const serverContext = snap.server?.context || {};   // Context from server API call
+    const context = snap.context || snap.server?.context || snap.browser?.context || {};
 
     // Determine trigger (try server context first, then browser)
-    let trigger = serverContext.trigger || browserContext.trigger || 'Unknown';
+    let trigger = context.trigger || 'Unknown';
     if (trigger === 'user_capture') trigger = 'User Capture';
     else if (trigger === 'js_error') trigger = 'JS Error';
     else if (trigger === 'internal_api') trigger = 'Internal API';
@@ -470,4 +451,92 @@ export function renderSummaryPanel(instance) {
             </div>
         </div>
     `;
+}
+
+/**
+ * Renders the list of recent snapshots into the UI.
+ * @param {object} instance - The StateMonitorDashboard instance.
+ * @param {Array<object>} snapshots - List of snapshot metadata objects from the API.
+ */
+export function renderRecentSnapshotsList(instance, snapshots) {
+   const listContainer = instance.ui.recentSnapshotsList;
+   if (!listContainer) {
+       console.error("Cannot render recent snapshots: List container not found in UI cache.");
+       return;
+   }
+
+   listContainer.innerHTML = ''; // Clear loading message or previous list
+
+   if (!snapshots || snapshots.length === 0) {
+       listContainer.innerHTML = '<p class="text-muted p-3 mb-0">No recent snapshots found.</p>';
+       return;
+   }
+
+   snapshots.forEach(snapInfo => {
+       const item = document.createElement('a'); // Use <a> as list-group-item often is
+       item.href = '#'; // Prevent default link behavior
+       item.className = 'list-group-item list-group-item-action flex-column align-items-start recent-snapshot-item';
+       item.dataset.snapshotId = snapInfo.snapshot_id;
+
+       const timestamp = new Date(snapInfo.capture_timestamp * 1000); // Convert float timestamp to Date
+       const trigger = snapInfo.trigger_context?.trigger || 'unknown'; // Get trigger from context
+       let triggerBadgeClass = 'bg-secondary';
+       if (trigger === 'user_capture') triggerBadgeClass = 'bg-primary';
+       else if (trigger === 'js_error') triggerBadgeClass = 'bg-danger';
+       else if (trigger === 'internal_api') triggerBadgeClass = 'bg-info';
+
+       item.innerHTML = `
+           <div class="d-flex w-100 justify-content-between">
+               <h6 class="mb-1"><span class="badge ${triggerBadgeClass}">${trigger}</span></h6>
+               <small class="text-muted">${timestamp.toLocaleString()}</small>
+           </div>
+           <p class="mb-1 small text-muted">ID: ${snapInfo.snapshot_id}</p>
+           <button class="btn btn-sm btn-outline-primary load-snapshot-btn">Load</button>
+       `;
+       
+       // Add event listener directly to the button within this item
+       const loadButton = item.querySelector('.load-snapshot-btn');
+       if (loadButton) {
+           loadButton.addEventListener('click', (event) => {
+               event.preventDefault();
+               event.stopPropagation(); // Prevent the link click
+               console.log(`Load button clicked for snapshot: ${snapInfo.snapshot_id}`);
+               // Call the imported API function to load and display
+               loadAndDisplaySnapshot(instance, snapInfo.snapshot_id);
+           });
+       }
+
+       listContainer.appendChild(item);
+   });
+}
+
+// --- Helper function to render data using JSONViewer (or fallback) ---
+// This is needed because renderJsonView expects an element ID, 
+// but here we have the container element directly.
+function renderDataInContainer(container, data) {
+     if (!container) return;
+     container.innerHTML = ''; // Clear previous content
+
+     if (typeof JSONViewer !== 'undefined') {
+         try {
+              const dataToRender = (data && typeof data === 'object' && 'results' in data && 'timestamp' in data) 
+                                  ? data.results 
+                                  : data;
+
+             if (dataToRender === null || typeof dataToRender !== 'object' || Object.keys(dataToRender).length === 0) {
+                 container.innerHTML = '<span class=\"text-muted\">No data available or data is empty.</span>';
+                 return;
+             }
+             
+             const viewer = new JSONViewer();
+             viewer.showJSON(dataToRender); // Use the JSONViewer instance
+             container.appendChild(viewer.getContainer()); // Append its element
+         } catch (e) {
+             console.error('Error using JSONViewer:', e);
+             renderJsonFallback(container, data); 
+         }
+     } else {
+         console.warn('JSONViewer class not found. Using fallback renderer.');
+         renderJsonFallback(container, data);
+     }
 }

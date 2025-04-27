@@ -5,10 +5,10 @@ from typing import Dict, Any, List, Optional
 from fastapi import Depends, HTTPException, Request, Response, status, Path, APIRouter, Body
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.shared.infrastructure.state.secure_state_snapshot import get_state_snapshot_service, SecureStateSnapshot
 from app.shared.domain.auth.services import AuthenticationService
-from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
-from app.web.interfaces.api.rest.dependencies.db_dependencies import get_db
+from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user, get_web_db_session
 from app.shared.interface.logging.api import get_web_logger
 from app.web.interfaces.api.rest.v1.base_controller import BaseController
 from app.shared.infrastructure.models.auth import AppUserEntity
@@ -163,7 +163,7 @@ class StateSnapshotController(BaseController):
         request: Request,
         snapshot_request: StateSnapshotRequest,
         current_user: AppUserEntity = Depends(get_current_user),
-        db: Session = Depends(get_db)
+        db: AsyncSession = Depends(get_web_db_session)
     ):
         """Create a new state snapshot using specified collectors"""
         if not current_user:
@@ -193,7 +193,7 @@ class StateSnapshotController(BaseController):
         # --- Save the snapshot to the database --- 
         if result and result.get('results'): # Check if collection was successful
             logger.info(f"Snapshot collected, attempting to save to DB for trigger: user_capture")
-            saved_snapshot = save_snapshot_with_limit(
+            saved_snapshot = await save_snapshot_with_limit(
                 db=db,
                 trigger='user_capture', # Explicitly set trigger for this endpoint
                 snapshot_data=result['results'], # Pass the actual results dict
@@ -216,7 +216,7 @@ class StateSnapshotController(BaseController):
         self,
         request: Request, # To potentially get IP, User-Agent if needed
         snapshot: SnapshotResult = Body(...), # Expect the snapshot data in the body
-        db: Session = Depends(get_db)
+        db: AsyncSession = Depends(get_web_db_session)
     ):
         """Receives and logs a snapshot captured by the browser (e.g., on JS error)."""
         logger.info("Received request to log browser-captured snapshot.")
@@ -231,7 +231,7 @@ class StateSnapshotController(BaseController):
             logger.warning(f"log_browser_snapshot called with unexpected trigger '{trigger}' in context. Forcing to 'js_error'.")
             trigger = 'js_error'
 
-        saved_snapshot = save_snapshot_with_limit(
+        saved_snapshot = await save_snapshot_with_limit(
             db=db,
             trigger=trigger,
             snapshot_data=snapshot.results, # Pass the results dict
@@ -281,7 +281,7 @@ class StateSnapshotController(BaseController):
     async def trigger_internal_snapshot(
         self,
         trigger_request: InternalSnapshotTriggerRequest = Body(...),
-        db: Session = Depends(get_db),
+        db: AsyncSession = Depends(get_web_db_session),
         # TODO: Add internal auth dependency here if needed
         # internal_auth: bool = Depends(verify_internal_request) 
     ):
@@ -309,7 +309,7 @@ class StateSnapshotController(BaseController):
             snapshot_result_model = SnapshotResult(**snapshot_result_dict)
             
             # --- Save using the new service --- 
-            saved_snapshot = save_snapshot_with_limit(
+            saved_snapshot = await save_snapshot_with_limit(
                 db=db,
                 trigger=trigger,
                 snapshot_data=snapshot_result_model.results, # Pass the results dict
@@ -339,7 +339,7 @@ class StateSnapshotController(BaseController):
         self,
         snapshot_id: str = Path(..., title="Snapshot ID", description="The unique ID of the snapshot to retrieve"),
         current_user: AppUserEntity = Depends(get_current_user),
-        db: Session = Depends(get_db)
+        db: AsyncSession = Depends(get_web_db_session)
     ):
         """Retrieve a previously stored state snapshot by its ID."""
         if not current_user:
@@ -349,7 +349,7 @@ class StateSnapshotController(BaseController):
 
         logger.info(f"User {current_user.username} requesting stored snapshot ID: {snapshot_id}")
         
-        snapshot = get_snapshot_by_id(db, snapshot_id)
+        snapshot = await get_snapshot_by_id(db, snapshot_id)
         
         if snapshot is None:
             raise HTTPException(
@@ -383,7 +383,7 @@ class StateSnapshotController(BaseController):
         self,
         limit: int = 10, # Allow specifying limit via query parameter, default to 10
         current_user: AppUserEntity = Depends(get_current_user),
-        db: Session = Depends(get_db)
+        db: AsyncSession = Depends(get_web_db_session)
     ):
         """Lists the most recent stored snapshots."""
         if not current_user:
@@ -394,7 +394,7 @@ class StateSnapshotController(BaseController):
         logger.info(f"User {current_user.username} requesting list of recent snapshots (limit: {limit})")
         
         # Use the service function
-        snapshots = list_recent_snapshots(db, count=limit)
+        snapshots = await list_recent_snapshots(db, count=limit)
 
         # Convert the list of StateSnapshot objects to a list of StoredSnapshotResponse objects
         response_list = []

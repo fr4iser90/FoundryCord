@@ -11,16 +11,17 @@
 
 - [x] Implement dedicated renderers for `consoleLogs` and `javascriptErrors` in `stateMonitorRenderer.js`.
 - [x] Extend `stateBridge.collectState` and callers to pass a `context` object.
-- [ ] **DB Storage:** Define SQLAlchemy model `StateSnapshot` (`id`, `timestamp`, `trigger`, `context`, `snapshot_data`).
-- [ ] **DB Storage:** Create Alembic migration `010_create_state_snapshots_table.py`.
-- [ ] **DB Storage:** Implement backend service `save_snapshot` with logic to limit stored snapshots (e.g., delete oldest if count > N).
-- [ ] **DB Storage:** Integrate `save_snapshot` into manual capture endpoint (`/api/v1/owner/state/snapshot` POST, trigger: 'user_capture').
-- [ ] **DB Storage:** Create new backend endpoint (`/api/v1/internal/state/log-browser-snapshot`) for frontend triggers (e.g., JS errors) to call, which then uses `save_snapshot` (trigger: 'js_error').
+- [x] **DB Storage:** Define SQLAlchemy model `StateSnapshot` (`id`, `timestamp`, `trigger`, `context`, `snapshot_data`).
+- [x] **DB Storage:** Create Alembic migration `010_create_state_snapshots_table.py`.
+- [x] **DB Storage:** Implement backend service `save_snapshot` with logic to limit stored snapshots (e.g., delete oldest if count > N).
+- [x] **DB Storage:** Integrate `save_snapshot` into manual capture endpoint (`/api/v1/owner/state/snapshot` POST, trigger: 'user_capture').
+- [x] **DB Storage:** Create new backend endpoint (`/api/v1/internal/state/log-browser-snapshot`) for frontend triggers (e.g., JS errors) to call, which then uses `save_snapshot` (trigger: 'js_error').
+# TODO: Add proper auth/security to /log-browser-snapshot endpoint later.
 - [x] Implement internal backend API endpoint to trigger server snapshots and log their IDs.
-- [ ] **DB Storage:** Ensure internal trigger endpoint also uses `save_snapshot` (trigger: 'internal_api').
+- [x] **DB Storage:** Ensure internal trigger endpoint also uses `save_snapshot` (trigger: 'internal_api').
 - [-] ~~Implement basic server-side snapshot storage (e.g., file/temp DB) and retrieval endpoint by ID.~~ (Superseded by DB approach)
-- [ ] **DB Storage:** Implement backend service/repository functions `get_snapshot_by_id` and `list_recent_snapshots`.
-- [ ] **DB Storage:** Implement/Update retrieval API endpoints (`/api/v1/owner/state/snapshot/{snapshot_id}` GET and `/api/v1/owner/state/snapshots/list` GET).
+- [x] **DB Storage:** Implement backend service/repository functions `get_snapshot_by_id` and `list_recent_snapshots`.
+- [x] **DB Storage:** Implement/Update retrieval API endpoints (`/api/v1/owner/state/snapshot/{snapshot_id}` GET and `/api/v1/owner/state/snapshots/list` GET).
 - [ ] Update `state_monitor.md` with completed Phase 2 features.
 
 ## Phase 3: Usability & Weitere Features

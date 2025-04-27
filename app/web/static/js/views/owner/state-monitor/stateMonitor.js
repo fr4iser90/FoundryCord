@@ -7,7 +7,7 @@ import stateBridge from '/static/js/core/state-bridge/bridgeMain.js';
 // Import functions from separated modules
 import { initElements, setStatus, initializeToggles } from './stateMonitorUi.js';
 import { setupEventListeners } from './stateMonitorEvents.js';
-import { loadAvailableCollectors, captureSnapshot, downloadSnapshot, copySnapshot } from './stateMonitorApi.js';
+import { loadAvailableCollectors, captureSnapshot, downloadSnapshot, copySnapshot, loadRecentSnapshots } from './stateMonitorApi.js';
 // Rendering functions are called by the API module in this direct split approach
 // import { renderCollectorPanel, renderResults, renderJsonView } from './stateMonitorRenderer.js'; 
 
@@ -41,6 +41,9 @@ class StateMonitorDashboard {
             // Initial load of collectors - MUST be awaited as it's async
             await this.loadAvailableCollectors(); // Call instance method
             console.log("[StateMonitorDashboard] Initial loadAvailableCollectors finished.");
+            // Also load recent snapshots
+            await this.loadRecentSnapshots(); // Call instance method
+            console.log("[StateMonitorDashboard] Initial loadRecentSnapshots finished.");
         } catch (error) {
             console.error("[StateMonitorDashboard] Error during async init (waiting for StateBridge or loading collectors):", error);
             // Use setStatus via the instance's UI cache
@@ -62,6 +65,11 @@ class StateMonitorDashboard {
     async loadAvailableCollectors() {
         // This instance method now simply delegates to the imported API function
         await loadAvailableCollectors(this);
+    }
+
+    async loadRecentSnapshots(limit = 10) {
+        // This instance method delegates to the imported API function
+        await loadRecentSnapshots(this, limit);
     }
 
     async captureSnapshot() {

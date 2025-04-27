@@ -28,12 +28,15 @@ export function initElements() {
         resultsPanel: document.getElementById('results-panel'),
         summaryPanel: document.getElementById('summary-panel'),
         statusDisplay: document.getElementById('status-display'),
-        snapshotTimestamp: document.getElementById('snapshot-timestamp')
+        snapshotTimestamp: document.getElementById('snapshot-timestamp'),
+        // Recent Snapshots List Panel
+        recentSnapshotsList: document.getElementById('recent-snapshots-list')
     };
     
     // Basic check if essential elements are missing
     if (!elements.collectorPanel || !elements.resultsPanel || !elements.statusDisplay || 
-        !elements.serverCollectorList || !elements.browserCollectorList) {
+        !elements.serverCollectorList || !elements.browserCollectorList ||
+        !elements.recentSnapshotsList) {
          console.warn('State Monitor: Essential UI elements not found during initialization.');
     }
     

@@ -1,17 +1,21 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from sqlalchemy import desc
 import logging
 from typing import Dict, Any, Optional, List
 
 # Assuming the model is defined here relative to the shared infrastructure
 from app.shared.infrastructure.models.monitoring.state_snapshot import StateSnapshot
+from app.shared.interface.logging.api import get_shared_logger
+import uuid
+from datetime import datetime, timezone
 
-logger = logging.getLogger(__name__)
+logger = get_shared_logger()
 
-DEFAULT_SNAPSHOT_LIMIT = 10
+DEFAULT_SNAPSHOT_LIMIT = 20
 
-def save_snapshot_with_limit(
-    db: Session, 
+async def save_snapshot_with_limit(
+    db: AsyncSession, 
     trigger: str, 
     snapshot_data: Dict[str, Any], 
     context: Optional[Dict[str, Any]] = None, 
@@ -31,7 +35,7 @@ def save_snapshot_with_limit(
     Returns:
         The saved StateSnapshot object if successful, None otherwise.
     """
-    logger.info(f"Attempting to save state snapshot triggered by: {trigger}")
+    logger.info(f"Attempting to save snapshot triggered by '{trigger}'. Limit: {limit}. Context keys: {list(context.keys()) if context else 'None'}")
     try:
         # 1. Create the new snapshot object
         new_snapshot = StateSnapshot(
@@ -43,67 +47,93 @@ def save_snapshot_with_limit(
         db.add(new_snapshot)
         logger.debug(f"New snapshot created (ID pending commit): {new_snapshot.id}")
 
-        # 2. Enforce the limit (delete oldest if necessary)
-        # It's often safer to commit the new one first, then delete, 
-        # but deleting first can prevent exceeding the limit even temporarily.
-        # Let's delete first for stricter limit enforcement.
+        # 2. Commit the new snapshot first to ensure it's in the DB before potentially deleting old ones
+        await db.commit()
+        await db.refresh(new_snapshot) # Refresh to get the full object with relationships if any
+        logger.info(f"Successfully added new snapshot {new_snapshot.id} for trigger '{trigger}'.")
 
-        # Count existing snapshots
-        current_count = db.query(StateSnapshot).count()
-        logger.debug(f"Current snapshot count: {current_count}, Limit: {limit}")
+        # 3. Enforce the limit asynchronously
+        # Count existing snapshots AFTER adding the new one
+        count_query = select(func.count(StateSnapshot.id)).where(StateSnapshot.trigger == trigger)
+        count_result = await db.execute(count_query)
+        existing_count_after_add = count_result.scalar_one()
+        logger.debug(f"Total snapshots for trigger '{trigger}' after adding: {existing_count_after_add}")
 
-        if current_count >= limit:
-            # Calculate how many to delete
-            num_to_delete = (current_count - limit) + 1 # +1 because we are adding a new one
-            logger.info(f"Snapshot limit ({limit}) reached/exceeded. Deleting {num_to_delete} oldest snapshot(s).")
+        if existing_count_after_add > limit:
+            num_to_delete = existing_count_after_add - limit
+            logger.info(f"Limit ({limit}) exceeded. Deleting {num_to_delete} oldest snapshot(s) for trigger '{trigger}'.")
+
+            # Find the IDs of the oldest snapshots to delete
+            select_oldest_query = select(StateSnapshot.id) \
+                                  .where(StateSnapshot.trigger == trigger) \
+                                  .order_by(StateSnapshot.timestamp.asc()) \
+                                  .limit(num_to_delete)
             
-            # Find the oldest snapshots
-            oldest_snapshots = db.query(StateSnapshot).order_by(StateSnapshot.timestamp.asc()).limit(num_to_delete).all()
-            
-            for snapshot_to_delete in oldest_snapshots:
-                logger.debug(f"Deleting old snapshot: ID={snapshot_to_delete.id}, Timestamp={snapshot_to_delete.timestamp}")
-                db.delete(snapshot_to_delete)
+            result_oldest = await db.execute(select_oldest_query)
+            ids_to_delete = [row.id for row in result_oldest]
 
-        # 3. Commit the transaction (adds new snapshot, deletes old ones)
-        db.commit()
-        db.refresh(new_snapshot) # Refresh to get the generated ID and timestamp
-        logger.info(f"Successfully saved snapshot ID: {new_snapshot.id}")
+            if ids_to_delete:
+                delete_query = delete(StateSnapshot).where(StateSnapshot.id.in_(ids_to_delete))
+                await db.execute(delete_query)
+                logger.info(f"Successfully deleted {len(ids_to_delete)} old snapshots for trigger '{trigger}'.")
+
+        await db.commit()
         return new_snapshot
 
     except Exception as e:
         logger.error(f"Error saving state snapshot: {e}", exc_info=True)
-        db.rollback() # Roll back the transaction on error
+        await db.rollback() # Roll back the transaction on error
         return None
 
 # --- Placeholder functions for retrieval (to be implemented based on TODO) --- 
 
-def get_snapshot_by_id(db: Session, snapshot_id: str) -> Optional[StateSnapshot]:
-    """Retrieves a single snapshot by its UUID."""
-    logger.debug(f"Fetching snapshot by ID: {snapshot_id}")
+async def get_snapshot_by_id(db: AsyncSession, snapshot_id: str) -> Optional[StateSnapshot]:
+    """
+    Retrieves a single state snapshot by its unique ID asynchronously.
+
+    :param db: The SQLAlchemy database session.
+    :param snapshot_id: The UUID string of the snapshot to retrieve.
+    :return: The StateSnapshot object if found, otherwise None.
+    """
+    logger.debug(f"Attempting to retrieve snapshot with ID: {snapshot_id}")
     try:
-        # Attempt to convert string ID to UUID for querying
-        import uuid
-        snapshot_uuid = uuid.UUID(snapshot_id)
-        snapshot = db.query(StateSnapshot).filter(StateSnapshot.id == snapshot_uuid).first()
+        # Validate if snapshot_id is a valid UUID format
+        parsed_id = uuid.UUID(snapshot_id)
+        # Use select with get for primary key lookup (more efficient)
+        # snapshot = await db.get(StateSnapshot, parsed_id) # .get might not work directly with UUIDs depending on dialect config? Fallback to select.
+        query = select(StateSnapshot).where(StateSnapshot.id == parsed_id)
+        result = await db.execute(query)
+        snapshot = result.scalar_one_or_none() # Use scalar_one_or_none for single result or None
+        
         if snapshot:
-            logger.info(f"Snapshot found for ID: {snapshot_id}")
+            logger.debug(f"Snapshot found: {snapshot.id}")
         else:
-            logger.warning(f"Snapshot not found for ID: {snapshot_id}")
+            logger.warning(f"Snapshot with ID '{snapshot_id}' not found.")
         return snapshot
-    except ValueError:
-        logger.error(f"Invalid UUID format provided for snapshot ID: {snapshot_id}")
+    except ValueError: # Catch invalid UUID format
+        logger.error(f"Invalid UUID format provided for snapshot_id: '{snapshot_id}'")
         return None
     except Exception as e:
-        logger.error(f"Error fetching snapshot by ID {snapshot_id}: {e}", exc_info=True)
+        logger.error(f"Error retrieving snapshot by ID {snapshot_id}: {e}", exc_info=True)
         return None
 
-def list_recent_snapshots(db: Session, count: int = DEFAULT_SNAPSHOT_LIMIT) -> List[StateSnapshot]: # Use constant
-    """Retrieves the most recent snapshots, up to the specified count."""
-    logger.debug(f"Fetching {count} recent snapshots")
+async def list_recent_snapshots(db: AsyncSession, count: int = 10) -> List[StateSnapshot]:
+    """
+    Lists the most recent state snapshots, ordered by timestamp descending.
+
+    :param db: The SQLAlchemy database session.
+    :param count: The maximum number of snapshots to return.
+    :return: A list of StateSnapshot objects.
+    """
+    logger.debug(f"Listing the latest {count} snapshots.")
     try:
-        snapshots = db.query(StateSnapshot).order_by(StateSnapshot.timestamp.desc()).limit(count).all()
-        logger.info(f"Retrieved {len(snapshots)} recent snapshots.")
+        query = select(StateSnapshot) \
+                .order_by(StateSnapshot.timestamp.desc()) \
+                .limit(count)
+        result = await db.execute(query)
+        snapshots = result.scalars().all() # Get all results as model instances
+        logger.debug(f"Found {len(snapshots)} recent snapshots (limit was {count}).")
         return snapshots
     except Exception as e:
-        logger.error(f"Error fetching recent snapshots: {e}", exc_info=True)
+        logger.error(f"Error listing recent snapshots: {e}", exc_info=True)
         return [] # Return empty list on error 

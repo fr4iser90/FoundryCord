@@ -6,7 +6,7 @@ import stateBridge from '/static/js/core/state-bridge/bridgeMain.js';
 // Import setStatus function from the UI module to replicate original behavior
 import { setStatus } from './stateMonitorUi.js'; 
 // Import rendering functions needed by API calls based on original structure
-import { renderCollectorPanel, renderResults, renderSummaryPanel } from './stateMonitorRenderer.js';
+import { renderCollectorPanel, renderResults, renderSummaryPanel, renderRecentSnapshotsList } from './stateMonitorRenderer.js';
 
 /**
  * Loads available collectors from the backend and browser.
@@ -172,4 +172,80 @@ export async function copySnapshot(instance) {
         console.error('Failed to copy snapshot:', err);
         setStatus(instance.ui.statusDisplay, 'Failed to copy snapshot to clipboard', 'error');
     }
+}
+
+/**
+ * Loads the list of recent snapshots from the backend.
+ * @param {object} instance - The StateMonitorDashboard instance.
+ * @param {number} [limit=10] - Number of snapshots to fetch.
+ */
+export async function loadRecentSnapshots(instance, limit = 10) {
+   console.log(`[API] Loading recent snapshots (limit: ${limit})...`);
+   try {
+       const response = await fetch(`/api/v1/owner/state/snapshots/list?limit=${limit}`);
+       if (!response.ok) {
+           let errorBody = await response.text();
+           console.error("[API] Error fetching recent snapshots list - Status:", response.status, "Body:", errorBody);
+           throw new Error(`Server responded with ${response.status}`);
+       }
+       const snapshots = await response.json();
+       console.log("[API] Received recent snapshots:", snapshots);
+       
+       // Call renderer to display the list
+       renderRecentSnapshotsList(instance, snapshots);
+
+   } catch (error) {
+       console.error('[API] Error loading recent snapshots:', error);
+       // Optionally update UI to show error in the list panel
+       if (instance.ui.recentSnapshotsList) {
+            instance.ui.recentSnapshotsList.innerHTML = '<p class="text-danger p-3 mb-0">Failed to load recent snapshots.</p>';
+       }
+       setStatus(instance.ui.statusDisplay, `Error loading recent snapshots: ${error.message}`, 'error');
+   }
+}
+
+/**
+ * Loads a specific snapshot by ID and displays its results.
+ * @param {object} instance - The StateMonitorDashboard instance.
+ * @param {string} snapshotId - The ID of the snapshot to load.
+ */
+export async function loadAndDisplaySnapshot(instance, snapshotId) {
+   console.log(`[API] Loading snapshot ID: ${snapshotId}...`);
+   setStatus(instance.ui.statusDisplay, `Loading snapshot ${snapshotId}...`, 'info');
+   try {
+       const response = await fetch(`/api/v1/owner/state/snapshot/${snapshotId}`);
+       if (!response.ok) {
+           let errorBody = await response.text();
+           console.error("[API] Error fetching snapshot", snapshotId, "- Status:", response.status, "Body:", errorBody);
+           if (response.status === 404) {
+               throw new Error(`Snapshot with ID ${snapshotId} not found.`);
+           } else {
+               throw new Error(`Server responded with ${response.status}`);
+           }
+       }
+       const storedSnapshotData = await response.json();
+       console.log("[API] Received stored snapshot data:", storedSnapshotData);
+
+       // Extract the relevant parts for rendering
+       // The API returns a StoredSnapshotResponse model
+       const snapshotToDisplay = {
+           timestamp: storedSnapshotData.capture_timestamp * 1000, // Convert back to ms timestamp
+           // Reconstruct the structure expected by renderers if needed
+           // Assuming the API returns { snapshot: { timestamp: ..., results: {...} } }
+           // Let's pass the whole snapshot part to the renderers
+           server: storedSnapshotData.snapshot?.server || { results: {}, timestamp: storedSnapshotData.capture_timestamp },
+           browser: storedSnapshotData.snapshot?.browser || { results: {}, timestamp: storedSnapshotData.capture_timestamp },
+           // Add context if needed by summary panel
+           context: storedSnapshotData.trigger_context || {}
+       };
+
+       // Call renderers with the LOADED data (instead of instance.currentSnapshot)
+       renderSummaryPanel(instance, snapshotToDisplay); // Pass data to summary
+       renderResults(instance, snapshotToDisplay);    // Pass data to results tabs
+       setStatus(instance.ui.statusDisplay, `Displayed stored snapshot: ${snapshotId}`, 'success');
+
+   } catch (error) {
+       console.error(`[API] Error loading snapshot ${snapshotId}:`, error);
+       setStatus(instance.ui.statusDisplay, `Error loading snapshot: ${error.message}`, 'error');
+   }
 } 
