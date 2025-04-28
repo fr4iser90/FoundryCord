@@ -166,7 +166,21 @@ export function initializeStructureTree(templateData) { // Export the function
              $(this).jstree('open_node', `template_${templateData.id || 'root'}`);
         })
         .on('select_node.jstree', function (e, data) {
-            // console.log("[TreeWidget] Node selected:", data.node); // AUSKOMMENTIERT
+            console.log("[TreeWidget] Node selected:", data.node);
+
+            // Dispatch a standardized event with relevant data
+            const nodeData = data.node.data; // Original data stored during creation
+            const eventDetail = {
+                id: data.node.id, // e.g., "channel_123"
+                text: data.node.text,
+                type: data.node.type, // "category", "channel", "template"
+                dbId: nodeData?.dbId, // Original database ID
+                channelType: nodeData?.channelType, // Specific type if channel
+                // Add other relevant properties from nodeData if needed later
+            };
+            document.dispatchEvent(new CustomEvent('designerNodeSelected', { detail: eventDetail }));
+            console.log("[TreeWidget] Dispatched 'designerNodeSelected' event:", eventDetail);
+
             const propertiesPanel = document.querySelector('.editor-panel-right');
             if (propertiesPanel && !propertiesPanel.classList.contains('collapsed')) {
                 const propsContent = propertiesPanel.querySelector('.panel-content-area') || propertiesPanel;

@@ -88,10 +88,9 @@
 
 {# Content for the Right Panel (Properties) #}
 {% block panel_right_content %}
-    <h5 class="panel-title mb-2"><i class="bi bi-sliders me-2"></i>Properties</h5>
-    <hr>
-    <p class="panel-placeholder">Edit selected widget properties here later...</p>
-    {# Placeholder for property editor #}
+    {# --- Include the Properties Panel Content --- #}
+    {% include "components/guild/designer/panel/properties.html" %}
+    {# -------------------------------------------- #}
 {% endblock %}
 
 {# Add Modals specific to the designer #}

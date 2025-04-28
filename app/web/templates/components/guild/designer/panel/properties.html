@@ -1,0 +1,52 @@
+<div id="properties-panel-content" class="p-3">
+    <h5 class="mt-0 mb-3 border-bottom pb-2">Properties</h5>
+
+    <!-- Placeholder when nothing is selected -->
+    <div id="properties-placeholder">
+        <p class="text-muted small">
+            <i class="fas fa-info-circle me-1"></i>
+            Select an element in the tree or lists to view/edit its properties.
+        </p>
+    </div>
+
+    <!-- Form fields container (initially hidden or empty) -->
+    <div id="properties-form-container" class="d-none">
+        <div class="mb-3" id="properties-general">
+            <label class="form-label form-label-sm">Type:</label>
+            <span id="prop-type" class="badge bg-secondary">N/A</span>
+            <label class="form-label form-label-sm ms-3">ID:</label>
+            <span id="prop-id" class="small text-muted">N/A</span>
+        </div>
+
+        <div class="mb-3" id="properties-name">
+            <label for="prop-name-input" class="form-label form-label-sm">Name</label>
+            <input type="text" class="form-control form-control-sm" id="prop-name-input" placeholder="Enter name..." disabled>
+        </div>
+
+        <div class="mb-3" id="properties-topic">
+             <label for="prop-topic-input" class="form-label form-label-sm">Topic</label>
+             <textarea class="form-control form-control-sm" id="prop-topic-input" rows="2" placeholder="Enter topic..." disabled></textarea>
+        </div>
+
+        <div class="mb-3" id="properties-settings">
+            <div class="form-check form-switch d-inline-block me-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="prop-nsfw-switch" disabled>
+                <label class="form-check-label small" for="prop-nsfw-switch">NSFW</label>
+            </div>
+             <div class="d-inline-block">
+                <label for="prop-slowmode-input" class="form-label form-label-sm">Slowmode (sec)</label>
+                <input type="number" class="form-control form-control-sm d-inline-block" id="prop-slowmode-input" style="width: 80px;" min="0" max="21600" step="1" placeholder="0" disabled>
+             </div>
+        </div>
+        
+        <hr>
+
+        <div id="properties-actions">
+             <button id="prop-delete-btn" class="btn btn-sm btn-danger" disabled>
+                 <i class="fas fa-trash me-1"></i> Delete Element
+             </button>
+             <!-- Add other actions like permissions later -->
+        </div>
+
+    </div>
+</div> 

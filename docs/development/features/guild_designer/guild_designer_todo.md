@@ -41,7 +41,7 @@
 
 ### Phase 2: Applying Template to Discord
 
-*   [ ] **Complete Bot `apply_template` Logic:**
+*   [x] **Complete Bot `apply_template` Logic:**
     *   **Target File:** `app/bot/core/workflows/guild_workflow.py` (function `apply_template`).
     *   **Enhancements:**
         *   [x] Fetch the full template structure (categories, channels, positions, parents, permissions etc.) from the database using the shared Template Repositories. (Implemented repository calls)
@@ -51,7 +51,7 @@
             *   [x] Create missing categories/channels based on the template.
             *   [x] Delete extra categories/channels not in the template (controlled by `template_delete_unmanaged` flag in GuildConfig).
             *   [x] Update names, topics, types if they differ.
-            *   [ ] **Reorder** categories and channels using Discord's bulk update endpoints if possible, or individual position updates otherwise, to match the template's `position` and parent structure. (Basic position set on create/update, complex reorder pending)
+            *   [ ] **Reorder** categories and channels using Discord's bulk update endpoints if possible, or individual position updates otherwise, to match the template's `position` and parent structure. **(Deferred: To be handled by future Sync Job)**
         *   [x] Update `discord_channel_id` in DB. (Implemented via session commit)
 *   [x] **Add "Apply Template" Trigger:**
     *   [x] **UI Button:** Add an "Apply to Discord" button in `app/web/templates/views/guild/designer/index.html`.
@@ -108,6 +108,25 @@
     *   **Files:** Alle Widget-JS-Dateien, `designerEvents.js`, `designerState.js`.
     *   [ ] **Events definieren:** Klare Events für Aktionen wie `propertyUpdated`, `nodeDeleted`, `nodeAdded` definieren.
     *   [ ] **Listener implementieren:** Alle relevanten Widgets müssen auf diese Events hören und ihre Anzeige entsprechend aktualisieren (nicht nur auf `loadTemplateData`).
+
+### Phase 4: Template Synchronization Job (Future)
+
+*   [ ] **Implement Scheduled Template Sync Job:**
+    *   [ ] **Scheduler Setup:** Bot-seitigen Scheduler einrichten (z.B. `apscheduler` oder integrierte `tasks.loop`).
+    *   [ ] **Sync Workflow/Service:** Neuen Workflow/Service für den Sync-Job erstellen.
+    *   [ ] **Core Sync Logic:**
+        *   [ ] Guild-spezifische Ausführung für alle "approved" Guilds.
+        *   [ ] Aktives Template für die Guild laden.
+        *   [ ] Live-Discord-Struktur holen.
+        *   [ ] Vergleich (Diff) durchführen.
+        *   [ ] Erstellen/Löschen/Updaten von Elementen auf Discord basierend auf dem Template (Teile von `apply_template` wiederverwenden).
+        *   [ ] **Neuordnung implementieren:** Verwendung von `edit_channel_positions` basierend auf Template-Reihenfolge.
+    *   [ ] **Reverse Sync (Flag-Based):**
+        *   [ ] Kanäle/Kategorien auf Discord erkennen, die *nicht* im Template sind.
+        *   [ ] Auf spezielles Flag prüfen (z.B. `#please_add` in Name/Topic).
+        *   [ ] Wenn Flag vorhanden: Entsprechenden Eintrag im DB-Template erstellen (Name, Typ, Positionierung ableiten).
+        *   [ ] Flag auf Discord entfernen nach erfolgreicher Übernahme.
+        *   [ ] **Konfiguration:** Job-Intervall und Flag-Marker konfigurierbar machen.
 
 ## UI/UX Enhancements (Lower Priority)
 

@@ -720,11 +720,69 @@ class GuildWorkflow(BaseWorkflow):
                      logger.debug("  Deletion of unmanaged categories is disabled (same flag as channels).")
                 # --- END CATEGORY DELETION ---
 
-                # --- Handle Reordering ---
-                # TODO: Consider bulk edit for efficiency/accuracy after all CUD operations
+                # ----------------------------------------------------------
+                # 8. Final Reordering using Bulk Update
+                # ----------------------------------------------------------
+                logger.info("  Attempting final reordering of channels and categories...")
+                try:
+                    # Prepare the positions data for the bulk update API
+                    final_positions = {}
+                    current_pos = 0
 
+                    # Get all relevant template channels and categories again, sorted correctly
+                    # Uncategorized channels first
+                    uncategorized_chans = sorted(
+                        [ch for ch in template_channels if ch.parent_category_template_id is None],
+                        key=lambda c: c.position
+                    )
+                    for template_chan in uncategorized_chans:
+                        if template_chan.discord_channel_id: # Only include channels that now exist on Discord
+                            final_positions[int(template_chan.discord_channel_id)] = current_pos
+                            current_pos += 1
+                        else:
+                            logger.warning(f"    Skipping uncategorized channel '{template_chan.channel_name}' in final reorder (no Discord ID found).")
 
-                logger.info(f"[apply_template] Channel and Category Create/Update/Delete logic complete. DB updates applied via session commit. Guild: {guild_id}.")
+                    # Then categories and their channels
+                    sorted_cats = sorted(template_categories, key=lambda c: c.position)
+                    for template_cat in sorted_cats:
+                        # Get the corresponding Discord category object (should exist if processed)
+                        discord_category = created_or_found_discord_categories.get(template_cat.id)
+                        if discord_category:
+                            final_positions[discord_category.id] = current_pos
+                            current_pos += 1
+                            
+                            # Channels within this category
+                            categorized_chans = sorted(
+                                [ch for ch in template_channels if ch.parent_category_template_id == template_cat.id],
+                                key=lambda c: c.position
+                            )
+                            for template_chan in categorized_chans:
+                                if template_chan.discord_channel_id: # Only include channels that now exist
+                                    final_positions[int(template_chan.discord_channel_id)] = current_pos
+                                    current_pos += 1
+                                else:
+                                     logger.warning(f"    Skipping categorized channel '{template_chan.channel_name}' in final reorder (no Discord ID found).")
+                        else:
+                             logger.warning(f"    Skipping category '{template_cat.category_name}' and its channels in final reorder (Discord category not found).")
+
+                    # Call the bulk update function
+                    if final_positions:
+                        logger.debug(f"    Prepared final positions: {final_positions}")
+                        await discord_guild.edit_channel_positions(positions=final_positions)
+                        logger.info("    Successfully applied final channel and category order.")
+                    else:
+                        logger.info("    No channels/categories with Discord IDs found to reorder.")
+
+                except nextcord.Forbidden:
+                    logger.error("    PERMISSION ERROR during final reordering. Check bot permissions for channel management.")
+                    # Decide if this should be a fatal error for the apply process
+                except nextcord.HTTPException as http_err:
+                    logger.error(f"    HTTP ERROR during final reordering: {http_err}")
+                except Exception as reorder_err:
+                    logger.error(f"    UNEXPECTED ERROR during final reordering: {reorder_err}", exc_info=True)
+                # --- END FINAL REORDERING ---
+
+                logger.info(f"[apply_template] Channel and Category Create/Update/Delete/Reorder logic complete. DB updates applied via session commit. Guild: {guild_id}.")
 
             # Commit changes made to template entities (like discord_channel_id updates)
             # await session.commit() # session_context handles commit/rollback

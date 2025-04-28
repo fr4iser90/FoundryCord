@@ -24,6 +24,9 @@ import { initializeSaveAsNewModal } from './modal/saveAsNewModal.js';
 import { initializeDeleteModal } from './modal/deleteModal.js';
 import { initializeActivateConfirmModal } from './modal/activateConfirmModal.js';
 
+// --- Panel Imports ---
+import { initializePropertiesPanel } from './panel/properties.js';
+
 // --- Main Execution --- 
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -157,6 +160,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log("[Index] Initializing core designer event listeners...");
         initializeDesignerEventListeners();
         console.log("[Index] Core designer event listeners initialized.");
+
+        // 8. Initialize Panels
+        console.log("[Index] Initializing panels (Properties, Toolbox)...");
+        initializePropertiesPanel();
+        console.log("[Index] Panels initialized.");
 
         console.log("[Index] Guild Designer initialization sequence complete.");
 
