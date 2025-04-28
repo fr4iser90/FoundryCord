@@ -70,11 +70,11 @@ export async function initializeSharedTemplateList(contentElement, currentGuildI
 
             const link = document.createElement('a');
             link.href = '#';
-            link.className = 'text-decoration-none text-body flex-grow-1 me-2 template-use-link'; // Changed class
+            link.className = 'text-decoration-none text-body flex-grow-1 me-2 template-use-link'; // Keep original class? Or rename too? Let's rename.
             link.dataset.templateId = templateId;
             link.addEventListener('click', (event) => {
                 event.preventDefault();
-                handleTemplateUse(templateId, templateName); // Changed handler
+                handleTemplateLoadShared(templateId, templateName); // <-- RENAME function call
             });
 
             const iconElement = document.createElement('i');
@@ -94,22 +94,22 @@ export async function initializeSharedTemplateList(contentElement, currentGuildI
             buttonGroup.setAttribute('role', 'group');
             buttonGroup.setAttribute('aria-label', 'Shared Template Actions');
 
-            // Example "Use" Button (functionality not implemented yet)
-            const useButton = document.createElement('button');
-            useButton.type = 'button';
-            useButton.className = 'btn btn-outline-primary btn-use-template';
-            useButton.title = `Use shared template '${templateName}'`;
-            useButton.dataset.templateId = templateId;
-            useButton.dataset.templateName = templateName;
-            const useIcon = document.createElement('i');
-            useIcon.className = 'fas fa-download'; // Example icon
-            useButton.appendChild(useIcon);
-            useButton.addEventListener('click', (event) => {
+            // Rename "Use" Button to "Load"
+            const loadButton = document.createElement('button');
+            loadButton.type = 'button';
+            loadButton.className = 'btn btn-outline-primary btn-load-shared-template'; // <-- RENAME class
+            loadButton.title = `Load shared template '${templateName}' into designer`; // <-- RENAME title
+            loadButton.dataset.templateId = templateId;
+            loadButton.dataset.templateName = templateName;
+            const loadIcon = document.createElement('i');
+            loadIcon.className = 'fas fa-download'; // Keep download icon
+            loadButton.appendChild(loadIcon);
+            loadButton.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                handleTemplateUse(templateId, templateName, currentGuildId); // Pass guildId if needed later
+                handleTemplateLoadShared(templateId, templateName, currentGuildId); // <-- RENAME function call
             });
-            buttonGroup.appendChild(useButton);
+            buttonGroup.appendChild(loadButton);
 
             // --- Add Save/Copy Button ---
             const saveButton = document.createElement('button');
@@ -185,43 +185,43 @@ export async function initializeSharedTemplateList(contentElement, currentGuildI
 }
 
 /**
- * Handles using a selected SHARED template.
- * @param {string} templateId - The ID of the template to use.
+ * Handles loading a selected SHARED template into the designer.
+ * (Previously handleTemplateUse)
+ * @param {string} templateId - The ID of the template to load.
  * @param {string} templateName - The name of the template.
  */
-async function handleTemplateUse(templateId, templateName) {
-    console.log(`[SharedTemplateListWidget] Use shared template selected: ${templateId}, Name: ${templateName}`);
-    
+async function handleTemplateLoadShared(templateId, templateName) { // <-- RENAME function name
+    console.log(`[SharedTemplateListWidget] Load shared template selected: ${templateId}, Name: ${templateName}`);
+
     if (!confirm(`Are you sure you want to load the shared template "${templateName}"?\nThis will replace the current structure in the designer.`)) {
-        console.log("[SharedTemplateListWidget] 'Use template' action cancelled by user.");
+        console.log("[SharedTemplateListWidget] 'Load template' action cancelled by user.");
         return;
     }
 
     console.log(`[SharedTemplateListWidget] Attempting to load structure for shared template ID: ${templateId}`);
     showToast('info', `Loading structure for "${templateName}"...`);
 
+    // Keep the ORIGINAL, WORKING API URL
     const apiUrl = `/api/v1/templates/guilds/shared/${templateId}`;
     try {
         const templateData = await apiRequest(apiUrl); // GET request by default
-        
+
         if (!templateData) {
-            // apiRequest likely showed a toast, but log and show another just in case
             console.error("[SharedTemplateListWidget] Received null or invalid data for template", templateId);
             showToast('error', `Failed to load data for template "${templateName}".`);
             return;
         }
 
-        // Dispatch event for index.js to handle the update
-        document.dispatchEvent(new CustomEvent('loadTemplateData', { 
-            detail: { templateData: templateData } // Wrap in object for clarity
+        // Dispatch event for index.js/designerEvents.js to handle the update
+        document.dispatchEvent(new CustomEvent('loadTemplateData', {
+            detail: { templateData: templateData } // Send the whole response object
         }));
 
         showToast('success', `Template "${templateName}" loaded successfully!`);
 
     } catch (error) {
-        console.error(`[SharedTemplateListWidget] Error loading template ${templateId}:`, error);
-        // apiRequest should have shown a toast, but we can show a generic one if needed
-        // showToast('error', `Failed to load template "${templateName}".`); 
+        console.error(`[SharedTemplateListWidget] Error loading shared template ${templateId}:`, error);
+        // apiRequest should have shown a toast
     }
 }
 

@@ -204,10 +204,32 @@ export async function initializeTemplateList(contentElement, currentGuildId, act
  * Handles loading a selected SAVED or INITIAL GUILD STRUCTURE template.
  * @param {string} templateId - The ID of the template to load.
  */
-function handleTemplateLoad(templateId) {
-    // console.log(`[GuildTemplateListWidget] Load GUILD STRUCTURE template selected: ${templateId}`);
-    // TODO: Implement logic to apply this structure template to the current guild (API call?)
-    showToast('info', `Loading guild structure template ${templateId}... (Not implemented yet)`);
+async function handleTemplateLoad(templateId) {
+    console.log(`[GuildTemplateListWidget] Load GUILD STRUCTURE template selected: ${templateId}`);
+
+    const apiUrl = `/api/v1/templates/guilds/${templateId}`;
+    try {
+        const templateData = await apiRequest(apiUrl); // GET request by default
+
+        // CORRECTED CHECK: Simply check if data exists. 
+        // The actual structure is within categories/channels, checked by the consumer.
+        if (!templateData) { 
+            console.error("[GuildTemplateListWidget] Received null or invalid data for template", templateId, templateData);
+            showToast('error', `Failed to load data for template ${templateId}.`); // Adjusted message
+            return;
+        }
+
+        // Dispatch event for index.js/designerEvents.js to handle the update
+        document.dispatchEvent(new CustomEvent('loadTemplateData', {
+            detail: { templateData: templateData } // Send the whole response object
+        }));
+
+        showToast('success', `Template "${templateData.template_name || templateId}" loaded successfully!`);
+
+    } catch (error) {
+        console.error(`[GuildTemplateListWidget] Error loading template ${templateId} details:`, error);
+        // apiRequest should have shown an error toast
+    }
 }
 
 /**

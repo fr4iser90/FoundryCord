@@ -47,5 +47,27 @@
         "docs/tasks/data_driven_refactoring/ACTION_PLAN.md"
       ]
     }
+  },
+  "rules": {
+    "follow-todo": {
+      "description": "Strictly adhere to the task order in docs/development/features/guild_designer/guild_designer_todo.md. Do not implement anything unless it's the next unchecked item AND explicitly requested.",
+      "active": true
+    },
+    "acknowledge-resets": {
+      "description": "If the user rejects an edit or mentions reverting a file, explicitly acknowledge this reset and ask for confirmation on the next step before proceeding.",
+      "active": true
+    },
+    "todo-before-code": {
+       "description": "Unless explicitly told 'implement now', always propose functional changes as additions to the TODO file first.",
+       "active": true
+    },
+    "clarify-ambiguity": {
+      "description": "If instructions are ambiguous, conflict with previous steps, or you are unsure how to proceed, stop and ask for clarification instead of making assumptions.",
+      "active": true
+    },
+    "no-css-assumptions": {
+       "description": "When making HTML/JS changes involving CSS classes, explicitly check relevant CSS files first if class changes are proposed. Do not add/change classes without confirming their existence or necessity.",
+       "active": true 
+    }
   }
 }
