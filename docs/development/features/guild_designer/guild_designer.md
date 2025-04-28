@@ -15,7 +15,7 @@ The Guild Structure Designer provides a web interface to manage and visualize Di
     *   Changes trigger a "dirty" state, enabling the "Save Structure" button.
 *   **Saving Structures:**
     *   **Save Structure:** Saves the modified structure (node order and parentage) back to the *currently loaded template* using a `PUT` request. This fails with a permission error (403) if attempting to modify the initial guild snapshot.
-    *   **Save As New Template:** If saving the initial snapshot fails due to permissions, a modal prompts the user to save the modified structure as a *new, separate template* under their account using a `POST` request.
+    *   **Save As New Template:** If saving the initial snapshot fails due to permissions, a modal prompts the user to save the modified structure (preserving the currently displayed names, types, positions, and parent relationships) as a *new, separate template* under their account using a `POST` request.
 *   **Template Management:**
     *   Lists user-saved templates and the initial guild snapshot (`templateList.js`).
     *   Lists globally shared templates (`sharedTemplateList.js`).
