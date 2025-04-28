@@ -1101,17 +1101,17 @@ class GuildTemplateService:
                 
                 channel_name = node_data.name if node_data.name else f"Channel {node_data.id}" # Use name from payload or fallback
                 channel_type = node_data.channel_type if node_data.channel_type else "text" # Use type from payload or fallback
-                # TODO: Extract real name/type/topic/permissions from payload if available
+                logger.debug(f"Preparing channel: ID={node_data.id}, Name='{channel_name}', Type='{channel_type}', ParentDBID={parent_category_db_id}, Pos={node_data.position}")
+
                 new_channel = GuildTemplateChannelEntity(
                     guild_template_id=new_template.id,
-                    channel_name=f"Channel {node_data.id}", # Placeholder name
-                    channel_type="text", # Placeholder type - needs frontend support
+                    channel_name=channel_name,
+                    channel_type=channel_type,
                     position=node_data.position,
                     parent_category_template_id=parent_category_db_id,
-                    topic=None # Placeholder topic
+                    topic=None # Placeholder topic - TODO: Add topic to payload?
                 )
                 nodes_to_create.append(new_channel)
-                logger.debug(f"Prepared channel: {node_data.id}, ParentDBID: {parent_category_db_id}, Pos: {node_data.position}")
 
         # Add all channels
         if nodes_to_create:
