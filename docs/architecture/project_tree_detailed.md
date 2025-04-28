@@ -12,8 +12,8 @@
 │   │   │   │   └── security_tasks.py
 │   │   │   └── services
 │   │   │       ├── auth
-│   │   │       │   ├── __init__.py
-│   │   │       │   └── OLD.py
+│   │   │       │   └── __init__.py
+│   │   │       │   
 │   │   │       ├── bot_control_service.py
 │   │   │       ├── category
 │   │   │       │   ├── category_builder.py
