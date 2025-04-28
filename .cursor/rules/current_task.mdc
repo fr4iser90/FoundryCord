@@ -1,0 +1,23 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+ # Current Task & TODO Focus
+
+**Instructions:**
+- **Update this file** to reflect the current feature you are working on.
+- Specify the **path to the relevant TODO file** below.
+- Add any **specific context or files** relevant ONLY to this immediate task.
+- **Leave the file empty** if no specific task context is needed beyond the general rules.
+
+## Current Feature: [User: Specify Feature Name, e.g., Guild Designer - Phase 1]
+
+## TODO List Adherence
+
+- **TODO File:** @docs/development/features/guild_designer/guild_designer_todo.md
+- **Rule:** Strictly follow the order and content of the specified TODO file unless explicitly told otherwise by the user *for the current step*.
+
+## Specific Task Context (Optional)
+
+- [User: Add links to highly relevant files or specific instructions for this task only]

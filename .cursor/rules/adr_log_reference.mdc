@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+ # Architectural Decision Records (ADR) Log Context
+
+See: @docs/architecture/09_adr_log.md

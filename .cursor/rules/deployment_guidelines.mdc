@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+ # Deployment Guidelines Context
+
+See: @docs/architecture/06_deployment.md

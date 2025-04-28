@@ -1,0 +1,23 @@
+---
+description: 
+globs: app/bot/*
+alwaysApply: false
+---
+# Backend/Shared/Bot Development Context & Rules
+
+## Key Architecture Documents
+
+- Overall System Overview: @docs/architecture/01_overview.md
+- Backend (FastAPI) Design: @docs/architecture/03_backend_design.md
+- Database Schema: @docs/architecture/04_database_schema.md
+- API Specification: @docs/architecture/05_api_specification.md
+- Relevant Coding Conventions (Python, DB): @docs/architecture/08_coding_conventions.md
+- Technology Stack (Backend/Bot/DB Sections): @docs/architecture/07_technology_stack.md
+
+## Code Verification Principles
+
+- **Imports:** Briefly check the definition/signature of imported functions/classes before use.
+- **API/Service Calls:** Verify expected parameters and responses of internal services or external APIs (e.g., Discord) based on documentation or code.
+- **Config/Data Access:** Anticipate that config values or DB data might be missing and handle robustly (e.g., defaults, error handling).
+
+*Note: Critical core rules (Instruction Adherence, etc.) are defined in `critical_rules.mdc` and apply always.*

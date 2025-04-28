@@ -1,0 +1,19 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Database Development Context & Rules
+
+## Key Architecture Documents
+
+- Database Schema Details: @docs/architecture/04_database_schema.md
+- Backend Design (Repository Layer, ORM): @docs/architecture/03_backend_design.md
+- Relevant Coding Conventions (DB Naming): @docs/architecture/08_coding_conventions.md
+
+## DB Interaction Principles
+
+- **Model Attributes:** Verify that attributes used in queries or object manipulations match the definitions in the SQLAlchemy models.
+- **Repository Methods:** Check the signature and expected behavior of repository methods before calling them.
+
+*Note: Critical core rules (Instruction Adherence, etc.) are defined in `critical_rules.mdc` and apply always.*
