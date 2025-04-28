@@ -73,6 +73,13 @@ class GuildTemplateController(BaseController):
                          description="Marks a specific template as the active one for this guild's configuration."
                          )(self.activate_guild_template) # NEW method
 
+        # --- NEW Apply Template Route ---
+        self.router.post("/apply",
+                         status_code=status.HTTP_200_OK, # Or 202 Accepted if it takes time?
+                         summary="Apply Active Template to Discord",
+                         description="Triggers the bot to apply the currently active template structure to the live Discord server."
+                         )(self.apply_guild_template) # NEW method
+
         # === General Template Routes (using separate router, NO prefix) ===
 
         # --- List Guild Structure Templates ---
@@ -620,6 +627,83 @@ class GuildTemplateController(BaseController):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred while creating the template."
             )
+
+    # --- NEW Method for Apply Route --- 
+    async def apply_guild_template(
+        self,
+        guild_id: str, # From path parameter
+        current_user: AppUserEntity = Depends(get_current_user), # From dependency
+        # db: AsyncSession = Depends(get_web_db_session) # May need DB session for permissions
+    ):
+        """API endpoint to trigger applying the active template to the Discord guild."""
+        self.logger.info(f"User {current_user.id} requesting template application for guild ID: {guild_id}")
+
+        # --- 1. Permission Check --- 
+        # TODO: Implement more robust permission check. Who can apply templates?
+        #       - Guild Owner on Discord? 
+        #       - Bot Owner?
+        #       - User with specific role in the guild (e.g., GUILD_ADMIN from DiscordGuildUserEntity)?
+        # For now, restrict to bot owner for safety.
+        if not current_user.is_owner:
+             self.logger.warning(f"Permission denied: User {current_user.id} (not bot owner) attempted to apply template for guild {guild_id}.")
+             raise HTTPException(
+                 status_code=status.HTTP_403_FORBIDDEN, 
+                 detail="You do not have permission to apply templates to this guild." # Keep message generic for now
+             )
+        
+        self.logger.info(f"Permission granted for user {current_user.id} to apply template for guild {guild_id}.")
+
+        # --- 2. Trigger Bot Workflow --- 
+        # How to access the bot instance from the controller?
+        # This is a common challenge. Options:
+        #   a) Pass bot instance during controller init (if possible with FastAPI setup).
+        #   b) Use a global registry or context variable (less ideal).
+        #   c) Use an intermediary service (like BotConnector) that the controller calls,
+        #      which then communicates with the bot (e.g., via Redis, RPC).
+        #   d) Assume bot instance is accessible via a known dependency or attribute.
+        
+        # Placeholder: Assuming a way to get the bot instance exists (e.g., via request state or dependency)
+        # This part NEEDS to be adapted based on how the bot instance is made available to FastAPI controllers.
+        bot_instance = None # <<<--- THIS IS A PLACEHOLDER
+        try:
+            # Example: Accessing via app state (if set up like that)
+            # from fastapi import Request
+            # request: Request (add as dependency to method)
+            # bot_instance = request.app.state.bot_instance 
+            
+            # Example: Accessing via a dependency (if defined)
+            # bot_instance = Depends(get_bot_instance) 
+            pass # Replace with actual bot access logic
+            
+            if not bot_instance or not hasattr(bot_instance, 'workflow_manager'):
+                 self.logger.error("Bot instance or workflow manager not available to trigger apply_template.")
+                 raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Bot workflow manager is unavailable.")
+
+            guild_workflow = bot_instance.workflow_manager.get_workflow("guild")
+            if not guild_workflow:
+                 self.logger.error("GuildWorkflow not found in workflow manager.")
+                 raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Guild workflow is unavailable.")
+
+            # Trigger the apply method asynchronously - don't wait for it to finish here?
+            # Or should this API call wait? If it waits, it might time out.
+            # For now, let's trigger and return success if the trigger call succeeds.
+            self.logger.info(f"Calling guild_workflow.apply_template('{guild_id}')")
+            apply_success = await guild_workflow.apply_template(guild_id)
+            
+            if not apply_success:
+                 # The workflow itself logs errors, but we should indicate failure to the API caller
+                 self.logger.error(f"Guild workflow apply_template returned False for guild {guild_id}")
+                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="The bot failed to apply the template. Check bot logs.")
+
+        except HTTPException as http_exc:
+            raise http_exc # Re-raise specific HTTP exceptions
+        except Exception as e:
+            self.logger.error(f"Unexpected error triggering apply_template for guild {guild_id}: {e}", exc_info=True)
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred while triggering the template application.")
+
+        # --- 3. Return Success Response --- 
+        self.logger.info(f"Successfully triggered template application for guild {guild_id}.")
+        return {"message": f"Template application initiated successfully for guild {guild_id}."}
 
 # Instantiate the controller for registration
 guild_template_controller = GuildTemplateController() 
