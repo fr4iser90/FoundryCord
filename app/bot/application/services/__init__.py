@@ -21,6 +21,10 @@ from .dashboard.dashboard_repository import DashboardRepository
 from .dashboard.dashboard_service import DashboardService
 from .dashboard.component_loader_service import ComponentLoaderService
 
+# --- Add Discord Services --- 
+from .discord.discord_query_service import DiscordQueryService
+# --------------------------
+
 # Monitoring services
 from .monitoring.system_monitoring import SystemMonitoringService
 from .system_metrics.system_metrics_service import SystemMetricsService
@@ -54,6 +58,10 @@ __all__ = [
     'DashboardRepository',
     'DashboardService',
     'ComponentLoaderService',
+
+    # --- Add Discord Services to __all__ --- 
+    'DiscordQueryService',
+    # --------------------------------------
     
     # Project management services
     'ProjectService',

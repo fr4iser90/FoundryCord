@@ -26,6 +26,7 @@ function updateSaveButtonState() {
 function updateToolbarButtonStates() {
     const saveButton = document.getElementById('save-structure-btn');
     const activateButton = document.getElementById('activate-template-btn');
+    const applyButton = document.getElementById('apply-template-btn'); // Get the new button
     
     const isDirty = state.isDirty();
     const currentTemplate = state.getCurrentTemplateData();
@@ -62,6 +63,26 @@ function updateToolbarButtonStates() {
     } else {
         console.warn("[DesignerEvents] Activate button not found during state update.");
     }
+
+    // --- NEW: Update Apply Button State ---
+    if (applyButton) {
+        // Disable apply button if:
+        // 1. There are unsaved changes (isDirty is true)
+        // 2. The currently loaded template is NOT the active one (isActive is false)
+        applyButton.disabled = isDirty || !isActive;
+        // Set appropriate title based on state
+        if (isDirty) {
+            applyButton.title = "Save changes before applying the template.";
+        } else if (!isActive) {
+            applyButton.title = "Activate this template before applying it to Discord.";
+        } else {
+            applyButton.title = "Apply this template structure to the live Discord server.";
+        }
+         // console.log(`[DesignerEvents] Apply button disabled: ${applyButton.disabled}`);
+    } else {
+         console.warn("[DesignerEvents] Apply button not found during state update.");
+    }
+    // --- END NEW ---
 }
 
 // --- Event Handler Functions --- 
@@ -408,6 +429,68 @@ function handleRequestShareTemplate(event) {
     openShareModal(templateId, templateName);
 }
 
+// --- NEW: Handler for Apply Template Button Click ---
+async function handleApplyTemplateClick() {
+    const applyButton = document.getElementById('apply-template-btn');
+    if (!applyButton || applyButton.disabled) {
+        console.log("[DesignerEvents] Apply button clicked but disabled or missing.");
+        return;
+    }
+    
+    const guildId = getGuildIdFromUrl();
+    const currentTemplate = state.getCurrentTemplateData();
+    const templateId = currentTemplate?.template_id;
+    const templateName = currentTemplate?.template_name || 'this template';
+
+    if (!guildId || templateId === undefined || templateId === null) {
+        showToast('error', 'Cannot apply: Guild ID or Template ID is missing.');
+        return;
+    }
+
+    // Confirmation Dialog
+    const confirmation = confirm(
+        `Are you sure you want to apply the template '${templateName}' (ID: ${templateId}) to the live Discord server for Guild ID ${guildId}? \n\n` +
+        `This will attempt to modify the server's categories and channels to match the template. This operation might be irreversible and is currently experimental.`
+    );
+
+    if (!confirmation) {
+        showToast('info', 'Template application cancelled.');
+        return;
+    }
+
+    console.log(`[DesignerEvents] Apply template confirmed for template ${templateId} on guild ${guildId}.`);
+    showToast('info', `Applying template '${templateName}' to Discord...`);
+
+    applyButton.disabled = true;
+    applyButton.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Applying...`;
+
+    const apiUrl = `/api/v1/guilds/${guildId}/apply_template`;
+
+    try {
+        // We might not need a request body if the backend uses the active template for the guild
+        const response = await apiRequest(apiUrl, { 
+            method: 'POST'
+            // Optionally send template ID if backend requires it:
+            // headers: { 'Content-Type': 'application/json' }, 
+            // body: JSON.stringify({ template_id: templateId })
+        });
+        
+        console.log('[DesignerEvents] Apply template API call successful:', response);
+        showToast('success', response.message || `Template '${templateName}' applied successfully!`);
+        // No state change needed here unless the apply action deactivates/changes something
+
+    } catch (error) {
+        console.error('[DesignerEvents] Error applying template via API:', error);
+        // apiRequest handles showing the error toast
+    } finally {
+        // Re-enable button and restore text regardless of success/failure
+        applyButton.disabled = false; // Or re-evaluate state via updateToolbarButtonStates?
+        applyButton.innerHTML = `<i class="fas fa-rocket"></i> Apply to Discord`; 
+        updateToolbarButtonStates(); // Refresh button state based on current conditions
+    }
+}
+// --- END NEW ---
+
 // --- Event Listener Setup Functions --- 
 
 function setupPanelToggles() {
@@ -468,6 +551,15 @@ export function initializeDesignerEventListeners() {
 
     // ---> ADDED: Listener for share requests (fired by list widget)
     document.addEventListener('requestShareTemplate', handleRequestShareTemplate);
+
+    // --- NEW: Listener for Apply Template ---
+    const applyBtn = document.getElementById('apply-template-btn');
+    if (applyBtn) {
+        applyBtn.addEventListener('click', handleApplyTemplateClick);
+    } else {
+        console.warn("[DesignerEvents] Apply Template button (#apply-template-btn) not found!");
+    }
+    // --- END NEW ---
 
     // Setup panel toggles (if they exist)
     setupPanelToggles(); 

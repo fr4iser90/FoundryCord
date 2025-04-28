@@ -32,7 +32,6 @@ The Guild Structure Designer provides a web interface to manage and visualize Di
 *   **Initial Snapshot:** When a guild is approved, the bot fetches the current structure from Discord, saves it as an "Initial Snapshot" template in the database, and marks it as active for the guild.
 *   **Data Storage:**
     *   Templates (structure, categories, channels) are stored in relational database tables.
-    *   The active template for a guild is linked (e.g., `active_template_id` on the guild record).
     *   UI layouts (widget positions, lock state) are saved separately per user/page.
 *   **Applying Changes (Bot Side - Incomplete):** The backend function `apply_template` is intended to modify the actual Discord server based on a template. Currently, its implementation is very basic and does **not** fully support creating, updating, deleting, or reordering channels/categories based on the template data.
 

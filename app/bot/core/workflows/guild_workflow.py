@@ -29,6 +29,8 @@ from app.shared.infrastructure.repositories.guild_templates.guild_template_chann
 from app.shared.infrastructure.repositories.guild_templates.guild_template_category_permission_repository_impl import GuildTemplateCategoryPermissionRepositoryImpl
 from app.shared.infrastructure.repositories.guild_templates.guild_template_channel_permission_repository_impl import GuildTemplateChannelPermissionRepositoryImpl
 import nextcord
+# --- NEW: Import DiscordQueryService --- 
+from app.bot.application.services.discord.discord_query_service import DiscordQueryService
 
 logger = get_bot_logger()
 
@@ -371,115 +373,322 @@ class GuildWorkflow(BaseWorkflow):
                 cat_perm_repo = GuildTemplateCategoryPermissionRepositoryImpl(session)
                 chan_perm_repo = GuildTemplateChannelPermissionRepositoryImpl(session)
 
+                # --- NEW: Instantiate Discord Query Service ---
+                # Assuming we can instantiate it directly or get it from bot
+                # Replace this if a proper service locator/factory pattern exists
+                discord_query_service = DiscordQueryService(self.bot)
+                # -------------------------------------------
+
                 # 1. Load Template Data
-                template = await template_repo.get_by_guild_id(guild_id)
+                # Fetch the *active* template for the guild
+                # TODO: Need to decide if we apply the ACTIVE template or a specific one passed in?
+                # For now, assume we fetch the active one based on GuildConfig
+                # This requires joining GuildConfig and GuildTemplate tables or fetching config first
+                # Placeholder: Fetching *any* template for the guild for now
+                template = await template_repo.get_by_guild_id(guild_id) # TODO: Refine this to get the *active* one
                 if not template:
                     logger.warning(f"[apply_template] No template found for guild {guild_id}. Cannot apply.")
-                    return False # Or True?
+                    return False # Cannot proceed without a template
 
+                # Fetch template structure using repositories (already loads needed attributes)
                 template_categories = await cat_repo.get_by_template_id(template.id)
                 template_channels = await chan_repo.get_by_template_id(template.id)
-                # TODO: Load permissions
+                # Permissions will be fetched later as needed by helpers
 
-                logger.info(f"[apply_template] Loaded template '{template.template_name}' for guild {guild_id}")
+                logger.info(f"[apply_template] Loaded template '{template.template_name}' (ID: {template.id}) for guild {guild_id}")
                 logger.debug(f"  Template contains {len(template_categories)} categories and {len(template_channels)} channels.")
 
                 # ----------------------------------------------------------
-                # 2. Get Current Discord State
+                # 2. Get Current Discord State (using the new service)
                 # ----------------------------------------------------------
-                discord_categories_list = discord_guild.categories
-                discord_channels_list = discord_guild.channels # All channels
+                live_guild_data = await discord_query_service.get_live_guild_structure(discord_guild)
+                live_categories = live_guild_data.get('categories', {})
+                live_channels = live_guild_data.get('channels', {})
 
                 # --- Create Lookups for easy access ---
-                # Map template category name -> template category object
+                # Map template category name -> template category entity
                 template_categories_by_name = {cat.category_name: cat for cat in template_categories}
-                # Map Discord category name -> Discord category object
-                discord_categories_by_name = {cat.name: cat for cat in discord_categories_list}
+                # Map Discord category name -> Discord category ID (using live data)
+                discord_categories_by_name = {cat_data['name']: cat_id for cat_id, cat_data in live_categories.items()}
 
-                logger.debug(f"  Found {len(discord_categories_list)} categories currently on Discord.")
+                logger.debug(f"  Found {len(live_categories)} categories currently on Discord.")
 
                 # ----------------------------------------------------------
                 # 3. Process Categories (Create/Update on Discord based on Template)
                 # ----------------------------------------------------------
-                created_discord_categories = {} # Map template cat ID -> created/found discord cat object
+                created_or_found_discord_categories = {} # Map template cat ID -> created/found discord cat object
 
                 # Sort template categories by position for correct creation order
                 sorted_template_categories = sorted(template_categories, key=lambda c: c.position)
 
                 for template_cat in sorted_template_categories:
                     logger.debug(f"  Processing template category: '{template_cat.category_name}' (Pos: {template_cat.position})")
-                    existing_discord_cat = discord_categories_by_name.get(template_cat.category_name)
+                    
+                    existing_discord_cat_id = discord_categories_by_name.get(template_cat.category_name)
+                    existing_discord_cat_object = None
+                    if existing_discord_cat_id:
+                         existing_discord_cat_object = discord_guild.get_channel(existing_discord_cat_id) # Fetch the object
 
-                    if existing_discord_cat:
-                        logger.info(f"    Category '{template_cat.category_name}' already exists on Discord.")
-                        # TODO: Update position? Apply permissions?
-                        # For now, just record the mapping
-                        created_discord_categories[template_cat.id] = existing_discord_cat
-                        # Apply permissions (placeholder)
-                        await self._apply_category_permissions(existing_discord_cat, template_cat.id, cat_perm_repo)
+                    if existing_discord_cat_object and isinstance(existing_discord_cat_object, nextcord.CategoryChannel): 
+                        logger.info(f"    Category '{template_cat.category_name}' already exists on Discord (ID: {existing_discord_cat_object.id}).")
+                        # TODO: Update position? 
+                        # if existing_discord_cat_object.position != template_cat.position: ... existing_discord_cat_object.edit(position=...) ...
+                        
+                        # Apply permissions 
+                        await self._apply_category_permissions(existing_discord_cat_object, template_cat.id, cat_perm_repo)
+                        
+                        # Store mapping
+                        created_or_found_discord_categories[template_cat.id] = existing_discord_cat_object
 
                     else:
                         logger.info(f"    Category '{template_cat.category_name}' does not exist. Creating...")
                         try:
-                            # Basic creation with name
-                            # TODO: Apply overwrites/permissions during creation if possible?
+                            # TODO: Apply overwrites during creation if possible?
                             new_discord_cat = await discord_guild.create_category(
                                 name=template_cat.category_name,
+                                position=template_cat.position, # Attempt to set position on creation
                                 reason=f"Applying template: {template.template_name}"
                             )
-                            logger.info(f"      Successfully created category '{new_discord_cat.name}' (ID: {new_discord_cat.id})")
-                            created_discord_categories[template_cat.id] = new_discord_cat
-
-                            # TODO: Set position AFTER creation if needed (might require separate call)
-                            # await new_discord_cat.edit(position=template_cat.position)
-
+                            logger.info(f"      Successfully created category '{new_discord_cat.name}' (ID: {new_discord_cat.id}) at position {new_discord_cat.position}")
+                            
                             # Apply permissions after creation
                             await self._apply_category_permissions(new_discord_cat, template_cat.id, cat_perm_repo)
+
+                            # Store mapping
+                            created_or_found_discord_categories[template_cat.id] = new_discord_cat
 
                         except nextcord.Forbidden:
                             logger.error(f"      PERMISSION ERROR: Cannot create category '{template_cat.category_name}'. Check bot permissions.")
                             # Decide how to handle: continue? rollback? stop?
-                            # For now, let's log and continue, but this might leave state inconsistent.
                         except nextcord.HTTPException as http_err:
                             logger.error(f"      HTTP ERROR creating category '{template_cat.category_name}': {http_err}")
                         except Exception as creation_err:
                              logger.error(f"      UNEXPECTED ERROR creating category '{template_cat.category_name}': {creation_err}", exc_info=True)
 
                 # ----------------------------------------------------------
-                # 4. Process Categories (Delete from Discord if not in Template - Optional)
+                # 4. Process Channels (Create/Update/Delete)
                 # ----------------------------------------------------------
-                # TODO: Make deletion configurable
-                delete_unmanaged = False # Set to True to enable deletion
-                if delete_unmanaged:
-                    logger.info("  Checking for Discord categories not present in the template...")
-                    for discord_cat_name, discord_cat in discord_categories_by_name.items():
-                        if discord_cat_name not in template_categories_by_name:
-                            logger.warning(f"    Discord category '{discord_cat_name}' is not in the template. Deleting...")
+                logger.info("Processing channels...")
+                
+                # --- Create Lookups ---
+                # Map template channel ID -> template channel entity
+                template_channels_by_id = {chan.id: chan for chan in template_channels}
+                
+                # Map (name, parent_template_id) -> template channel entity (for matching channels without discord_id)
+                template_channels_by_name_parent = {(chan.channel_name, chan.parent_category_template_id): chan for chan in template_channels}
+                
+                # Map live Discord channel ID -> live channel data dict (from DiscordQueryService)
+                # live_channels = live_guild_data.get('channels', {}) # Already defined
+
+                # Map (name, parent_discord_id) -> live channel data dict
+                live_channels_by_name_parent = {(chan_data['name'], chan_data['parent_id']): chan_data for chan_id, chan_data in live_channels.items()}
+
+                # Keep track of live channels we've matched or created to handle deletions later
+                processed_live_channel_ids = set()
+
+                # --- Iterate through Template Channels (Create/Update) ---
+                # Sort by position to encourage correct ordering, although Discord might adjust
+                sorted_template_channels = sorted(template_channels, key=lambda c: c.position)
+
+                for template_chan in sorted_template_channels:
+                    logger.debug(f"  Processing template channel: '{template_chan.channel_name}' (Type: {template_chan.channel_type}, Pos: {template_chan.position}, DB_ID: {template_chan.id})")
+
+                    target_discord_category = None
+                    if template_chan.parent_category_template_id:
+                        target_discord_category = created_or_found_discord_categories.get(template_chan.parent_category_template_id)
+                        if not target_discord_category:
+                            logger.warning(f"    Parent category (Template ID: {template_chan.parent_category_template_id}) not found or created on Discord for channel '{template_chan.channel_name}'. Will create channel without parent.")
+                    
+                    target_parent_discord_id = target_discord_category.id if target_discord_category else None
+
+                    # --- Try to find existing Discord channel ---
+                    existing_discord_chan_object = None
+                    # 1. Try matching by known Discord ID (if set previously)
+                    if template_chan.discord_channel_id:
+                         potential_match = discord_guild.get_channel(int(template_chan.discord_channel_id))
+                         # Verify it's the correct type (or handle type changes?)
+                         if potential_match and str(potential_match.type) == template_chan.channel_type:
+                             existing_discord_chan_object = potential_match
+                             logger.debug(f"    Found potential match by DB discord_channel_id: {existing_discord_chan_object.name} ({existing_discord_chan_object.id})")
+                         else:
+                              logger.warning(f"    DB discord_channel_id {template_chan.discord_channel_id} for '{template_chan.channel_name}' points to a non-existent channel or channel of wrong type ({potential_match.type if potential_match else 'None'}). Ignoring ID.")
+                              # Reset the ID in DB? For now, just proceed to name matching.
+                              # await chan_repo.update(template_chan, discord_channel_id=None) # Example
+
+                    # 2. If no match by ID, try matching by name and parent
+                    if not existing_discord_chan_object:
+                        live_match_data = live_channels_by_name_parent.get((template_chan.channel_name, target_parent_discord_id))
+                        if live_match_data:
+                            # Fetch the actual channel object using the ID from live data
+                            # Find the key (channel_id) corresponding to the matched value (live_match_data)
+                            discord_chan_id = None
+                            for chan_id, chan_data in live_channels.items():
+                                if chan_data == live_match_data:
+                                     discord_chan_id = chan_id
+                                     break
+                            
+                            if discord_chan_id:
+                                 potential_match = discord_guild.get_channel(discord_chan_id)
+                                 if potential_match and str(potential_match.type) == template_chan.channel_type:
+                                    existing_discord_chan_object = potential_match
+                                    logger.debug(f"    Found potential match by name and parent: {existing_discord_chan_object.name} ({existing_discord_chan_object.id})")
+                                    # --- Update DB discord_channel_id --- 
+                                    if template_chan.discord_channel_id != str(existing_discord_chan_object.id):
+                                        logger.info(f"      Updating DB discord_id for template channel {template_chan.id} from {template_chan.discord_channel_id} to {existing_discord_chan_object.id}")
+                                        template_chan.discord_channel_id = str(existing_discord_chan_object.id)
+                                        # Session commit will handle saving this change
+                                    # -------------------------------------
+
+                    # --- Update or Create Channel ---
+                    if existing_discord_chan_object:
+                        processed_live_channel_ids.add(existing_discord_chan_object.id)
+                        logger.info(f"    Channel '{template_chan.channel_name}' already exists (ID: {existing_discord_chan_object.id}). Checking for updates...")
+                        
+                        # --- Check for updates ---
+                        updates_needed = {}
+                        if existing_discord_chan_object.name != template_chan.channel_name: # Note: Name match was primary way to find it if ID was missing
+                             updates_needed['name'] = template_chan.channel_name
+                        if existing_discord_chan_object.position != template_chan.position:
+                             updates_needed['position'] = template_chan.position
+                        if getattr(existing_discord_chan_object, 'topic', None) != template_chan.topic:
+                            updates_needed['topic'] = template_chan.topic # Only for text/forum
+                        if getattr(existing_discord_chan_object, 'nsfw', False) != template_chan.is_nsfw:
+                             updates_needed['nsfw'] = template_chan.is_nsfw # Only for text/voice/forum/stage
+                        if isinstance(existing_discord_chan_object, (nextcord.TextChannel, nextcord.ForumChannel)):
+                            if existing_discord_chan_object.slowmode_delay != template_chan.slowmode_delay:
+                                updates_needed['slowmode_delay'] = template_chan.slowmode_delay
+                        if existing_discord_chan_object.category != target_discord_category: # Compare objects directly
+                             updates_needed['category'] = target_discord_category # Move category
+
+                        if updates_needed:
                             try:
-                                await discord_cat.delete(reason="Removing category not defined in template")
-                                logger.warning(f"      Successfully deleted category '{discord_cat_name}'.")
+                                logger.info(f"      Updating channel '{existing_discord_chan_object.name}' ({existing_discord_chan_object.id}) with changes: {updates_needed}")
+                                await existing_discord_chan_object.edit(**updates_needed, reason="Applying template updates")
+                                logger.debug(f"        Successfully updated channel.")
                             except nextcord.Forbidden:
-                                logger.error(f"      PERMISSION ERROR: Cannot delete category '{discord_cat_name}'.")
+                                logger.error(f"        PERMISSION ERROR updating channel '{existing_discord_chan_object.name}'.")
                             except nextcord.HTTPException as http_err:
-                                logger.error(f"      HTTP ERROR deleting category '{discord_cat_name}': {http_err}")
+                                logger.error(f"        HTTP ERROR updating channel '{existing_discord_chan_object.name}': {http_err}")
+                            except Exception as update_err:
+                                logger.error(f"        UNEXPECTED ERROR updating channel '{existing_discord_chan_object.name}': {update_err}", exc_info=True)
+                        else:
+                             logger.debug("      No attribute updates needed.")
+
+                        # Always apply permissions (overwrite mode)
+                        await self._apply_channel_permissions(existing_discord_chan_object, template_chan.id, chan_perm_repo)
+
+                    else:
+                        # --- Create Channel ---
+                        logger.info(f"    Channel '{template_chan.channel_name}' does not exist. Creating...")
+                        creation_kwargs = {
+                             'name': template_chan.channel_name,
+                             'category': target_discord_category,
+                             'position': template_chan.position,
+                             'reason': f"Applying template: {template.template_name}"
+                        }
+                        # Add type-specific args
+                        if template_chan.channel_type == 'text':
+                            creation_kwargs.update({
+                                'topic': template_chan.topic,
+                                'slowmode_delay': template_chan.slowmode_delay,
+                                'nsfw': template_chan.is_nsfw
+                            })
+                            channel_creator = discord_guild.create_text_channel
+                        elif template_chan.channel_type == 'voice':
+                             creation_kwargs.update({
+                                 'nsfw': template_chan.is_nsfw
+                                 # Add bitrate, user_limit if stored in template
+                             })
+                             channel_creator = discord_guild.create_voice_channel
+                        elif template_chan.channel_type == 'stage_voice': # Check nextcord's exact type string if different
+                             creation_kwargs.update({
+                                # Add stage specific args if needed
+                             })
+                             channel_creator = discord_guild.create_stage_channel
+                        elif template_chan.channel_type == 'forum':
+                              creation_kwargs.update({
+                                'topic': template_chan.topic,
+                                'slowmode_delay': template_chan.slowmode_delay,
+                                'nsfw': template_chan.is_nsfw
+                                # Add tags etc. if stored in template
+                             })
+                              channel_creator = discord_guild.create_forum
+                        else:
+                            logger.error(f"      Unsupported channel type '{template_chan.channel_type}' in template. Cannot create.")
+                            continue # Skip this channel
+
+                        try:
+                            new_discord_chan = await channel_creator(**creation_kwargs)
+                            logger.info(f"      Successfully created {template_chan.channel_type} channel '{new_discord_chan.name}' (ID: {new_discord_chan.id})")
+                            
+                            # Apply permissions
+                            await self._apply_channel_permissions(new_discord_chan, template_chan.id, chan_perm_repo)
+
+                            # --- Update DB discord_channel_id --- 
+                            logger.info(f"      Updating DB discord_id for template channel {template_chan.id} to {new_discord_chan.id}")
+                            template_chan.discord_channel_id = str(new_discord_chan.id)
+                            # Session commit will handle saving this change
+                            # -------------------------------------
+
+                            processed_live_channel_ids.add(new_discord_chan.id) # Track newly created channel ID
+
+                        except nextcord.Forbidden:
+                            logger.error(f"      PERMISSION ERROR: Cannot create {template_chan.channel_type} channel '{template_chan.channel_name}'. Check bot permissions.")
+                        except nextcord.HTTPException as http_err:
+                            logger.error(f"      HTTP ERROR creating {template_chan.channel_type} channel '{template_chan.channel_name}': {http_err}")
+                        except Exception as creation_err:
+                             logger.error(f"      UNEXPECTED ERROR creating {template_chan.channel_type} channel '{template_chan.channel_name}': {creation_err}", exc_info=True)
+
+                # ----------------------------------------------------------
+                # 6. Process Channels (Delete from Discord if not in Template - Optional)
+                # ----------------------------------------------------------
+                # TODO: Make deletion configurable via GuildConfig or similar
+                delete_unmanaged_channels = False # Set to True to enable deletion
+                if delete_unmanaged_channels:
+                    logger.info("  Checking for Discord channels not present in the template...")
+                    channels_to_delete = set(live_channels.keys()) - processed_live_channel_ids
+                    logger.debug(f"    Found {len(channels_to_delete)} live channel IDs not processed: {channels_to_delete}")
+                    
+                    for discord_chan_id in channels_to_delete:
+                        # Fetch the actual channel object
+                        channel_to_delete = discord_guild.get_channel(discord_chan_id)
+                        live_chan_data = live_channels.get(discord_chan_id) # Get data for logging
+                        chan_name_for_log = live_chan_data['name'] if live_chan_data else f"ID {discord_chan_id}"
+
+                        if channel_to_delete:
+                            logger.warning(f"    Discord channel '{chan_name_for_log}' (ID: {discord_chan_id}) is not in the template. Deleting...")
+                            try:
+                                await channel_to_delete.delete(reason="Removing channel not defined in template")
+                                logger.warning(f"      Successfully deleted channel '{chan_name_for_log}'.")
+                            except nextcord.Forbidden:
+                                logger.error(f"      PERMISSION ERROR: Cannot delete channel '{chan_name_for_log}'.")
+                            except nextcord.HTTPException as http_err:
+                                logger.error(f"      HTTP ERROR deleting channel '{chan_name_for_log}': {http_err}")
                             except Exception as deletion_err:
-                                logger.error(f"      UNEXPECTED ERROR deleting category '{discord_cat_name}': {deletion_err}", exc_info=True)
+                                logger.error(f"      UNEXPECTED ERROR deleting channel '{chan_name_for_log}': {deletion_err}", exc_info=True)
+                        else:
+                            # This case might happen if a channel was deleted manually during the sync
+                            logger.warning(f"    Could not find Discord channel object with ID {discord_chan_id} ('{chan_name_for_log}') to delete. Already deleted?")
                 else:
-                    logger.debug("  Deletion of unmanaged categories is disabled.")
+                    logger.debug("  Deletion of unmanaged channels is disabled.")
 
-                # ----------------------------------------------------------
-                # 5. Process Channels (Create/Update/Delete)
-                # ----------------------------------------------------------
-                # TODO: Similar logic as categories, but associate with correct created_discord_categories[parent_id]
-                # TODO: **Crucially: Update template_channels.discord_channel_id in the database**
-                logger.warning(f"[apply_template] Channel processing logic for guild {guild_id} is not yet implemented.")
+                # --- Handle Reordering ---
+                # TODO: Consider bulk edit for efficiency/accuracy after all CUD operations
 
-            # If we reach here without errors (even if logic is missing), assume success for now
-            logger.info(f"[apply_template] Category processing (partially) completed for guild {guild_id}. Returning True.")
+
+                logger.info(f"[apply_template] Channel Create/Update/Delete logic complete. DB updates applied via session commit. Guild: {guild_id}.")
+
+            # Commit changes made to template entities (like discord_channel_id updates)
+            # await session.commit() # session_context handles commit/rollback
+
+            # If we reach here without fatal errors, consider it successful
+            # TODO: Refine success criteria based on non-fatal errors logged during CUD operations?
+            logger.info(f"[apply_template] Successfully applied template changes for guild {guild_id}.")
             return True
 
         except Exception as e:
             logger.error(f"[apply_template] Error applying template for guild {guild_id}: {e}", exc_info=True)
+            # Rollback is handled by session_context
             return False
 
     async def _apply_category_permissions(self, discord_category: nextcord.CategoryChannel, template_category_id: int, cat_perm_repo: GuildTemplateCategoryPermissionRepository) -> None:
@@ -520,6 +729,56 @@ class GuildWorkflow(BaseWorkflow):
             logger.error(f"      HTTP ERROR applying permissions to category '{discord_category.name}': {http_err}")
         except Exception as perm_err:
             logger.error(f"      UNEXPECTED ERROR applying permissions to category '{discord_category.name}': {perm_err}", exc_info=True)
+
+    # --- NEW HELPER FUNCTION for Channel Permissions ---
+    async def _apply_channel_permissions(
+        self, 
+        discord_channel: nextcord.abc.GuildChannel, # Use base GuildChannel type
+        template_channel_id: int, 
+        chan_perm_repo: GuildTemplateChannelPermissionRepository
+    ) -> None:
+        """Helper to apply permissions stored in the template to a Discord channel."""
+        logger.debug(f"    Applying permissions for channel '{discord_channel.name}' (Template ID: {template_channel_id})")
+        try:
+            template_perms = await chan_perm_repo.get_by_channel_template_id(template_channel_id)
+            if not template_perms:
+                logger.debug(f"      No specific permissions found in template for channel ID {template_channel_id}.")
+                return
+
+            # Get roles from the guild
+            guild_roles = {role.name: role for role in discord_channel.guild.roles}
+
+            overwrites = {} # Build the overwrites dictionary
+            for perm in template_perms:
+                role = guild_roles.get(perm.role_name)
+                if not role:
+                    logger.warning(f"      Role '{perm.role_name}' defined in template permissions not found on guild '{discord_channel.guild.name}'. Skipping permission.")
+                    continue
+
+                # Create PermissionOverwrite object
+                # Handle potential None values for bitfields gracefully
+                allow_value = perm.allow_permissions_bitfield if perm.allow_permissions_bitfield is not None else 0
+                deny_value = perm.deny_permissions_bitfield if perm.deny_permissions_bitfield is not None else 0
+                
+                allow_perms = nextcord.Permissions(allow_value)
+                deny_perms = nextcord.Permissions(deny_value)
+                overwrites[role] = nextcord.PermissionOverwrite.from_pair(allow_perms, deny_perms)
+                logger.debug(f"      Prepared overwrite for role '{role.name}': Allow={allow_perms.value}, Deny={deny_perms.value}")
+
+            if overwrites:
+                 logger.info(f"    Setting {len(overwrites)} permission overwrites for channel '{discord_channel.name}'")
+                 await discord_channel.edit(overwrites=overwrites, reason="Applying template permissions")
+                 logger.debug(f"      Successfully applied permissions to channel '{discord_channel.name}'.")
+            else:
+                logger.debug(f"      No valid roles found for template permissions on channel '{discord_channel.name}'. No changes made.")
+
+        except nextcord.Forbidden:
+            logger.error(f"      PERMISSION ERROR: Cannot apply permissions to channel '{discord_channel.name}'. Check bot permissions.")
+        except nextcord.HTTPException as http_err:
+            logger.error(f"      HTTP ERROR applying permissions to channel '{discord_channel.name}': {http_err}")
+        except Exception as perm_err:
+            logger.error(f"      UNEXPECTED ERROR applying permissions to channel '{discord_channel.name}': {perm_err}", exc_info=True)
+    # --- END NEW HELPER FUNCTION ---
 
     async def sync_guild(self, guild_id: str, sync_members_only: bool = True) -> bool:
         """Synchronize guild data with Discord"""

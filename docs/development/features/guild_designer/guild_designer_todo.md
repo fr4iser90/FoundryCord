@@ -42,9 +42,9 @@
 ### Phase 2: Applying Template to Discord
 
 *   [ ] **Complete Bot `apply_template` Logic:**
-    *   **Target File:** `app/bot/workflows/guild_workflow.py` (function `apply_template`).
+    *   **Target File:** `app/bot/core/workflows/guild_workflow.py` (function `apply_template`).
     *   **Enhancements:**
-        *   Fetch the full template structure (categories and channels with positions/parents) from the database using `GuildTemplateService`.
+        *   Fetch the full template structure (categories, channels, positions, parents, permissions etc.) from the database using the shared Template Repositories.
         *   Fetch the *current* guild structure directly from Discord using the Discord service (`app/services/discord_service.py` or similar).
         *   Implement comparison logic (diffing) between the template and the live Discord state.
         *   Call Discord API functions (via the service) to:
