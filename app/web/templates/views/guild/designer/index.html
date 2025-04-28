@@ -35,14 +35,21 @@
     <button id="save-structure-btn" class="btn btn-sm btn-primary me-2" title="Save Changes to this Template Structure" disabled>
         <i class="bi bi-save-fill"></i> <span class="d-none d-md-inline">Save Structure</span>
     </button>
-    <button id="activate-template-btn" class="btn btn-sm btn-success me-2" title="Set this template as the active one for the guild" disabled>
-        <i class="bi bi-check-circle-fill"></i> <span class="d-none d-md-inline">Activate</span>
+    <button id="activate-template-btn" class="btn btn-sm btn-success ms-2" disabled>
+        <i class="bi bi-check-circle-fill me-1"></i> Activate
     </button>
-    <!-- NEW Apply Button -->
-    <button id="apply-template-btn" class="btn btn-sm btn-warning me-2" title="Apply this template to the live Discord server" disabled>
-        <i class="bi bi-rocket-fill"></i> <span class="d-none d-md-inline">Apply to Discord</span>
+
+    <!-- Apply Settings Checkbox (NEW) -->
+    <div class="form-check form-switch ms-3 d-inline-block align-middle" title="Delete channels/categories not in template when applying">
+        <input class="form-check-input" type="checkbox" role="switch" id="delete-unmanaged-checkbox" disabled>
+        <label class="form-check-label small" for="delete-unmanaged-checkbox">Clean Apply</label>
+    </div>
+
+    <!-- Apply Button -->
+    <button id="apply-template-btn" class="btn btn-sm btn-primary ms-2" disabled>
+        <i class="bi bi-discord me-1"></i> Apply to Discord
     </button>
-    <!-- End NEW Apply Button -->
+
     {# TODO: Add Apply to Discord Button later #}
 
     {# Gridstack Controls #}

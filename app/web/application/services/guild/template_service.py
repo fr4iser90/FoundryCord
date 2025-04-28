@@ -28,6 +28,9 @@ from app.shared.infrastructure.models.auth import AppUserEntity
 # -----------------------------------
 # Import Exceptions
 from app.shared.domain.exceptions import TemplateNotFound, PermissionDenied, InvalidOperation, DomainException
+# --- ADD Guild Config Repo --- 
+from app.shared.infrastructure.repositories.discord import GuildConfigRepositoryImpl
+# ---------------------------
 
 logger = get_web_logger()
 
@@ -57,6 +60,15 @@ class GuildTemplateService:
                 chan_repo = GuildTemplateChannelRepositoryImpl(session)
                 cat_perm_repo = GuildTemplateCategoryPermissionRepositoryImpl(session)
                 chan_perm_repo = GuildTemplateChannelPermissionRepositoryImpl(session)
+                # --- ADD Guild Config Repo --- 
+                guild_config_repo = GuildConfigRepositoryImpl(session)
+                # ---------------------------
+
+                # --- Fetch GuildConfig --- 
+                guild_config = await guild_config_repo.get_by_guild_id(guild_id)
+                delete_unmanaged_flag = guild_config.template_delete_unmanaged if guild_config else False # Default to False if no config found
+                logger.debug(f"GuildConfig found for {guild_id}. template_delete_unmanaged is {delete_unmanaged_flag}")
+                # -------------------------
 
                 # 2. Get all categories for this template, eager loading permissions
                 cat_stmt = (
@@ -86,6 +98,9 @@ class GuildTemplateService:
                     "template_id": template.id,
                     "template_name": template.template_name,
                     "created_at": template.created_at.isoformat() if template.created_at else None,
+                    "is_shared": template.is_shared, # Include shared status
+                    "creator_user_id": template.creator_user_id, # Include creator ID
+                    "template_delete_unmanaged": delete_unmanaged_flag,
                     "categories": [],
                     "channels": []
                 }
@@ -154,6 +169,17 @@ class GuildTemplateService:
 
                 template_db_id = template.id
                 logger.debug(f"Found template ID {template_db_id}")
+                
+                # --- Fetch GuildConfig if guild_id is available --- 
+                delete_unmanaged_flag = False # Default
+                if template.guild_id: # Only fetch config if template is linked to a guild
+                    guild_config_repo = GuildConfigRepositoryImpl(session)
+                    guild_config = await guild_config_repo.get_by_guild_id(template.guild_id)
+                    delete_unmanaged_flag = guild_config.template_delete_unmanaged if guild_config else False
+                    logger.debug(f"GuildConfig fetched for guild {template.guild_id}. template_delete_unmanaged is {delete_unmanaged_flag}")
+                else:
+                    logger.debug(f"Template {template_id} is not linked to a specific guild. delete_unmanaged flag defaults to False.")
+                # -------------------------------------------------
 
                 # Instantiate other repos
                 cat_repo = GuildTemplateCategoryRepositoryImpl(session)
@@ -189,6 +215,9 @@ class GuildTemplateService:
                     "template_id": template.id,
                     "template_name": template.template_name,
                     "created_at": template.created_at.isoformat() if template.created_at else None,
+                    "is_shared": template.is_shared, # Include shared status
+                    "creator_user_id": template.creator_user_id, # Include creator ID
+                    "template_delete_unmanaged": delete_unmanaged_flag,
                     "categories": [],
                     "channels": []
                 }

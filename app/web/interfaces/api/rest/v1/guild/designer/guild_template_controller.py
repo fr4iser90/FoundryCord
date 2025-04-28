@@ -27,7 +27,7 @@ from sqlalchemy import select
 # ---------------------------------------
 from sqlalchemy.ext.asyncio import AsyncSession # Import AsyncSession
 # ---> ADD: Import specific exceptions from service/domain if they exist
-from app.shared.domain.exceptions import TemplateNotFound, PermissionDenied, InvalidOperation
+from app.shared.domain.exceptions import TemplateNotFound, PermissionDenied, InvalidOperation, ConfigurationNotFound # Added ConfigurationNotFound
 # --- NEW: Add HTTP client import (adjust based on available library) ---
 import httpx 
 # -------------------------------------------------------------------
@@ -38,6 +38,11 @@ INTERNAL_API_BASE_URL = "http://foundrycord-bot:9090" # Use container name, GET 
 
 class GuildTemplateActivateSchema(BaseModel):
     template_id: int
+
+# --- NEW Schema for Settings Update ---
+class GuildTemplateSettingsUpdate(BaseModel):
+    delete_unmanaged: bool
+# --------------------------------------
 
 class GuildTemplateController(BaseController):
     """Controller for managing guild structure templates via API."""
@@ -86,6 +91,14 @@ class GuildTemplateController(BaseController):
                          summary="Apply Active Template to Discord",
                          description="Triggers the bot to apply the currently active template structure to the live Discord server."
                          )(self.apply_guild_template) # NEW method
+
+        # --- NEW Route for Updating Settings --- 
+        self.router.put("/settings",
+                        status_code=status.HTTP_200_OK,
+                        summary="Update Guild Template Application Settings",
+                        description="Updates settings related to how templates are applied for this guild, e.g., deleting unmanaged channels."
+                        )(self.update_template_settings)
+        # ------------------------------------------
 
         # === General Template Routes (using separate router, NO prefix) ===
 
@@ -625,6 +638,48 @@ class GuildTemplateController(BaseController):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred while creating the template."
             )
+
+    # --- NEW Method for Settings Update Route ---
+    async def update_template_settings(
+        self,
+        guild_id: str,
+        settings_update: GuildTemplateSettingsUpdate,
+        current_user: AppUserEntity = Depends(get_current_user),
+        db: AsyncSession = Depends(get_web_db_session)
+    ):
+        """API endpoint to update guild-specific template application settings."""
+        self.logger.info(f"User {current_user.id} updating template settings for guild {guild_id}: {settings_update.dict()}")
+        try:
+            # Basic permission check (e.g., only owner or specific admin role)
+            # TODO: Refine permission check logic
+            if not current_user.is_owner:
+                 self.logger.warning(f"Permission denied: User {current_user.id} attempted to update template settings for guild {guild_id}.")
+                 raise PermissionDenied("Insufficient permissions to update template settings.")
+
+            # Call the service layer method (assuming it exists)
+            success = await self.template_service.update_template_settings(
+                db=db,
+                guild_id=guild_id,
+                delete_unmanaged=settings_update.delete_unmanaged,
+                requesting_user=current_user
+            )
+            
+            if not success:
+                # This might indicate the GuildConfig wasn't found
+                self.logger.warning(f"Template settings update failed for guild {guild_id} (potentially config not found).")
+                raise ConfigurationNotFound(f"Configuration for guild {guild_id} not found.")
+
+            self.logger.info(f"Successfully updated template settings for guild {guild_id}.")
+            return {"message": "Template settings updated successfully."}
+
+        except PermissionDenied as e:
+             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        except ConfigurationNotFound as e:
+             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) 
+        except Exception as e:
+            self.logger.error(f"Unexpected error updating template settings for guild {guild_id}: {e}", exc_info=True)
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An internal error occurred while updating template settings.")
+    # ------------------------------------------
 
     # --- METHOD MODIFIED for Apply Route --- 
     async def apply_guild_template(

@@ -73,13 +73,17 @@ class GuildTemplateRepositoryImpl(BaseRepositoryImpl[GuildTemplateEntity], Guild
         guild_id: Optional[str] = None, 
         template_description: Optional[str] = None,
         is_shared: bool = False,
+        # Set default is_active to False for new templates
+        is_active: bool = False, 
         structure_version: Optional[str] = None
         # Add other fields from GuildTemplateEntity as needed
     ) -> Optional[GuildTemplateEntity]:
         """Create a new guild template record.
 
         Handles initial snapshots (guild_id set, creator_user_id=None) 
-        and user-created templates (creator_user_id set, guild_id=None or source)."""
+        and user-created templates (creator_user_id set, guild_id=None or source).
+        Newly created templates default to is_active=False.
+        """
         try:
             # --- Duplicate Check (User-Saved Templates) ---
             # Check for duplicate template name for the same creator
@@ -99,8 +103,8 @@ class GuildTemplateRepositoryImpl(BaseRepositoryImpl[GuildTemplateEntity], Guild
                 creator_user_id=creator_user_id,
                 is_shared=is_shared,
                 # structure_version=structure_version # Uncomment if structure_version is added to model
-                # Set defaults for other fields if needed, though DB defaults often handle this
-                is_active=True 
+                # Pass the specific is_active value (defaults to False now)
+                is_active=is_active 
             )
 
             self.session.add(new_template)

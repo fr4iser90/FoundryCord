@@ -77,6 +77,7 @@ class GuildStructureTemplate(GuildStructureTemplateBase):
     created_at: datetime
     updated_at: datetime
     is_initial_snapshot: bool = False
+    template_delete_unmanaged: Optional[bool] = None # Get from GuildConfig
     # The full structure might be loaded separately for performance
     class Config:
         from_attributes = True
@@ -194,6 +195,8 @@ class GuildTemplateResponseSchema(BaseModel):
     created_at: Optional[datetime] = None
     categories: List[CategorySchema] = []
     channels: List[ChannelSchema] = []
+    is_initial_snapshot: Optional[bool] = False # Indicates if it's the initial auto-generated snapshot
+    template_delete_unmanaged: Optional[bool] = None # Get from GuildConfig
 
     class Config:
         # from_attributes = True # REMOVED - Data comes from a dict, not ORM object directly here

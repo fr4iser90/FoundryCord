@@ -23,7 +23,8 @@ class GuildConfigRepositoryImpl(GuildConfigRepository):
     
     async def create_or_update(self, guild_id: str, guild_name: str,
                               features: Dict[str, bool] = None,
-                              settings: Dict[str, Any] = None) -> GuildConfigEntity:
+                              settings: Dict[str, Any] = None,
+                              active_template_id: Optional[int] = None) -> GuildConfigEntity:
         """Create or update guild configuration"""
         # First check if config exists
         config = await self.get_by_guild_id(guild_id)
@@ -38,6 +39,9 @@ class GuildConfigRepositoryImpl(GuildConfigRepository):
                  config.enable_dashboard = features.get('dashboard', False)
                  config.enable_tasks = features.get('tasks', False)
                  config.enable_services = features.get('services', False)
+            # Set active template if provided for new config
+            if active_template_id is not None:
+                config.active_template_id = active_template_id
 
         else:
             # Ensure name is updated if config already exists
@@ -47,18 +51,35 @@ class GuildConfigRepositoryImpl(GuildConfigRepository):
                  config.enable_dashboard = features.get('dashboard', config.enable_dashboard)
                  config.enable_tasks = features.get('tasks', config.enable_tasks)
                  config.enable_services = features.get('services', config.enable_services)
+            # Update active template if provided for existing config
+            if active_template_id is not None:
+                config.active_template_id = active_template_id
 
         # Update settings if provided
         if settings:
             config.settings = json.dumps(settings)
 
         self.session.add(config)
-        await self.session.commit()
-        # Refresh the object to get the latest state from DB, including defaults
-        await self.session.refresh(config)
+        # Commit is handled by the session context manager in the service layer
+        # await self.session.commit()
+        # No need to refresh if commit is handled externally
+        # await self.session.refresh(config)
         return config
         
+    async def update_template_delete_unmanaged(self, guild_id: str, delete_unmanaged: bool) -> bool:
+        """Update the template_delete_unmanaged flag for a specific guild."""
+        config = await self.get_by_guild_id(guild_id)
+        if not config:
+            return False # Guild config not found
+        
+        config.template_delete_unmanaged = delete_unmanaged
+        self.session.add(config)
+        # Commit will be handled by the calling service/controller context
+        # await self.session.commit()
+        return True
+
     async def delete(self, config: GuildConfigEntity) -> None:
         """Delete a guild configuration"""
         await self.session.delete(config)
-        await self.session.commit()
+        # Commit will be handled by the calling service/controller context
+        # await self.session.commit()

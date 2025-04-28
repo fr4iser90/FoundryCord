@@ -10,6 +10,12 @@ import { initializeStructureTree } from './widget/structureTree.js';
 import { populateGuildDesignerWidgets } from './designerWidgets.js'; // Needed for loadTemplateData
 import { openShareModal } from './modal/shareModal.js'; // Add import for share modal opener
 
+// --- Constants for Element IDs ---
+const SAVE_BTN_ID = 'save-structure-btn';
+const ACTIVATE_BTN_ID = 'activate-template-btn';
+const APPLY_BTN_ID = 'apply-template-btn';
+const DELETE_UNMANAGED_CHECKBOX_ID = 'delete-unmanaged-checkbox'; // <<< NEW
+
 // --- Function to update save button state --- 
 // DEPRECATED: Logic moved to updateToolbarButtonStates
 /*
@@ -265,6 +271,18 @@ function handleTemplateDataLoad(event) {
         populateGuildDesignerWidgets(templateData);
         initializeStructureTree(templateData);
 
+        // --- NEW: Initialize Delete Unmanaged Checkbox --- 
+        const deleteUnmanagedCheckbox = document.getElementById(DELETE_UNMANAGED_CHECKBOX_ID);
+        if (deleteUnmanagedCheckbox) {
+            const deleteFlag = templateData.template_delete_unmanaged === true; // Ensure boolean
+            console.log(`[DesignerEvents] Setting '${DELETE_UNMANAGED_CHECKBOX_ID}' checked state to: ${deleteFlag}`);
+            deleteUnmanagedCheckbox.checked = deleteFlag;
+            deleteUnmanagedCheckbox.disabled = false; // Enable the checkbox
+        } else {
+            console.warn(`[DesignerEvents] Checkbox '${DELETE_UNMANAGED_CHECKBOX_ID}' not found during template load.`);
+        }
+        // --- END NEW ---
+
         // Reset dirty flag and update buttons
         state.setDirty(false);
         // ---> UPDATED: Use new function
@@ -497,6 +515,47 @@ async function handleApplyTemplateClick() {
 }
 // --- END NEW ---
 
+// --- NEW: Handler for Delete Unmanaged Checkbox Change ---
+async function handleDeleteUnmanagedChange(event) {
+    const checkbox = event.target;
+    const deleteUnmanaged = checkbox.checked;
+    const guildId = getGuildIdFromUrl();
+
+    console.log(`[DesignerEvents] '${DELETE_UNMANAGED_CHECKBOX_ID}' changed. New value: ${deleteUnmanaged}`);
+
+    if (!guildId) {
+        console.error("[DesignerEvents] Cannot update setting: Guild ID missing.");
+        showToast('error', 'Cannot save setting: Guild ID not found.');
+        // Revert checkbox state?
+        checkbox.checked = !deleteUnmanaged;
+        return;
+    }
+
+    const apiUrl = `/api/v1/guilds/${guildId}/template/settings`;
+    const payload = { delete_unmanaged: deleteUnmanaged };
+
+    checkbox.disabled = true; // Disable during API call
+
+    try {
+        await apiRequest(apiUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        showToast('success', `Setting 'Clean Apply' updated to: ${deleteUnmanaged}.`);
+        // Optionally update local state if needed, though fetching on load might be sufficient
+        // state.setDeleteUnmanaged(deleteUnmanaged); // If state module tracks this
+    } catch (error) {
+        console.error(`[DesignerEvents] Error updating 'delete_unmanaged' setting:`, error);
+        // Revert checkbox state on error
+        checkbox.checked = !deleteUnmanaged;
+        // apiRequest shows the error toast
+    } finally {
+        checkbox.disabled = false; // Re-enable checkbox
+    }
+}
+// --- END NEW ---
+
 // --- Event Listener Setup Functions --- 
 
 function setupPanelToggles() {
@@ -525,10 +584,10 @@ function setupPanelToggles() {
 export function initializeDesignerEventListeners() {
     console.log("[DesignerEvents] Initializing designer event listeners...");
 
-    const saveButton = document.getElementById('save-structure-btn');
+    const saveButton = document.getElementById(SAVE_BTN_ID);
     saveButton?.addEventListener('click', handleSaveStructureClick);
 
-    const activateButton = document.getElementById('activate-template-btn');
+    const activateButton = document.getElementById(ACTIVATE_BTN_ID);
     activateButton?.addEventListener('click', handleToolbarActivateClick);
 
     // Listener for the 'Save As New' confirmation event (fired by the modal)
@@ -559,11 +618,20 @@ export function initializeDesignerEventListeners() {
     document.addEventListener('requestShareTemplate', handleRequestShareTemplate);
 
     // --- NEW: Listener for Apply Template ---
-    const applyBtn = document.getElementById('apply-template-btn');
+    const applyBtn = document.getElementById(APPLY_BTN_ID);
     if (applyBtn) {
         applyBtn.addEventListener('click', handleApplyTemplateClick);
     } else {
-        console.warn("[DesignerEvents] Apply Template button (#apply-template-btn) not found!");
+        console.warn(`[DesignerEvents] Toolbar button '${APPLY_BTN_ID}' not found.`);
+    }
+    // --- END NEW ---
+
+    // --- NEW: Delete Unmanaged Checkbox Listener ---
+    const deleteUnmanagedCheckbox = document.getElementById(DELETE_UNMANAGED_CHECKBOX_ID);
+    if (deleteUnmanagedCheckbox) {
+        deleteUnmanagedCheckbox.addEventListener('change', handleDeleteUnmanagedChange);
+    } else {
+        console.warn(`[DesignerEvents] Checkbox '${DELETE_UNMANAGED_CHECKBOX_ID}' not found.`);
     }
     // --- END NEW ---
 
