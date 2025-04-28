@@ -1,0 +1,21 @@
+<!-- Activation Confirmation Modal -->
+<div class="modal fade" id="activateConfirmModal" tabindex="-1" aria-labelledby="activateConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="activateConfirmModalLabel">Confirm Activation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to activate the template "<strong id="activateTemplateName"></strong>"?
+                <p class="small text-muted mt-2">
+                    Activating this template may replace any existing active template for this guild. The currently active template (if any) will be deactivated.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmActivateBtn">Activate</button>
+            </div>
+        </div>
+    </div>
+</div> 

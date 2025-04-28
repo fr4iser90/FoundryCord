@@ -26,6 +26,8 @@ from app.shared.infrastructure.models import DiscordGuildUserEntity
 from sqlalchemy import select
 # ---------------------------------------
 from sqlalchemy.ext.asyncio import AsyncSession # Import AsyncSession
+# ---> ADD: Import specific exceptions from service/domain if they exist
+from app.shared.domain.exceptions import TemplateNotFound, PermissionDenied
 
 class GuildTemplateActivateSchema(BaseModel):
     template_id: int
@@ -143,6 +145,17 @@ class GuildTemplateController(BaseController):
             status_code=status.HTTP_201_CREATED,
             dependencies=[Depends(get_current_user)]
         )(self.create_template_from_structure)
+
+        # ---> ADD: REGISTER ACTIVATE ROUTE
+        self.general_template_router.post(
+            "/templates/guilds/{template_id}/activate",
+            summary="Activate Guild Template",
+            description="Sets a specific guild template as the active one for its associated guild.",
+            status_code=status.HTTP_200_OK,
+            # Use dependencies=[Depends(get_current_user)] if you only need auth check
+            # Or add specific permission check dependency if created
+            dependencies=[Depends(get_current_user)] 
+        )(self.activate_guild_template)
 
     async def get_guild_template(self, guild_id: str, current_user: AppUserEntity = Depends(get_current_user)) -> GuildTemplateResponseSchema:
         """API endpoint to retrieve the guild template structure by Guild ID."""
@@ -469,56 +482,39 @@ class GuildTemplateController(BaseController):
     # --- NEW METHOD for Activate Route --- 
     async def activate_guild_template(
         self,
-        guild_id: str,
-        activate_data: GuildTemplateActivateSchema, # Use the new schema for body
-        current_user: AppUserEntity = Depends(get_current_user)
+        template_id: int, # From path parameter
+        current_user: AppUserEntity = Depends(get_current_user), # From dependency
+        db: AsyncSession = Depends(get_web_db_session) # Get DB session
     ):
-        """API endpoint to set a template as active for the guild."""
+        """API endpoint to activate a specific guild template."""
+        self.logger.info(f"User {current_user.id} requesting activation for template ID: {template_id}")
         try:
-            # --- Permission Check --- 
-            if not current_user.is_owner:
-                # If not global owner, check guild-specific role
-                async with session_context() as session:
-                    query = select(DiscordGuildUserEntity).where(
-                        DiscordGuildUserEntity.user_id == current_user.id,
-                        DiscordGuildUserEntity.guild_id == guild_id
-                    )
-                    result = await session.execute(query)
-                    guild_user = result.scalar_one_or_none()
-                    
-                    # Allow if role is Admin (3) or Owner (4)
-                    is_guild_admin_or_owner = guild_user and guild_user.role_id >= 3 
-                    if not is_guild_admin_or_owner:
-                        self.logger.warning(f"Permission denied: User {current_user.id} (Role ID: {getattr(guild_user, 'role_id', 'N/A')}) attempted to activate template for guild {guild_id}.")
-                        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to activate templates for this guild.")
-            # --- End Permission Check ---
-            
-            self.logger.info(f"User {current_user.id} attempting to activate template {activate_data.template_id} for guild {guild_id}")
-            
             # --- Call Service Layer --- 
-            success = await self.template_service.activate_template(
-                guild_id=guild_id,
-                template_id=activate_data.template_id
-                # user_id=current_user.id # Service method doesn't currently need user_id
+            # Service layer is expected to raise TemplateNotFound or PermissionDenied on failure
+            await self.template_service.activate_template(
+                db=db, 
+                template_id=template_id, 
+                requesting_user=current_user 
             )
             
-            if not success:
-                # Service layer handles logging specifics (not found, error etc.)
-                # Determine appropriate status code based on potential failure reasons
-                # If service returns False because config or template not found, 404 is reasonable.
-                # If service returns False due to other error, 500 might be better.
-                # Let's assume 404 for now if config/template missing. Controller could check template existence first?
-                # For simplicity, let's return 400 Bad Request, implying issue with request (e.g., bad template ID or guild config issue)
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to activate template. Ensure guild and template exist.")
-            
-            self.logger.info(f"Successfully activated template {activate_data.template_id} for guild {guild_id}")
-            return {"message": "Template activated successfully"} # Return success message
-            
-        except HTTPException as http_exc:
-            raise http_exc
+            # --- Return Success Response --- 
+            self.logger.info(f"Template ID {template_id} activated successfully by user {current_user.id}.")
+            # Return a simple success message, status code 200 is set by decorator
+            return {"message": "Template activated successfully."}
+
+        # --- Map Domain Exceptions to HTTP Exceptions (as per convention) ---
+        except TemplateNotFound as e:
+            self.logger.warning(f"Activation failed: Template ID {template_id} not found.")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        except PermissionDenied as e:
+            self.logger.warning(f"Activation failed for template ID {template_id}: User {current_user.id} lacks permissions. Details: {str(e)}")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
         except Exception as e:
-            self.logger.error(f"Error activating template {activate_data.template_id} for guild {guild_id}: {e}", exc_info=True)
-            return self.handle_exception(e) # Use base handler
+            # Log unexpected errors and let the global handler return a 500
+            self.logger.error(f"Unexpected error activating template ID {template_id}: {e}", exc_info=True)
+            # Reraise the original exception for the global handler to catch and format
+            # raise e # Or explicitly raise a 500 if preferred
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An internal error occurred during template activation.")
 
     # --- Method Definition for Structure Update --- 
     async def update_guild_template_structure(

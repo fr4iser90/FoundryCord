@@ -20,7 +20,7 @@ function formatDataForJsTree(templateData) {
     treeData.push({
         id: `template_${templateData.id || 'root'}`,
         parent: '#', // # denotes the root
-        text: templateData.template_name || 'Guild Structure',
+        text: 'Guild Structure', // Use a static label for the root
         icon: 'fas fa-server', // Example icon
         type: 'template' // Custom type for styling/behavior
     });

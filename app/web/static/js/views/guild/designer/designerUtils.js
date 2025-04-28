@@ -118,11 +118,39 @@ export function formatStructureForApi(templateId) {
                 const nodeId = node.id;
                 // Only include category and channel nodes in the payload
                 if (nodeId && (nodeId.startsWith('category_') || nodeId.startsWith('channel_'))) {
-                    nodesPayload.push({
+                    // Extract name: jsTree text often includes position, clean it up
+                    const name = node.text.replace(/\s*\(Pos: \d+\)$/, '').trim();
+                    
+                    let channelType = null;
+                    if (nodeId.startsWith('channel_')) {
+                        // Attempt to get type from icon or stored data
+                        const iconClass = node.icon;
+                        if (iconClass && iconClass.includes('fa-hashtag')) {
+                            channelType = 'text';
+                        } else if (iconClass && iconClass.includes('fa-volume-up')) {
+                            channelType = 'voice';
+                        } else if (node.data?.channelType) {
+                            // Fallback to stored data if icon check fails
+                            channelType = node.data.channelType;
+                        } else {
+                            channelType = 'text'; // Default if type cannot be determined
+                            console.warn(`[DesignerUtils] Could not determine channel type for ${nodeId}. Defaulting to 'text'.`);
+                        }
+                    }
+
+                    const payloadNode = {
                         id: nodeId,
                         parent_id: node.parent === '#' ? `template_${templateId || 'root'}` : node.parent, // Map '#' root to template ID
-                        position: index       // Position is the index among siblings
-                    });
+                        position: index,      // Position is the index among siblings
+                        name: name            // Add extracted name
+                    };
+                    
+                    // Add channel_type only for channel nodes
+                    if (channelType) {
+                         payloadNode.channel_type = channelType;
+                    }
+
+                    nodesPayload.push(payloadNode);
                 }
                 // Recursively process children regardless of parent type
                 if (node.children && node.children.length > 0) {

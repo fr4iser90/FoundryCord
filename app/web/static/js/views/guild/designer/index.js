@@ -22,6 +22,7 @@ import { initializeStructureTree } from './widget/structureTree.js'; // Still ne
 import { initializeShareModal } from './modal/shareModal.js';
 import { initializeSaveAsNewModal } from './modal/saveAsNewModal.js';
 import { initializeDeleteModal } from './modal/deleteModal.js';
+import { initializeActivateConfirmModal } from './modal/activateConfirmModal.js';
 
 // --- Main Execution --- 
 
@@ -53,6 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             initialTemplateData = await fetchGuildTemplate(guildId);
             state.setCurrentTemplateData(initialTemplateData); // Store in state
+            state.setCurrentTemplateIsActive(initialTemplateData?.is_active ?? false); 
             console.log("[Index] Initial template data fetched and stored in state.");
         } catch (error) {
             console.error("[Index] Failed to fetch initial template data. Stopping initialization.", error);
@@ -148,6 +150,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeShareModal();
         initializeSaveAsNewModal();
         initializeDeleteModal();
+        initializeActivateConfirmModal();
         console.log("[Index] Modals initialized.");
         
         // 7. Initialize Core Designer Event Listeners (Save button, custom events, etc.)

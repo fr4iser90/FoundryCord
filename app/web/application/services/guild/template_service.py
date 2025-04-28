@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, and_, or_, update, delete
 
 from app.shared.infrastructure.database.session.context import session_context
 from app.shared.interface.logging.api import get_web_logger
@@ -26,6 +26,8 @@ from app.web.interfaces.api.rest.v1.schemas.guild_template_schemas import GuildS
 from app.shared.infrastructure.repositories.auth.user_repository_impl import UserRepositoryImpl
 from app.shared.infrastructure.models.auth import AppUserEntity
 # -----------------------------------
+# Import Exceptions
+from app.shared.domain.exceptions import TemplateNotFound, PermissionDenied, InvalidOperation, DomainException
 
 logger = get_web_logger()
 
@@ -714,41 +716,97 @@ class GuildTemplateService:
             # Consider specific exception types if repo raises them (e.g., IntegrityError)
             return False
 
-    async def activate_template(self, guild_id: str, template_id: int) -> bool:
-        """Sets the specified template as the 'active' template for the given guild."""
-        logger.info(f"Attempting to set template {template_id} as active for guild {guild_id}")
+    async def activate_template(
+        self, 
+        db: AsyncSession, # Use the session passed from controller
+        template_id: int, 
+        requesting_user: AppUserEntity
+    ) -> None: # Return None on success, raise exception on failure
+        """
+        Activates a specific template for its associated guild.
+        Ensures only one template is active per guild by deactivating others.
+        Performs permission checks.
+        """
+        logger.info(f"Attempting to activate template ID {template_id} by user {requesting_user.id}")
+
+        # Use the provided session directly, no need for session_context here
+        template_repo = GuildTemplateRepositoryImpl(db)
+
+        # 1. Fetch the template to activate
+        template_to_activate: Optional[GuildTemplateEntity] = await template_repo.get_by_id(template_id)
+
+        if not template_to_activate:
+            logger.warning(f"Activate failed: Template ID {template_id} not found.")
+            # Raise specific exception for controller to catch
+            raise TemplateNotFound(template_id=template_id) 
+
+        logger.debug(f"Found template '{template_to_activate.template_name}' (ID: {template_id}) for activation.")
+
+        # 2. Permission Check
+        # TODO: Implement more robust permission check involving guild roles.
+        # Current logic only allows the template creator or a global bot owner.
+        # Need to fetch DiscordGuildUserEntity for the requesting_user and associated_guild_id
+        # and check if their role_id is >= Admin (e.g., 3) or Owner (e.g., 4).
+        is_creator = template_to_activate.creator_user_id == requesting_user.id
+        is_bot_owner = requesting_user.is_owner
+        is_guild_admin_or_owner = False # Placeholder - Needs implementation
+
+        # Check if user meets *any* of the allowed criteria (creator, bot owner, OR future guild admin/owner)
+        if not (is_creator or is_bot_owner or is_guild_admin_or_owner):
+            logger.warning(f"Permission denied: User {requesting_user.id} (BotOwner: {is_bot_owner}, Creator: {is_creator}, GuildRole: N/A) tried to activate template {template_id} created by {template_to_activate.creator_user_id}.")
+            raise PermissionDenied(
+                user_id=requesting_user.id, 
+                action=f"activate template {template_id}",
+                # Update message once guild role check is added
+                message=f"Only the template creator or a bot owner can activate this template (Guild admin check pending)."
+            )
+        
+        logger.debug(f"Permission granted for user {requesting_user.id} to activate template {template_id}.")
+
+        # 3. Check if already active
+        if template_to_activate.is_active:
+            logger.info(f"Template ID {template_id} is already active. No action needed.")
+            # Optional: Raise InvalidOperation or just return successfully
+            # raise InvalidOperation(f"Template {template_id} is already active.")
+            return # Consider this a success/no-op
+
+        # 4. Get the associated guild ID
+        associated_guild_id = template_to_activate.associated_guild_id
+        if not associated_guild_id:
+             # This should ideally not happen if templates are always linked to a guild
+             logger.error(f"Critical error: Template ID {template_id} has no associated_guild_id. Cannot activate.")
+             raise InvalidOperation(f"Template {template_id} is not associated with any guild and cannot be activated.")
+
+        # 5. Deactivate other active templates for the SAME guild
+        logger.info(f"Deactivating other active templates for guild {associated_guild_id} (if any).")
+        deactivate_stmt = (
+            update(GuildTemplateEntity)
+            .where(
+                GuildTemplateEntity.associated_guild_id == associated_guild_id,
+                GuildTemplateEntity.is_active == True,
+                GuildTemplateEntity.id != template_id # Exclude the one we are activating
+            )
+            .values(is_active=False)
+            .execution_options(synchronize_session="fetch") # Recommended for UPDATE/DELETE
+        )
+        await db.execute(deactivate_stmt)
+        # No need to check result count, just ensure any others are deactivated.
+
+        # 6. Activate the target template
+        logger.info(f"Activating template ID {template_id} for guild {associated_guild_id}.")
+        template_to_activate.is_active = True
+        db.add(template_to_activate) # Add to session for update tracking
+
+        # 7. Commit changes
         try:
-            async with session_context() as session:
-                # 1. Find the Guild Configuration
-                # Need GuildConfigRepository or query directly
-                from app.shared.infrastructure.models.discord.entities import GuildConfigEntity
-                config_stmt = select(GuildConfigEntity).where(GuildConfigEntity.guild_id == guild_id)
-                config_result = await session.execute(config_stmt)
-                guild_config: Optional[GuildConfigEntity] = config_result.scalar_one_or_none()
-
-                if not guild_config:
-                    logger.warning(f"No GuildConfigEntity found for guild {guild_id}. Cannot activate template.")
-                    # Optionally create a default config here? For now, fail.
-                    return False
-                
-                # 2. Check if the target template actually exists (optional but good practice)
-                template_repo = GuildTemplateRepositoryImpl(session)
-                target_template = await template_repo.get_by_id(template_id)
-                if not target_template:
-                    logger.warning(f"Target template ID {template_id} does not exist. Cannot activate.")
-                    return False
-
-                # 3. Update the active_template_id
-                guild_config.active_template_id = template_id
-                session.add(guild_config) # Mark as dirty
-                await session.flush() # Ensure update is reflected before commit
-
-                logger.info(f"Successfully set template {template_id} as active for guild {guild_id}")
-                return True
-
-        except Exception as e:
-            logger.error(f"Error activating template {template_id} for guild {guild_id}: {e}", exc_info=True)
-            return False
+            await db.commit()
+            await db.refresh(template_to_activate) # Refresh to get latest state if needed elsewhere
+            logger.info(f"Successfully committed activation for template ID {template_id}.")
+        except Exception as commit_exc:
+            logger.error(f"Database error committing activation for template {template_id}: {commit_exc}", exc_info=True)
+            await db.rollback() # Rollback on commit error
+            # Raise a generic exception or a specific DB error wrapper
+            raise DomainException(f"Failed to save activation status for template {template_id} due to a database error.")
 
     # --- NEW: Placeholder for permission check --- 
     async def check_user_can_edit_template(self, db: AsyncSession, user_id: int, template_id: int) -> bool:
@@ -788,143 +846,174 @@ class GuildTemplateService:
             logger.error(f"Error checking edit permission for user {user_id} on template {template_id}: {e}", exc_info=True)
             return False # Deny permission on error
 
-    # --- NEW: Method to update template structure --- 
+    # --- RESTORED: Method to update template structure (Original Version) --- 
     async def update_template_structure(
         self, 
         db: AsyncSession, 
         template_id: int, 
-        structure_payload: GuildStructureUpdatePayload
+        structure_payload: GuildStructureUpdatePayload,
+        requesting_user: AppUserEntity # Added user for permission check
     ) -> GuildTemplateEntity: # Return the updated template entity
-        """Updates the positions and parent categories of channels and categories within a template."""
-        logger.info(f"Attempting to update structure for template ID: {template_id}")
+        """
+        Updates the structure (positions, parentage) of categories and channels
+        for a given template based on the payload received from the frontend designer.
+        Handles updates to existing items and deletion of items removed in the designer.
+        NOTE: Does not currently handle adding *new* items via this method.
+        """
+        logger.info(f"Attempting structure update for template ID: {template_id} by user {requesting_user.id}")
 
-        # 1. Fetch existing template and its items (categories, channels)
         template_repo = GuildTemplateRepositoryImpl(db)
-        template = await template_repo.get_by_id_with_structure(template_id)
+        category_repo = GuildTemplateCategoryRepositoryImpl(db) # Use passed session
+        channel_repo = GuildTemplateChannelRepositoryImpl(db)   # Use passed session
+
+        # --- 1. Permission Check (This is redundant if controller checks, but safe) ---
+        template = await template_repo.get_by_id(template_id)
         if not template:
             logger.error(f"Update failed: Template {template_id} not found.")
-            raise ValueError(f"Template with ID {template_id} not found.")
+            raise TemplateNotFound(template_id=template_id)
 
-        logger.debug(f"Found template {template_id} with {len(template.categories)} categories and {len(template.channels)} channels.")
+        is_creator = template.creator_user_id == requesting_user.id
+        is_bot_owner = requesting_user.is_owner
+        if not is_creator and not is_bot_owner:
+             logger.warning(f"Permission denied for user {requesting_user.id} to update structure of template {template_id}")
+             raise PermissionDenied(user_id=requesting_user.id, action=f"update structure for template {template_id}")
 
-        # 2. Create lookup maps for efficient updates
-        category_map = {cat.id: cat for cat in template.categories}
-        channel_map = {chan.id: chan for chan in template.channels}
+        logger.debug(f"Permission granted for user {requesting_user.id} to update template {template_id}.")
 
-        # 3. Process the payload nodes
-        updated_items = []
+        # --- 2. Fetch Existing Structure from DB ---
+        existing_categories = await category_repo.get_by_template_id(template_id)
+        existing_channels = await channel_repo.get_by_template_id(template_id)
+
+        existing_cats_by_dbid = {cat.id: cat for cat in existing_categories}
+        existing_chans_by_dbid = {chan.id: chan for chan in existing_channels}
+        
+        existing_cat_dbids = set(existing_cats_by_dbid.keys())
+        existing_chan_dbids = set(existing_chans_by_dbid.keys())
+
+        logger.debug(f"Template {template_id}: Found {len(existing_cat_dbids)} existing categories, {len(existing_chan_dbids)} existing channels.")
+
+        # --- 3. Process Incoming Payload ---
+        incoming_cat_dbids = set()
+        incoming_chan_dbids = set()
+        incoming_nodes_data = {} # Map DB ID -> { id_str, parent_id_str, position }
+
         for node_data in structure_payload.nodes:
             node_id_str = node_data.id
-            parent_id_str = node_data.parent_id
-            new_position = node_data.position
-
-            logger.debug(f"Processing node: {node_id_str}, Parent: {parent_id_str}, Position: {new_position}")
-
-            item_type = None
             item_db_id = None
+            item_type = None
 
-            # Parse node ID
             if node_id_str.startswith("category_"):
                 item_type = "category"
-                try:
-                    item_db_id = int(node_id_str.split("_")[1])
-                except (IndexError, ValueError):
-                    logger.warning(f"Skipping node: Invalid category ID format '{node_id_str}'")
-                    continue
+                try: item_db_id = int(node_id_str.split("_")[1])
+                except (IndexError, ValueError): continue # Skip invalid ID
+                if item_db_id in existing_cat_dbids: # Only process known items
+                     incoming_cat_dbids.add(item_db_id)
+                     incoming_nodes_data[item_db_id] = node_data
+                else:
+                     logger.warning(f"Incoming node {node_id_str} does not match an existing category in template {template_id}. Ignoring.")
+
             elif node_id_str.startswith("channel_"):
                 item_type = "channel"
-                try:
-                    item_db_id = int(node_id_str.split("_")[1])
-                except (IndexError, ValueError):
-                    logger.warning(f"Skipping node: Invalid channel ID format '{node_id_str}'")
-                    continue
-            elif node_id_str.startswith("template_"):
-                logger.debug(f"Skipping template root node: {node_id_str}")
-                continue # Skip the root template node itself
-            else:
-                logger.warning(f"Skipping node: Unrecognized ID prefix '{node_id_str}'")
-                continue
-
-            # Find the corresponding DB item
-            db_item = None
-            if item_type == "category":
-                db_item = category_map.get(item_db_id)
-            elif item_type == "channel":
-                db_item = channel_map.get(item_db_id)
-
-            if not db_item:
-                logger.warning(f"Skipping node: DB item not found for {item_type} ID {item_db_id} (Node: {node_id_str})")
-                continue
-
-            # --- Update Position --- 
-            if db_item.position != new_position:
-                logger.debug(f"Updating position for {item_type} {item_db_id} from {db_item.position} to {new_position}")
-                db_item.position = new_position
-                updated_items.append(db_item)
-
-            # --- Update Parent (only for channels) --- 
-            if item_type == "channel":
-                new_parent_db_id = None
-                if parent_id_str and parent_id_str.startswith("category_"):
-                    try:
-                        new_parent_db_id = int(parent_id_str.split("_")[1])
-                        # Verify the parent category exists in this template
-                        if new_parent_db_id not in category_map:
-                            logger.warning(f"Channel {item_db_id} parent category ID {new_parent_db_id} (from '{parent_id_str}') not found in template. Setting parent to None.")
-                            new_parent_db_id = None
-                    except (IndexError, ValueError):
-                        logger.warning(f"Invalid parent category ID format '{parent_id_str}' for channel {item_db_id}. Setting parent to None.")
-                        new_parent_db_id = None
-                elif parent_id_str and parent_id_str.startswith("template_"):
-                    # Channel is directly under the template (uncategorized)
-                    new_parent_db_id = None
+                try: item_db_id = int(node_id_str.split("_")[1])
+                except (IndexError, ValueError): continue # Skip invalid ID
+                if item_db_id in existing_chan_dbids: # Only process known items
+                    incoming_chan_dbids.add(item_db_id)
+                    incoming_nodes_data[item_db_id] = node_data
                 else:
-                    # Invalid or unexpected parent, treat as uncategorized
-                    if parent_id_str:
-                         logger.warning(f"Unexpected parent ID '{parent_id_str}' for channel {item_db_id}. Setting parent to None.")
-                    new_parent_db_id = None
-                
-                # Check if parent actually changed
-                if db_item.parent_category_template_id != new_parent_db_id:
-                    logger.debug(f"Updating parent for channel {item_db_id} from {db_item.parent_category_template_id} to {new_parent_db_id}")
-                    db_item.parent_category_template_id = new_parent_db_id
-                    if db_item not in updated_items:
-                        updated_items.append(db_item)
+                    logger.warning(f"Incoming node {node_id_str} does not match an existing channel in template {template_id}. Ignoring.")
+        
+        logger.debug(f"Template {template_id}: Processing {len(incoming_cat_dbids)} incoming categories, {len(incoming_chan_dbids)} incoming channels.")
 
-            # TODO: Add logic to update name/topic if included in payload and different
+        # --- 4. Identify Changes ---
+        cats_to_delete_ids = existing_cat_dbids - incoming_cat_dbids
+        chans_to_delete_ids = existing_chan_dbids - incoming_chan_dbids
+        
+        items_to_update = [] # Collect DB entities that need updating
 
-        # 4. Add updated items to session and commit
-        if updated_items:
+        # --- 5. Process Updates ---
+        # Update existing categories
+        for cat_dbid in incoming_cat_dbids:
+            category = existing_cats_by_dbid[cat_dbid]
+            node_data = incoming_nodes_data[cat_dbid]
+            if category.position != node_data.position:
+                logger.debug(f"Updating category {cat_dbid} position from {category.position} to {node_data.position}")
+                category.position = node_data.position
+                items_to_update.append(category)
+
+        # Update existing channels
+        for chan_dbid in incoming_chan_dbids:
+            channel = existing_chans_by_dbid[chan_dbid]
+            node_data = incoming_nodes_data[chan_dbid]
+            needs_update = False
+
+            # Check position
+            if channel.position != node_data.position:
+                logger.debug(f"Updating channel {chan_dbid} position from {channel.position} to {node_data.position}")
+                channel.position = node_data.position
+                needs_update = True
+
+            # Check parent
+            new_parent_db_id: Optional[int] = None
+            parent_id_str = node_data.parent_id
+            if parent_id_str and parent_id_str.startswith("category_"):
+                try:
+                    potential_parent_dbid = int(parent_id_str.split("_")[1])
+                    # IMPORTANT: Check if the potential parent *still exists* in the incoming structure
+                    if potential_parent_dbid in incoming_cat_dbids:
+                         new_parent_db_id = potential_parent_dbid
+                    else:
+                         logger.warning(f"Channel {chan_dbid} requested parent {parent_id_str} which is being deleted or wasn't found. Setting parent to NULL.")
+                except (IndexError, ValueError):
+                    logger.warning(f"Channel {chan_dbid} has invalid parent ID format {parent_id_str}. Setting parent to NULL.")
+            # If parent_id_str starts with template_ or is '#', new_parent_db_id remains None (correct)
+
+            if channel.parent_category_template_id != new_parent_db_id:
+                logger.debug(f"Updating channel {chan_dbid} parent from {channel.parent_category_template_id} to {new_parent_db_id}")
+                channel.parent_category_template_id = new_parent_db_id
+                needs_update = True
+
+            if needs_update and channel not in items_to_update:
+                items_to_update.append(channel)
+
+        # --- 6. Perform Deletions ---
+        if cats_to_delete_ids:
+             logger.info(f"Deleting {len(cats_to_delete_ids)} categories from template {template_id}: {cats_to_delete_ids}")
+             # Assuming cascading delete handles permissions, otherwise delete them first
+             delete_cat_stmt = delete(GuildTemplateCategoryEntity).where(GuildTemplateCategoryEntity.id.in_(cats_to_delete_ids))
+             await db.execute(delete_cat_stmt)
+
+        if chans_to_delete_ids:
+             logger.info(f"Deleting {len(chans_to_delete_ids)} channels from template {template_id}: {chans_to_delete_ids}")
+             # Assuming cascading delete handles permissions, otherwise delete them first
+             delete_chan_stmt = delete(GuildTemplateChannelEntity).where(GuildTemplateChannelEntity.id.in_(chans_to_delete_ids))
+             await db.execute(delete_chan_stmt)
+
+        # --- 7. Commit Changes ---
+        if items_to_update or cats_to_delete_ids or chans_to_delete_ids:
             try:
-                logger.info(f"Updating {len(updated_items)} items in template {template_id}")
-                db.add_all(updated_items)
+                if items_to_update:
+                     logger.info(f"Committing updates for {len(items_to_update)} items in template {template_id}")
+                     db.add_all(items_to_update) # Add updated items if needed (SQLAlchemy might track automatically)
+                
                 await db.commit()
                 logger.info(f"Successfully committed structure updates for template {template_id}")
-                # Refresh the template object to reflect changes (optional but good practice)
-                await db.refresh(template)
             except Exception as e:
                 logger.error(f"Database error committing structure updates for template {template_id}: {e}", exc_info=True)
                 await db.rollback()
-                raise # Re-raise the DB error
+                raise DomainException(f"Failed to save structure updates due to database error.") from e
         else:
             logger.info(f"No structure changes detected for template {template_id}. Nothing to commit.")
 
-        # 5. Return the updated template entity
+        # --- 8. Return Updated Template ---
+        # Re-fetch or refresh the template to ensure the caller gets the latest state
+        # Refreshing the existing object might be sufficient if relationships were loaded
+        try:
+             await db.refresh(template, attribute_names=['categories', 'channels'])
+        except Exception as refresh_err:
+             # If refresh fails, log it but still return the template object we have
+             logger.warning(f"Failed to refresh template object after update, returning potentially stale data: {refresh_err}")
+             
         return template
-
-    # Ensure the GuildTemplateRepositoryImpl has a method like get_by_id_with_structure
-    # that eagerly loads categories and channels, e.g.:
-    # async def get_by_id_with_structure(self, template_id: int) -> Optional[GuildTemplateEntity]:
-    #     stmt = (
-    #         select(GuildTemplateEntity)
-    #         .where(GuildTemplateEntity.id == template_id)
-    #         .options(
-    #             selectinload(GuildTemplateEntity.categories),
-    #             selectinload(GuildTemplateEntity.channels)
-    #         )
-    #     )
-    #     result = await self.session.execute(stmt)
-    #     return result.scalar_one_or_none()
 
     # --- NEW Method to Create Template from Structure --- 
     async def create_template_from_structure(
@@ -973,15 +1062,15 @@ class GuildTemplateService:
         # First pass: Create Categories
         for node_data in payload.structure.nodes:
             if node_data.id.startswith("category_"):
-                # TODO: Extract real name/permissions from payload if available
+                category_name = node_data.name if node_data.name else f"Category {node_data.id}" # Use name from payload or fallback
+                logger.debug(f"Preparing category: ID={node_data.id}, Name='{category_name}', Pos={node_data.position}")
                 new_category = GuildTemplateCategoryEntity(
                     guild_template_id=new_template.id,
-                    category_name=f"Category {node_data.id}", # Placeholder name - needs frontend support
+                    category_name=category_name,
                     position=node_data.position
                 )
                 created_categories_map[node_data.id] = new_category # Store entity before flush
                 nodes_to_create.append(new_category)
-                logger.debug(f"Prepared category: {node_data.id}, Pos: {node_data.position}")
 
         # Add all categories first
         if nodes_to_create:
@@ -1010,6 +1099,8 @@ class GuildTemplateService:
                     else:
                         logger.warning(f"Channel {node_data.id} refers to parent {node_data.parent_id} which was not found/created. Setting parent to NULL.")
                 
+                channel_name = node_data.name if node_data.name else f"Channel {node_data.id}" # Use name from payload or fallback
+                channel_type = node_data.channel_type if node_data.channel_type else "text" # Use type from payload or fallback
                 # TODO: Extract real name/type/topic/permissions from payload if available
                 new_channel = GuildTemplateChannelEntity(
                     guild_template_id=new_template.id,

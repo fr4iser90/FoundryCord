@@ -1,45 +1,28 @@
 import { apiRequest, showToast, ApiError } from '/static/js/components/common/notifications.js';
 
-/**
- * Fetches and displays the list of SAVED GUILD STRUCTURE templates for the current context
- * (including the initial snapshot and user-saved templates).
- * @param {HTMLElement} contentElement - The container element for the widget content.
- * @param {string} currentGuildId - The current guild ID (needed for context).
- * @param {string|null} activeTemplateId - The ID of the currently active template (or null).
- */
-export async function initializeTemplateList(contentElement, currentGuildId, activeTemplateId) {
-    if (!contentElement) {
-        // console.warn("[GuildTemplateListWidget] Content element not provided.");
-        return;
-    }
+// Internal flag to prevent multiple listeners if initialized multiple times (simple safeguard)
+let isActivationListenerAdded = false; 
+
+// --- Internal Helper: Renders the template list ---
+async function _renderTemplateList(contentElement, currentGuildId, activeTemplateId) {
+    if (!contentElement) return;
     if (!currentGuildId) {
-        console.warn("[GuildTemplateListWidget] Current Guild ID not provided, cannot load templates.");
         contentElement.innerHTML = '<p class="panel-placeholder">Guild context not available.</p>';
         return;
     }
 
-    console.log("[GuildTemplateListWidget] Initializing saved templates list...");
+    console.log(`[GuildTemplateListWidget] Rendering template list. Active ID: ${activeTemplateId}`);
     contentElement.innerHTML = '<p class="panel-placeholder">Loading saved guild structure templates...</p>';
 
-    // API ENDPOINT fetches initial snapshot for the context guild + user-saved templates
     const listApiUrl = `/api/v1/templates/guilds/?context_guild_id=${encodeURIComponent(currentGuildId)}`; 
 
     try {
-        // Fetch the list of templates
         const response = await apiRequest(listApiUrl); 
-        
-        // Expect response format: { templates: [ { template_id: ..., template_name: ..., is_initial_snapshot: boolean (optional) }, ... ] }
         const templates = response?.templates; 
 
         if (!Array.isArray(templates)) {
-            // Handle case where response might be null or not have templates array
-            if (response === null || response === undefined) {
-                 // console.warn("[GuildTemplateListWidget] No response received from template list API.");
-                 contentElement.innerHTML = '<p class="text-danger p-3">Error loading templates: Invalid data format.</p>';
-            } else {
-                console.error("[GuildTemplateListWidget] Invalid data received from API (expected array in response.templates):", response);
-                contentElement.innerHTML = '<p class="text-danger p-3">Error loading templates: Invalid data format.</p>';
-            }
+            console.error("[GuildTemplateListWidget] Invalid data received from API:", response);
+            contentElement.innerHTML = '<p class="text-danger p-3">Error loading templates: Invalid data format.</p>';
             return;
         }
 
@@ -49,52 +32,46 @@ export async function initializeTemplateList(contentElement, currentGuildId, act
         }
         
         const fragment = document.createDocumentFragment();
-
-        // Convert activeTemplateId to number for comparison, handle null/undefined
-        const currentActiveId = activeTemplateId ? parseInt(activeTemplateId, 10) : null;
+        const currentActiveIdStr = activeTemplateId != null ? String(activeTemplateId) : null; // Ensure string for comparison
 
         templates.forEach(template => {
-            const templateId = template.template_id; // Assuming this is a number from API
+            const templateId = template.template_id;
             const templateName = template.template_name || 'Unnamed Template';
             
-            if (templateId === undefined || templateId === null) {
-                // console.warn('[GuildTemplateListWidget] Template object missing template_id:', template);
-                return;
-            }
+            if (templateId === undefined || templateId === null) return;
             
-            // --- Check if this is the initial snapshot (assuming API provides a flag) --- 
-            const isInitialSnapshot = template.is_initial_snapshot === true; // Example check
-
-            // --- Create elements using DOM --- 
+            const isInitialSnapshot = template.is_initial_snapshot === true;
+            const isActive = currentActiveIdStr != null && String(templateId) === currentActiveIdStr;
+             
+            // --- Create list item elements ---
             const listItem = document.createElement('div');
             listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
 
+            // Load Link
             const link = document.createElement('a');
             link.href = '#';
             link.className = 'text-decoration-none text-body flex-grow-1 me-2 template-load-link';
             link.dataset.templateId = templateId;
             link.addEventListener('click', (event) => {
                 event.preventDefault();
-                handleTemplateLoad(templateId);
+                handleTemplateLoad(templateId); 
             });
-
             const iconElement = document.createElement('i');
-            // TODO: Consider making icon dynamic based on template type (initial, user, shared) if needed
-            iconElement.className = 'template-icon fas fa-server me-2'; // Default icon
+            iconElement.className = 'template-icon fas fa-server me-2'; 
             link.appendChild(iconElement);
-
             const nameSpan = document.createElement('span');
             nameSpan.className = 'template-name';
             nameSpan.textContent = templateName;
             link.appendChild(nameSpan);
-
+             if (isActive) {
+                 nameSpan.insertAdjacentHTML('beforeend', ' <span class="badge bg-success ms-1">Active</span>');
+             }
             listItem.appendChild(link);
 
-            // --- Action Buttons Group --- 
+            // Action Buttons Group
             const buttonGroup = document.createElement('div');
             buttonGroup.className = 'btn-group btn-group-sm';
             buttonGroup.setAttribute('role', 'group');
-            buttonGroup.setAttribute('aria-label', 'Template Actions');
 
             // Share Button
             const shareButton = document.createElement('button');
@@ -106,8 +83,6 @@ export async function initializeTemplateList(contentElement, currentGuildId, act
             const shareIcon = document.createElement('i');
             shareIcon.className = 'fas fa-share-alt';
             shareButton.appendChild(shareIcon);
-            // TODO: Disable share button for initial snapshot?
-            // shareButton.disabled = isInitialSnapshot;
             shareButton.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -115,33 +90,34 @@ export async function initializeTemplateList(contentElement, currentGuildId, act
             });
             buttonGroup.appendChild(shareButton);
 
-            // Activate Button
+
+            // Activate Button (MODIFIED LOGIC)
             const activateButton = document.createElement('button');
             activateButton.type = 'button';
-            activateButton.className = 'btn btn-outline-success btn-activate-template'; // New class
-            activateButton.title = `Set template '${templateName}' as active for this guild`;
+            activateButton.className = 'btn btn-outline-success btn-activate-template'; 
             activateButton.dataset.templateId = templateId;
             activateButton.dataset.templateName = templateName;
             const activateIcon = document.createElement('i');
-            // Determine if this template is the currently active one
-            // Use == for type coercion (String vs Number) from dataset/API
-            const isActive = (currentActiveId != null && String(templateId) == String(currentActiveId)); 
-            console.debug(`[GuildTemplateListWidget] Checking active status for Template ID: ${templateId} (Type: ${typeof templateId}), Current Active ID: ${currentActiveId} (Type: ${typeof currentActiveId}), IsActive: ${isActive}`);
-
+            
             if (isActive) {
                 activateButton.disabled = true;
                 activateButton.title = `Template '${templateName}' is already active`;
                 activateButton.classList.remove('btn-outline-success');
-                activateButton.classList.add('btn-success', 'active'); // Make it look pressed/active
-                activateIcon.className = 'fas fa-star'; // Change icon to star or similar
-                nameSpan.insertAdjacentHTML('beforeend', ' <span class="badge bg-success ms-1">Active</span>'); // Add badge
+                activateButton.classList.add('btn-success', 'active'); 
+                activateIcon.className = 'fas fa-star'; // Use star when active
             } else {
-                activateIcon.className = 'fas fa-check-circle'; // Default checkmark icon
-                activateButton.addEventListener('click', (event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    handleTemplateActivate(templateId, templateName, currentGuildId, listContentElement, currentActiveId);
-                });
+                 activateButton.title = `Activate template '${templateName}' for this guild`;
+                 activateIcon.className = 'fas fa-check-circle'; // Use checkmark when inactive
+                 // ---> MODIFIED: Dispatch event instead of calling API directly
+                 activateButton.addEventListener('click', (event) => {
+                     event.preventDefault();
+                     event.stopPropagation();
+                     // Dispatch event to request activation modal
+                     console.log(`[TemplateList] Dispatching requestActivateTemplate for ID: ${templateId}`);
+                     document.dispatchEvent(new CustomEvent('requestActivateTemplate', {
+                          detail: { templateId: templateId, templateName: templateName }
+                     }));
+                 });
             }
             activateButton.appendChild(activateIcon);
             buttonGroup.appendChild(activateButton);
@@ -154,38 +130,27 @@ export async function initializeTemplateList(contentElement, currentGuildId, act
             deleteButton.dataset.templateId = templateId;
             deleteButton.dataset.templateName = templateName;
             const deleteIcon = document.createElement('i');
-            deleteIcon.className = 'fas fa-trash-alt text-danger'; // Style icon red
+            deleteIcon.className = 'fas fa-trash-alt text-danger';
             deleteButton.appendChild(deleteIcon);
-            
-            // --- Disable delete for initial snapshot --- 
             if (isInitialSnapshot) {
                 deleteButton.disabled = true;
                 deleteButton.title = 'Cannot delete the initial guild snapshot.';
-                deleteButton.classList.add('disabled'); // Optional: visual cue
+                deleteButton.classList.add('disabled');
             } else {
-                // Add event listener for non-snapshot templates
                 deleteButton.addEventListener('click', (event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    // Dispatch event to request modal opening
                     console.log(`[TemplateList] Dispatching requestDeleteTemplate for ID: ${templateId}`);
                     document.dispatchEvent(new CustomEvent('requestDeleteTemplate', {
-                         detail: {
-                            templateId: templateId,
-                            templateName: templateName,
-                            listType: 'saved'
-                         }
+                         detail: { templateId: templateId, templateName: templateName, listType: 'saved' }
                     }));
                 });
             }
-            // -------------------------------------------
-            
             buttonGroup.appendChild(deleteButton);
             // --- End Action Buttons ---
 
             listItem.appendChild(buttonGroup);
             fragment.appendChild(listItem);
-            // --- End DOM Creation ---
         });
 
         contentElement.innerHTML = ''; 
@@ -195,141 +160,97 @@ export async function initializeTemplateList(contentElement, currentGuildId, act
         contentElement.appendChild(listGroup);
 
     } catch (error) {
-        console.error("[GuildTemplateListWidget] Error fetching guild structure templates:", error);
-        contentElement.innerHTML = `<p class="text-danger p-3">Error loading templates: ${error.message}</p>`;
+        console.error("[GuildTemplateListWidget] Error rendering guild structure templates:", error);
+        contentElement.innerHTML = `<p class="text-danger p-3">Error rendering templates: ${error.message}</p>`;
     }
 }
 
-/**
- * Handles loading a selected SAVED or INITIAL GUILD STRUCTURE template.
- * @param {string} templateId - The ID of the template to load.
- */
-async function handleTemplateLoad(templateId) {
-    console.log(`[GuildTemplateListWidget] Load GUILD STRUCTURE template selected: ${templateId}`);
-
-    const apiUrl = `/api/v1/templates/guilds/${templateId}`;
-    try {
-        const templateData = await apiRequest(apiUrl); // GET request by default
-
-        // CORRECTED CHECK: Simply check if data exists. 
-        // The actual structure is within categories/channels, checked by the consumer.
-        if (!templateData) { 
-            console.error("[GuildTemplateListWidget] Received null or invalid data for template", templateId, templateData);
-            showToast('error', `Failed to load data for template ${templateId}.`); // Adjusted message
-            return;
-        }
-
-        // Dispatch event for index.js/designerEvents.js to handle the update
-        document.dispatchEvent(new CustomEvent('loadTemplateData', {
-            detail: { templateData: templateData } // Send the whole response object
-        }));
-
-        showToast('success', `Template "${templateData.template_name || templateId}" loaded successfully!`);
-
-    } catch (error) {
-        console.error(`[GuildTemplateListWidget] Error loading template ${templateId} details:`, error);
-        // apiRequest should have shown an error toast
-    }
-}
 
 /**
- * Handles sharing a specific SAVED GUILD STRUCTURE template.
- * @param {number} templateId - The ID of the template to share.
- * @param {string} templateName - The name of the template.
+ * Initializes the SAVED GUILD STRUCTURE templates list widget.
+ * Fetches initial data and sets up listener for activation events.
+ * @param {HTMLElement} contentElement - The container element for the widget content.
+ * @param {string} currentGuildId - The current guild ID.
+ * @param {string|null} initialActiveTemplateId - The ID of the template active on initial load.
  */
-function handleTemplateShare(templateId, templateName) {
-    // console.log(`[GuildTemplateListWidget] Share requested for template ID: ${templateId}, Name: ${templateName}`);
-
-    // Get the modal element
-    const shareModalElement = document.getElementById('shareTemplateModal');
-    if (!shareModalElement) {
-        console.error("[GuildTemplateListWidget] Share modal element (#shareTemplateModal) not found in the DOM.");
-        showToast('error', 'Could not open the share dialog.');
-        return;
-    }
-
-    // Get the Bootstrap modal instance
-    // Ensure Bootstrap's Modal class is available (likely loaded globally via base template)
-    const bootstrapModal = bootstrap.Modal.getInstance(shareModalElement) || new bootstrap.Modal(shareModalElement);
-
-    // Populate the modal fields
-    const templateIdInput = shareModalElement.querySelector('#shareTemplateIdInput');
-    const templateNameInput = shareModalElement.querySelector('#shareTemplateNameInput');
-    const templateDescriptionInput = shareModalElement.querySelector('#shareTemplateDescriptionInput');
-
-    if (templateIdInput) {
-        templateIdInput.value = templateId;
-    } else {
-        console.warn("[GuildTemplateListWidget] Share modal is missing the template ID input.");
-    }
+export async function initializeTemplateList(contentElement, currentGuildId, initialActiveTemplateId) {
+    console.log("[GuildTemplateListWidget] Initializing...");
     
-    if (templateNameInput) {
-        templateNameInput.value = templateName; // Pre-fill with the original name
-    } else {
-        console.warn("[GuildTemplateListWidget] Share modal is missing the template name input.");
-    }
+    // Initial render
+    await _renderTemplateList(contentElement, currentGuildId, initialActiveTemplateId);
 
-    if (templateDescriptionInput) {
-        templateDescriptionInput.value = ''; // Clear description on open
-    } else {
-        console.warn("[GuildTemplateListWidget] Share modal is missing the template description input.");
+    // Add listener for activation events *only once*
+    if (!isActivationListenerAdded) {
+        document.addEventListener('templateActivated', (event) => {
+            console.log("[GuildTemplateListWidget] Detected 'templateActivated' event. Refreshing list.");
+            const activatedTemplateId = event.detail?.activatedTemplateId;
+            // Re-render the list with the new active ID
+             _renderTemplateList(contentElement, currentGuildId, activatedTemplateId); 
+        });
+        isActivationListenerAdded = true;
+        console.log("[GuildTemplateListWidget] 'templateActivated' listener added.");
     }
-
-    // Show the modal
-    bootstrapModal.show();
 }
 
-/**
- * Handles activating a specific template for the current guild.
- * @param {number} templateId - The ID of the template to activate.
- * @param {string} templateName - The name of the template (for confirmation).
- * @param {string} guildId - The ID of the current guild.
- * @param {HTMLElement} listContentElement - The element containing the list to refresh.
- * @param {string|null} initialActiveId - The active ID when the list was loaded.
- */
-async function handleTemplateActivate(templateId, templateName, guildId, listContentElement, initialActiveId) {
-    console.log(`[GuildTemplateListWidget] Activate requested for template ID: ${templateId}, Name: ${templateName}, Guild: ${guildId}`);
+// --- Event Handlers for actions WITHIN the list ---
 
-    if (!guildId) {
-        console.error("[GuildTemplateListWidget] Cannot activate template: Guild ID is missing.");
-        showToast('error', 'Cannot activate template: Guild context missing.');
+// Handles clicking on a template name to load it into the designer
+async function handleTemplateLoad(templateId) {
+    if (templateId === undefined || templateId === null) {
+        console.error("[TemplateList] Load clicked but template ID is missing.");
+        showToast('error', 'Cannot load template: ID missing.');
         return;
     }
-
-    // Confirmation dialog
-    if (!confirm(`Are you sure you want to set "${templateName}" as the active template for this guild?\n(This won't apply changes immediately, but marks it for future application).`)) {
-        console.log("[GuildTemplateListWidget] Activation cancelled by user.");
-        return;
-    }
-
-    const activateApiUrl = `/api/v1/guilds/${guildId}/template/activate`;
-    const payload = { template_id: templateId };
-
-    console.log(`[GuildTemplateListWidget] Sending POST request to: ${activateApiUrl} with payload:`, payload);
+    console.log(`[TemplateList] Requesting load for template ID: ${templateId}`);
+    // TODO: Show loading indicator?
+    
+    // API endpoint to fetch FULL structure data for a specific template
+    const detailApiUrl = `/api/v1/templates/guilds/${templateId}`;
 
     try {
-        await apiRequest(activateApiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
+        showToast('info', `Loading template (ID: ${templateId})...`);
+        const templateData = await apiRequest(detailApiUrl); // Expects full template object
         
-        showToast('success', `Template "${templateName}" is now set as active.`);
-        console.log(`[GuildTemplateListWidget] Successfully activated template ${templateId} for guild ${guildId}.`);
-        
-        // Refresh the list to show the updated active state
-        if (listContentElement) {
-            // Pass the NEWLY activated template ID for the refresh
-            initializeTemplateList(listContentElement, guildId, String(templateId)); 
-        } else {
-            console.warn("[GuildTemplateListWidget] Could not refresh list after activation: content element missing.");
+        if (!templateData || typeof templateData !== 'object') {
+             throw new Error("Invalid data received for template details.");
         }
 
+        console.log(`[TemplateList] Template data fetched for ID ${templateId}. Dispatching 'loadTemplateData' event.`);
+        
+        // Dispatch event for the main designer listener
+        document.dispatchEvent(new CustomEvent('loadTemplateData', { 
+            detail: { templateData: templateData } 
+        }));
+        
+        showToast('success', `Template '${templateData.template_name || 'Unnamed'}' loaded.`);
+
     } catch (error) {
-        // apiRequest handles basic toast, but log details here
-        console.error(`[GuildTemplateListWidget] Error activating template ID ${templateId} for guild ${guildId}:`, error);
-        // Optionally provide more specific feedback if needed based on error type/status
+        console.error(`[TemplateList] Error fetching template details for ID ${templateId}:`, error);
+        showToast('error', `Failed to load template: ${error.message}`);
     }
 }
+
+// Handles clicking the Share button for a template
+function handleTemplateShare(templateId, templateName) {
+     if (templateId === undefined || templateId === null || !templateName) {
+        console.error("[TemplateList] Share clicked but template ID or Name is missing.");
+        showToast('error', 'Cannot share template: Details missing.');
+        return;
+    }
+    console.log(`[TemplateList] Requesting share for template: ${templateName} (ID: ${templateId})`);
+    
+    // Dispatch event to open the share modal (assuming modal logic handles API call)
+    document.dispatchEvent(new CustomEvent('requestShareTemplate', { 
+        detail: { templateId: templateId, templateName: templateName } 
+    }));
+}
+
+// DEPRECATED: Handles clicking the Activate button (Now dispatches event)
+/*
+async function handleTemplateActivate(templateId, templateName, guildId, listContentElement, initialActiveId) {
+    // ... (Previous logic making API call directly) ...
+} 
+*/
+
+// --- Initial log ---
+console.log("[GuildTemplateListWidget] Module loaded.");

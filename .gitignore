@@ -55,8 +55,8 @@ logs/
 *~
 *.old
 *.orig
-
-
+old.py
+OLD.py
 
 # OS specific
 .DS_Store

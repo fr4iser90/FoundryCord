@@ -104,6 +104,8 @@ class GuildStructureNodeUpdate(BaseModel):
     id: str = Field(..., description="Node ID from jsTree (e.g., 'category_123', 'channel_456')")
     parent_id: Optional[str] = Field(None, description="Parent Node ID from jsTree (e.g., 'category_123', 'template_root') or None for root-level items")
     position: int = Field(..., ge=0, description="New 0-based index position among siblings")
+    name: Optional[str] = Field(None, description="Display name extracted from the node")
+    channel_type: Optional[str] = Field(None, description="Type of channel (e.g., 'text', 'voice'), only for channel nodes")
 
 class GuildStructureUpdatePayload(BaseModel):
     nodes: List[GuildStructureNodeUpdate] = Field(..., description="List of all nodes representing the desired structure")

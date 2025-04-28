@@ -35,6 +35,9 @@
     <button id="save-structure-btn" class="btn btn-sm btn-primary me-2" title="Save Changes to this Template Structure" disabled>
         <i class="bi bi-save-fill"></i> <span class="d-none d-md-inline">Save Structure</span>
     </button>
+    <button id="activate-template-btn" class="btn btn-sm btn-success me-2" title="Set this template as the active one for the guild" disabled>
+        <i class="bi bi-check-circle-fill"></i> <span class="d-none d-md-inline">Activate</span>
+    </button>
     {# TODO: Add Apply to Discord Button later #}
 
     {# Gridstack Controls #}
@@ -84,6 +87,7 @@
     {% include "views/guild/designer/share_modal.html" %}
     {% include "views/guild/designer/save_as_new_modal.html" %}
     {% include "views/guild/designer/delete_modal.html" %} 
+    {% include "views/guild/designer/activate_confirm_modal.html" %}
 {% endblock %}
 
 

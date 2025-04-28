@@ -12,20 +12,21 @@
     *   [x] **Trigger Save:** Implemented `handleSaveStructureClick` in `designerEvents.js` (PUT).
     *   [x] **Save As New Modal:** Implemented (`saveAsNewModal.js`, `save_as_new_modal.html`).
     *   [x] **Handle Save As New:** Implemented listener for `saveAsNewConfirmed` in `designerEvents.js` (POST).
-*   [ ] **Implement Frontend Logic for Toolbar "Activate" Button:**
-    *   **Target File:** `designerEvents.js` (listener setup), `index.js`/`designerState.js` (state/button updates).
-    *   **UI:** Add/uncomment "Activate" button in `index.html` toolbar.
-    *   **Listener:** Add listener in `initializeDesignerEventListeners` (`designerEvents.js`) calling `handleToolbarActivateClick`.
-    *   **Handler:** Implement `handleToolbarActivateClick` to call `POST /api/v1/templates/guilds/{template_id}/activate`, update state, update toolbar buttons via `updateButtonStates`, dispatch `templateActivated` event.
-    *   **Consideration:** Add confirmation modal.
-*   [ ] **Update Core State/Loading Logic for Activation:**
-    *   **Target File:** `index.js` (or refactored core module), `designerState.js`.
-    *   **Loading:** Update `loadTemplateStructure` (or equivalent) to fetch `is_active` status and store in `state`.
-    *   **State:** Ensure `designerState.js` tracks `currentTemplateIsActive`.
-    *   **Button States:** Update `updateButtonStates` to manage the *toolbar* button's state based on `currentTemplateIsActive`.
-*   [ ] **Ensure `templateList.js` Updates on Activation:**
-    *   **Target File:** `templateList.js`.
-    *   **Listener:** Add listener for `templateActivated` event to re-initialize the list with the correct active indicator.
+*   [x] **Implement Frontend Logic for Toolbar "Activate" Button:**
+    *   [x] **Target File:** `designerEvents.js` (listener setup), `index.js`/`designerState.js` (state/button updates).
+    *   [x] **UI:** Add/uncomment "Activate" button in `index.html` toolbar.
+    *   [x] **Listener:** Add listener in `initializeDesignerEventListeners` (`designerEvents.js`) calling `handleToolbarActivateClick`.
+    *   [x] **Handler:** Implement `handleToolbarActivateClick` to call `POST /api/v1/templates/guilds/{template_id}/activate`, update state, update toolbar buttons via `updateButtonStates`, dispatch `templateActivated` event.
+    *   [x] **Consideration:** Add confirmation modal (`activateConfirmModal.js`, `activate_confirm_modal.html`).
+*   [x] **Update Core State/Loading Logic for Activation:**
+    *   [x] **Target File:** `index.js`, `designerState.js`, `designerEvents.js`.
+    *   [x] **Loading:** Update `fetchGuildTemplate` (`index.js`) and `handleTemplateDataLoad` (`designerEvents.js`) to fetch/use `is_active` status and store in `state`.
+    *   [x] **State:** Ensure `designerState.js` tracks `currentTemplateIsActive`.
+    *   [x] **Button States:** Implement `updateToolbarButtonStates` in `designerEvents.js` to manage toolbar buttons based on `isDirty` and `currentTemplateIsActive`.
+*   [x] **Ensure `templateList.js` Updates on Activation:**
+    *   [x] **Target File:** `templateList.js`.
+    *   [x] **Listener:** Add listener for `templateActivated` event to re-initialize the list with the correct active indicator (via `_renderTemplateList`).
+    *   [x] **Refactor:** Activate button in list now dispatches `requestActivateTemplate`, handled by `designerEvents.js`.
 *   [x] **Create Backend Save API Endpoints:**
     *   [x] **API Route (PUT):** Defined `PUT /api/v1/templates/guilds/{template_id}/structure`.
     *   [x] **API Route (POST):** Defined `POST /api/v1/templates/guilds/from_structure`.
@@ -33,10 +34,10 @@
     *   [x] **Service Logic (PUT):** Implemented `update_template_structure`.
     *   [x] **Service Logic (POST):** Implemented `create_template_from_structure`.
     *   [x] **Database Interaction:** Ensured services use session correctly.
-*   [ ] **Create Backend Activate API Endpoint:**
-    *   [ ] **API Route (POST):** Define `POST /api/v1/templates/guilds/{template_id}/activate` in `guild_template_controller.py`.
-    *   [ ] **Service Logic:** Implement `activate_template` in `template_service.py` to set `is_active` flag (ensure only one per guild).
-    *   [ ] **Permissions:** Ensure only owner or GUILD ADMIN can activate.
+*   [x] **Create Backend Activate API Endpoint:**
+    *   [x] **API Route (POST):** Define `POST /api/v1/templates/guilds/{template_id}/activate` in `guild_template_controller.py`.
+    *   [x] **Service Logic:** Implement `activate_template` in `template_service.py` to set `is_active` flag (ensure only one per guild).
+    *   [x] **Permissions:** Ensure only owner or GUILD ADMIN can activate (Basic check implemented, comments added for future enhancement).
 
 ### Phase 2: Applying Template to Discord
 

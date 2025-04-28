@@ -3,19 +3,63 @@ import { getGuildIdFromUrl, formatStructureForApi } from './designerUtils.js';
 import { apiRequest, showToast, ApiError } from '/static/js/components/common/notifications.js';
 import { openSaveAsNewModal } from './modal/saveAsNewModal.js';
 import { openDeleteModal } from './modal/deleteModal.js'; // Import delete modal opener
+import { openActivateConfirmModal } from './modal/activateConfirmModal.js'; // Import activation modal opener
 // Import widget initializers needed for refresh
 import { initializeTemplateList } from './widget/templateList.js'; 
 import { initializeStructureTree } from './widget/structureTree.js';
 import { populateGuildDesignerWidgets } from './designerWidgets.js'; // Needed for loadTemplateData
+import { openShareModal } from './modal/shareModal.js'; // Add import for share modal opener
 
 // --- Function to update save button state --- 
-// This function needs access to the state's dirty flag reference
+// DEPRECATED: Logic moved to updateToolbarButtonStates
+/*
 function updateSaveButtonState() {
     const saveButton = document.getElementById('save-structure-btn');
     if (saveButton) {
         // Access dirty state via the state module
         saveButton.disabled = !state.isDirty(); 
     } 
+}
+*/
+
+// --- Function to update toolbar button states ---
+function updateToolbarButtonStates() {
+    const saveButton = document.getElementById('save-structure-btn');
+    const activateButton = document.getElementById('activate-template-btn');
+    
+    const isDirty = state.isDirty();
+    const isActive = state.isCurrentTemplateActive();
+
+    // Debugging log
+    console.log(`[DesignerEvents] Updating button states: isDirty=${isDirty}, isCurrentTemplateActive=${isActive}`);
+
+    if (saveButton) {
+        saveButton.disabled = !isDirty;
+        // console.log(`[DesignerEvents] Save button disabled: ${saveButton.disabled}`);
+    } else {
+        console.warn("[DesignerEvents] Save button not found during state update.");
+    }
+
+    if (activateButton) {
+        // Disable activate button if:
+        // 1. There are unsaved changes (isDirty is true)
+        // 2. The currently loaded template is already the active one (isActive is true)
+        activateButton.disabled = isDirty || isActive; 
+        
+        // Optional: Change appearance if active (e.g., text or icon)
+        if (isActive) {
+             // Example: Modify text/icon if already active
+             // activateButton.innerHTML = `<i class="bi bi-check-all"></i> <span class="d-none d-md-inline">Active</span>`;
+             activateButton.title = "This template is already active for the guild.";
+        } else {
+             // Restore default appearance if not active
+             // activateButton.innerHTML = `<i class="bi bi-check-circle-fill"></i> <span class="d-none d-md-inline">Activate</span>`;
+             activateButton.title = "Set this template as the active one for the guild";
+        }
+        // console.log(`[DesignerEvents] Activate button disabled: ${activateButton.disabled}`);
+    } else {
+        console.warn("[DesignerEvents] Activate button not found during state update.");
+    }
 }
 
 // --- Event Handler Functions --- 
@@ -24,7 +68,8 @@ function updateSaveButtonState() {
 function handleStructureSaved(event) {
     console.log("[DesignerEvents] Handling 'structureSaved' event:", event.detail);
     state.setDirty(false); // Use state setter
-    updateSaveButtonState();
+    // ---> UPDATED: Use new function
+    updateToolbarButtonStates();
     
     // Optionally refresh the template list if a new template was created
     if (event.detail?.isNew && event.detail?.newTemplateId) {
@@ -36,6 +81,10 @@ function handleStructureSaved(event) {
              initializeTemplateList(templateListContentEl, guildId, String(event.detail.newTemplateId)); 
              // Update the active state globally as well
              state.setActiveTemplateId(String(event.detail.newTemplateId));
+             // Since a new template was created, it cannot be the active one
+             state.setCurrentTemplateIsActive(false); 
+             // Update buttons again after setting active state
+             updateToolbarButtonStates(); 
         } else {
              console.warn("[DesignerEvents] Could not find template list or guildId to refresh after save.");
         }
@@ -155,8 +204,30 @@ async function handleSaveStructureClick() {
         }
     } finally {
          saveButton.innerHTML = `<i class="bi bi-save-fill"></i> <span class="d-none d-md-inline">Save Structure</span>`;
-         updateSaveButtonState(); // Update based on potentially changed dirty state
+         // ---> UPDATED: Use new function
+         updateToolbarButtonStates(); 
     }
+}
+
+// NEW: Handles the Toolbar "Activate" button click
+function handleToolbarActivateClick() {
+    console.log("[DesignerEvents] Activate button clicked.");
+    const templateData = state.getCurrentTemplateData();
+    const templateId = templateData?.template_id;
+    const templateName = templateData?.template_name || 'Unnamed Template'; // Provide a fallback name
+
+    if (templateId === undefined || templateId === null) {
+        console.error("[DesignerEvents] Cannot activate: Current template ID is unknown.");
+        showToast('error', 'Cannot determine which template to activate.');
+        return;
+    }
+    
+    // Check if the template is already active (we might need to fetch/store this info first)
+    // For now, let's assume we always show the confirmation. We'll add the check later.
+    // TODO: Fetch/store active status and potentially disable button if already active.
+
+    console.log(`[DesignerEvents] Requesting activation confirmation for: ${templateName} (ID: ${templateId})`);
+    openActivateConfirmModal(templateId, templateName); 
 }
 
 // Handles the event when template data is loaded (e.g., from list click)
@@ -166,15 +237,24 @@ function handleTemplateDataLoad(event) {
         const templateData = event.detail.templateData;
         showToast('info', `Loading structure from template: ${templateData.template_name || 'Unnamed Template'}`);
         
-        state.setCurrentTemplateData(templateData); // Update state
-        state.setActiveTemplateId(templateData.template_id); // Update active ID state
+        // Update state with the newly loaded template data
+        state.setCurrentTemplateData(templateData);
+        // Update active status based on loaded data
+        state.setCurrentTemplateIsActive(templateData?.is_active ?? false);
+        // Set the global active template ID (might be different from the currently loaded one)
+        // ---> Note: Should we use state.getActiveTemplateId() here for consistency? 
+        // If the template loaded IS the active one, its ID should match the global active ID.
+        // For now, assuming templateData.template_id represents the ID of the template being loaded.
+        state.setActiveTemplateId(templateData.template_id); 
         
         // Re-populate widgets and tree - Use functions from designerWidgets and structureTree directly
         populateGuildDesignerWidgets(templateData);
         initializeStructureTree(templateData);
 
-        state.setDirty(false); // Reset dirty flag
-        updateSaveButtonState(); 
+        // Reset dirty flag and update buttons
+        state.setDirty(false);
+        // ---> UPDATED: Use new function
+        updateToolbarButtonStates(); 
 
     } else {
         console.error("[DesignerEvents] 'loadTemplateData' event received without valid data.");
@@ -186,7 +266,8 @@ function handleTemplateDataLoad(event) {
 function handleStructureChange(event) {
     console.log("[DesignerEvents] Handling 'structureChanged' event:", event.detail);
     state.setDirty(true); // Set dirty flag via state module
-    updateSaveButtonState();
+    // ---> UPDATED: Use new function
+    updateToolbarButtonStates();
 }
 
 // --- NEW: Handler for delete request --- 
@@ -199,6 +280,140 @@ function handleRequestDeleteTemplate(event) {
         console.error("[DesignerEvents] 'requestDeleteTemplate' event missing necessary detail data.");
         showToast('error', 'Could not initiate delete process.');
     }
+}
+
+// NEW: Handler for activation request (e.g., from list widget)
+function handleRequestActivateTemplate(event) {
+    console.log("[DesignerEvents] Handling 'requestActivateTemplate' event:", event.detail);
+    const { templateId, templateName } = event.detail;
+
+    if (templateId === undefined || templateId === null || !templateName) {
+        console.error("[DesignerEvents] 'requestActivateTemplate' event missing necessary detail data.");
+        showToast('error', 'Could not initiate activation process: Details missing.');
+        return;
+    }
+
+    // Open the same confirmation modal used by the toolbar button
+    openActivateConfirmModal(templateId, templateName);
+}
+
+// --- NEW: Handler for confirmed delete ---
+async function handleTemplateDeleteConfirmed(event) {
+    console.log("[DesignerEvents] Handling 'deleteConfirmed' event:", event.detail);
+    const { templateId, listType } = event.detail;
+
+    if (templateId === undefined || templateId === null || !listType) {
+        console.error("[DesignerEvents] 'deleteConfirmed' event missing necessary data.");
+        showToast('error', 'Delete confirmation failed: Missing ID or list type.');
+        return;
+    }
+
+    const apiUrl = `/api/v1/templates/guilds/${templateId}`;
+    showToast('info', `Attempting to delete template ID: ${templateId}...`);
+
+    try {
+        await apiRequest(apiUrl, { method: 'DELETE' });
+        showToast('success', `Template (ID: ${templateId}) deleted successfully!`);
+
+        // Determine which list widget to refresh
+        let listContentEl = null;
+        let initializer = null;
+        const guildId = getGuildIdFromUrl();
+
+        if (listType === 'saved') {
+            listContentEl = document.getElementById('widget-content-template-list');
+            initializer = initializeTemplateList;
+        } else if (listType === 'shared') {
+            // listContentEl = document.getElementById('widget-content-shared-template-list');
+            // initializer = initializeSharedTemplateList; // Assuming this exists
+            console.warn("[DesignerEvents] Shared template list refresh not implemented yet after delete.");
+            // TODO: Implement shared template list refresh if needed
+        }
+
+        if (listContentEl && initializer && guildId) {
+            console.log(`[DesignerEvents] Refreshing ${listType} template list after deletion.`);
+            // Re-initialize the specific list widget
+            initializer(listContentEl, guildId); 
+        } else if (guildId) {
+            console.warn(`[DesignerEvents] Could not find elements or initializer to refresh ${listType} list.`);
+        } else {
+            console.warn("[DesignerEvents] Could not find guildId to refresh list after delete.");
+        }
+
+    } catch (error) {
+        console.error(`[DesignerEvents] Error deleting template (ID: ${templateId}):`, error);
+        // apiRequest handles showing the toast
+    }
+}
+
+// NEW: Handles the confirmation from the Activate modal
+async function handleActivateConfirmed(event) {
+    console.log("[DesignerEvents] Handling 'activateConfirmed' event:", event.detail);
+    const { templateId } = event.detail;
+
+    if (templateId === undefined || templateId === null) {
+        console.error("[DesignerEvents] 'activateConfirmed' event missing templateId.");
+        showToast('error', 'Activation failed: Template ID was missing.');
+        return;
+    }
+
+    const apiUrl = `/api/v1/templates/guilds/${templateId}/activate`;
+    const activateButton = document.getElementById('activate-template-btn'); // Need button for loading state
+    const originalButtonText = activateButton ? activateButton.innerHTML : ''; // Store original content
+
+    if (activateButton) {
+        activateButton.disabled = true;
+        activateButton.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Activating...`;
+    }
+    showToast('info', `Activating template ID: ${templateId}...`);
+
+    try {
+        const response = await apiRequest(apiUrl, { method: 'POST' }); // No body needed
+        
+        console.log('[DesignerEvents] Template activated successfully via POST:', response);
+        showToast('success', `Template (ID: ${templateId}) activated successfully!`);
+
+        // Update state: Mark current template as active and update global active ID
+        state.setCurrentTemplateIsActive(true);
+        state.setActiveTemplateId(templateId); // Update the guild-wide active ID
+        // Ensure dirty flag is false (activation implies saved state)
+        state.setDirty(false); 
+
+        // ---> UPDATED: Update buttons after successful activation
+        updateToolbarButtonStates();
+
+        // Dispatch 'templateActivated' event (as per TODO)
+        document.dispatchEvent(new CustomEvent('templateActivated', { 
+            detail: { activatedTemplateId: templateId } 
+        }));
+        console.log("[DesignerEvents] Dispatched 'templateActivated' event.");
+
+    } catch (error) {
+        console.error(`[DesignerEvents] Error activating template (ID: ${templateId}) via POST:`, error);
+        // apiRequest already shows toast on error
+    } finally {
+        // Restore button appearance (loading spinner removed)
+        if (activateButton) {
+            activateButton.innerHTML = originalButtonText; 
+        }
+        // ---> UPDATED: Always update button states in finally block
+        updateToolbarButtonStates();
+        console.log("[DesignerEvents] Button states updated in finally block after activation attempt.");
+    }
+}
+
+// NEW: Handler for share request (from list widget)
+function handleRequestShareTemplate(event) {
+    console.log("[DesignerEvents] Handling 'requestShareTemplate' event:", event.detail);
+    const { templateId, templateName } = event.detail;
+
+    if (templateId === undefined || templateId === null || !templateName) {
+        console.error("[DesignerEvents] 'requestShareTemplate' event missing necessary detail data.");
+        showToast('error', 'Could not initiate share process: Details missing.');
+        return;
+    }
+    // Open the share modal
+    openShareModal(templateId, templateName);
 }
 
 // --- Event Listener Setup Functions --- 
@@ -227,44 +442,48 @@ function setupPanelToggles() {
 
 // Export one main function to set up all listeners
 export function initializeDesignerEventListeners() {
-    console.log("[DesignerEvents] Initializing all event listeners...");
-    
-    setupPanelToggles();
-    
-    // Listen for template loading requests (e.g., from template lists)
-    document.addEventListener('loadTemplateData', handleTemplateDataLoad);
-    console.log("[DesignerEvents] 'loadTemplateData' listener active.");
+    console.log("[DesignerEvents] Initializing designer event listeners...");
 
-    // Listen for structure changes from the tree widget
-    document.addEventListener('structureChanged', handleStructureChange);
-    console.log("[DesignerEvents] 'structureChanged' listener active.");
-
-    // Listen for successful save events (from PUT or POST)
-    document.addEventListener('structureSaved', handleStructureSaved);
-    console.log("[DesignerEvents] 'structureSaved' listener active.");
-
-    // Listen for confirmation from the Save As New modal
-    document.addEventListener('saveAsNewConfirmed', handleSaveAsNewConfirmed);
-    console.log("[DesignerEvents] 'saveAsNewConfirmed' listener active.");
-
-    // --- Add listener for delete requests ---
-    document.addEventListener('requestDeleteTemplate', handleRequestDeleteTemplate);
-    console.log("[DesignerEvents] 'requestDeleteTemplate' listener active.");
-    // ---------------------------------------
-
-    // Add listener for the main Save button
     const saveButton = document.getElementById('save-structure-btn');
-    if (saveButton) {
-        saveButton.addEventListener('click', handleSaveStructureClick);
-        console.log("[DesignerEvents] Save button click listener active.");
-    } else {
-        console.warn("[DesignerEvents] Main save button (#save-structure-btn) not found.");
-    }
+    saveButton?.addEventListener('click', handleSaveStructureClick);
 
-    // Initial update for save button state based on initial dirty state
-    updateSaveButtonState(); 
+    const activateButton = document.getElementById('activate-template-btn');
+    activateButton?.addEventListener('click', handleToolbarActivateClick);
 
-    console.log("[DesignerEvents] All event listeners initialized.");
+    // Listener for the 'Save As New' confirmation event (fired by the modal)
+    document.addEventListener('saveAsNewConfirmed', handleSaveAsNewConfirmed);
+
+    // Listener for when template data is loaded (e.g., from template list click)
+    document.addEventListener('loadTemplateData', handleTemplateDataLoad);
+
+    // Listener for when the structure tree reports changes
+    document.addEventListener('structureChanged', handleStructureChange);
+
+    // Listener for delete requests (fired by list widgets)
+    document.addEventListener('requestDeleteTemplate', handleRequestDeleteTemplate);
+
+    // Listener for confirmed deletion (fired by delete modal)
+    document.addEventListener('deleteConfirmed', handleTemplateDeleteConfirmed);
+
+    // Listener for structure saved (fired by PUT/POST handlers)
+    document.addEventListener('structureSaved', handleStructureSaved);
+
+    // Listener for activation confirmation (fired by activate confirm modal)
+    document.addEventListener('activateConfirmed', handleActivateConfirmed);
+
+    // ---> ADDED: Listener for activation requests (fired by list widget)
+    document.addEventListener('requestActivateTemplate', handleRequestActivateTemplate);
+
+    // ---> ADDED: Listener for share requests (fired by list widget)
+    document.addEventListener('requestShareTemplate', handleRequestShareTemplate);
+
+    // Setup panel toggles (if they exist)
+    setupPanelToggles(); 
+
+    // Initial button state update
+    updateToolbarButtonStates();
+
+    console.log("[DesignerEvents] Designer event listeners initialized.");
 }
 
 // Initial log to confirm loading
