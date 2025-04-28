@@ -62,28 +62,7 @@ The web interface will be available at `http://localhost:8080`
 
 ## Project Structure
 
-<details>
-<summary>Click to expand</summary>
 
-```plaintext
-├── app/                    # Main application directory
-│   ├── bot/               # Discord bot implementation
-│   ├── postgres/          # Database related files
-│   ├── tracker/           # IP tracking service
-│   └── web/              # Web interface components
-├── compose/               # Docker compose and environment files
-│   ├── docker-compose.yml
-│   ├── env.discordbot.example
-│   ├── .env.postgres.example
-│   └── init-db.sh
-├── utils/                 # Utility scripts and tools
-│   ├── python-shell.nix
-│   ├── test_server.py
-│   ├── test_server.sh
-│   └── update_local.sh
-└── SECURITY.md           # Security documentation
-```
-</details>
 
 ## Configuration
 
