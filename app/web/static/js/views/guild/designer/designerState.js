@@ -3,7 +3,6 @@
 let currentActiveTemplateId = null; // ID of the *guild's* active template
 let isStructureDirty = false;
 let currentTemplateData = null;
-let currentTemplateIsActive = false; // Is the *currently loaded* template the active one?
 
 // Using a reference object for the dirty flag allows passing it to other modules
 // where its value can be updated directly.
@@ -11,7 +10,15 @@ const dirtyFlagRef = { value: isStructureDirty };
 
 export const state = {
     getActiveTemplateId: () => currentActiveTemplateId,
-    setActiveTemplateId: (id) => { currentActiveTemplateId = id; },
+    setActiveTemplateId: (id) => {
+         // Add console log to trace calls
+         console.log(`[DesignerState DEBUG] setActiveTemplateId called with ID: ${id} (Type: ${typeof id})`); 
+         const previousId = currentActiveTemplateId;
+         currentActiveTemplateId = id; 
+         if (previousId !== currentActiveTemplateId) {
+             console.log(`[DesignerState] Active template ID updated from ${previousId} to ${currentActiveTemplateId}`);
+         }
+    },
 
     // Use the reference object for getting/setting dirty status
     isDirty: () => dirtyFlagRef.value,
@@ -29,15 +36,6 @@ export const state = {
     setCurrentTemplateData: (data) => { 
         currentTemplateData = data; 
         console.log("[DesignerState] Current template data updated.");
-    },
-
-    // New state for tracking if the loaded template is the active one
-    isCurrentTemplateActive: () => currentTemplateIsActive,
-    setCurrentTemplateIsActive: (isActive) => {
-        if (currentTemplateIsActive !== isActive) { // Only update and log if changed
-            currentTemplateIsActive = isActive;
-            console.log(`[DesignerState] Current template active status set to: ${isActive}`);
-        }
     },
 };
 

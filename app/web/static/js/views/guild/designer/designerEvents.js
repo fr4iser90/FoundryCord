@@ -28,10 +28,12 @@ function updateToolbarButtonStates() {
     const activateButton = document.getElementById('activate-template-btn');
     
     const isDirty = state.isDirty();
-    const isActive = state.isCurrentTemplateActive();
+    const currentTemplate = state.getCurrentTemplateData();
+    const globalActiveId = state.getActiveTemplateId();
+    const isActive = currentTemplate && globalActiveId !== null && String(currentTemplate.template_id) === String(globalActiveId);
 
     // Debugging log
-    console.log(`[DesignerEvents] Updating button states: isDirty=${isDirty}, isCurrentTemplateActive=${isActive}`);
+    console.log(`[DesignerEvents] Updating button states: isDirty=${isDirty}, isCurrentLoadedTemplateActive=${isActive} (CurrentID: ${currentTemplate?.template_id}, GlobalActiveID: ${globalActiveId})`);
 
     if (saveButton) {
         saveButton.disabled = !isDirty;
@@ -81,8 +83,6 @@ function handleStructureSaved(event) {
              initializeTemplateList(templateListContentEl, guildId, String(event.detail.newTemplateId)); 
              // Update the active state globally as well
              state.setActiveTemplateId(String(event.detail.newTemplateId));
-             // Since a new template was created, it cannot be the active one
-             state.setCurrentTemplateIsActive(false); 
              // Update buttons again after setting active state
              updateToolbarButtonStates(); 
         } else {
@@ -239,13 +239,6 @@ function handleTemplateDataLoad(event) {
         
         // Update state with the newly loaded template data
         state.setCurrentTemplateData(templateData);
-        // Update active status based on loaded data
-        state.setCurrentTemplateIsActive(templateData?.is_active ?? false);
-        // Set the global active template ID (might be different from the currently loaded one)
-        // ---> Note: Should we use state.getActiveTemplateId() here for consistency? 
-        // If the template loaded IS the active one, its ID should match the global active ID.
-        // For now, assuming templateData.template_id represents the ID of the template being loaded.
-        state.setActiveTemplateId(templateData.template_id); 
         
         // Re-populate widgets and tree - Use functions from designerWidgets and structureTree directly
         populateGuildDesignerWidgets(templateData);
@@ -374,8 +367,7 @@ async function handleActivateConfirmed(event) {
         showToast('success', `Template (ID: ${templateId}) activated successfully!`);
 
         // Update state: Mark current template as active and update global active ID
-        state.setCurrentTemplateIsActive(true);
-        state.setActiveTemplateId(templateId); // Update the guild-wide active ID
+        state.setActiveTemplateId(String(templateId)); // Update the guild-wide active ID (Ensure string)
         // Ensure dirty flag is false (activation implies saved state)
         state.setDirty(false); 
 

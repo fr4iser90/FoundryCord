@@ -54,7 +54,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             initialTemplateData = await fetchGuildTemplate(guildId);
             state.setCurrentTemplateData(initialTemplateData); // Store in state
-            state.setCurrentTemplateIsActive(initialTemplateData?.is_active ?? false); 
             console.log("[Index] Initial template data fetched and stored in state.");
         } catch (error) {
             console.error("[Index] Failed to fetch initial template data. Stopping initialization.", error);
@@ -66,7 +65,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const activeTemplateIdFromDOM = mainContainer.dataset.activeTemplateId;
         if (activeTemplateIdFromDOM) {
             state.setActiveTemplateId(activeTemplateIdFromDOM);
-            console.log(`[Index] Found and stored active template ID from DOM: ${activeTemplateIdFromDOM}`);
+            console.log(`[Index] Found and stored active template ID from DOM: ${activeTemplateIdFromDOM} (Type: ${typeof activeTemplateIdFromDOM})`);
+            console.log(`[Index] Value in state.getActiveTemplateId() right after setting: ${state.getActiveTemplateId()}`);
         } else {
              console.warn("[Index] Active template ID not found in main container's data attribute.");
         }

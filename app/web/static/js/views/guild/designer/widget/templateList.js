@@ -41,6 +41,7 @@ async function _renderTemplateList(contentElement, currentGuildId, activeTemplat
             if (templateId === undefined || templateId === null) return;
             
             const isInitialSnapshot = template.is_initial_snapshot === true;
+            console.log(`[TemplateList Render Check] Template ID: ${templateId}, Global Active ID: ${currentActiveIdStr}`);
             const isActive = currentActiveIdStr != null && String(templateId) === currentActiveIdStr;
              
             // --- Create list item elements ---
@@ -108,15 +109,12 @@ async function _renderTemplateList(contentElement, currentGuildId, activeTemplat
             } else {
                  activateButton.title = `Activate template '${templateName}' for this guild`;
                  activateIcon.className = 'fas fa-check-circle'; // Use checkmark when inactive
-                 // ---> MODIFIED: Dispatch event instead of calling API directly
-                 activateButton.addEventListener('click', (event) => {
+                 // ---> MODIFIED: Call API directly instead of dispatching event
+                 activateButton.addEventListener('click', async (event) => { // Make listener async
                      event.preventDefault();
                      event.stopPropagation();
-                     // Dispatch event to request activation modal
-                     console.log(`[TemplateList] Dispatching requestActivateTemplate for ID: ${templateId}`);
-                     document.dispatchEvent(new CustomEvent('requestActivateTemplate', {
-                          detail: { templateId: templateId, templateName: templateName }
-                     }));
+                     // Call the direct activation function
+                     await handleTemplateActivateDirect(templateId, templateName, event.currentTarget); // Pass button for state change
                  });
             }
             activateButton.appendChild(activateIcon);
@@ -245,12 +243,48 @@ function handleTemplateShare(templateId, templateName) {
     }));
 }
 
-// DEPRECATED: Handles clicking the Activate button (Now dispatches event)
-/*
-async function handleTemplateActivate(templateId, templateName, guildId, listContentElement, initialActiveId) {
-    // ... (Previous logic making API call directly) ...
-} 
-*/
+// --- NEW: Direct activation handler ---
+async function handleTemplateActivateDirect(templateId, templateName, buttonElement) {
+    console.log(`[TemplateList] Direct activation requested for: ${templateName} (ID: ${templateId})`);
+
+    if (!templateId) {
+        showToast('error', 'Activation failed: Template ID missing.');
+        return;
+    }
+
+    const apiUrl = `/api/v1/templates/guilds/${templateId}/activate`;
+    const originalButtonHtml = buttonElement.innerHTML; // Store original content
+    const originalTitle = buttonElement.title;
+
+    buttonElement.disabled = true;
+    buttonElement.innerHTML = `<span class="spinner-border spinner-border-sm"></span>`;
+    buttonElement.title = 'Activating...';
+    showToast('info', `Activating template: ${templateName}...`);
+
+    try {
+        const response = await apiRequest(apiUrl, { method: 'POST' }); 
+        console.log('[TemplateList] Template activated successfully via POST:', response);
+        showToast('success', `Template ${templateName} (ID: ${templateId}) activated successfully!`);
+
+        // Dispatch 'templateActivated' event so list and toolbar update state
+        document.dispatchEvent(new CustomEvent('templateActivated', { 
+            detail: { activatedTemplateId: templateId } 
+        }));
+        console.log("[TemplateList] Dispatched 'templateActivated' event after direct activation.");
+
+        // Note: The list will re-render itself upon receiving the 'templateActivated' event.
+        // The button state will be correctly set during the re-render.
+
+    } catch (error) {
+        console.error(`[TemplateList] Error directly activating template (ID: ${templateId}) via POST:`, error);
+        // apiRequest already shows toast on error
+        // Restore button state on error
+        buttonElement.disabled = false;
+        buttonElement.innerHTML = originalButtonHtml;
+        buttonElement.title = originalTitle;
+    } 
+    // No finally needed, button state restored on error or handled by re-render on success
+}
 
 // --- Initial log ---
 console.log("[GuildTemplateListWidget] Module loaded.");
