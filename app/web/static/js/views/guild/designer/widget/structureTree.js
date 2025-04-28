@@ -14,9 +14,9 @@ function formatDataForJsTree(templateData) {
     if (!templateData) return [];
 
     const treeData = [];
-    const categoriesById = {};
+    const categoriesById = {}; // Keep this map needed for categorized channels
 
-    // Root node for the template
+    // 1. Root node for the template
     treeData.push({
         id: `template_${templateData.id || 'root'}`,
         parent: '#', // # denotes the root
@@ -25,15 +25,47 @@ function formatDataForJsTree(templateData) {
         type: 'template' // Custom type for styling/behavior
     });
 
-    // Process categories
+    // Process channels first to separate them
+    const uncategorizedChannels = [];
+    const categorizedChannels = [];
+    if (Array.isArray(templateData.channels)) {
+        templateData.channels.forEach(chan => {
+            if (chan && chan.id) {
+                if (chan.parent_category_template_id === null || chan.parent_category_template_id === undefined) {
+                    uncategorizedChannels.push(chan);
+                } else {
+                    categorizedChannels.push(chan);
+                }
+            }
+        });
+    }
+
+    // Sort channel groups by position
+    uncategorizedChannels.sort((a, b) => (a?.position ?? Infinity) - (b?.position ?? Infinity));
+    categorizedChannels.sort((a, b) => (a?.position ?? Infinity) - (b?.position ?? Infinity));
+
+    // 2. Add uncategorized channels to treeData (parent is root)
+    uncategorizedChannels.forEach(chan => {
+        const icon = getChannelIcon(chan.type);
+        treeData.push({
+            id: `channel_${chan.id}`,
+            parent: `template_${templateData.id || 'root'}`, // Assign to root
+            text: `${chan.channel_name || 'Unnamed Channel'} (Pos: ${chan.position})`,
+            icon: icon,
+            type: 'channel',
+            data: { type: 'channel', dbId: chan.id, channelType: chan.type }
+        });
+    });
+
+    // 3. Process and Add categories (parent is root)
     if (Array.isArray(templateData.categories)) {
-        templateData.categories.sort((a, b) => a.position - b.position);
+        templateData.categories.sort((a, b) => (a?.position ?? Infinity) - (b?.position ?? Infinity)); // Also sort categories
         templateData.categories.forEach(cat => {
             if (cat && cat.id) {
                 categoriesById[cat.id] = cat; // Store for channel lookup
                 treeData.push({
                     id: `category_${cat.id}`,
-                    parent: `template_${templateData.id || 'root'}`,
+                    parent: `template_${templateData.id || 'root'}`, // Assign to root
                     text: `${cat.category_name || 'Unnamed Category'} (Pos: ${cat.position})`,
                     icon: 'fas fa-folder', // Example icon
                     type: 'category',
@@ -43,40 +75,38 @@ function formatDataForJsTree(templateData) {
         });
     }
 
-    // Process channels
-    if (Array.isArray(templateData.channels)) {
-        templateData.channels.sort((a, b) => a.position - b.position);
-        templateData.channels.forEach(chan => {
-             if (chan && chan.id) {
-                const iconElement = document.createElement('i');
-                let icon = 'fas fa-question-circle'; // Default icon
-                const rawChannelType = chan.type;
-                const channelType = rawChannelType ? rawChannelType.trim().toLowerCase() : '';
-                // --- TEMPORARY DEBUG LOG REMOVED ---
-                // console.log(`[TreeWidget Icon Check] ID=${chan.id}, Raw Type='${rawChannelType}', Processed Type='${channelType}'`);
-                // -----------------------------------
-                if (channelType === 'text') icon = 'fas fa-hashtag';
-                else if (channelType === 'voice') icon = 'fas fa-volume-up';
-                // iconElement.className = icon + ' me-2'; // Nicht mehr nötig, da wir den String übergeben
-                
-                const parentId = chan.parent_category_template_id 
-                    ? `category_${chan.parent_category_template_id}` 
-                    : `template_${templateData.id || 'root'}`; // Assign to root if no category
+    // 4. Add categorized channels to treeData (parent is category)
+    categorizedChannels.forEach(chan => {
+        // Check if parent category actually exists in the data we processed
+        if (categoriesById[chan.parent_category_template_id]) {
+             const icon = getChannelIcon(chan.type);
+             const parentId = `category_${chan.parent_category_template_id}`;
+             treeData.push({
+                 id: `channel_${chan.id}`,
+                 parent: parentId,
+                 text: `${chan.channel_name || 'Unnamed Channel'} (Pos: ${chan.position})`,
+                 icon: icon,
+                 type: 'channel',
+                 data: { type: 'channel', dbId: chan.id, channelType: chan.type }
+             });
+        } else {
+            // Log a warning if a channel references a non-existent parent category ID
+            console.warn(`[TreeWidget] Channel '${chan.channel_name}' (ID: ${chan.id}) references non-existent parent category ID: ${chan.parent_category_template_id}. Skipping.`);
+        }
+    });
 
-                treeData.push({
-                    id: `channel_${chan.id}`,
-                    parent: parentId,
-                    text: `${chan.channel_name || 'Unnamed Channel'} (Pos: ${chan.position})`,
-                    icon: icon, // <-- KORREKTUR: Gib den String mit der Klasse weiter, nicht das Element
-                    type: 'channel',
-                    data: { type: 'channel', dbId: chan.id, channelType: chan.type } // Store original data
-                });
-            }
-        });
-    }
-
-    // console.log("[TreeWidget] Formatted data for jsTree:", treeData); // AUSKOMMENTIERT
+    // Debug log for the final structure
+    // console.log("[TreeWidget] Final formatted data for jsTree:", JSON.stringify(treeData, null, 2));
     return treeData;
+}
+
+// Helper function to get icon class based on channel type
+function getChannelIcon(rawChannelType) {
+    const channelType = rawChannelType ? String(rawChannelType).trim().toLowerCase() : '';
+    if (channelType === 'text') return 'fas fa-hashtag';
+    if (channelType === 'voice') return 'fas fa-volume-up';
+    // Add other types as needed
+    return 'fas fa-question-circle'; // Default
 }
 
 /**

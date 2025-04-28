@@ -27,9 +27,14 @@ export function initializeChannelsList(templateData, contentElement, guildId) {
             const parentB = b?.parent_category_template_id;
             const catA = categoriesById[parentA];
             const catB = categoriesById[parentB];
-            const posA = parentA === null ? Infinity : (catA ? catA.position : Infinity - 1);
-            const posB = parentB === null ? Infinity : (catB ? catB.position : Infinity - 1);
+            // Assign -1 to uncategorized channels to bring them to the top
+            const posA = parentA === null ? -1 : (catA ? catA.position : Infinity); 
+            const posB = parentB === null ? -1 : (catB ? catB.position : Infinity); 
+            
+            // Sort by category position (uncategorized first)
             if (posA !== posB) return posA - posB;
+            
+            // Within the same category (or both uncategorized), sort by channel position
             const channelPosA = typeof a?.position === 'number' ? a.position : Infinity;
             const channelPosB = typeof b?.position === 'number' ? b.position : Infinity;
             return channelPosA - channelPosB;

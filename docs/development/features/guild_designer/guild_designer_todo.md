@@ -69,10 +69,49 @@
         *   [x] The modal's confirm button triggers the actual DELETE API call.
     *   [x] **Refresh List after Delete:** Ensure the template list widgets correctly refresh after a successful deletion triggered via the modal.
 
+### Phase 3: Full Designer Editing Capabilities
+
+*   [ ] **Properties Panel - Setup & Display:**
+    *   **Files:** `properties.js`, `properties.html` (widget template), `structureTree.js`, Listen-Widgets (`categoriesList.js`, `channelsList.js`).
+    *   [ ] **UI Grundstruktur:** HTML für Properties-Panel erstellen (Felder für Name, Topic, Slowmode, NSFW etc.), initial ausgeblendet/placeholder.
+    *   [ ] **Selektion:** Event (`nodeSelected`) aus Baum/Listen bei Auswahl auslösen.
+    *   [ ] **Anzeige:** `properties.js` implementieren: Auf `nodeSelected` hören, Panel mit Daten füllen, Felder je nach Typ ein-/ausblenden, Felder (noch) deaktivieren.
+*   [ ] **Properties Panel - Editing aktivieren:**
+    *   **Files:** `properties.js`, `designerState.js`, `designerEvents.js`.
+    *   [ ] **Felder aktivieren:** Input-Felder bei Auswahl aktivieren.
+    *   [ ] **Änderungen verfolgen:** Listener in `properties.js` hinzufügen: Bei Änderung -> temporäre Daten speichern (im State/Node-Data), `state.setDirty(true)`, `updateToolbarButtonStates()` aufrufen.
+    *   [ ] **State erweitern:** `designerState.js` ggf. anpassen, um "pending property changes" zu speichern.
+*   [ ] **Save Button - Properties speichern:**
+    *   **Files:** `designerUtils.js`, `template_service.py`, `guild_template_controller.py`.
+    *   [ ] **Daten formatieren (`formatStructureForApi`):** Funktion erweitern, um geänderte Properties für jeden Knoten mitzusenden.
+    *   [ ] **Backend erweitern (`update_template_structure`):** PUT-Endpunkt/Service anpassen, um Property-Updates zu empfangen und in DB zu speichern (Kategorie-/Kanal-Entitäten aktualisieren).
+    *   [ ] **State aufräumen:** Nach erfolgreichem Speichern "pending property changes" löschen.
+*   [ ] **Elemente löschen implementieren:**
+    *   **Files:** `properties.js` / `structureTree.js`, `deleteModal.js`, `designerEvents.js`, `template_service.py`, `guild_template_controller.py`, Repos.
+    *   [ ] **UI Trigger:** Löschen-Button im Properties Panel ODER Kontextmenü im Baum hinzufügen.
+    *   [ ] **Bestätigung:** Vorhandenen `deleteModal` verwenden.
+    *   [ ] **Backend API (DELETE):** Neue Endpunkte (`DELETE /.../categories/{id}`, `DELETE /.../channels/{id}`) erstellen.
+    *   [ ] **Backend Logik:** Service/Repo-Methoden zum Löschen der DB-Entitäten implementieren (inkl. Checks).
+    *   [ ] **Frontend Call:** API-Aufruf nach Modal-Bestätigung in `designerEvents.js`.
+    *   [ ] **UI Update:** Nach Erfolg: Knoten aus Baum/Listen entfernen, `state.setDirty(true)`.
+*   [ ] **Elemente hinzufügen (Toolbox):**
+    *   **Files:** `toolboxList.js`, `toolbox.html`, `structureTree.js`, `designerEvents.js`, `template_service.py`, `guild_template_controller.py`, Repos.
+    *   [ ] **Toolbox UI:** Draggable Elemente für "Neue Kategorie", "Neuer Textkanal" etc. erstellen.
+    *   [ ] **Tree Drag-and-Drop:** jsTree konfigurieren, um Drop aus Toolbox zu akzeptieren.
+    *   [ ] **Input Modal:** Modal für Namenseingabe bei neuem Element erstellen/verwenden.
+    *   [ ] **Frontend State:** Nach Eingabe: Temporären Knoten zum Baum hinzufügen, Daten in `state.pendingAdditions` speichern, `state.setDirty(true)`.
+    *   [ ] **Backend API (POST):** Neue Endpunkte (`POST /.../categories`, `POST /.../channels`) erstellen.
+    *   [ ] **Backend Logik:** Service/Repo-Methoden zum Erstellen neuer DB-Entitäten implementieren.
+    *   [ ] **Frontend Call:** Eigene POST Calls nach Modal-Bestätigung machen das Hinzufügen direkter (statt über "Save Structure").
+    *   [ ] **UI Update:** Nach Erfolg: Temporären Knoten mit echter DB-ID aktualisieren, Listen neu laden.
+*   [ ] **Widget-Synchronisation verbessern:**
+    *   **Files:** Alle Widget-JS-Dateien, `designerEvents.js`, `designerState.js`.
+    *   [ ] **Events definieren:** Klare Events für Aktionen wie `propertyUpdated`, `nodeDeleted`, `nodeAdded` definieren.
+    *   [ ] **Listener implementieren:** Alle relevanten Widgets müssen auf diese Events hören und ihre Anzeige entsprechend aktualisieren (nicht nur auf `loadTemplateData`).
 
 ## UI/UX Enhancements (Lower Priority)
 
-*   [ ] **Improve Visual Accuracy:**
+*   [x] **Improve Visual Accuracy:**
     *   **Files:** `app/web/static/js/views/guild/designer/widget/structureTree.js`, `app/web/static/js/views/guild/designer/widget/channelsList.js`.
     *   **Task:** Adjust sorting/data generation to place uncategorized channels visually at the top.
 *   [ ] **Properties Panel:**

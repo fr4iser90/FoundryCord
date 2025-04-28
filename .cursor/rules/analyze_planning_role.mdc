@@ -1,0 +1,8 @@
+---
+description: analyze_planning
+globs: 
+alwaysApply: false
+---
+ # Coding Conventions Context
+
+See: @docs/architecture/08_coding_conventions.md
