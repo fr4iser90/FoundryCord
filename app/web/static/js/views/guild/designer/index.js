@@ -21,6 +21,7 @@ import { initializeStructureTree } from './widget/structureTree.js'; // Still ne
 // --- Modal Imports ---
 import { initializeShareModal } from './modal/shareModal.js';
 import { initializeSaveAsNewModal } from './modal/saveAsNewModal.js';
+import { initializeDeleteModal } from './modal/deleteModal.js';
 
 // --- Main Execution --- 
 
@@ -146,6 +147,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log("[Index] Initializing modals...");
         initializeShareModal();
         initializeSaveAsNewModal();
+        initializeDeleteModal();
         console.log("[Index] Modals initialized.");
         
         // 7. Initialize Core Designer Event Listeners (Save button, custom events, etc.)

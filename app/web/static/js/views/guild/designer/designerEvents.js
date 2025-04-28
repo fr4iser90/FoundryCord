@@ -2,6 +2,7 @@ import { state } from './designerState.js';
 import { getGuildIdFromUrl, formatStructureForApi } from './designerUtils.js';
 import { apiRequest, showToast, ApiError } from '/static/js/components/common/notifications.js';
 import { openSaveAsNewModal } from './modal/saveAsNewModal.js';
+import { openDeleteModal } from './modal/deleteModal.js'; // Import delete modal opener
 // Import widget initializers needed for refresh
 import { initializeTemplateList } from './widget/templateList.js'; 
 import { initializeStructureTree } from './widget/structureTree.js';
@@ -188,6 +189,18 @@ function handleStructureChange(event) {
     updateSaveButtonState();
 }
 
+// --- NEW: Handler for delete request --- 
+function handleRequestDeleteTemplate(event) {
+    console.log("[DesignerEvents] Handling 'requestDeleteTemplate' event:", event.detail);
+    const { templateId, templateName, listType } = event.detail;
+    if (templateId !== undefined && templateName !== undefined && listType !== undefined) {
+        openDeleteModal(templateId, templateName, listType);
+    } else {
+        console.error("[DesignerEvents] 'requestDeleteTemplate' event missing necessary detail data.");
+        showToast('error', 'Could not initiate delete process.');
+    }
+}
+
 // --- Event Listener Setup Functions --- 
 
 function setupPanelToggles() {
@@ -233,6 +246,11 @@ export function initializeDesignerEventListeners() {
     // Listen for confirmation from the Save As New modal
     document.addEventListener('saveAsNewConfirmed', handleSaveAsNewConfirmed);
     console.log("[DesignerEvents] 'saveAsNewConfirmed' listener active.");
+
+    // --- Add listener for delete requests ---
+    document.addEventListener('requestDeleteTemplate', handleRequestDeleteTemplate);
+    console.log("[DesignerEvents] 'requestDeleteTemplate' listener active.");
+    // ---------------------------------------
 
     // Add listener for the main Save button
     const saveButton = document.getElementById('save-structure-btn');

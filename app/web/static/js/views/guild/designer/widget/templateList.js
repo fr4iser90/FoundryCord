@@ -123,12 +123,10 @@ export async function initializeTemplateList(contentElement, currentGuildId, act
             activateButton.dataset.templateId = templateId;
             activateButton.dataset.templateName = templateName;
             const activateIcon = document.createElement('i');
-            // Check if this template is the active one
-            const isActive = (currentActiveId !== null && templateId === currentActiveId);
-
-            // --- Debugging Active State --- 
-            console.log(`[TemplateList Debug] Template: ${templateName} (ID: ${templateId}, Type: ${typeof templateId}) - ActiveID: ${currentActiveId} (Type: ${typeof currentActiveId}) - IsActive: ${isActive}`);
-            // --- End Debugging ---
+            // Determine if this template is the currently active one
+            // Use == for type coercion (String vs Number) from dataset/API
+            const isActive = (currentActiveId != null && String(templateId) == String(currentActiveId)); 
+            console.debug(`[GuildTemplateListWidget] Checking active status for Template ID: ${templateId} (Type: ${typeof templateId}), Current Active ID: ${currentActiveId} (Type: ${typeof currentActiveId}), IsActive: ${isActive}`);
 
             if (isActive) {
                 activateButton.disabled = true;
@@ -165,12 +163,19 @@ export async function initializeTemplateList(contentElement, currentGuildId, act
                 deleteButton.title = 'Cannot delete the initial guild snapshot.';
                 deleteButton.classList.add('disabled'); // Optional: visual cue
             } else {
-                // Keep existing event listener for non-snapshot templates
+                // Add event listener for non-snapshot templates
                 deleteButton.addEventListener('click', (event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    // TODO: Change this to call openDeleteModal(templateId, templateName) later
-                    handleTemplateDelete(templateId, templateName, contentElement, currentGuildId);
+                    // Dispatch event to request modal opening
+                    console.log(`[TemplateList] Dispatching requestDeleteTemplate for ID: ${templateId}`);
+                    document.dispatchEvent(new CustomEvent('requestDeleteTemplate', {
+                         detail: {
+                            templateId: templateId,
+                            templateName: templateName,
+                            listType: 'saved'
+                         }
+                    }));
                 });
             }
             // -------------------------------------------
@@ -250,46 +255,6 @@ function handleTemplateShare(templateId, templateName) {
 
     // Show the modal
     bootstrapModal.show();
-}
-
-/**
- * Handles deleting a specific SAVED GUILD STRUCTURE template.
- * (Cannot delete the initial snapshot).
- * @param {number} templateId - The ID of the template to delete.
- * @param {string} templateName - The name of the template (for confirmation).
- * @param {HTMLElement} listContentElement - The element containing the list to refresh.
- * @param {string} currentGuildId - The current guild ID for list refresh context.
- */
-async function handleTemplateDelete(templateId, templateName, listContentElement, currentGuildId) {
-    // console.log(`[GuildTemplateListWidget] Delete requested for saved template ID: ${templateId}, Name: ${templateName}`);
-
-    // Confirmation dialog
-    if (!confirm(`Are you sure you want to permanently delete the template "${templateName}"?`)) {
-        // console.log("[GuildTemplateListWidget] Delete cancelled by user.");
-        return;
-    }
-
-    const deleteApiUrl = `/api/v1/templates/guilds/${templateId}`;
-    // console.log(`[GuildTemplateListWidget] Sending DELETE request to: ${deleteApiUrl}`);
-
-    try {
-        await apiRequest(deleteApiUrl, {
-            method: 'DELETE'
-        });
-        
-        showToast('success', `Template "${templateName}" deleted successfully.`);
-        // console.log(`[GuildTemplateListWidget] Successfully deleted template ${templateId}.`);
-        
-        // Refresh the list
-        if (listContentElement) {
-            initializeTemplateList(listContentElement, currentGuildId);
-        } else {
-            // console.warn("[GuildTemplateListWidget] Could not refresh list after delete: content element missing.");
-        }
-
-    } catch (error) {
-        console.error(`[GuildTemplateListWidget] Error deleting template ID ${templateId}:`, error);
-    }
 }
 
 /**

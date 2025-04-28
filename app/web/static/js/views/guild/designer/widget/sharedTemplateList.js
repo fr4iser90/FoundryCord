@@ -152,7 +152,15 @@ export async function initializeSharedTemplateList(contentElement, currentGuildI
                 deleteButton.addEventListener('click', (event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    handleSharedTemplateDelete(templateId, templateName, contentElement, currentGuildId);
+                    // Dispatch event to request modal opening
+                    console.log(`[SharedTemplateList] Dispatching requestDeleteTemplate for ID: ${templateId}`);
+                    document.dispatchEvent(new CustomEvent('requestDeleteTemplate', {
+                        detail: {
+                            templateId: templateId,
+                            templateName: templateName,
+                            listType: 'shared'
+                        }
+                    }));
                 });
                 buttonGroup.appendChild(deleteButton);
             }
@@ -267,47 +275,6 @@ async function handleSharedTemplateSave(templateId, templateName, currentGuildId
     } catch (error) {
         console.error(`[SharedTemplateListWidget] Error copying shared template ${templateId}:`, error);
         // apiRequest likely showed an error toast
-    }
-}
-
-// --- NEW: Delete Handler --- 
-/**
- * Handles deleting a specific SHARED template created by the current user.
- * @param {number} templateId - The ID of the template to delete.
- * @param {string} templateName - The name of the template (for confirmation).
- * @param {HTMLElement} listContentElement - The element containing the list to refresh.
- * @param {string} currentGuildId - The current guild ID for list refresh context.
- */
-async function handleSharedTemplateDelete(templateId, templateName, listContentElement, currentGuildId) {
-    console.log(`[SharedTemplateListWidget] Delete requested for OWNED shared template ID: ${templateId}, Name: ${templateName}`);
-
-    // Confirmation dialog
-    if (!confirm(`Are you sure you want to permanently delete your shared template "${templateName}"?`)) {
-        console.log("[SharedTemplateListWidget] Delete cancelled by user.");
-        return;
-    }
-
-    const deleteApiUrl = `/api/v1/templates/guilds/${templateId}`;
-    console.log(`[SharedTemplateListWidget] Sending DELETE request to: ${deleteApiUrl}`);
-
-    try {
-        await apiRequest(deleteApiUrl, {
-            method: 'DELETE'
-        });
-        
-        showToast('success', `Shared template "${templateName}" deleted successfully.`);
-        console.log(`[SharedTemplateListWidget] Successfully deleted template ${templateId}.`);
-        
-        // Refresh the list
-        if (listContentElement) {
-            initializeSharedTemplateList(listContentElement, currentGuildId);
-        } else {
-            console.warn("[SharedTemplateListWidget] Could not refresh list after delete: content element missing.");
-        }
-
-    } catch (error) {
-        // apiRequest handles toast, but log details here
-        console.error(`[SharedTemplateListWidget] Error deleting shared template ID ${templateId}:`, error);
     }
 }
 

@@ -1,0 +1,25 @@
+<!---- Delete Confirmation Modal ---->
+<div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="deleteConfirmationModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Deletion</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to permanently delete the template:</p>
+        <p class="text-center"><strong id="deleteTemplateName">Template Name Placeholder</strong>?</p>
+        <p class="text-danger"><small>This action cannot be undone.</small></p>
+        {# Hidden input to store the ID of the template to delete #}
+        <input type="hidden" id="deleteTemplateIdInput" value="">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteButton">
+          <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+          Confirm Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

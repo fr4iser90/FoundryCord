@@ -24,6 +24,7 @@ The Guild Structure Designer provides a web interface to manage and visualize Di
     *   Allows saving copies of shared templates.
     *   Allows sharing user-saved templates.
     *   Allows deleting user-saved templates (excluding the initial snapshot) and owned shared templates.
+    *   **Deletion Confirmation:** Uses a confirmation modal (`deleteModal.js`, `delete_modal.html`) for all delete operations to prevent accidental deletions.
 *   **UI:** Uses Gridstack (`gridManager.js`) for a customizable, persistent widget-based layout.
 
 ## Bot Interaction & Data Storage
