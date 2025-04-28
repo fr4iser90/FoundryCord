@@ -49,15 +49,17 @@
         *   [x] Implement comparison logic (diffing) between the template and the live Discord state. (Implemented via loops/checks in apply_template)
         *   [x] Call Discord API functions (via the service) to:
             *   [x] Create missing categories/channels based on the template.
-            *   [ ] Delete extra categories/channels not in the template (consider making this optional/configurable). (Logic added, flag hardcoded to False)
+            *   [x] Delete extra categories/channels not in the template (controlled by `template_delete_unmanaged` flag in GuildConfig).
             *   [x] Update names, topics, types if they differ.
             *   [ ] **Reorder** categories and channels using Discord's bulk update endpoints if possible, or individual position updates otherwise, to match the template's `position` and parent structure. (Basic position set on create/update, complex reorder pending)
         *   [x] Update `discord_channel_id` in DB. (Implemented via session commit)
 *   [x] **Add "Apply Template" Trigger:**
     *   [x] **UI Button:** Add an "Apply to Discord" button in `app/web/templates/views/guild/designer/index.html`.
-    *   [x] **Frontend Logic:** Add event listener in `app/web/static/js/views/guild/designer/designerEvents.js` for the apply button. Added confirmation dialog.
-    *   [x] **Backend API:** Create a new endpoint `POST /api/v1/guilds/{guild_id}/template/apply` in `app/web/interfaces/api/rest/v1/guild/designer/guild_template_controller.py`.
-    *   [x] **Trigger Workflow:** This API endpoint calls the `guild_workflow.apply_template` function.
+    *   [x] **UI Setting:** Add "Clean Apply" (`template_delete_unmanaged`) checkbox to control deletion behavior.
+    *   [x] **Frontend Logic:** Add event listener in `app/web/static/js/views/guild/designer/designerEvents.js` for the apply button and checkbox. Added confirmation dialog for apply.
+    *   [x] **Backend API (Apply):** Create a new endpoint `POST /api/v1/guilds/{guild_id}/template/apply` in `app/web/interfaces/api/rest/v1/guild/designer/guild_template_controller.py`.
+    *   [x] **Backend API (Settings):** Create `PUT /guilds/{guild_id}/template/settings` endpoint to save the "Clean Apply" setting.
+    *   [x] **Trigger Workflow:** The apply API endpoint calls the `guild_workflow.apply_template` function.
 *   [x] **Deletion Safety:**
     *   [x] **Prevent Initial Snapshot Deletion:** In `templateList.js`, disable the delete button for templates marked as `is_initial_snapshot`.
     *   [x] **Add Delete Confirmation Modal:** 

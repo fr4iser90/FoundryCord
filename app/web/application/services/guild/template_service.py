@@ -27,7 +27,7 @@ from app.shared.infrastructure.repositories.auth.user_repository_impl import Use
 from app.shared.infrastructure.models.auth import AppUserEntity
 # -----------------------------------
 # Import Exceptions
-from app.shared.domain.exceptions import TemplateNotFound, PermissionDenied, InvalidOperation, DomainException
+from app.shared.domain.exceptions import TemplateNotFound, PermissionDenied, InvalidOperation, DomainException, ConfigurationNotFound
 # --- ADD Guild Config Repo --- 
 from app.shared.infrastructure.repositories.discord import GuildConfigRepositoryImpl
 # ---------------------------
@@ -1167,6 +1167,48 @@ class GuildTemplateService:
             logger.error(f"Database error committing new template {new_template.id}: {e}", exc_info=True)
             await session.rollback()
             raise ValueError(f"Failed to commit new template: {e}") # Raise specific error
+
+    # --- NEW Method to update template settings --- 
+    async def update_template_settings(
+        self, 
+        db: AsyncSession, 
+        guild_id: str, 
+        delete_unmanaged: bool,
+        requesting_user: AppUserEntity # For potential permission checks later
+    ) -> bool:
+        """Updates specific template application settings for a guild."""
+        logger.info(f"Service attempting to update template_delete_unmanaged to {delete_unmanaged} for guild {guild_id}")
+        try:
+            # TODO: Add more robust permission check if needed (e.g., based on user role in guild)
+            if not requesting_user.is_owner:
+                 logger.warning(f"Permission denied in service for user {requesting_user.id} updating settings for guild {guild_id}")
+                 raise PermissionDenied("User does not have permission to update these settings.")
+            
+            # Instantiate the repository
+            config_repo = GuildConfigRepositoryImpl(db)
+            
+            # Call the repository method to update the flag
+            success = await config_repo.update_template_delete_unmanaged(
+                guild_id=guild_id,
+                delete_unmanaged=delete_unmanaged
+            )
+            
+            if success:
+                logger.info(f"Successfully updated template_delete_unmanaged flag for guild {guild_id}")
+            else:
+                logger.warning(f"GuildConfigRepository failed to update flag for guild {guild_id} (config likely not found). Raising ConfigurationNotFound.")
+                # Raise the specific exception if repo indicates failure (e.g., config not found)
+                raise ConfigurationNotFound(f"Configuration for guild {guild_id} not found.")
+                
+            return True # Return True on success
+            
+        # Let specific exceptions bubble up to the controller
+        except (PermissionDenied, ConfigurationNotFound) as e:
+             raise e
+        except Exception as e:
+            logger.error(f"Unexpected error in update_template_settings for guild {guild_id}: {e}", exc_info=True)
+            # Raise a generic domain exception or re-raise the original
+            raise DomainException(f"An unexpected error occurred while updating template settings for guild {guild_id}.") from e
 
 
 # Instantiate the service if needed globally (e.g., for factory)

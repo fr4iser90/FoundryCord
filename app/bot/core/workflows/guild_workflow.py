@@ -423,6 +423,7 @@ class GuildWorkflow(BaseWorkflow):
                 # 3. Process Categories (Create/Update on Discord based on Template)
                 # ----------------------------------------------------------
                 created_or_found_discord_categories = {} # Map template cat ID -> created/found discord cat object
+                processed_live_category_ids = set() # <<< NEW: Track processed Discord category IDs
 
                 # Sort template categories by position for correct creation order
                 sorted_template_categories = sorted(template_categories, key=lambda c: c.position)
@@ -445,6 +446,7 @@ class GuildWorkflow(BaseWorkflow):
                         
                         # Store mapping
                         created_or_found_discord_categories[template_cat.id] = existing_discord_cat_object
+                        processed_live_category_ids.add(existing_discord_cat_object.id) # <<< ADD existing ID
 
                     else:
                         logger.info(f"    Category '{template_cat.category_name}' does not exist. Creating...")
@@ -462,10 +464,10 @@ class GuildWorkflow(BaseWorkflow):
 
                             # Store mapping
                             created_or_found_discord_categories[template_cat.id] = new_discord_cat
+                            processed_live_category_ids.add(new_discord_cat.id) # <<< ADD new ID
 
                         except nextcord.Forbidden:
                             logger.error(f"      PERMISSION ERROR: Cannot create category '{template_cat.category_name}'. Check bot permissions.")
-                            # Decide how to handle: continue? rollback? stop?
                         except nextcord.HTTPException as http_err:
                             logger.error(f"      HTTP ERROR creating category '{template_cat.category_name}': {http_err}")
                         except Exception as creation_err:
@@ -679,11 +681,50 @@ class GuildWorkflow(BaseWorkflow):
                 else:
                     logger.debug("  Deletion of unmanaged channels is disabled.")
 
+                # ----------------------------------------------------------
+                # 7. Process Categories (Delete from Discord if not in Template - Optional)
+                # ----------------------------------------------------------
+                # Use the same flag as for channels
+                if delete_unmanaged_channels:
+                    logger.info("  Checking for Discord categories not present in the template...")
+                    # Compare all live category IDs with the ones we processed (found/created from template)
+                    categories_to_delete = set(live_categories.keys()) - processed_live_category_ids 
+                    logger.debug(f"    Found {len(categories_to_delete)} live category IDs not processed: {categories_to_delete}")
+
+                    for discord_cat_id in categories_to_delete:
+                        # Fetch the actual category object
+                        category_to_delete = discord_guild.get_channel(discord_cat_id)
+                        live_cat_data = live_categories.get(discord_cat_id) # Get data for logging
+                        cat_name_for_log = live_cat_data['name'] if live_cat_data else f"ID {discord_cat_id}"
+
+                        if category_to_delete and isinstance(category_to_delete, nextcord.CategoryChannel):
+                            logger.warning(f"    Discord category '{cat_name_for_log}' (ID: {discord_cat_id}) is not in the template. Deleting...")
+                            try:
+                                await category_to_delete.delete(reason="Removing category not defined in template")
+                                logger.warning(f"      Successfully deleted category '{cat_name_for_log}'.")
+                            except nextcord.Forbidden:
+                                logger.error(f"      PERMISSION ERROR: Cannot delete category '{cat_name_for_log}'.")
+                            except nextcord.HTTPException as http_err:
+                                # Check if it's because the category is not empty
+                                if http_err.code == 50070: # Discord error code for 'Cannot delete a channel with messages' (might apply to categories with channels?)
+                                    logger.error(f"      CANNOT DELETE category '{cat_name_for_log}': It might still contain channels. Ensure unmanaged channels were deleted first.")
+                                else:
+                                    logger.error(f"      HTTP ERROR deleting category '{cat_name_for_log}': {http_err}")
+                            except Exception as deletion_err:
+                                logger.error(f"      UNEXPECTED ERROR deleting category '{cat_name_for_log}': {deletion_err}", exc_info=True)
+                        elif category_to_delete: 
+                            logger.warning(f"    Found object for ID {discord_cat_id} ('{cat_name_for_log}') but it's not a CategoryChannel (Type: {type(category_to_delete)}). Skipping deletion.")
+                        else:
+                            logger.warning(f"    Could not find Discord category object with ID {discord_cat_id} ('{cat_name_for_log}') to delete. Already deleted?")
+                else:
+                     logger.debug("  Deletion of unmanaged categories is disabled (same flag as channels).")
+                # --- END CATEGORY DELETION ---
+
                 # --- Handle Reordering ---
                 # TODO: Consider bulk edit for efficiency/accuracy after all CUD operations
 
 
-                logger.info(f"[apply_template] Channel Create/Update/Delete logic complete. DB updates applied via session commit. Guild: {guild_id}.")
+                logger.info(f"[apply_template] Channel and Category Create/Update/Delete logic complete. DB updates applied via session commit. Guild: {guild_id}.")
 
             # Commit changes made to template entities (like discord_channel_id updates)
             # await session.commit() # session_context handles commit/rollback
