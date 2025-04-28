@@ -44,19 +44,20 @@
 *   [ ] **Complete Bot `apply_template` Logic:**
     *   **Target File:** `app/bot/core/workflows/guild_workflow.py` (function `apply_template`).
     *   **Enhancements:**
-        *   Fetch the full template structure (categories, channels, positions, parents, permissions etc.) from the database using the shared Template Repositories.
-        *   Fetch the *current* guild structure directly from Discord using the Discord service (`app/services/discord_service.py` or similar).
-        *   Implement comparison logic (diffing) between the template and the live Discord state.
-        *   Call Discord API functions (via the service) to:
-            *   Create missing categories/channels based on the template.
-            *   Delete extra categories/channels not in the template (consider making this optional/configurable).
-            *   Update names, topics, types if they differ.
-            *   **Reorder** categories and channels using Discord's bulk update endpoints if possible, or individual position updates otherwise, to match the template's `position` and parent structure.
-*   [ ] **Add "Apply Template" Trigger:**
-    *   **UI Button:** Add an "Apply to Discord" button in `app/web/templates/views/guild/designer/index.html` (perhaps near the "Save" button, enabled only when the template is saved and active?).
-    *   **Frontend Logic:** Add event listener in `app/web/static/js/views/guild/designer/index.js` for the apply button. It should likely call a new backend endpoint. Add confirmation dialog.
-    *   **Backend API:** Create a new endpoint `POST /api/v1/guilds/{guild_id}/apply_template` (or similar) in `app/api/v1/endpoints/guilds.py`.
-    *   **Trigger Workflow:** This API endpoint should call the `guild_workflow.apply_template` function, likely passing the `guild_id` and potentially the `active_template_id` associated with that guild.
+        *   [x] Fetch the full template structure (categories, channels, positions, parents, permissions etc.) from the database using the shared Template Repositories. (Implemented repository calls)
+        *   [x] Fetch the *current* guild structure directly from Discord using the Discord service (`app/bot/application/services/discord/discord_query_service.py` created and used).
+        *   [x] Implement comparison logic (diffing) between the template and the live Discord state. (Implemented via loops/checks in apply_template)
+        *   [x] Call Discord API functions (via the service) to:
+            *   [x] Create missing categories/channels based on the template.
+            *   [ ] Delete extra categories/channels not in the template (consider making this optional/configurable). (Logic added, flag hardcoded to False)
+            *   [x] Update names, topics, types if they differ.
+            *   [ ] **Reorder** categories and channels using Discord's bulk update endpoints if possible, or individual position updates otherwise, to match the template's `position` and parent structure. (Basic position set on create/update, complex reorder pending)
+        *   [x] Update `discord_channel_id` in DB. (Implemented via session commit)
+*   [x] **Add "Apply Template" Trigger:**
+    *   [x] **UI Button:** Add an "Apply to Discord" button in `app/web/templates/views/guild/designer/index.html`.
+    *   [x] **Frontend Logic:** Add event listener in `app/web/static/js/views/guild/designer/designerEvents.js` for the apply button. Added confirmation dialog.
+    *   [x] **Backend API:** Create a new endpoint `POST /api/v1/guilds/{guild_id}/template/apply` in `app/web/interfaces/api/rest/v1/guild/designer/guild_template_controller.py`.
+    *   [x] **Trigger Workflow:** This API endpoint calls the `guild_workflow.apply_template` function.
 *   [x] **Deletion Safety:**
     *   [x] **Prevent Initial Snapshot Deletion:** In `templateList.js`, disable the delete button for templates marked as `is_initial_snapshot`.
     *   [x] **Add Delete Confirmation Modal:** 

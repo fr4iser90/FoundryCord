@@ -368,34 +368,40 @@ class GuildWorkflow(BaseWorkflow):
             async with session_context() as session:
                 # Instantiate repositories
                 template_repo = GuildTemplateRepositoryImpl(session)
+                guild_config_repo = GuildConfigRepositoryImpl(session)
                 cat_repo = GuildTemplateCategoryRepositoryImpl(session)
                 chan_repo = GuildTemplateChannelRepositoryImpl(session)
                 cat_perm_repo = GuildTemplateCategoryPermissionRepositoryImpl(session)
                 chan_perm_repo = GuildTemplateChannelPermissionRepositoryImpl(session)
 
                 # --- NEW: Instantiate Discord Query Service ---
-                # Assuming we can instantiate it directly or get it from bot
-                # Replace this if a proper service locator/factory pattern exists
                 discord_query_service = DiscordQueryService(self.bot)
                 # -------------------------------------------
 
                 # 1. Load Template Data
-                # Fetch the *active* template for the guild
-                # TODO: Need to decide if we apply the ACTIVE template or a specific one passed in?
-                # For now, assume we fetch the active one based on GuildConfig
-                # This requires joining GuildConfig and GuildTemplate tables or fetching config first
-                # Placeholder: Fetching *any* template for the guild for now
-                template = await template_repo.get_by_guild_id(guild_id) # TODO: Refine this to get the *active* one
+                # --- NEUE LOGIK ZUM LADEN DES AKTIVEN TEMPLATES ---
+                logger.debug(f"[apply_template] Fetching GuildConfig for guild {guild_id} to find active template.")
+                guild_config = await guild_config_repo.get_by_guild_id(guild_id)
+                if not guild_config or guild_config.active_template_id is None:
+                    logger.warning(f"[apply_template] No active template configured for guild {guild_id} in GuildConfig. Cannot apply.")
+                    return False
+
+                active_template_id = guild_config.active_template_id
+                logger.info(f"[apply_template] Found active template ID from GuildConfig: {active_template_id}")
+
+                template = await template_repo.get_by_id(active_template_id)
                 if not template:
-                    logger.warning(f"[apply_template] No template found for guild {guild_id}. Cannot apply.")
-                    return False # Cannot proceed without a template
+                    # This case might indicate inconsistent data (active_template_id points to non-existent template)
+                    logger.error(f"[apply_template] Active template ID {active_template_id} (from GuildConfig) not found in GuildTemplate table for guild {guild_id}. Data inconsistency?")
+                    return False
+                # --- ENDE NEUE LOGIK ---
 
                 # Fetch template structure using repositories (already loads needed attributes)
                 template_categories = await cat_repo.get_by_template_id(template.id)
                 template_channels = await chan_repo.get_by_template_id(template.id)
                 # Permissions will be fetched later as needed by helpers
 
-                logger.info(f"[apply_template] Loaded template '{template.template_name}' (ID: {template.id}) for guild {guild_id}")
+                logger.info(f"[apply_template] Loaded active template '{template.template_name}' (ID: {template.id}) for guild {guild_id}")
                 logger.debug(f"  Template contains {len(template_categories)} categories and {len(template_channels)} channels.")
 
                 # ----------------------------------------------------------
@@ -596,7 +602,6 @@ class GuildWorkflow(BaseWorkflow):
                             channel_creator = discord_guild.create_text_channel
                         elif template_chan.channel_type == 'voice':
                              creation_kwargs.update({
-                                 'nsfw': template_chan.is_nsfw
                                  # Add bitrate, user_limit if stored in template
                              })
                              channel_creator = discord_guild.create_voice_channel
@@ -642,8 +647,10 @@ class GuildWorkflow(BaseWorkflow):
                 # ----------------------------------------------------------
                 # 6. Process Channels (Delete from Discord if not in Template - Optional)
                 # ----------------------------------------------------------
-                # TODO: Make deletion configurable via GuildConfig or similar
-                delete_unmanaged_channels = False # Set to True to enable deletion
+                # Read the flag from the loaded guild configuration
+                delete_unmanaged_channels = guild_config.template_delete_unmanaged
+                logger.info(f"  Configuration for deleting unmanaged channels: {delete_unmanaged_channels}")
+
                 if delete_unmanaged_channels:
                     logger.info("  Checking for Discord channels not present in the template...")
                     channels_to_delete = set(live_channels.keys()) - processed_live_channel_ids

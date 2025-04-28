@@ -115,6 +115,57 @@ async def handle_ping(request: web.Request):
     logger.debug("Internal API: Sending 200 response for /internal/ping")
     return web.json_response(response_body, status=200)
 
+# --- NEW: Handler for triggering Template Application Workflow --- 
+async def handle_apply_guild_template(request: web.Request):
+    """Handles POST /guilds/{guild_id}/apply_template"""
+    guild_id = request.match_info.get('guild_id')
+    response_status = 500 # Default to internal server error
+    response_body = {'status': 'error', 'message': 'Internal server error'} # Default error body
+
+    try:
+        if not guild_id:
+            logger.error("Internal API: Missing guild_id in apply_template request")
+            response_status = 400
+            response_body = {'status': 'error', 'message': 'Missing guild_id'}
+            return web.json_response(response_body, status=response_status)
+
+        bot_app = request.app.get('bot_instance')
+        if not bot_app or not hasattr(bot_app, 'control_service'):
+            logger.error("Internal API: Bot instance or control_service not found for apply_template")
+            response_status = 500
+            response_body = {'status': 'error', 'message': 'Internal server error: Bot not configured'}
+            return web.json_response(response_body, status=response_status)
+
+        logger.info(f"Internal API: Received request to trigger template application for guild {guild_id}")
+        try:
+            # Schedule the actual bot logic to run without blocking the API response
+            async def run_task():
+                try:
+                    success = await bot_app.control_service.trigger_apply_template(guild_id=guild_id)
+                    if not success:
+                        logger.error(f"Internal API: Bot reported failure processing template application for guild {guild_id} (async task)")
+                    else:
+                        logger.info(f"Internal API: Bot successfully processed template application for guild {guild_id} (async task)")
+                except Exception as task_err:
+                     logger.error(f"Internal API: Error in background apply_template task for guild {guild_id}: {task_err}", exc_info=True)
+            
+            asyncio.create_task(run_task())
+            # Return 202 Accepted immediately
+            response_status = 202
+            response_body = {'status': 'ok', 'message': f'Template application trigger scheduled for guild {guild_id}'}
+            logger.info(f"Internal API: Sending {response_status} response for trigger apply_template guild {guild_id}")
+            return web.json_response(response_body, status=response_status)
+        except Exception as e:
+            logger.error(f"Internal API: Error scheduling apply_template task for guild {guild_id}: {e}", exc_info=True)
+            response_status = 500
+            response_body = {'status': 'error', 'message': 'Internal server error during task scheduling'}
+            return web.json_response(response_body, status=response_status)
+            
+    except Exception as outer_e:
+         logger.error(f"Internal API: Unexpected error in handle_apply_guild_template for guild {guild_id or 'unknown'}: {outer_e}", exc_info=True)
+         return web.json_response(response_body, status=response_status)
+# --- END NEW HANDLER ---
+
 # --- Route Setup Function --- 
 def setup_internal_routes(app: web.Application):
     """Add routes to the internal API application."""
@@ -123,6 +174,9 @@ def setup_internal_routes(app: web.Application):
     router.add_post('/internal/trigger/approve_guild/{guild_id}', handle_trigger_approve_guild)
     router.add_get('/internal/ping', handle_ping)
     router.add_get('/internal/logs', handle_get_logs)
+    # --- NEW ROUTE --- 
+    router.add_post('/guilds/{guild_id}/apply_template', handle_apply_guild_template)
+    # -----------------
     
     # Improved logging for routes
     route_details = []

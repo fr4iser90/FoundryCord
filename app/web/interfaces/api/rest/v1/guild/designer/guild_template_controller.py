@@ -27,7 +27,14 @@ from sqlalchemy import select
 # ---------------------------------------
 from sqlalchemy.ext.asyncio import AsyncSession # Import AsyncSession
 # ---> ADD: Import specific exceptions from service/domain if they exist
-from app.shared.domain.exceptions import TemplateNotFound, PermissionDenied
+from app.shared.domain.exceptions import TemplateNotFound, PermissionDenied, InvalidOperation
+# --- NEW: Add HTTP client import (adjust based on available library) ---
+import httpx 
+# -------------------------------------------------------------------
+# --- NEW: Import settings if available --- 
+# from app.web.core.config import settings # Example, adjust path as needed
+INTERNAL_API_BASE_URL = "http://foundrycord-bot:9090" # Use container name, GET FROM CONFIG ideally
+# ----------------------------------------
 
 class GuildTemplateActivateSchema(BaseModel):
     template_id: int
@@ -66,14 +73,14 @@ class GuildTemplateController(BaseController):
                          description="Saves the structure of the specified guild as a new named template."
                         )(self.create_guild_template)
 
-        # --- NEW Activate Route ---
-        self.router.post("/activate",
+        # --- NEW Guild-Specific Activate Route --- 
+        self.router.post("/templates/{template_id}/activate", # Path relative to /guilds/{guild_id}/
                          status_code=status.HTTP_200_OK,
-                         summary="Set Guild Template as Active",
-                         description="Marks a specific template as the active one for this guild's configuration."
-                         )(self.activate_guild_template) # NEW method
+                         summary="Activate Guild Template for specific Guild",
+                         description="Marks a specific template as the active one for the specified guild."
+                         )(self.activate_guild_template) # Method signature needs update
 
-        # --- NEW Apply Template Route ---
+        # --- Apply Template Route (Remains Guild-Specific) ---
         self.router.post("/apply",
                          status_code=status.HTTP_200_OK, # Or 202 Accepted if it takes time?
                          summary="Apply Active Template to Discord",
@@ -152,17 +159,6 @@ class GuildTemplateController(BaseController):
             status_code=status.HTTP_201_CREATED,
             dependencies=[Depends(get_current_user)]
         )(self.create_template_from_structure)
-
-        # ---> ADD: REGISTER ACTIVATE ROUTE
-        self.general_template_router.post(
-            "/templates/guilds/{template_id}/activate",
-            summary="Activate Guild Template",
-            description="Sets a specific guild template as the active one for its associated guild.",
-            status_code=status.HTTP_200_OK,
-            # Use dependencies=[Depends(get_current_user)] if you only need auth check
-            # Or add specific permission check dependency if created
-            dependencies=[Depends(get_current_user)] 
-        )(self.activate_guild_template)
 
     async def get_guild_template(self, guild_id: str, current_user: AppUserEntity = Depends(get_current_user)) -> GuildTemplateResponseSchema:
         """API endpoint to retrieve the guild template structure by Guild ID."""
@@ -486,27 +482,27 @@ class GuildTemplateController(BaseController):
             self.logger.error(f"Error creating guild template '{template_data.template_name}' from {guild_id}: {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create guild template due to an unexpected error.")
 
-    # --- NEW METHOD for Activate Route --- 
+    # --- NEW Method for Activate Route --- 
     async def activate_guild_template(
         self,
-        template_id: int, # From path parameter
+        guild_id: str, # <<<--- GET FROM PATH
+        template_id: int, # <<<--- GET FROM PATH
         current_user: AppUserEntity = Depends(get_current_user), # From dependency
         db: AsyncSession = Depends(get_web_db_session) # Get DB session
     ):
-        """API endpoint to activate a specific guild template."""
-        self.logger.info(f"User {current_user.id} requesting activation for template ID: {template_id}")
+        """API endpoint to activate a specific guild template *for a specific guild*."""
+        self.logger.info(f"User {current_user.id} requesting activation for template ID: {template_id} *for guild ID: {guild_id}*") # Updated log
         try:
-            # --- Call Service Layer --- 
-            # Service layer is expected to raise TemplateNotFound or PermissionDenied on failure
+            # --- Call Service Layer (Pass guild_id now) --- 
             await self.template_service.activate_template(
                 db=db, 
                 template_id=template_id, 
+                target_guild_id=guild_id, # <<<--- PASS GUILD ID
                 requesting_user=current_user 
             )
             
             # --- Return Success Response --- 
-            self.logger.info(f"Template ID {template_id} activated successfully by user {current_user.id}.")
-            # Return a simple success message, status code 200 is set by decorator
+            self.logger.info(f"Template ID {template_id} activated successfully for guild {guild_id} by user {current_user.id}.")
             return {"message": "Template activated successfully."}
 
         # --- Map Domain Exceptions to HTTP Exceptions (as per convention) ---
@@ -514,13 +510,15 @@ class GuildTemplateController(BaseController):
             self.logger.warning(f"Activation failed: Template ID {template_id} not found.")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
         except PermissionDenied as e:
-            self.logger.warning(f"Activation failed for template ID {template_id}: User {current_user.id} lacks permissions. Details: {str(e)}")
+            self.logger.warning(f"Activation failed for template ID {template_id} on guild {guild_id}: User {current_user.id} lacks permissions. Details: {str(e)}")
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        # --- ADD InvalidOperation for missing GuildConfig --- 
+        except InvalidOperation as e:
+            self.logger.error(f"Activation failed for template {template_id} on guild {guild_id}: {e}", exc_info=True)
+            # Return 400 Bad Request or 500? 400 seems appropriate if config is missing/invalid.
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
         except Exception as e:
-            # Log unexpected errors and let the global handler return a 500
-            self.logger.error(f"Unexpected error activating template ID {template_id}: {e}", exc_info=True)
-            # Reraise the original exception for the global handler to catch and format
-            # raise e # Or explicitly raise a 500 if preferred
+            self.logger.error(f"Unexpected error activating template ID {template_id} for guild {guild_id}: {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An internal error occurred during template activation.")
 
     # --- Method Definition for Structure Update --- 
@@ -628,82 +626,57 @@ class GuildTemplateController(BaseController):
                 detail="An unexpected error occurred while creating the template."
             )
 
-    # --- NEW Method for Apply Route --- 
+    # --- METHOD MODIFIED for Apply Route --- 
     async def apply_guild_template(
         self,
         guild_id: str, # From path parameter
         current_user: AppUserEntity = Depends(get_current_user), # From dependency
-        # db: AsyncSession = Depends(get_web_db_session) # May need DB session for permissions
+        # Add HTTP client dependency if available, otherwise create one
+        # http_client: httpx.AsyncClient = Depends(get_http_client) # Example dependency
     ):
-        """API endpoint to trigger applying the active template to the Discord guild."""
+        """API endpoint to trigger applying the active template to the Discord guild via Internal API."""
         self.logger.info(f"User {current_user.id} requesting template application for guild ID: {guild_id}")
 
-        # --- 1. Permission Check --- 
-        # TODO: Implement more robust permission check. Who can apply templates?
-        #       - Guild Owner on Discord? 
-        #       - Bot Owner?
-        #       - User with specific role in the guild (e.g., GUILD_ADMIN from DiscordGuildUserEntity)?
-        # For now, restrict to bot owner for safety.
+        # --- 1. Permission Check (Remains the same) --- 
         if not current_user.is_owner:
              self.logger.warning(f"Permission denied: User {current_user.id} (not bot owner) attempted to apply template for guild {guild_id}.")
              raise HTTPException(
                  status_code=status.HTTP_403_FORBIDDEN, 
-                 detail="You do not have permission to apply templates to this guild." # Keep message generic for now
+                 detail="You do not have permission to apply templates to this guild." 
              )
-        
         self.logger.info(f"Permission granted for user {current_user.id} to apply template for guild {guild_id}.")
 
-        # --- 2. Trigger Bot Workflow --- 
-        # How to access the bot instance from the controller?
-        # This is a common challenge. Options:
-        #   a) Pass bot instance during controller init (if possible with FastAPI setup).
-        #   b) Use a global registry or context variable (less ideal).
-        #   c) Use an intermediary service (like BotConnector) that the controller calls,
-        #      which then communicates with the bot (e.g., via Redis, RPC).
-        #   d) Assume bot instance is accessible via a known dependency or attribute.
-        
-        # Placeholder: Assuming a way to get the bot instance exists (e.g., via request state or dependency)
-        # This part NEEDS to be adapted based on how the bot instance is made available to FastAPI controllers.
-        bot_instance = None # <<<--- THIS IS A PLACEHOLDER
+        # --- 2. Trigger Bot via Internal API --- 
+        internal_api_url = f"{INTERNAL_API_BASE_URL}/guilds/{guild_id}/apply_template"
+        self.logger.info(f"Making POST request to internal API: {internal_api_url}")
+
         try:
-            # Example: Accessing via app state (if set up like that)
-            # from fastapi import Request
-            # request: Request (add as dependency to method)
-            # bot_instance = request.app.state.bot_instance 
+            # Use httpx client (instantiate directly for now, ideally inject)
+            async with httpx.AsyncClient() as client:
+                 response = await client.post(internal_api_url, timeout=10.0) # Add timeout
             
-            # Example: Accessing via a dependency (if defined)
-            # bot_instance = Depends(get_bot_instance) 
-            pass # Replace with actual bot access logic
-            
-            if not bot_instance or not hasattr(bot_instance, 'workflow_manager'):
-                 self.logger.error("Bot instance or workflow manager not available to trigger apply_template.")
-                 raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Bot workflow manager is unavailable.")
+            # Check response status from internal API
+            if response.status_code == 202: # 202 Accepted is expected success
+                 self.logger.info(f"Internal API accepted template application trigger for guild {guild_id}.")
+                 response_data = response.json()
+                 return {"message": response_data.get("message", "Template application trigger accepted by bot.")}
+            elif response.status_code == 400:
+                 self.logger.error(f"Internal API returned 400 Bad Request for guild {guild_id}: {response.text}")
+                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Internal bot error: {response.json().get('message', 'Bad request')}")
+            elif response.status_code == 500 or response.status_code == 503:
+                 self.logger.error(f"Internal API returned {response.status_code} for guild {guild_id}: {response.text}")
+                 raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Internal bot error: {response.json().get('message', 'Server error')}")
+            else:
+                 # Handle other unexpected statuses from internal API
+                 self.logger.error(f"Internal API returned unexpected status {response.status_code} for guild {guild_id}: {response.text}")
+                 raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Unexpected response from internal bot API (Status: {response.status_code})")
 
-            guild_workflow = bot_instance.workflow_manager.get_workflow("guild")
-            if not guild_workflow:
-                 self.logger.error("GuildWorkflow not found in workflow manager.")
-                 raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Guild workflow is unavailable.")
-
-            # Trigger the apply method asynchronously - don't wait for it to finish here?
-            # Or should this API call wait? If it waits, it might time out.
-            # For now, let's trigger and return success if the trigger call succeeds.
-            self.logger.info(f"Calling guild_workflow.apply_template('{guild_id}')")
-            apply_success = await guild_workflow.apply_template(guild_id)
-            
-            if not apply_success:
-                 # The workflow itself logs errors, but we should indicate failure to the API caller
-                 self.logger.error(f"Guild workflow apply_template returned False for guild {guild_id}")
-                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="The bot failed to apply the template. Check bot logs.")
-
-        except HTTPException as http_exc:
-            raise http_exc # Re-raise specific HTTP exceptions
+        except httpx.RequestError as exc:
+            self.logger.error(f"HTTP request to internal bot API failed: {exc}", exc_info=True)
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Failed to communicate with the internal bot service.")
         except Exception as e:
-            self.logger.error(f"Unexpected error triggering apply_template for guild {guild_id}: {e}", exc_info=True)
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred while triggering the template application.")
-
-        # --- 3. Return Success Response --- 
-        self.logger.info(f"Successfully triggered template application for guild {guild_id}.")
-        return {"message": f"Template application initiated successfully for guild {guild_id}."}
+            self.logger.error(f"Unexpected error calling internal API for guild {guild_id}: {e}", exc_info=True)
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred while communicating with the bot.")
 
 # Instantiate the controller for registration
 guild_template_controller = GuildTemplateController() 

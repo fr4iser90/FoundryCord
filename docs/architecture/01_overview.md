@@ -20,7 +20,7 @@ Illustrate how these components interact. A C4 Context or Container diagram woul
 *   User's Browser <-> Frontend (HTML/CSS/JS served by Backend)
 *   Frontend (JavaScript) <-> Backend API (via HTTP requests)
 *   Backend API -> Shared Core (Services, Repositories) -> Database
-*   Backend API -> (Potentially triggers Bot actions - Method needs clarification: DB flags? Message Queue? RPC?)
+*   Backend API -> Internal Bot API (via HTTP requests using httpx)
 *   Discord Bot -> Shared Core (Services, Repositories) -> Database
 *   Discord Bot <-> Discord API (Gateway events, REST calls)
 *   Discord API -> Discord Bot (Events, Interaction Hooks for commands)

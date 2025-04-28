@@ -80,12 +80,19 @@ async def initialize_session() -> bool:
     return await _session_factory.initialize()
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    """Get a database session from the global factory."""
+    """Get a database session from the global factory with proper commit/rollback."""
     if not _session_factory.is_initialized():
         await initialize_session()
     
     session = await _session_factory.create_session()
     try:
         yield session
+        await session.commit()
+        logger.debug("Session committed successfully.")
+    except Exception as e:
+        logger.error(f"Exception occurred during session: {e}. Rolling back.", exc_info=True)
+        await session.rollback()
+        raise
     finally:
-        await session.close() 
+        await session.close()
+        logger.debug("Session closed.") 

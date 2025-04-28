@@ -24,6 +24,7 @@ def upgrade() -> None:
         sa.Column('enable_tasks', sa.Boolean(), nullable=False, server_default='false'),
         sa.Column('enable_services', sa.Boolean(), nullable=False, server_default='false'),
         sa.Column('settings', sa.String(), nullable=True),
+        sa.Column('template_delete_unmanaged', sa.Boolean(), server_default=sa.text('false'), nullable=False),
         sa.UniqueConstraint('guild_id', name='uq_guild_config')
     )
 

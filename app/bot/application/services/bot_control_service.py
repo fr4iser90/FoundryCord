@@ -54,6 +54,42 @@ class BotControlService:
             logger.error(f"Error in BotControlService while triggering guild approval for {guild_id}: {e}", exc_info=True)
             return False
 
+    # --- NEW: Method to trigger template application --- 
+    async def trigger_apply_template(self, guild_id: str) -> bool:
+        """
+        Triggers the GuildWorkflow's apply_template method for the specified guild.
+
+        Args:
+            guild_id: The ID of the guild to apply the active template to.
+
+        Returns:
+            True if the workflow method was called and returned True, False otherwise.
+        """
+        logger.info(f"BotControlService received request to trigger template application for guild: {guild_id}")
+        
+        if not self.bot or not hasattr(self.bot, 'workflow_manager'):
+            logger.error("Bot instance or workflow manager not available in BotControlService.")
+            return False
+
+        try:
+            # Get the GuildWorkflow instance from the manager
+            guild_workflow = self.bot.workflow_manager.get_workflow("guild")
+            
+            if not guild_workflow:
+                logger.error("GuildWorkflow not found in workflow manager.")
+                return False
+            
+            # Call the actual workflow method
+            logger.info(f"Calling guild_workflow.apply_template('{guild_id}')")
+            # We await the result here as the service call should reflect the outcome
+            success = await guild_workflow.apply_template(guild_id)
+            logger.info(f"guild_workflow.apply_template('{guild_id}') returned: {success}")
+            return success
+        except Exception as e:
+            logger.error(f"Error in BotControlService while triggering template application for {guild_id}: {e}", exc_info=True)
+            return False
+    # --- END NEW METHOD --- 
+
     # --- Other potential control methods --- 
     async def start(self):
         # Logic to start the bot if it's stopped

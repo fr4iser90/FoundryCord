@@ -18,6 +18,7 @@ class GuildTemplateChannelEntity(Base):
     is_nsfw = Column(Boolean, server_default='false', nullable=False)
     slowmode_delay = Column(Integer, server_default='0', nullable=False)
     parent_category_template_id = Column(Integer, ForeignKey('guild_template_categories.id', ondelete='SET NULL'), nullable=True, index=True)
+    discord_channel_id = Column(String, nullable=True, index=True, unique=False) # Store actual Discord ID when applied/synced
     metadata_json = Column(JSON, nullable=True)
 
     # Relationship back to the parent template

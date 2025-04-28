@@ -22,6 +22,8 @@ class GuildConfigEntity(Base):
     
     # --- Active Template --- 
     active_template_id = Column(Integer, ForeignKey('guild_templates.id', ondelete='SET NULL'), nullable=True)
+    template_delete_unmanaged = Column(Boolean, default=False, nullable=False)
+    # ------------------------------------
     
     # Relationship back to guild
     guild = relationship("GuildEntity", back_populates="config", uselist=False)

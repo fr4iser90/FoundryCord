@@ -371,7 +371,18 @@ async function handleActivateConfirmed(event) {
         return;
     }
 
-    const apiUrl = `/api/v1/templates/guilds/${templateId}/activate`;
+    // ---> NEU: Guild ID holen <---
+    const guildId = getGuildIdFromUrl();
+    if (!guildId) {
+        console.error("[DesignerEvents] Cannot activate: Could not get Guild ID from URL.");
+        showToast('error', 'Activation failed: Could not determine Guild ID.');
+        // Optional: Button wiederherstellen?
+        return;
+    }
+
+    const apiUrl = `/api/v1/guilds/${guildId}/template/templates/${templateId}/activate`;
+
+    
     const activateButton = document.getElementById('activate-template-btn'); // Need button for loading state
     const originalButtonText = activateButton ? activateButton.innerHTML : ''; // Store original content
 
@@ -389,11 +400,9 @@ async function handleActivateConfirmed(event) {
 
         // Update state: Mark current template as active and update global active ID
         state.setActiveTemplateId(String(templateId)); // Update the guild-wide active ID (Ensure string)
-        // Ensure dirty flag is false (activation implies saved state)
-        state.setDirty(false); 
+        state.setDirty(false); // Ensure dirty flag is false (activation implies saved state)
 
-        // ---> UPDATED: Update buttons after successful activation
-        updateToolbarButtonStates();
+        updateToolbarButtonStates(); // Update buttons after successful activation
 
         // Dispatch 'templateActivated' event (as per TODO)
         document.dispatchEvent(new CustomEvent('templateActivated', { 
@@ -403,14 +412,11 @@ async function handleActivateConfirmed(event) {
 
     } catch (error) {
         console.error(`[DesignerEvents] Error activating template (ID: ${templateId}) via POST:`, error);
-        // apiRequest already shows toast on error
     } finally {
-        // Restore button appearance (loading spinner removed)
         if (activateButton) {
             activateButton.innerHTML = originalButtonText; 
         }
-        // ---> UPDATED: Always update button states in finally block
-        updateToolbarButtonStates();
+        updateToolbarButtonStates(); // Always update button states in finally block
         console.log("[DesignerEvents] Button states updated in finally block after activation attempt.");
     }
 }
@@ -464,7 +470,7 @@ async function handleApplyTemplateClick() {
     applyButton.disabled = true;
     applyButton.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Applying...`;
 
-    const apiUrl = `/api/v1/guilds/${guildId}/apply_template`;
+    const apiUrl = `/api/v1/guilds/${guildId}/template/apply`;
 
     try {
         // We might not need a request body if the backend uses the active template for the guild

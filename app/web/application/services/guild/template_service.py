@@ -720,14 +720,15 @@ class GuildTemplateService:
         self, 
         db: AsyncSession, # Use the session passed from controller
         template_id: int, 
+        target_guild_id: str, # <<<--- NEUER PARAMETER
         requesting_user: AppUserEntity
     ) -> None: # Return None on success, raise exception on failure
         """
-        Activates a specific template for its associated guild.
+        Activates a specific template for the target guild.
         Ensures only one template is active per guild by deactivating others.
         Performs permission checks.
         """
-        logger.info(f"Attempting to activate template ID {template_id} by user {requesting_user.id}")
+        logger.info(f"Attempting to activate template ID {template_id} for guild {target_guild_id} by user {requesting_user.id}") # Updated log
 
         # Use the provided session directly, no need for session_context here
         template_repo = GuildTemplateRepositoryImpl(db)
@@ -737,76 +738,63 @@ class GuildTemplateService:
 
         if not template_to_activate:
             logger.warning(f"Activate failed: Template ID {template_id} not found.")
-            # Raise specific exception for controller to catch
             raise TemplateNotFound(template_id=template_id) 
 
         logger.debug(f"Found template '{template_to_activate.template_name}' (ID: {template_id}) for activation.")
 
         # 2. Permission Check
-        # TODO: Implement more robust permission check involving guild roles.
-        # Current logic only allows the template creator or a global bot owner.
-        # Need to fetch DiscordGuildUserEntity for the requesting_user and associated_guild_id
-        # and check if their role_id is >= Admin (e.g., 3) or Owner (e.g., 4).
+        # TODO: Enhance permission check - does user have rights *in the target_guild_id*?
+        # Current check is based on template creator/bot owner.
         is_creator = template_to_activate.creator_user_id == requesting_user.id
         is_bot_owner = requesting_user.is_owner
-        is_guild_admin_or_owner = False # Placeholder - Needs implementation
+        is_guild_admin_or_owner = False # Placeholder 
 
-        # Check if user meets *any* of the allowed criteria (creator, bot owner, OR future guild admin/owner)
         if not (is_creator or is_bot_owner or is_guild_admin_or_owner):
-            logger.warning(f"Permission denied: User {requesting_user.id} (BotOwner: {is_bot_owner}, Creator: {is_creator}, GuildRole: N/A) tried to activate template {template_id} created by {template_to_activate.creator_user_id}.")
+            logger.warning(f"Permission denied: User {requesting_user.id} tried to activate template {template_id} for guild {target_guild_id}.")
             raise PermissionDenied(
                 user_id=requesting_user.id, 
-                action=f"activate template {template_id}",
-                # Update message once guild role check is added
+                action=f"activate template {template_id} for guild {target_guild_id}",
                 message=f"Only the template creator or a bot owner can activate this template (Guild admin check pending)."
             )
         
-        logger.debug(f"Permission granted for user {requesting_user.id} to activate template {template_id}.")
+        logger.debug(f"Permission granted for user {requesting_user.id} to activate template {template_id} for guild {target_guild_id}.")
 
-        # 3. Check if already active
-        if template_to_activate.is_active:
-            logger.info(f"Template ID {template_id} is already active. No action needed.")
-            # Optional: Raise InvalidOperation or just return successfully
-            # raise InvalidOperation(f"Template {template_id} is already active.")
-            return # Consider this a success/no-op
-
-        # 4. Get the associated guild ID
-        associated_guild_id = template_to_activate.associated_guild_id
-        if not associated_guild_id:
-             # This should ideally not happen if templates are always linked to a guild
-             logger.error(f"Critical error: Template ID {template_id} has no associated_guild_id. Cannot activate.")
-             raise InvalidOperation(f"Template {template_id} is not associated with any guild and cannot be activated.")
-
-        # 5. Deactivate other active templates for the SAME guild
-        logger.info(f"Deactivating other active templates for guild {associated_guild_id} (if any).")
+        # 5. Deactivate other active templates for the TARGET guild
+        logger.info(f"Deactivating other active templates for guild {target_guild_id} (if any).")
         deactivate_stmt = (
             update(GuildTemplateEntity)
             .where(
-                GuildTemplateEntity.associated_guild_id == associated_guild_id,
+                GuildTemplateEntity.guild_id == target_guild_id, # <<<--- Verwende target_guild_id
                 GuildTemplateEntity.is_active == True,
                 GuildTemplateEntity.id != template_id # Exclude the one we are activating
             )
             .values(is_active=False)
-            .execution_options(synchronize_session="fetch") # Recommended for UPDATE/DELETE
+            .execution_options(synchronize_session="fetch") 
         )
         await db.execute(deactivate_stmt)
-        # No need to check result count, just ensure any others are deactivated.
 
         # 6. Activate the target template
-        logger.info(f"Activating template ID {template_id} for guild {associated_guild_id}.")
+        logger.debug(f"Activating target template {template_id}")
         template_to_activate.is_active = True
-        db.add(template_to_activate) # Add to session for update tracking
 
-        # 7. Commit changes
-        try:
-            await db.commit()
-            await db.refresh(template_to_activate) # Refresh to get latest state if needed elsewhere
-            logger.info(f"Successfully committed activation for template ID {template_id}.")
-        except Exception as commit_exc:
-            logger.error(f"Database error committing activation for template {template_id}: {commit_exc}", exc_info=True)
-            await db.rollback() # Rollback on commit error
-            # Raise a generic exception or a specific DB error wrapper
-            raise DomainException(f"Failed to save activation status for template {template_id} due to a database error.")
+        # --- Update GuildConfigEntity.active_template_id für die TARGET guild ---
+        logger.debug(f"Updating GuildConfigEntity for guild {target_guild_id} to set active_template_id={template_id}")
+        from app.shared.infrastructure.models.discord import GuildConfigEntity
+        update_config_stmt = (
+            update(GuildConfigEntity)
+            .where(GuildConfigEntity.guild_id == target_guild_id) # <<<--- Verwende target_guild_id
+            .values(active_template_id=template_id)
+        )
+        config_update_result = await db.execute(update_config_stmt)
+
+        if config_update_result.rowcount == 0:
+            logger.error(f"Could not find or update GuildConfigEntity for guild {target_guild_id} to set active_template_id={template_id}. Guild config might be missing!")
+            raise InvalidOperation(f"Could not update guild configuration for guild {target_guild_id}. Configuration might be missing.")
+        else:
+            logger.debug(f"Successfully updated GuildConfigEntity.active_template_id for guild {target_guild_id}.")
+        # --- ENDE Update GuildConfig ---
+
+        logger.info(f"Successfully marked template {template_id} as active and updated GuildConfig (pending commit) for guild {target_guild_id}")
 
     # --- NEW: Placeholder for permission check --- 
     async def check_user_can_edit_template(self, db: AsyncSession, user_id: int, template_id: int) -> bool:

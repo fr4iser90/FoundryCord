@@ -3,9 +3,15 @@ import { apiRequest, showToast, ApiError } from '/static/js/components/common/no
 // Internal flag to prevent multiple listeners if initialized multiple times (simple safeguard)
 let isActivationListenerAdded = false; 
 
+// Store guildId globally within the module scope
+let currentGuildIdForActivation = null;
+
 // --- Internal Helper: Renders the template list ---
 async function _renderTemplateList(contentElement, currentGuildId, activeTemplateId) {
     if (!contentElement) return;
+    
+    currentGuildIdForActivation = currentGuildId; // <<<--- STORE GUILD ID
+    
     if (!currentGuildId) {
         contentElement.innerHTML = '<p class="panel-placeholder">Guild context not available.</p>';
         return;
@@ -247,12 +253,31 @@ function handleTemplateShare(templateId, templateName) {
 async function handleTemplateActivateDirect(templateId, templateName, buttonElement) {
     console.log(`[TemplateList] Direct activation requested for: ${templateName} (ID: ${templateId})`);
 
-    if (!templateId) {
+    if (templateId === undefined || templateId === null) {
         showToast('error', 'Activation failed: Template ID missing.');
         return;
     }
+    
+    // ---> GET STORED GUILD ID <---
+    const targetGuildId = currentGuildIdForActivation;
+    if (!targetGuildId) {
+        showToast('error', 'Activation failed: Guild context ID missing.');
+        console.error('[TemplateList] Cannot activate: currentGuildIdForActivation is null/undefined.');
+        return;
+    }
+    // ---> END GET STORED GUILD ID <---
 
-    const apiUrl = `/api/v1/templates/guilds/${templateId}/activate`;
+    // ---> BUILD NEW API URL <---
+    const apiUrl = `/api/v1/guilds/${targetGuildId}/templates/${templateId}/activate`;
+    console.log(`[TemplateList] Activation API URL: ${apiUrl}`);
+    // ---> END BUILD NEW API URL <---
+    
+    // ---> DEBUGGING LOGS START <---
+    console.log(`[TemplateList Activate DEBUG] targetGuildId = '${targetGuildId}' (Type: ${typeof targetGuildId})`);
+    console.log(`[TemplateList Activate DEBUG] templateId = '${templateId}' (Type: ${typeof templateId})`);
+    console.log(`[TemplateList Activate DEBUG] Constructed apiUrl = '${apiUrl}'`);
+    // ---> DEBUGGING LOGS END <---
+
     const originalButtonHtml = buttonElement.innerHTML; // Store original content
     const originalTitle = buttonElement.title;
 
@@ -272,18 +297,13 @@ async function handleTemplateActivateDirect(templateId, templateName, buttonElem
         }));
         console.log("[TemplateList] Dispatched 'templateActivated' event after direct activation.");
 
-        // Note: The list will re-render itself upon receiving the 'templateActivated' event.
-        // The button state will be correctly set during the re-render.
-
     } catch (error) {
         console.error(`[TemplateList] Error directly activating template (ID: ${templateId}) via POST:`, error);
-        // apiRequest already shows toast on error
         // Restore button state on error
         buttonElement.disabled = false;
         buttonElement.innerHTML = originalButtonHtml;
         buttonElement.title = originalTitle;
     } 
-    // No finally needed, button state restored on error or handled by re-render on success
 }
 
 // --- Initial log ---
