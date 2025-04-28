@@ -1092,16 +1092,30 @@ class GuildTemplateService:
         for node_data in payload.structure.nodes:
             if node_data.id.startswith("channel_"):
                 parent_category_db_id: Optional[int] = None
-                if node_data.parent_id and node_data.parent_id.startswith("category_"):
-                    parent_category_entity = created_categories_map.get(node_data.parent_id)
+                parent_js_id = node_data.parent_id # Get parent ID from payload
+                logger.debug(f"Processing Channel Node: ID={node_data.id}, PayloadParentID='{parent_js_id}'")
+
+                if parent_js_id and parent_js_id.startswith("category_"):
+                    # Look up the PARENT category entity using the jsTree ID from the payload
+                    parent_category_entity = created_categories_map.get(parent_js_id)
                     if parent_category_entity:
-                        parent_category_db_id = parent_category_entity.id # Use the DB ID
+                        # Get the DATABASE ID from the SQLAlchemy entity object (should be populated after flush/refresh)
+                        parent_category_db_id = parent_category_entity.id 
+                        logger.debug(f"  Found parent category entity in map. Extracted DB ID: {parent_category_db_id} (from Entity: {parent_category_entity})")
                     else:
-                        logger.warning(f"Channel {node_data.id} refers to parent {node_data.parent_id} which was not found/created. Setting parent to NULL.")
+                        # Log if the lookup failed
+                        logger.warning(f"  Parent category entity NOT FOUND in map for key '{parent_js_id}'. Setting DB Parent ID to NULL.")
+                        # parent_category_db_id remains None
+                elif parent_js_id and parent_js_id.startswith("template_"):
+                    logger.debug(f"  Parent is template root ('{parent_js_id}'). Setting DB Parent ID to NULL.")
+                    # parent_category_db_id remains None
+                else:
+                    logger.warning(f"  Unrecognized or missing parent ID '{parent_js_id}'. Setting DB Parent ID to NULL.")
+                    # parent_category_db_id remains None
                 
                 channel_name = node_data.name if node_data.name else f"Channel {node_data.id}" # Use name from payload or fallback
                 channel_type = node_data.channel_type if node_data.channel_type else "text" # Use type from payload or fallback
-                logger.debug(f"Preparing channel: ID={node_data.id}, Name='{channel_name}', Type='{channel_type}', ParentDBID={parent_category_db_id}, Pos={node_data.position}")
+                logger.debug(f"  Final assignment: Name='{channel_name}', Type='{channel_type}', ParentDBID={parent_category_db_id}, Pos={node_data.position}")
 
                 new_channel = GuildTemplateChannelEntity(
                     guild_template_id=new_template.id,

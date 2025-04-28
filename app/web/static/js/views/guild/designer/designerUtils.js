@@ -103,66 +103,69 @@ export function formatStructureForApi(templateId) {
     }
 
     try {
-        const rootNode = treeInstance.get_json('#'); 
-        if (!Array.isArray(rootNode) || rootNode.length !== 1) {
-             console.error("[DesignerUtils] Unexpected tree structure format from get_json.", rootNode);
-             showToast('error', 'Failed to read structure data.');
-             return null;
-        }
-
         const nodesPayload = [];
-        // Recursive function to traverse the tree data and format nodes
-        function traverseNodes(nodes) {
-            if (!Array.isArray(nodes)) return;
-            nodes.forEach((node, index) => {
-                const nodeId = node.id;
-                // Only include category and channel nodes in the payload
-                if (nodeId && (nodeId.startsWith('category_') || nodeId.startsWith('channel_'))) {
-                    // Extract name: jsTree text often includes position, clean it up
-                    const name = node.text.replace(/\s*\(Pos: \d+\)$/, '').trim();
-                    
-                    let channelType = null;
-                    if (nodeId.startsWith('channel_')) {
-                        // Attempt to get type from icon or stored data
-                        const iconClass = node.icon;
-                        if (iconClass && iconClass.includes('fa-hashtag')) {
-                            channelType = 'text';
-                        } else if (iconClass && iconClass.includes('fa-volume-up')) {
-                            channelType = 'voice';
-                        } else if (node.data?.channelType) {
-                            // Fallback to stored data if icon check fails
-                            channelType = node.data.channelType;
-                        } else {
-                            channelType = 'text'; // Default if type cannot be determined
-                            console.warn(`[DesignerUtils] Could not determine channel type for ${nodeId}. Defaulting to 'text'.`);
-                        }
-                    }
+        const allNodes = treeInstance.get_json(null, { flat: true }); // Get flat list of nodes
 
-                    const payloadNode = {
-                        id: nodeId,
-                        parent_id: node.parent === '#' ? `template_${templateId || 'root'}` : node.parent, // Map '#' root to template ID
-                        position: index,      // Position is the index among siblings
-                        name: name            // Add extracted name
-                    };
-                    
-                    // Add channel_type only for channel nodes
-                    if (channelType) {
-                         payloadNode.channel_type = channelType;
-                    }
+        allNodes.forEach(node => {
+            const nodeId = node.id;
 
-                    nodesPayload.push(payloadNode);
+            // Skip the root node ('#') provided by jsTree itself
+            if (nodeId === '#') {
+                 return; 
+            }
+
+            // Only process categories and channels (skip the template root)
+            if (nodeId.startsWith('category_') || nodeId.startsWith('channel_')) {
+                console.log(`[DesignerUtils] Processing Node from flat list: ID=${nodeId}, Raw Parent=${node.parent}, Text=${node.text}`);
+
+                const name = node.text.replace(/\s*\(Pos: \d+\)$/, '').trim();
+                let channelType = null;
+
+                if (nodeId.startsWith('channel_')) {
+                    // Derive channel type (same logic as before)
+                    const iconClass = node.icon;
+                     if (iconClass && iconClass.includes('fa-hashtag')) channelType = 'text';
+                     else if (iconClass && iconClass.includes('fa-volume-up')) channelType = 'voice';
+                     else if (node.data?.channelType) channelType = node.data.channelType;
+                     else {
+                        channelType = 'text';
+                        console.warn(`[DesignerUtils] Could not determine channel type for ${nodeId}. Defaulting to 'text'.`);
+                     }
                 }
-                // Recursively process children regardless of parent type
-                if (node.children && node.children.length > 0) {
-                    traverseNodes(node.children);
+                
+                // Determine parent for payload: Map jsTree root '#' to our template root ID
+                const parentIdForPayload = node.parent === '#' ? `template_${templateId || 'root'}` : node.parent;
+                if (!parentIdForPayload) {
+                     console.error(`[DesignerUtils] Could not determine parent ID for payload for node ${nodeId}. node.parent was: ${node.parent}. Skipping node.`);
+                     return; // Skip if parent ID is invalid
                 }
-            });
-        }
-        
-        // Start traversal from the children of the *actual* root node ('#') returned by get_json
-        traverseNodes(rootNode[0].children);
 
-        console.log(`[DesignerUtils] Formatted ${nodesPayload.length} nodes for API payload.`);
+                // Determine position among siblings
+                const parentNode = treeInstance.get_node(node.parent); // Get the jsTree parent node object
+                const siblings = parentNode ? parentNode.children : []; // Get the IDs of children of that parent
+                const position = siblings.indexOf(nodeId); // Find the index of the current node within its siblings
+                
+                if (position === -1) {
+                     console.error(`[DesignerUtils] Could not determine position for node ${nodeId} under parent ${node.parent}. Siblings: [${siblings.join(', ')}]. Skipping node.`);
+                     return; // Skip if position cannot be determined reliably
+                }
+
+                const payloadNode = {
+                    id: nodeId,
+                    parent_id: parentIdForPayload,
+                    position: position, // Use calculated position
+                    name: name
+                };
+
+                if (channelType) {
+                    payloadNode.channel_type = channelType;
+                }
+
+                nodesPayload.push(payloadNode);
+            }
+        });
+
+        console.log(`[DesignerUtils] Formatted ${nodesPayload.length} nodes for API payload from flat list.`);
         return { nodes: nodesPayload };
 
     } catch (error) {
