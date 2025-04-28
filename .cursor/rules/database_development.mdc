@@ -1,6 +1,6 @@
 ---
 description: 
-globs: 
+globs: app/shared/*
 alwaysApply: false
 ---
 # Database Development Context & Rules
