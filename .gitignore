@@ -1,4 +1,6 @@
 # HomeLab Discord Bot - .gitignore
+.cursorrules
+.cursor/
 .project_config.sh
 shell.nix
 # Python

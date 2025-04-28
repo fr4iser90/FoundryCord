@@ -19,7 +19,7 @@ The Guild Structure Designer provides a web interface to manage and visualize Di
 *   **Template Management:**
     *   Lists user-saved templates and the initial guild snapshot (`templateList.js`).
     *   Lists globally shared templates (`sharedTemplateList.js`).
-    *   Allows loading a template's structure into the designer view.
+    *   Allows loading a template's structure into the designer view (by clicking the template name in the 'Saved Templates' list or the load button in the 'Shared Templates' list).
     *   Allows setting a template as "active" for the guild (marks it for potential future use by the bot).
     *   Allows saving copies of shared templates.
     *   Allows sharing user-saved templates.
