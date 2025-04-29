@@ -28,6 +28,7 @@ let propDeleteBtn = null;
 // --- NEW: Store current node info --- 
 let currentNodeType = null;
 let currentNodeDbId = null;
+let currentNodeName = null;
 // ----------------------------------
 
 // Add refs for parent/position later if needed
@@ -101,6 +102,10 @@ function handleNodeSelection(event) {
     // Find the full data object using the dbId and type from the event
     const fullNodeData = findNodeDataInState(nodeData.type, nodeData.dbId);
 
+    // --- Debug Log for fullNodeData ---
+    console.log("[PropertiesPanel] fullNodeData from state:", fullNodeData);
+    // -----------------------------------
+
     if (!fullNodeData) {
         console.error(`[PropertiesPanel] Could not find full data in state for ${nodeData.type} ID ${nodeData.dbId}`);
         showToast('error', 'Could not load properties for selected item.');
@@ -114,6 +119,7 @@ function handleNodeSelection(event) {
     // --- NEW: Store current node info for input handler --- 
     currentNodeType = nodeData.type;
     currentNodeDbId = fullNodeData.id; // Use ID from the full data object
+    currentNodeName = fullNodeData.name || 'Unnamed Item'; // Store name here
     // --------------------------------------------------
 }
 
@@ -177,8 +183,12 @@ function handleDeleteClick() {
         return;
     }
 
+    // --- Debug log for name --- 
+    console.log(`[PropertiesPanel] Debug: handleDeleteClick - currentNodeName = ${currentNodeName}`);
+    // -------------------------
+
     // Get name from the input field (might be edited)
-    const currentName = propNameInput.value || 'Unnamed Item';
+    const currentName = currentNodeName || 'Unnamed Item';
 
     console.log(`[PropertiesPanel] Requesting delete confirmation for ${currentNodeType} ID: ${currentNodeDbId}, Name: ${currentName}`);
 

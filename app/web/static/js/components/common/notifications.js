@@ -108,8 +108,37 @@ const apiRequest = async (endpoint, options = {}) => {
             throw new ApiError(errorMessage, response.status, errorData);
         }
         
-        const data = await response.json();
-        return data;
+        // Try parsing the response body as JSON
+        try {
+            // --- Check for 204 No Content before parsing --- 
+            if (response.status === 204) {
+                console.debug('[apiRequest] Received 204 No Content, returning null.');
+                return null; // Or return {}; depending on expected usage
+            }
+            // -----------------------------------------------
+
+            // Attempt to parse JSON, but handle cases where body might be empty or non-JSON
+            try {
+                 // Check if response has content before trying to parse
+                 const text = await response.text(); // Read as text first
+                 if (!text) {
+                     console.debug('[apiRequest] Received empty response body, returning null.');
+                     return null;
+                 }
+                 const data = JSON.parse(text); // Parse the text
+                 console.debug('[apiRequest] Response data parsed:', data);
+                 return data;
+            } catch (parseError) {
+                 console.error(`[apiRequest] Error parsing JSON response body (Status: ${response.status}):`, parseError);
+                 // Decide what to return or throw. Returning null might be safer.
+                 // Alternatively, throw the parseError if the caller should handle it.
+                 // throw new Error(`Failed to parse JSON response: ${parseError.message}`); 
+                 return null; // Return null if parsing fails for a successful status code (except 204)
+            }
+        } catch (fetchOrApiError) { // Catch network errors or ApiError thrown earlier
+            console.error("Error parsing response body:", fetchOrApiError);
+            throw fetchOrApiError;
+        }
     } catch (error) {
         console.error("Error in apiRequest:", error);
         
