@@ -27,7 +27,8 @@
     border-color: var(--primary);
 }
 
-.dark-theme .form-control::placeholder {
+.dark-theme .form-control::placeholder,
+.light-theme .form-control::placeholder {
     color: var(--text-muted);
 }
 
@@ -160,4 +161,9 @@
 .form-floating > .form-control:not(:placeholder-shown) ~ label {
     opacity: .65;
     transform: scale(.85) translateY(-0.5rem) translateX(0.15rem);
+}
+
+.dark-theme .form-check-input,
+.light-theme .form-check-input {
+    /* ... styles ... */
 } 

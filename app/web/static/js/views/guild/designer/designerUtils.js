@@ -166,7 +166,18 @@ export function formatStructureForApi(templateId) {
         });
 
         console.log(`[DesignerUtils] Formatted ${nodesPayload.length} nodes for API payload from flat list.`);
-        return { nodes: nodesPayload };
+        
+        // --- NEW: Get pending property changes from state --- 
+        const pendingChanges = state.getPendingPropertyChanges(); // Assume state is imported
+        console.log("[formatStructureForApi] Pending property changes retrieved from state:", pendingChanges);
+        // ---------------------------------------------------
+
+        return {
+            nodes: nodesPayload,
+            // --- NEW: Add pending changes to payload --- 
+            property_changes: pendingChanges // Include the pending changes object
+            // ------------------------------------------
+        };
 
     } catch (error) {
         console.error("[DesignerUtils] Error formatting tree data for API:", error);

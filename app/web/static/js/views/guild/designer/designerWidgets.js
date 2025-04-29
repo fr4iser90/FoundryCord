@@ -1,8 +1,9 @@
 // Import specific widget initializers
 import { initializeStructureTree } from './widget/structureTree.js';
 import { initializeTemplateInfo } from './widget/templateInfo.js';
-import { initializeCategoriesList } from './widget/categoriesList.js';
-import { initializeChannelsList } from './widget/channelsList.js';
+// Import the *actual* list functions to be exported below
+import { initializeCategoriesList as _initializeCategoriesList } from './widget/categoriesList.js';
+import { initializeChannelsList as _initializeChannelsList } from './widget/channelsList.js';
 import { initializeTemplateList } from './widget/templateList.js';
 import { initializeSharedTemplateList } from './widget/sharedTemplateList.js';
 
@@ -32,8 +33,8 @@ export function populateGuildDesignerWidgets(templateData) {
     // Define widgets and their initialization functions
     const widgetInitializers = {
         'template-info': (el, data) => initializeTemplateInfo(data, el),
-        'categories': (el, data) => initializeCategoriesList(data, el, guildId),
-        'channels': (el, data) => initializeChannelsList(data, el, guildId),
+        'categories': (el, data) => _initializeCategoriesList(data, el, guildId),
+        'channels': (el, data) => _initializeChannelsList(data, el, guildId),
         'template-list': (el, data) => {
             // Use the active template ID from the state module
             const activeId = state.getActiveTemplateId();
@@ -78,3 +79,8 @@ export function populateGuildDesignerWidgets(templateData) {
 
 // Initial log to confirm loading
 console.log("[DesignerWidgets] Widgets module loaded.");
+
+// --- Export individual list initializers --- 
+export const initializeCategoriesList = _initializeCategoriesList;
+export const initializeChannelsList = _initializeChannelsList;
+// -------------------------------------------

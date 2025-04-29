@@ -63,10 +63,9 @@
 
 {# Content for the Left Panel (Toolbox) #}
 {% block panel_left_content %}
-    <h5 class="panel-title mb-2"><i class="bi bi-tools me-2"></i>Toolbox</h5>
-    <hr>
-    <p class="panel-placeholder">Drag elements from here later...</p>
-    {# Placeholder for drag-and-drop categories/channels/jsTree #}
+    {# --- Include the Toolbox Panel Content --- #}
+    {% include "components/guild/designer/panel/toolbox.html" %}
+    {# ----------------------------------------- #}
 {% endblock %}
 
 {# Content for the Main Area (Gridstack Canvas) #}
@@ -99,6 +98,7 @@
     {% include "views/guild/designer/save_as_new_modal.html" %}
     {% include "views/guild/designer/delete_modal.html" %} 
     {% include "views/guild/designer/activate_confirm_modal.html" %}
+    {% include "views/guild/designer/new_item_input_modal.html" %}
 {% endblock %}
 
 
@@ -108,6 +108,15 @@
     <script src="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack-all.js"></script>
     {# Include jQuery (dependency for jsTree) #}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    {# --- NEW: Include jQuery UI (Core and Draggable) for Toolbox --- #}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/jquery-ui.min.js"
+            integrity="sha512-57oZ/vW8ANMjR/KQ6Be9v/+/h6bq9/l3f0Oc7vn6qMqyhvPd1cvKBRWWpzu0QoneImqr2SkmO4MSqU+RpHom3Q=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    {# Add jQuery UI CSS (optional, but good for consistency) #}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/themes/base/jquery-ui.min.css"
+          integrity="sha512-ELV+xyi8IhEApPS/pSj66+Jiw+sOT1Mqkzlh8ExXihe4zfqbWkxPRi8wptXIO9g73FSlhmquFlUOuMSoXz5IRw=="
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    {# -------------------------------------------------------------- #}
     {# Include jsTree JS #}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/jstree.min.js"></script>
     {# Include the JavaScript file for this page (using /views/ path and type="module") #}

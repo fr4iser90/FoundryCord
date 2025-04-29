@@ -1,0 +1,32 @@
+<!---- New Item Input Modal ---->
+<div class="modal fade" id="newItemInputModal" tabindex="-1" aria-labelledby="newItemInputModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="newItemInputModalLabel">Add New <span id="newItemTypeSpan">Item</span></h5>
+        {# No close button in header to force confirmation/cancellation #}
+      </div>
+      <div class="modal-body">
+        <form id="newItemForm">
+          <div class="mb-3">
+            <label for="newItemNameInput" class="form-label">Name:</label>
+            <input type="text" class="form-control" id="newItemNameInput" required minlength="1" maxlength="100" placeholder="Enter name...">
+            <div class="invalid-feedback">
+              Please enter a valid name (1-100 characters).
+            </div>
+          </div>
+          {# Hidden fields to store context #}
+          <input type="hidden" id="newItemTypeInput" value="">
+          <input type="hidden" id="newItemParentIdInput" value="">
+          <input type="hidden" id="newItemPositionInput" value="">
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary" form="newItemForm" id="confirmNewItemButton">
+           Add Item
+        </button>
+      </div>
+    </div>
+  </div>
+</div> 

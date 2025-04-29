@@ -4,6 +4,7 @@
 // For now, formatDataForJsTree and initializeStructureTree seem self-contained
 // except for jQuery which is global via CDN.
 import { showToast } from '/static/js/components/common/notifications.js';
+import { openNewItemInputModal } from '/static/js/views/guild/designer/modal/newItemInputModal.js';
 
 /**
  * Converts template data into the format required by jsTree.
@@ -154,11 +155,19 @@ export function initializeStructureTree(templateData) { // Export the function
                 check_callback: true, 
                 themes: { name: 'default', responsive: true, stripes: true }
             },
-            plugins: ["dnd", "types", "wholerow"], 
+            plugins: ["dnd", "types", "wholerow"], // Ensure "dnd" is present
             types: {
                 "template": { "icon": "fas fa-server text-primary" },
                 "category": { "icon": "fas fa-folder text-warning" },
                 "channel": { /* default icon set in data */ }
+            },
+            dnd: {
+                // check_while_dragging: true, // Optional: Provides feedback during drag
+                // is_draggable: function(nodes) {
+                //     // Optional: Prevent dragging certain tree nodes if needed
+                //     // console.log("[TreeWidget DND] is_draggable check:", nodes);
+                //     // return true; // Allow dragging all tree nodes by default
+                // }
             }
         })
         .on('ready.jstree', function () {
@@ -213,7 +222,65 @@ export function initializeStructureTree(templateData) { // Export the function
                 }
             }));
 
-            showToast('info', `Moved ${data.node.text}. Remember to save changes.`);
+            // --- Check if the move originated from the toolbox --- 
+            const isToolboxDrop = data.event?.helper?.hasClass('toolbox-item');
+            
+            if (isToolboxDrop) {
+                console.log("[TreeWidget DND] Drop from toolbox detected.");
+                const itemType = data.event.helper.data('type'); // Get type from toolbox item data
+                const parentNode = $(this).jstree(true).get_node(data.parent);
+                const parentType = parentNode ? parentNode.type : null;
+                const parentDbId = parentNode?.data?.dbId;
+
+                console.log(`  Item Type: ${itemType}`);
+                console.log(`  Target Parent: ID=${data.parent}, Type=${parentType}, DBID=${parentDbId}, Position=${data.position}`);
+
+                // --- VALIDATE DROP TARGET --- 
+                let isValidDrop = false;
+                if (itemType === 'category' && parentType === 'template') {
+                    isValidDrop = true; // Category can only be dropped onto template root
+                } else if (itemType.endsWith('_channel') && (parentType === 'template' || parentType === 'category')) {
+                    isValidDrop = true; // Channels can be dropped onto root or category
+                }
+
+                if (isValidDrop) {
+                    // TODO: Prevent the actual move in jsTree for toolbox items (maybe return false in check_callback?)
+                    //       For now, we proceed and will create a new node later.
+                    showToast('info', `Adding new ${itemType}...`);
+                    // TODO: Trigger Input Modal here, passing itemType, parentDbId, position
+                    openNewItemInputModal(itemType, data.parent, data.position);
+
+                    // --- TEMPORARY: Prevent default move event for toolbox drops --- 
+                    // This is a bit hacky; ideally, check_callback would prevent the move.
+                    // We reset the dirty flag set by the move_node event listener above.
+                    state.setDirty(false);
+                    updateToolbarButtonStates(); 
+                    // -------------------------------------------------------------
+
+                } else {
+                     showToast('warning', `Cannot drop a ${itemType} here.`);
+                     console.warn(`[TreeWidget DND] Invalid drop: ${itemType} cannot be dropped onto ${parentType}`);
+                     // TODO: Ensure the placeholder node added by jsTree is removed
+                     // $(this).jstree(true).delete_node(data.node.id); // Might be needed if check_callback doesn't prevent it
+                     state.setDirty(false); // Reset dirty flag
+                     updateToolbarButtonStates();
+                }
+            
+            } else {
+                // Dispatch structureChanged event ONLY for internal tree moves
+                document.dispatchEvent(new CustomEvent('structureChanged', {
+                    detail: {
+                        nodeId: data.node.id,
+                        newParentId: data.parent,
+                        newPosition: data.position,
+                        oldParentId: data.old_parent,
+                        oldPosition: data.old_position
+                    }
+                }));
+                // This was a regular node move within the tree
+                showToast('info', `Moved ${data.node.text}. Remember to save changes.`);
+            }
+            // -----------------------------------------------------
         });
         // console.log("[TreeWidget] jsTree initialized successfully."); // AUSKOMMENTIERT
     } catch (error) {

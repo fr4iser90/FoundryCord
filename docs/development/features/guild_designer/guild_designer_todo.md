@@ -84,7 +84,7 @@
 *   [ ] **Save Button - Properties speichern:**
     *   **Files:** `designerUtils.js`, `template_service.py`, `guild_template_controller.py`.
     *   [ ] **Daten formatieren (`formatStructureForApi`):** Funktion erweitern, um geänderte Properties für jeden Knoten mitzusenden.
-    *   [ ] **Backend erweitern (`update_template_structure`):** PUT-Endpunkt/Service anpassen, um Property-Updates zu empfangen und in DB zu speichern (Kategorie-/Kanal-Entitäten aktualisieren).
+    *   [ ] **Backend erweitern (`update_template_structure`):** PUT `/templates/guilds/{template_id}/structure` Endpunkt/Service anpassen, um Property-Updates zu empfangen und in DB zu speichern (Kategorie-/Kanal-Entitäten aktualisieren).
     *   [ ] **State aufräumen:** Nach erfolgreichem Speichern "pending property changes" löschen.
 *   [ ] **Elemente löschen implementieren:**
     *   **Files:** `properties.js` / `structureTree.js`, `deleteModal.js`, `designerEvents.js`, `template_service.py`, `guild_template_controller.py`, Repos.
@@ -100,7 +100,7 @@
     *   [ ] **Tree Drag-and-Drop:** jsTree konfigurieren, um Drop aus Toolbox zu akzeptieren.
     *   [ ] **Input Modal:** Modal für Namenseingabe bei neuem Element erstellen/verwenden.
     *   [ ] **Frontend State:** Nach Eingabe: Temporären Knoten zum Baum hinzufügen, Daten in `state.pendingAdditions` speichern, `state.setDirty(true)`.
-    *   [ ] **Backend API (POST):** Neue Endpunkte (`POST /.../categories`, `POST /.../channels`) erstellen.
+    *   [ ] **Backend API (POST):** Neue Endpunkte (`POST /templates/guilds/categories`, `POST /templates/guilds/channels` - *Prüfen ob diese oder `from_structure` gemeint war*) erstellen.
     *   [ ] **Backend Logik:** Service/Repo-Methoden zum Erstellen neuer DB-Entitäten implementieren.
     *   [ ] **Frontend Call:** Eigene POST Calls nach Modal-Bestätigung machen das Hinzufügen direkter (statt über "Save Structure").
     *   [ ] **UI Update:** Nach Erfolg: Temporären Knoten mit echter DB-ID aktualisieren, Listen neu laden.

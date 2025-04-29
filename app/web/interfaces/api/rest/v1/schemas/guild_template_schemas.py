@@ -110,6 +110,7 @@ class GuildStructureNodeUpdate(BaseModel):
 
 class GuildStructureUpdatePayload(BaseModel):
     nodes: List[GuildStructureNodeUpdate] = Field(..., description="List of all nodes representing the desired structure")
+    property_changes: Optional[Dict[str, Dict[str, Any]]] = Field(None, description="Dictionary mapping node keys (e.g., 'category_123') to changed properties and their new values.")
 
 class GuildStructureUpdateResponse(BaseModel):
     message: str

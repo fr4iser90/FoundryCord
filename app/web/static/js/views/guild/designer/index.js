@@ -15,7 +15,7 @@ import {
     toggleLayoutLockAndSave 
 } from './designerLayout.js';
 import { initializeDesignerEventListeners } from './designerEvents.js';
-import { populateGuildDesignerWidgets } from './designerWidgets.js';
+import { populateGuildDesignerWidgets, initializeCategoriesList, initializeChannelsList } from './designerWidgets.js';
 import { initializeStructureTree } from './widget/structureTree.js'; // Still needed for GridManager callback
 
 // --- Modal Imports ---
@@ -23,9 +23,11 @@ import { initializeShareModal } from './modal/shareModal.js';
 import { initializeSaveAsNewModal } from './modal/saveAsNewModal.js';
 import { initializeDeleteModal } from './modal/deleteModal.js';
 import { initializeActivateConfirmModal } from './modal/activateConfirmModal.js';
+import { initializeNewItemInputModal } from './modal/newItemInputModal.js';
 
 // --- Panel Imports ---
 import { initializePropertiesPanel } from './panel/properties.js';
+import { initializeToolbox } from './panel/toolbox.js';
 
 // --- Main Execution --- 
 
@@ -154,6 +156,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeSaveAsNewModal();
         initializeDeleteModal();
         initializeActivateConfirmModal();
+        initializeNewItemInputModal();
         console.log("[Index] Modals initialized.");
         
         // 7. Initialize Core Designer Event Listeners (Save button, custom events, etc.)
@@ -164,7 +167,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 8. Initialize Panels
         console.log("[Index] Initializing panels (Properties, Toolbox)...");
         initializePropertiesPanel();
+        initializeToolbox();
         console.log("[Index] Panels initialized.");
+
+        // --- NEW: Add listener for element deletion --- 
+        document.addEventListener('designerElementDeleted', handleDesignerElementDeleted);
+        console.log("[Index] Added listener for 'designerElementDeleted'.");
+        // --------------------------------------------
 
         console.log("[Index] Guild Designer initialization sequence complete.");
 
@@ -173,3 +182,80 @@ document.addEventListener('DOMContentLoaded', async () => {
         displayErrorMessage('An critical unexpected error occurred during initialization. Please check the console.');
     }
 }); 
+
+// --- NEW: Handler function for element deletion ---
+/**
+ * Handles the 'designerElementDeleted' event dispatched by the delete modal.
+ * Removes the corresponding node from the jsTree view.
+ * @param {CustomEvent} event - The event object containing detail: { itemType, itemId }.
+ */
+function handleDesignerElementDeleted(event) {
+    const { itemType, itemId } = event.detail;
+    console.log(`[Index] Handling 'designerElementDeleted' for ${itemType} ID: ${itemId}`);
+
+    if (!itemType || itemId === undefined || itemId === null) {
+        console.error("[Index] Invalid event detail for 'designerElementDeleted':", event.detail);
+        return;
+    }
+
+    // Construct the jsTree node ID (e.g., designer_category -> category_)
+    const nodeTypePrefix = itemType.replace('designer_', ''); // Remove prefix
+    const nodeIdString = `${nodeTypePrefix}_${itemId}`;
+
+    // Get the jsTree instance
+    const treeContainer = document.getElementById('widget-content-structure-tree');
+    if (!treeContainer || typeof $.fn.jstree !== 'function') {
+        console.error("[Index] Could not find tree container or jsTree function to delete node.");
+        return;
+    }
+    const treeInstance = $(treeContainer).jstree(true);
+
+    if (!treeInstance) {
+        console.error("[Index] Could not get jsTree instance to delete node.");
+        return;
+    }
+
+    // Check if node exists before attempting delete
+    const node = treeInstance.get_node(nodeIdString);
+    if (!node) {
+        console.warn(`[Index] Node with ID ${nodeIdString} not found in jsTree. Might have been removed already.`);
+        return; // Node doesn't exist, nothing to delete
+    }
+
+    // Delete the node from the tree
+    try {
+        treeInstance.delete_node(nodeIdString);
+        console.log(`[Index] Successfully deleted node ${nodeIdString} from jsTree.`);
+        // Note: state.setDirty(true) is already called by deleteModal.js
+        // We might need to trigger an update for other list widgets here if needed
+        // --- Refresh corresponding list widget --- 
+        const currentTemplateData = state.getCurrentTemplateData();
+        const guildId = getGuildIdFromUrl(); // Needed for list links
+
+        if (currentTemplateData && guildId) {
+            if (itemType === 'designer_category') {
+                const categoryListEl = document.getElementById('widget-content-categories');
+                if (categoryListEl) {
+                    console.log("[Index] Refreshing categories list after deletion.");
+                    initializeCategoriesList(currentTemplateData, categoryListEl, guildId);
+                } else {
+                    console.warn("[Index] Could not find categories list element to refresh.");
+                }
+            } else if (itemType === 'designer_channel') {
+                const channelListEl = document.getElementById('widget-content-channels');
+                if (channelListEl) {
+                    console.log("[Index] Refreshing channels list after deletion.");
+                    initializeChannelsList(currentTemplateData, channelListEl, guildId);
+                } else {
+                    console.warn("[Index] Could not find channels list element to refresh.");
+                }
+            }
+        } else {
+            console.warn("[Index] Could not refresh list widget: Missing current template data or guild ID.");
+        }
+        // -----------------------------------------
+    } catch (error) {
+        console.error(`[Index] Error deleting node ${nodeIdString} from jsTree:`, error);
+    }
+}
+// -------------------------------------------- 

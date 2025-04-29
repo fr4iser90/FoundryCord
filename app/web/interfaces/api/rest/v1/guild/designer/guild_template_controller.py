@@ -173,6 +173,24 @@ class GuildTemplateController(BaseController):
             dependencies=[Depends(get_current_user)]
         )(self.create_template_from_structure)
 
+        # === NEW DELETE Endpoints for Categories/Channels ===
+        self.general_template_router.delete(
+            "/templates/guilds/categories/{category_id}",
+            status_code=status.HTTP_204_NO_CONTENT,
+            summary="Delete Template Category by DB ID",
+            description="Deletes a specific category from a guild template using its unique database ID.",
+            dependencies=[Depends(get_current_user)]
+        )(self.delete_template_category)
+
+        self.general_template_router.delete(
+            "/templates/guilds/channels/{channel_id}",
+            status_code=status.HTTP_204_NO_CONTENT,
+            summary="Delete Template Channel by DB ID",
+            description="Deletes a specific channel from a guild template using its unique database ID.",
+            dependencies=[Depends(get_current_user)]
+        )(self.delete_template_channel)
+        # ====================================================
+
     async def get_guild_template(self, guild_id: str, current_user: AppUserEntity = Depends(get_current_user)) -> GuildTemplateResponseSchema:
         """API endpoint to retrieve the guild template structure by Guild ID."""
         try:
@@ -732,6 +750,84 @@ class GuildTemplateController(BaseController):
         except Exception as e:
             self.logger.error(f"Unexpected error calling internal API for guild {guild_id}: {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred while communicating with the bot.")
+
+    # === NEW Controller Methods for Deleting Elements ===
+    async def delete_template_category(
+        self,
+        category_id: int,
+        current_user: AppUserEntity = Depends(get_current_user),
+        db: AsyncSession = Depends(get_web_db_session)
+    ):
+        """API endpoint to delete a category from a template."""
+        self.logger.info(f"User {current_user.id} requesting deletion of template category ID: {category_id}")
+        try:
+            # TODO: Permission Check: Ensure user can edit the parent template of this category
+            # This might involve fetching the category, then its parent template, then checking creator/owner
+            # Example (needs service method get_category_parent_template_id):
+            # parent_template_id = await self.template_service.get_category_parent_template_id(db, category_id)
+            # if not parent_template_id:
+            #     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category or its parent template not found.")
+            # can_edit = await self.template_service.check_user_can_edit_template(db, current_user.id, parent_template_id)
+            # if not can_edit:
+            #     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied to modify this template.")
+            # For now, assume permission granted if authenticated
+            
+            # Call the service layer method (to be implemented)
+            # Assuming service method is named delete_template_category
+            deleted = await self.template_service.delete_template_category(db, category_id)
+            
+            if not deleted:
+                # Service should raise specific exceptions ideally
+                self.logger.warning(f"Service failed to delete category {category_id}. Might not exist.")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found or could not be deleted.")
+            
+            self.logger.info(f"Successfully deleted template category ID: {category_id}")
+            # No content to return for 204
+            return
+
+        except HTTPException as http_exc:
+            raise http_exc
+        except NotImplementedError:
+            self.logger.error(f"Category deletion service method not implemented for ID {category_id}")
+            raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Category deletion not implemented.")
+        except Exception as e:
+            self.logger.error(f"Error deleting template category ID {category_id}: {e}", exc_info=True)
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An internal error occurred while deleting the category.")
+
+    async def delete_template_channel(
+        self,
+        channel_id: int,
+        current_user: AppUserEntity = Depends(get_current_user),
+        db: AsyncSession = Depends(get_web_db_session)
+    ):
+        """API endpoint to delete a channel from a template."""
+        self.logger.info(f"User {current_user.id} requesting deletion of template channel ID: {channel_id}")
+        try:
+            # TODO: Permission Check: Ensure user can edit the parent template of this channel
+            # Similar logic as for category deletion
+            # For now, assume permission granted if authenticated
+            
+            # Call the service layer method (to be implemented)
+            # Assuming service method is named delete_template_channel
+            deleted = await self.template_service.delete_template_channel(db, channel_id)
+            
+            if not deleted:
+                self.logger.warning(f"Service failed to delete channel {channel_id}. Might not exist.")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Channel not found or could not be deleted.")
+            
+            self.logger.info(f"Successfully deleted template channel ID: {channel_id}")
+            # No content to return for 204
+            return
+
+        except HTTPException as http_exc:
+            raise http_exc
+        except NotImplementedError:
+            self.logger.error(f"Channel deletion service method not implemented for ID {channel_id}")
+            raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Channel deletion not implemented.")
+        except Exception as e:
+            self.logger.error(f"Error deleting template channel ID {channel_id}: {e}", exc_info=True)
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An internal error occurred while deleting the channel.")
+    # =======================================================
 
 # Instantiate the controller for registration
 guild_template_controller = GuildTemplateController() 

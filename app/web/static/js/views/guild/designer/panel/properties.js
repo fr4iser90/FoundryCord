@@ -9,7 +9,9 @@
  */
 
 import { showToast } from '/static/js/components/common/notifications.js';
-import { state } from '../designerState.js'; // Import state if needed
+import { state } from '../designerState.js';
+import { openDeleteModal } from '../modal/deleteModal.js';
+import { updateToolbarButtonStates } from '../designerEvents.js';
 
 // --- DOM Element References (Lazy Loaded) ---
 let panelContent = null;
@@ -22,6 +24,12 @@ let propTopicInput = null;
 let propNsfwSwitch = null;
 let propSlowmodeInput = null;
 let propDeleteBtn = null;
+
+// --- NEW: Store current node info --- 
+let currentNodeType = null;
+let currentNodeDbId = null;
+// ----------------------------------
+
 // Add refs for parent/position later if needed
 
 // --- Initialization ---
@@ -59,12 +67,16 @@ export function initializePropertiesPanel() {
     // Add event listener for node selection
     document.addEventListener('designerNodeSelected', handleNodeSelection);
     
-    // TODO: Add event listeners for input changes in the form fields
-    // propNameInput.addEventListener('input', handleInputChange);
-    // ... etc ...
+    // --- Add event listeners for input changes --- 
+    propNameInput.addEventListener('input', handleInputChange);
+    propTopicInput.addEventListener('input', handleInputChange);
+    propSlowmodeInput.addEventListener('input', handleInputChange);
+    propNsfwSwitch.addEventListener('change', handleInputChange); // Use 'change' for checkbox/switch
+    // -----------------------------------------
 
-    // TODO: Add event listener for the delete button
-    // propDeleteBtn.addEventListener('click', handleDeleteClick);
+    // --- Add event listener for the delete button --- 
+    propDeleteBtn.addEventListener('click', handleDeleteClick);
+    // ---------------------------------------------
 
     resetPanel(); // Show placeholder initially
     console.log("[PropertiesPanel] Initialization complete.");
@@ -98,9 +110,84 @@ function handleNodeSelection(event) {
     
     // Pass the full data and original type to populatePanel
     populatePanel(fullNodeData, nodeData.type);
+
+    // --- NEW: Store current node info for input handler --- 
+    currentNodeType = nodeData.type;
+    currentNodeDbId = fullNodeData.id; // Use ID from the full data object
+    // --------------------------------------------------
 }
 
-// TODO: Implement handleInputChange, handleDeleteClick etc.
+// --- NEW: Handle Input Changes --- 
+/**
+ * Handles input changes in the properties form fields.
+ * Sets the designer state to dirty and updates toolbar buttons.
+ * 
+ * TODO: Store the specific change temporarily in the state.
+ * @param {Event} event - The input or change event object.
+ */
+function handleInputChange(event) {
+    const inputElement = event.target;
+    const propertyName = inputElement.id; // e.g., 'prop-name-input', 'prop-nsfw-switch'
+    const newValue = (inputElement.type === 'checkbox') ? inputElement.checked : inputElement.value;
+
+    console.log(`[PropertiesPanel] Input changed: ${propertyName} = ${newValue}`);
+
+    // 1. Set the state to dirty
+    state.setDirty(true);
+
+    // 2. Update the toolbar button states (e.g., enable Save)
+    updateToolbarButtonStates(); 
+
+    // 3. TODO: Store the pending change
+    // This requires knowing the ID and type of the currently edited node.
+    // We might need to store the current node's ID/type within the properties.js scope
+    // when populatePanel is called, or retrieve it from the state again here.
+    // Example (Conceptual - requires storing current node info):
+    // state.addPendingPropertyChange(currentNodeDbId, currentNodeType, propertyName, newValue);
+
+    // --- NEW: Call state to add the change --- 
+    if (currentNodeType && currentNodeDbId !== null) {
+        // Map the input ID back to a simpler property name if needed
+        let statePropertyName = propertyName.replace('prop-', '').replace('-input', '').replace('-switch', ''); 
+        // e.g., 'prop-name-input' -> 'name', 'prop-nsfw-switch' -> 'nsfw'
+        
+        // Special handling for nsfw to match potential backend expectation (is_nsfw)
+        if (statePropertyName === 'nsfw') {
+            statePropertyName = 'is_nsfw';
+        }
+        // Add more mappings if needed
+        
+        state.addPendingPropertyChange(currentNodeType, currentNodeDbId, statePropertyName, newValue);
+    } else {
+        console.warn("[PropertiesPanel] Cannot store pending change: Current node type or ID is not set.");
+    }
+    // --- END NEW --- 
+}
+// --- END NEW --- 
+
+// --- NEW: Handle Delete Click --- 
+/**
+ * Handles the click event for the delete button in the properties panel.
+ * Opens the confirmation modal, passing necessary details.
+ */
+function handleDeleteClick() {
+    if (currentNodeDbId === null || !currentNodeType) {
+        console.error("[PropertiesPanel] Delete clicked but current node info is missing.");
+        showToast('error', 'Cannot delete: Item details not available.');
+        return;
+    }
+
+    // Get name from the input field (might be edited)
+    const currentName = propNameInput.value || 'Unnamed Item';
+
+    console.log(`[PropertiesPanel] Requesting delete confirmation for ${currentNodeType} ID: ${currentNodeDbId}, Name: ${currentName}`);
+
+    // Open the existing delete modal, passing type information
+    // The modal currently only handles templates, this needs modification later.
+    // Pass a prefixed type to distinguish from template deletion requests later.
+    openDeleteModal(currentNodeDbId, currentName, `designer_${currentNodeType}`); 
+}
+// --- END NEW ---
 
 // --- UI Logic ---
 
@@ -142,53 +229,52 @@ function populatePanel(data, nodeType) {
     propDeleteBtn.disabled = true;
 
     // Hide type-specific fields/sections initially
-    propTopicInput.closest('.mb-3').classList.add('d-none'); 
-    propNsfwSwitch.closest('.mb-3').classList.add('d-none'); // Hide the whole settings div containing NSFW and Slowmode
-    // No need to hide slowmode separately if its parent div is hidden
+    const topicSection = propTopicInput.closest('.mb-3'); // Get parent div
+    const settingsSection = propNsfwSwitch.closest('.mb-3'); // Get parent div
+    const slowmodeContainer = propSlowmodeInput.closest('.d-inline-block'); // Get specific container for slowmode
 
-    // --- Fill Type-Specific Fields & Enable Controls ---
+    topicSection.classList.add('d-none'); 
+    settingsSection.classList.add('d-none'); // Hide the whole settings div containing NSFW and Slowmode
+    // No need to hide slowmode separately if its parent div is hidden, but good practice to manage its container too
+    slowmodeContainer.classList.add('d-none');
+
+
+    // --- Fill Type-Specific Fields & Adjust Visibility (Controls remain disabled) ---
     if (nodeType === 'category') {
-        // Enable name editing for categories (LATER - keep disabled for now)
-        // propNameInput.disabled = false;
-        
-        // Enable delete button (LATER - keep disabled for now)
-        // propDeleteBtn.disabled = false;
+        // Nothing specific to show/hide for categories yet besides common fields
+        propDeleteBtn.disabled = false; // Enable delete button for categories
+        propNameInput.disabled = false; // Enable name editing for categories
+        // Delete button logic will be added later
         
     } else if (nodeType === 'channel') {
-        // Enable name editing for channels (LATER - keep disabled for now)
-        // propNameInput.disabled = false;
-        
-        // Enable delete button (LATER - keep disabled for now)
-        // propDeleteBtn.disabled = false;
+        propNameInput.disabled = false; // Enable name editing for channels
+        propDeleteBtn.disabled = false; // Enable delete button for channels
 
         // Show/Populate fields applicable to the specific channel type
         const channelType = data.type ? data.type.toLowerCase() : ''; // Use 'type' from full data
         
         // Topic: Text channels only
         if (channelType === 'text') {
-            const topicSection = propTopicInput.closest('.mb-3');
             topicSection.classList.remove('d-none'); // Show topic section
             propTopicInput.value = data.topic || '';
-            // propTopicInput.disabled = false; // Keep disabled for now
+            propTopicInput.disabled = false; // Enable topic editing
         }
         
-        // Settings Div (NSFW, Slowmode): Text & Voice channels 
-        const settingsSection = propNsfwSwitch.closest('.mb-3');
+        // Settings Div (NSFW): Text & Voice channels 
         if (channelType === 'text' || channelType === 'voice') {
             settingsSection.classList.remove('d-none'); // Show settings section
             propNsfwSwitch.checked = data.is_nsfw || false;
-            // propNsfwSwitch.disabled = false; // Keep disabled for now
+            propNsfwSwitch.disabled = false; // Enable NSFW toggle
         }
 
-        // Slowmode: Text channels only (within the settings div)
-        const slowmodeContainer = propSlowmodeInput.closest('.d-inline-block');
+        // Slowmode (within the settings div): Text channels only
         if (channelType === 'text') {
-            slowmodeContainer.classList.remove('d-none'); // Show slowmode input
+            // Ensure settings section is visible first if needed (already handled above)
+            slowmodeContainer.classList.remove('d-none'); // Show slowmode input within the settings div
             propSlowmodeInput.value = data.slowmode_delay || 0;
-            // propSlowmodeInput.disabled = false; // Keep disabled for now
-        } else {
-             slowmodeContainer.classList.add('d-none'); // Hide slowmode if not text
+            propSlowmodeInput.disabled = false; // Enable slowmode editing
         }
+        // Delete button logic will be added later
         
     } else {
          // Handle template root node or other types - reset to placeholder

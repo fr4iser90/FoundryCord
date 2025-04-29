@@ -948,6 +948,67 @@ class GuildTemplateService:
         items_to_update = [] # Collect DB entities that need updating
 
         # --- 5. Process Updates ---
+        # --- 5a. Process Property Changes (NEW) --- 
+        if structure_payload.property_changes:
+             logger.info(f"Processing {len(structure_payload.property_changes)} nodes with property changes for template {template_id}")
+             for node_key, changes in structure_payload.property_changes.items():
+                 try:
+                     item_type, item_db_id_str = node_key.split('_')
+                     item_db_id = int(item_db_id_str)
+
+                     target_entity = None
+                     if item_type == 'category' and item_db_id in existing_cats_by_dbid:
+                         target_entity = existing_cats_by_dbid[item_db_id]
+                     elif item_type == 'channel' and item_db_id in existing_chans_by_dbid:
+                          target_entity = existing_chans_by_dbid[item_db_id]
+                     
+                     if target_entity:
+                         logger.debug(f"Applying property changes to {item_type} ID {item_db_id}: {changes}")
+                         for prop_name, new_value in changes.items():
+                             # Map frontend prop names to entity attribute names if necessary
+                             entity_attr_name = prop_name # Default: assume direct mapping
+                             if item_type == 'category':
+                                 if prop_name == 'name': entity_attr_name = 'category_name'
+                                 # Add other category mappings if needed
+                             elif item_type == 'channel':
+                                 if prop_name == 'name': entity_attr_name = 'channel_name'
+                                 # if prop_name == 'type': entity_attr_name = 'channel_type' # Type change unlikely here
+                                 # is_nsfw and slowmode_delay likely map directly
+                                 # topic likely maps directly
+                             
+                             if hasattr(target_entity, entity_attr_name):
+                                 current_value = getattr(target_entity, entity_attr_name)
+                                 # Type casting might be needed (e.g., string to int for slowmode)
+                                 try:
+                                     # Attempt type casting based on expected type
+                                     expected_type = type(current_value)
+                                     if expected_type is bool and isinstance(new_value, str): # Handle string 'true'/'false' from JS for bool
+                                          casted_value = new_value.lower() == 'true'
+                                     elif expected_type is int and isinstance(new_value, (str, bool)): # Handle potential string/bool for int
+                                          casted_value = int(new_value)
+                                     elif expected_type is float and isinstance(new_value, (str, bool, int)): # Handle potential string/bool/int for float
+                                         casted_value = float(new_value)
+                                     else:
+                                          casted_value = expected_type(new_value)
+                                     
+                                     if current_value != casted_value:
+                                          logger.debug(f"  Updating {entity_attr_name} from '{current_value}' to '{casted_value}'")
+                                          setattr(target_entity, entity_attr_name, casted_value)
+                                          if target_entity not in items_to_update:
+                                              items_to_update.append(target_entity)
+                                     else:
+                                          logger.debug(f"  Skipping {entity_attr_name}: Value '{current_value}' already matches new value '{casted_value}'")
+                                 except (ValueError, TypeError) as cast_err:
+                                      logger.warning(f"  Could not apply change for {entity_attr_name}: Failed to cast new value '{new_value}' to expected type {expected_type}. Error: {cast_err}")
+                             else:
+                                 logger.warning(f"  Property '{prop_name}' (mapped to '{entity_attr_name}') not found on {item_type} entity ID {item_db_id}. Skipping.")
+                     else:
+                         logger.warning(f"Node key '{node_key}' in property changes refers to a non-existent or mismatched item. Skipping changes: {changes}")
+
+                 except (ValueError, IndexError) as e:
+                     logger.warning(f"Could not parse node key '{node_key}' from property changes payload: {e}. Skipping changes: {changes}")
+        # --- End Property Changes ---
+
         # Update existing categories
         for cat_dbid in incoming_cat_dbids:
             category = existing_cats_by_dbid[cat_dbid]
@@ -1210,6 +1271,66 @@ class GuildTemplateService:
             # Raise a generic domain exception or re-raise the original
             raise DomainException(f"An unexpected error occurred while updating template settings for guild {guild_id}.") from e
 
+    # --- NEW Service Methods for Deleting Elements ---
+
+    async def delete_template_category(self, db: AsyncSession, category_id: int) -> bool:
+        """Deletes a specific category from a template database entry."""
+        logger.info(f"Service attempting to delete template category ID: {category_id}")
+        try:
+            category_repo = GuildTemplateCategoryRepositoryImpl(db)
+            category_to_delete = await category_repo.get_by_id(category_id)
+
+            if not category_to_delete:
+                logger.warning(f"Category ID {category_id} not found for deletion.")
+                return False # Indicate not found
+
+            # Optional: Add check if category has child channels before deleting?
+            # For simplicity, we assume cascading delete is handled by DB or we allow deletion.
+            # If a check is needed:
+            # channel_repo = GuildTemplateChannelRepositoryImpl(db)
+            # children_exist = await channel_repo.check_if_channels_exist_for_category(category_id)
+            # if children_exist:
+            #     logger.warning(f"Attempted to delete category {category_id} which still has child channels.")
+            #     raise InvalidOperation("Cannot delete category with existing channels.")
+
+            await category_repo.delete(category_to_delete)
+            # Commit should be handled by the controller's session management or context manager
+            # await db.commit() 
+            logger.info(f"Successfully marked category ID {category_id} for deletion (pending commit).")
+            return True
+
+        # Let specific exceptions like InvalidOperation bubble up
+        except InvalidOperation as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error deleting template category ID {category_id}: {e}", exc_info=True)
+            await db.rollback() # Rollback on error within this operation
+            # Raise a generic exception or return False?
+            raise DomainException(f"Failed to delete category {category_id} due to database error.") from e
+
+    async def delete_template_channel(self, db: AsyncSession, channel_id: int) -> bool:
+        """Deletes a specific channel from a template database entry."""
+        logger.info(f"Service attempting to delete template channel ID: {channel_id}")
+        try:
+            channel_repo = GuildTemplateChannelRepositoryImpl(db)
+            channel_to_delete = await channel_repo.get_by_id(channel_id)
+
+            if not channel_to_delete:
+                logger.warning(f"Channel ID {channel_id} not found for deletion.")
+                return False # Indicate not found
+
+            await channel_repo.delete(channel_to_delete)
+            # Commit should be handled by the controller's session management
+            # await db.commit()
+            logger.info(f"Successfully marked channel ID {channel_id} for deletion (pending commit).")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error deleting template channel ID {channel_id}: {e}", exc_info=True)
+            await db.rollback()
+            raise DomainException(f"Failed to delete channel {channel_id} due to database error.") from e
+
+    # -----------------------------------------------------
 
 # Instantiate the service if needed globally (e.g., for factory)
 # Or instantiate it where needed

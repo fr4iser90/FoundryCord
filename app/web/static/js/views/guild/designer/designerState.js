@@ -1,43 +1,97 @@
 // Module to manage shared state for the Guild Designer
 
-let currentActiveTemplateId = null; // ID of the *guild's* active template
-let isStructureDirty = false;
-let currentTemplateData = null;
+// --- Private State Variables ---
+let _isDirty = false;
+let _currentTemplateData = null; // Holds the full structure { template_id, name, categories: [], channels: [] }
+let _activeTemplateId = null; // DB ID of the template marked active in the guild config
+let _initialTemplateDataJson = null; // Store the initial unmodified structure as JSON
+let _pendingPropertyChanges = {};
+let _pendingAdditions = [];
 
-// Using a reference object for the dirty flag allows passing it to other modules
-// where its value can be updated directly.
-const dirtyFlagRef = { value: isStructureDirty };
-
+// --- Public State Object ---
 export const state = {
-    getActiveTemplateId: () => currentActiveTemplateId,
-    setActiveTemplateId: (id) => {
-         // Add console log to trace calls
-         console.log(`[DesignerState DEBUG] setActiveTemplateId called with ID: ${id} (Type: ${typeof id})`); 
-         const previousId = currentActiveTemplateId;
-         currentActiveTemplateId = id; 
-         if (previousId !== currentActiveTemplateId) {
-             console.log(`[DesignerState] Active template ID updated from ${previousId} to ${currentActiveTemplateId}`);
-         }
-    },
 
-    // Use the reference object for getting/setting dirty status
-    isDirty: () => dirtyFlagRef.value,
-    setDirty: (dirty) => {
-        if (dirtyFlagRef.value !== dirty) { // Only update and log if changed
-            dirtyFlagRef.value = dirty;
-            console.log(`[DesignerState] Dirty state set to: ${dirty}`);
-            // Optionally, dispatch an event here if other modules need to react DIRECTLY to dirty changes
-            // document.dispatchEvent(new CustomEvent('designerDirtyStateChanged', { detail: { isDirty: dirtyFlagRef.value } }));
+    setActiveTemplateId: function(id) {
+        console.log(`[DesignerState DEBUG] setActiveTemplateId called with ID: ${id} (Type: ${typeof id})`);
+        const previousId = _activeTemplateId;
+        _activeTemplateId = id;
+        if (previousId !== _activeTemplateId) {
+            console.log(`[DesignerState] Active template ID updated from ${previousId} to ${_activeTemplateId}`);
         }
     },
-    getDirtyFlagRef: () => dirtyFlagRef, // Provide direct access to the ref object if needed cautiously
 
-    getCurrentTemplateData: () => currentTemplateData,
-    setCurrentTemplateData: (data) => { 
-        currentTemplateData = data; 
+    getActiveTemplateId: function() {
+        return _activeTemplateId;
+    },
+
+    isDirty: function() {
+        return _isDirty;
+    },
+
+    setDirty: function(dirty) {
+        if (_isDirty !== dirty) {
+            _isDirty = dirty;
+            console.log(`[DesignerState] Dirty state set to: ${_isDirty}`);
+            if (!_isDirty) {
+                this.clearPendingPropertyChanges(); // Use 'this'
+                this.clearPendingAdditions();     // Use 'this'
+            }
+        }
+    },
+
+    getCurrentTemplateData: function() {
+        return _currentTemplateData;
+    },
+
+    setCurrentTemplateData: function(data) {
+        _currentTemplateData = data;
         console.log("[DesignerState] Current template data updated.");
     },
-};
+
+    // --- Property Changes ---
+    addPendingPropertyChange: function(nodeType, nodeId, property, value) {
+        if (!nodeType || nodeId === undefined || nodeId === null || !property) {
+            console.error("[DesignerState] Invalid arguments for addPendingPropertyChange:", { nodeType, nodeId, property, value });
+            return;
+        }
+        const key = `${nodeType}_${nodeId}`;
+        if (!_pendingPropertyChanges[key]) {
+            _pendingPropertyChanges[key] = {};
+        }
+        _pendingPropertyChanges[key][property] = value;
+        console.log("[DesignerState] Pending changes updated:", _pendingPropertyChanges);
+    },
+
+    getPendingPropertyChanges: function() {
+        return _pendingPropertyChanges;
+    },
+
+    clearPendingPropertyChanges: function() {
+        _pendingPropertyChanges = {};
+        console.log("[DesignerState] Pending property changes cleared.");
+    },
+
+    // --- Pending Additions ---
+    addPendingAddition: function(tempId, itemType, itemName, parentNodeId, position) {
+        _pendingAdditions.push({
+            tempId: tempId,
+            itemType: itemType,
+            name: itemName,
+            parentId: parentNodeId,
+            position: position
+        });
+        console.log("[DesignerState] Pending additions updated:", _pendingAdditions);
+    },
+
+    getPendingAdditions: function() {
+        return _pendingAdditions;
+    },
+
+    clearPendingAdditions: function() {
+        _pendingAdditions = [];
+        console.log("[DesignerState] Pending additions cleared.");
+    }
+}; // End state object definition
 
 // Initial log to confirm loading
 console.log("[DesignerState] State module loaded.");

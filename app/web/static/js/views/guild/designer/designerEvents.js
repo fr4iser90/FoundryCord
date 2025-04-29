@@ -29,7 +29,7 @@ function updateSaveButtonState() {
 */
 
 // --- Function to update toolbar button states ---
-function updateToolbarButtonStates() {
+export function updateToolbarButtonStates() {
     const saveButton = document.getElementById('save-structure-btn');
     const activateButton = document.getElementById('activate-template-btn');
     const applyButton = document.getElementById('apply-template-btn'); // Get the new button
@@ -434,7 +434,7 @@ async function handleActivateConfirmed(event) {
         if (activateButton) {
             activateButton.innerHTML = originalButtonText; 
         }
-        updateToolbarButtonStates(); // Always update button states in finally block
+        updateToolbarButtonStates(); // Always update button states in finally block after activation attempt.
         console.log("[DesignerEvents] Button states updated in finally block after activation attempt.");
     }
 }
@@ -556,6 +556,75 @@ async function handleDeleteUnmanagedChange(event) {
 }
 // --- END NEW ---
 
+// --- NEW: Handler for newItemConfirmed --- 
+/**
+ * Handles the confirmation of adding a new item from the input modal.
+ * Adds a temporary node to the tree and marks the state as dirty.
+ * @param {CustomEvent} event - The event object containing detail: { itemType, itemName, parentNodeId, position }.
+ */
+function handleNewItemConfirmed(event) {
+    const { itemType, itemName, parentNodeId, position } = event.detail;
+    console.log(`[DesignerEvents] Handling 'newItemConfirmed': Adding ${itemType} '${itemName}' under parent ${parentNodeId} at pos ${position}`);
+
+    // 1. Add temporary node to jsTree
+    const treeContainer = document.getElementById('widget-content-structure-tree');
+    const treeInstance = treeContainer ? $(treeContainer).jstree(true) : null;
+
+    if (!treeInstance) {
+        console.error("[DesignerEvents] Cannot add temporary node: jsTree instance not found.");
+        showToast('error', 'Failed to add item to the visual structure.');
+        return;
+    }
+
+    // Generate a temporary ID for the node
+    const tempNodeId = `temp_${itemType}_${Date.now()}`;
+    let iconClass = 'fas fa-question-circle'; // Default icon
+    let nodeTypeForTree = 'channel'; // Default
+
+    if (itemType === 'category') {
+        iconClass = 'fas fa-folder text-warning';
+        nodeTypeForTree = 'category';
+    } else if (itemType === 'text_channel') {
+        iconClass = 'fas fa-hashtag text-info';
+    } else if (itemType === 'voice_channel') {
+        iconClass = 'fas fa-volume-up text-info';
+    }
+
+    const newNodeData = {
+        id: tempNodeId,
+        text: `${itemName} (New)`, // Indicate it's new
+        icon: iconClass,
+        type: nodeTypeForTree,
+        // We don't have a dbId yet
+        data: { type: itemType, isTemporary: true } // Store original type and temporary flag
+    };
+
+    try {
+        const parentId = parentNodeId || '#'; // Use '#' for root if parentNodeId is null/empty
+        treeInstance.create_node(parentId, newNodeData, position, (newNode) => {
+            console.log(`[DesignerEvents] Temporary node ${newNode.id} created in jsTree.`);
+            // Optional: Immediately select the new node?
+            // treeInstance.deselect_all();
+            // treeInstance.select_node(newNode.id);
+        });
+    } catch (error) {
+        console.error(`[DesignerEvents] Error adding temporary node to jsTree:`, error);
+        showToast('error', 'Failed to visually add the new item.');
+        return;
+    }
+
+    // --- Store pending addition in state --- 
+    state.addPendingAddition(tempNodeId, itemType, itemName, parentNodeId, position);
+    // ---------------------------------------
+
+    // 3. Set dirty state
+    state.setDirty(true);
+    updateToolbarButtonStates(); // Update buttons
+
+    showToast('success', `Added '${itemName}'. Save structure to make it permanent.`);
+}
+// -------------------------------------
+
 // --- Event Listener Setup Functions --- 
 
 function setupPanelToggles() {
@@ -628,12 +697,11 @@ export function initializeDesignerEventListeners() {
 
     // --- NEW: Delete Unmanaged Checkbox Listener ---
     const deleteUnmanagedCheckbox = document.getElementById(DELETE_UNMANAGED_CHECKBOX_ID);
-    if (deleteUnmanagedCheckbox) {
-        deleteUnmanagedCheckbox.addEventListener('change', handleDeleteUnmanagedChange);
-    } else {
-        console.warn(`[DesignerEvents] Checkbox '${DELETE_UNMANAGED_CHECKBOX_ID}' not found.`);
-    }
-    // --- END NEW ---
+    deleteUnmanagedCheckbox?.addEventListener('change', handleDeleteUnmanagedChange);
+
+    // --- NEW: Listener for New Item Confirmation ---
+    document.addEventListener('newItemConfirmed', handleNewItemConfirmed);
+    // ---------------------------------------------
 
     // Setup panel toggles (if they exist)
     setupPanelToggles(); 
