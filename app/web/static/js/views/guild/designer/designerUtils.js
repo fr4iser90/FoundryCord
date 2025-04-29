@@ -1,4 +1,7 @@
 import { apiRequest, showToast, ApiError } from '/static/js/components/common/notifications.js';
+// --- NEW: Import state functions --- 
+import { state } from './designerState.js';
+// ---------------------------------
 
 /**
  * Extracts the Guild ID from the current URL path.
@@ -168,8 +171,8 @@ export function formatStructureForApi(templateId) {
         console.log(`[DesignerUtils] Formatted ${nodesPayload.length} nodes for API payload from flat list.`);
         
         // --- NEW: Get pending property changes from state --- 
-        const pendingChanges = state.getPendingPropertyChanges(); // Assume state is imported
-        console.log("[formatStructureForApi] Pending property changes retrieved from state:", pendingChanges);
+        const pendingChanges = state.getPendingPropertyChanges(); 
+        console.log("[DesignerUtils - formatStructureForApi] Pending property changes retrieved from state:", pendingChanges);
         // ---------------------------------------------------
 
         return {

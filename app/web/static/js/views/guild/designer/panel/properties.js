@@ -225,18 +225,29 @@ function populatePanel(data, nodeType) {
     propTypeSpan.textContent = nodeType.charAt(0).toUpperCase() + nodeType.slice(1);
     propTypeSpan.className = `badge ${nodeType === 'category' ? 'bg-warning text-dark' : 'bg-info text-dark'}`; // Basic styling
     propIdSpan.textContent = data.id; // Use ID from the full data object
-    propNameInput.value = data.name || ''; // Use name from the full data object
+    
+    // --- MODIFIED: Use type-specific name field --- 
+    let currentName = '';
+    if (nodeType === 'category' && data.category_name) {
+        currentName = data.category_name;
+    } else if (nodeType === 'channel' && data.channel_name) {
+        currentName = data.channel_name;
+    } else if (data.name) { // Fallback to generic name if specific one is missing
+        currentName = data.name;
+    }
+    propNameInput.value = currentName;
+    // --- END MODIFICATION ---
 
     // --- Reset all fields to default visibility/state/value ---
-    // Inputs disabled by default, specific logic enables them
-    propNameInput.disabled = true;
-    propTopicInput.disabled = true;
-    propTopicInput.value = '';
-    propNsfwSwitch.disabled = true;
+    // Inputs are now enabled/disabled based on type below, remove general disable
+    // propNameInput.disabled = true; // REMOVED
+    // propTopicInput.disabled = true; // REMOVED
+    propTopicInput.value = ''; 
+    // propNsfwSwitch.disabled = true; // REMOVED
     propNsfwSwitch.checked = false;
-    propSlowmodeInput.disabled = true;
+    // propSlowmodeInput.disabled = true; // REMOVED
     propSlowmodeInput.value = 0;
-    propDeleteBtn.disabled = true;
+    propDeleteBtn.disabled = true; // Keep delete disabled by default
 
     // Hide type-specific fields/sections initially
     const topicSection = propTopicInput.closest('.mb-3'); // Get parent div

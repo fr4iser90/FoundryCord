@@ -18,10 +18,13 @@ from app.web.interfaces.api.rest.v1.schemas.guild_template_schemas import (
     GuildStructureTemplateCreateFromStructure,
     GuildStructureTemplateInfo
 )
+# --- Define Schemas Locally if not imported --- 
+from pydantic import BaseModel, Field
+# --- Add imports for permission check ---
+from app.shared.infrastructure.database.session import session_context
 # Schema for activate request
 from pydantic import BaseModel
 # --- Add imports for permission check ---
-from app.shared.infrastructure.database.session import session_context
 from app.shared.infrastructure.models import DiscordGuildUserEntity
 from sqlalchemy import select
 # ---------------------------------------
