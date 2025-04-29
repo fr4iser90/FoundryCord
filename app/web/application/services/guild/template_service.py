@@ -1368,7 +1368,38 @@ class GuildTemplateService:
             await db.rollback()
             raise DomainException(f"Failed to delete channel {channel_id} due to database error.") from e
 
-    # -----------------------------------------------------
+    # --- NEW Method to get parent template ID ---
+    async def get_parent_template_id_for_element(
+        self,
+        db: AsyncSession,
+        element_id: int,
+        element_type: str # 'category' or 'channel'
+    ) -> Optional[int]:
+        """Fetches the parent GuildTemplateEntity ID for a given category or channel ID."""
+        logger.debug(f"Fetching parent template ID for {element_type} ID: {element_id}")
+        try:
+            entity = None
+            if element_type == 'category':
+                repo = GuildTemplateCategoryRepositoryImpl(db)
+                entity = await repo.get_by_id(element_id)
+            elif element_type == 'channel':
+                repo = GuildTemplateChannelRepositoryImpl(db)
+                entity = await repo.get_by_id(element_id)
+            else:
+                logger.warning(f"Invalid element_type '{element_type}' provided.")
+                return None
+
+            if not entity:
+                logger.warning(f"{element_type.capitalize()} ID {element_id} not found.")
+                return None
+
+            logger.debug(f"Found parent template ID {entity.guild_template_id} for {element_type} {element_id}")
+            return entity.guild_template_id
+
+        except Exception as e:
+            logger.error(f"Error fetching parent template ID for {element_type} {element_id}: {e}", exc_info=True)
+            return None # Return None on error
+    # --- End NEW Method ---
 
 # Instantiate the service if needed globally (e.g., for factory)
 # Or instantiate it where needed

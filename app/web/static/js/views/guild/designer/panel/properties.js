@@ -116,11 +116,21 @@ function handleNodeSelection(event) {
     // Pass the full data and original type to populatePanel
     populatePanel(fullNodeData, nodeData.type);
 
-    // --- NEW: Store current node info for input handler --- 
+    // --- MODIFIED: Store current node info for input handler --- 
     currentNodeType = nodeData.type;
     currentNodeDbId = fullNodeData.id; // Use ID from the full data object
-    currentNodeName = fullNodeData.name || 'Unnamed Item'; // Store name here
-    // --------------------------------------------------
+    // Extract name based on type, similar to populatePanel
+    let nameToStore = 'Unnamed Item';
+    if (currentNodeType === 'category' && fullNodeData.category_name) {
+        nameToStore = fullNodeData.category_name;
+    } else if (currentNodeType === 'channel' && fullNodeData.channel_name) {
+        nameToStore = fullNodeData.channel_name;
+    } else if (fullNodeData.name) { // Fallback
+        nameToStore = fullNodeData.name;
+    }
+    currentNodeName = nameToStore; // Store the correctly extracted name
+    console.log(`[PropertiesPanel] Stored currentNodeName: ${currentNodeName}`); // Add log
+    // --- END MODIFICATION ---
 }
 
 // --- NEW: Handle Input Changes --- 
@@ -183,19 +193,20 @@ function handleDeleteClick() {
         return;
     }
 
-    // --- Debug log for name --- 
-    console.log(`[PropertiesPanel] Debug: handleDeleteClick - currentNodeName = ${currentNodeName}`);
-    // -------------------------
+    // --- REVERTED: Use the internally stored name --- 
+    const currentName = currentNodeName || 'Unnamed Item'; 
+    // --- END REVERT ---
 
-    // Get name from the input field (might be edited)
-    const currentName = currentNodeName || 'Unnamed Item';
+    // --- Debug log for name ---
+    console.log(`[PropertiesPanel] Debug: handleDeleteClick - Name being used = ${currentName}`);
+    // -------------------------
 
     console.log(`[PropertiesPanel] Requesting delete confirmation for ${currentNodeType} ID: ${currentNodeDbId}, Name: ${currentName}`);
 
     // Open the existing delete modal, passing type information
     // The modal currently only handles templates, this needs modification later.
     // Pass a prefixed type to distinguish from template deletion requests later.
-    openDeleteModal(currentNodeDbId, currentName, `designer_${currentNodeType}`); 
+    openDeleteModal(currentNodeDbId, currentName, `designer_${currentNodeType}`);
 }
 // --- END NEW ---
 

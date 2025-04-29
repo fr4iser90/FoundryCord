@@ -821,26 +821,40 @@ class GuildTemplateController(BaseController):
         """API endpoint to delete a category from a template."""
         self.logger.info(f"User {current_user.id} requesting deletion of template category ID: {category_id}")
         try:
-            # TODO: Permission Check: Ensure user can edit the parent template of this category
-            # This might involve fetching the category, then its parent template, then checking creator/owner
-            # Example (needs service method get_category_parent_template_id):
-            # parent_template_id = await self.template_service.get_category_parent_template_id(db, category_id)
-            # if not parent_template_id:
-            #     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category or its parent template not found.")
-            # can_edit = await self.template_service.check_user_can_edit_template(db, current_user.id, parent_template_id)
-            # if not can_edit:
-            #     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied to modify this template.")
-            # For now, assume permission granted if authenticated
-            
-            # Call the service layer method (to be implemented)
-            # Assuming service method is named delete_template_category
+            # --- Re-inserted Permission Check ---
+            try:
+                parent_template_id = await self.template_service.get_parent_template_id_for_element(
+                    db=db, element_id=category_id, element_type='category'
+                )
+                if parent_template_id is None: # Service should ideally raise if not found
+                    raise TemplateNotFound("Category or its parent template not found.")
+
+                can_edit = await self.template_service.check_user_can_edit_template(
+                    db=db, user_id=current_user.id, template_id=parent_template_id
+                )
+                if not can_edit:
+                    raise PermissionDenied("Permission denied to modify this template.")
+                
+                self.logger.info(f"Permission granted for user {current_user.id} to delete category {category_id} (Template ID: {parent_template_id})")
+
+            except (TemplateNotFound, ValueError) as e: # Catch potential service errors
+                self.logger.warning(f"Permission check failed for category {category_id}: {e}")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+            except PermissionDenied as e:
+                self.logger.warning(f"Permission denied for user {current_user.id} on category {category_id}: {e}")
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+            # --- End Permission Check ---
+
+            # Call the service layer method
             deleted = await self.template_service.delete_template_category(db, category_id)
             
             if not deleted:
-                # Service should raise specific exceptions ideally
-                self.logger.warning(f"Service failed to delete category {category_id}. Might not exist.")
+                # If permission passed, but delete failed, it's likely a 404 or 500 during delete itself
+                self.logger.warning(f"Service failed to delete category {category_id} after permission check. Might not exist or DB error.")
+                # We rely on the service potentially raising an exception here if needed.
+                # If service just returns False, we translate to 404 as the most likely cause.
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found or could not be deleted.")
-            
+
             self.logger.info(f"Successfully deleted template category ID: {category_id}")
             # No content to return for 204
             return
@@ -863,18 +877,39 @@ class GuildTemplateController(BaseController):
         """API endpoint to delete a channel from a template."""
         self.logger.info(f"User {current_user.id} requesting deletion of template channel ID: {channel_id}")
         try:
-            # TODO: Permission Check: Ensure user can edit the parent template of this channel
-            # Similar logic as for category deletion
-            # For now, assume permission granted if authenticated
+            # --- Re-inserted Permission Check ---
+            try:
+                parent_template_id = await self.template_service.get_parent_template_id_for_element(
+                    db=db, element_id=channel_id, element_type='channel'
+                )
+                if parent_template_id is None: # Service should ideally raise if not found
+                    raise TemplateNotFound("Channel or its parent template not found.")
+
+                can_edit = await self.template_service.check_user_can_edit_template(
+                    db=db, user_id=current_user.id, template_id=parent_template_id
+                )
+                if not can_edit:
+                    raise PermissionDenied("Permission denied to modify this template.")
+
+                self.logger.info(f"Permission granted for user {current_user.id} to delete channel {channel_id} (Template ID: {parent_template_id})")
+
+            except (TemplateNotFound, ValueError) as e: # Catch potential service errors
+                self.logger.warning(f"Permission check failed for channel {channel_id}: {e}")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+            except PermissionDenied as e:
+                self.logger.warning(f"Permission denied for user {current_user.id} on channel {channel_id}: {e}")
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+            # --- End Permission Check ---
             
-            # Call the service layer method (to be implemented)
-            # Assuming service method is named delete_template_channel
+            # Call the service layer method
             deleted = await self.template_service.delete_template_channel(db, channel_id)
             
             if not deleted:
-                self.logger.warning(f"Service failed to delete channel {channel_id}. Might not exist.")
+                self.logger.warning(f"Service failed to delete channel {channel_id} after permission check. Might not exist or DB error.")
+                # We rely on the service potentially raising an exception here if needed.
+                # If service just returns False, we translate to 404 as the most likely cause.
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Channel not found or could not be deleted.")
-            
+
             self.logger.info(f"Successfully deleted template channel ID: {channel_id}")
             # No content to return for 204
             return
