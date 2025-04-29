@@ -200,7 +200,7 @@ class GuildTemplateResponseSchema(BaseModel):
     template_delete_unmanaged: Optional[bool] = None # Get from GuildConfig
 
     class Config:
-        # from_attributes = True # REMOVED - Data comes from a dict, not ORM object directly here
+        from_attributes = True
         populate_by_name = True # Enable using aliases for population
         # Ensure nested models also use populate_by_name if needed
 

@@ -865,16 +865,17 @@ class GuildTemplateService:
 
     # --- RESTORED: Method to update template structure (Original Version) --- 
     async def update_template_structure(
-        self, 
-        db: AsyncSession, 
-        template_id: int, 
+        self,
+        db: AsyncSession,
+        template_id: int,
         structure_payload: GuildStructureUpdatePayload,
         requesting_user: AppUserEntity # Added user for permission check
-    ) -> GuildTemplateEntity: # Return the updated template entity
+    ) -> Dict[str, Any]: # Return a dictionary now
         """
-        Updates the structure (positions, parentage) of categories and channels
+        Updates the structure (positions, parentage, properties) of categories and channels
         for a given template based on the payload received from the frontend designer.
         Handles updates to existing items and deletion of items removed in the designer.
+        Returns a dictionary containing the updated template entity and the relevant delete_unmanaged flag.
         NOTE: Does not currently handle adding *new* items via this method.
         """
         logger.info(f"Attempting structure update for template ID: {template_id} by user {requesting_user.id}")
@@ -1082,16 +1083,53 @@ class GuildTemplateService:
         else:
             logger.info(f"No structure changes detected for template {template_id}. Nothing to commit.")
 
-        # --- 8. Return Updated Template ---
-        # Re-fetch or refresh the template to ensure the caller gets the latest state
-        # Refreshing the existing object might be sufficient if relationships were loaded
+        # --- 8. Return Updated Template AND Config Flag ---
+        # Re-fetch the template with all necessary relationships eager-loaded
+        logger.info(f"Re-fetching updated template {template_id} with eager loading.")
         try:
-             await db.refresh(template, attribute_names=['categories', 'channels'])
-        except Exception as refresh_err:
-             # If refresh fails, log it but still return the template object we have
-             logger.warning(f"Failed to refresh template object after update, returning potentially stale data: {refresh_err}")
-             
-        return template
+            stmt = (
+                select(GuildTemplateEntity)
+                .options(
+                    selectinload(GuildTemplateEntity.categories)
+                    .selectinload(GuildTemplateCategoryEntity.permissions),
+                    selectinload(GuildTemplateEntity.channels)
+                    .selectinload(GuildTemplateChannelEntity.permissions)
+                )
+                .where(GuildTemplateEntity.id == template_id)
+            )
+            result = await db.execute(stmt)
+            updated_template_entity = result.scalar_one_or_none()
+
+            if not updated_template_entity:
+                logger.error(f"Failed to re-fetch template {template_id} after update.")
+                raise DomainException(f"Failed to retrieve updated template data for template ID {template_id}.")
+
+            logger.info(f"Successfully re-fetched template {template_id}.")
+
+            # --- Fetch the delete_unmanaged flag ---
+            delete_unmanaged_flag = False # Default value
+            if updated_template_entity.guild_id:
+                 logger.debug(f"Fetching GuildConfig for guild_id: {updated_template_entity.guild_id}")
+                 config_repo = GuildConfigRepositoryImpl(db)
+                 guild_config = await config_repo.get_by_guild_id(updated_template_entity.guild_id)
+                 if guild_config:
+                     delete_unmanaged_flag = guild_config.template_delete_unmanaged
+                     logger.debug(f"Found GuildConfig. template_delete_unmanaged = {delete_unmanaged_flag}")
+                 else:
+                     logger.warning(f"No GuildConfig found for guild_id: {updated_template_entity.guild_id}. Defaulting delete_unmanaged to False.")
+            else:
+                 logger.warning(f"Template {template_id} is not associated with a guild_id. Defaulting delete_unmanaged to False.")
+            # ----------------------------------------
+
+            # Return both the entity and the flag in a dictionary
+            return {
+                "template_entity": updated_template_entity,
+                "delete_unmanaged": delete_unmanaged_flag
+            }
+
+        except Exception as fetch_err:
+            logger.error(f"Error re-fetching template {template_id} or its config after update: {fetch_err}", exc_info=True)
+            raise DomainException(f"Failed to retrieve complete updated template data or config: {fetch_err}") from fetch_err
 
     # --- NEW Method to Create Template from Structure --- 
     async def create_template_from_structure(

@@ -161,7 +161,7 @@ class GuildTemplateController(BaseController):
             "/templates/guilds/{template_id}/structure",
             summary="Update Guild Template Structure",
             description="Updates the categories and channels structure of a specific guild template based on provided node list.",
-            response_model=GuildStructureUpdateResponse,
+            response_model=GuildTemplateResponseSchema,
             status_code=status.HTTP_200_OK,
             dependencies=[Depends(get_current_user)] # Add dependency here for route protection
         )(self.update_guild_template_structure)
@@ -562,14 +562,13 @@ class GuildTemplateController(BaseController):
         payload: GuildStructureUpdatePayload, # From request body
         current_user: AppUserEntity = Depends(get_current_user), # From dependency
         db: AsyncSession = Depends(get_web_db_session) # Use the correct session dependency
-    ) -> GuildStructureUpdateResponse:
+    ) -> GuildTemplateResponseSchema:
         """Updates the structure (categories and channels) of a specific guild template."""
         # 1. Authorization Check (Ensure user can edit this template)
-        # Placeholder for actual permission logic
         try:
             can_edit = await self.template_service.check_user_can_edit_template(
                 db=db, # Pass db session
-                user_id=current_user.id, 
+                user_id=current_user.id,
                 template_id=template_id
             )
             if not can_edit:
@@ -582,20 +581,78 @@ class GuildTemplateController(BaseController):
 
         # 2. Call the service layer to perform the update
         try:
-            # Assuming the service method returns the updated template *entity* or ID
-            updated_template = await self.template_service.update_template_structure(
-                db=db, # Pass db session
+            # Service now returns a dictionary
+            service_result = await self.template_service.update_template_structure(
+                db=db,
                 template_id=template_id,
-                structure_payload=payload
+                structure_payload=payload,
+                requesting_user=current_user
             )
-            # Construct response based on what the service returns
-            # If it returns the entity: updated_template.id
-            # If it just returns the ID: updated_template
-            # Assuming it returns an object with an 'id' attribute for now
-            return GuildStructureUpdateResponse(
-                message=f"Successfully updated structure for template ID {template_id}",
-                updated_template_id=updated_template.id 
-            )
+            
+            # Extract data from the service result
+            template_entity = service_result["template_entity"]
+            delete_unmanaged_flag = service_result["delete_unmanaged"]
+
+            # --- Manually Construct the Response Dictionary --- 
+            self.logger.debug(f"Manually constructing response dictionary for template {template_entity.id}")
+            response_dict = {
+                "guild_id": template_entity.guild_id,
+                "template_id": template_entity.id,
+                "template_name": template_entity.template_name,
+                "created_at": template_entity.created_at,
+                # Determine initial snapshot based on creator_user_id being None
+                "is_initial_snapshot": template_entity.creator_user_id is None,
+                "template_delete_unmanaged": delete_unmanaged_flag,
+                "categories": [],
+                "channels": []
+            }
+
+            # Populate categories (using schema logic manually)
+            for cat_entity in template_entity.categories:
+                cat_dict = {
+                    "id": cat_entity.id,
+                    "name": cat_entity.category_name, # Use correct attribute name
+                    "position": cat_entity.position,
+                    "permissions": []
+                }
+                for perm_entity in cat_entity.permissions:
+                    cat_dict["permissions"].append({
+                        "id": perm_entity.id,
+                        "role_name": perm_entity.role_name,
+                        # Use correct attribute names and handle None
+                        "allow": perm_entity.allow_permissions_bitfield if perm_entity.allow_permissions_bitfield is not None else 0,
+                        "deny": perm_entity.deny_permissions_bitfield if perm_entity.deny_permissions_bitfield is not None else 0
+                    })
+                response_dict["categories"].append(cat_dict)
+
+            # Populate channels (using schema logic manually)
+            for chan_entity in template_entity.channels:
+                chan_dict = {
+                    "id": chan_entity.id,
+                    "name": chan_entity.channel_name, # Use correct attribute name
+                    "type": chan_entity.channel_type,
+                    "position": chan_entity.position,
+                    "topic": chan_entity.topic,
+                    "is_nsfw": chan_entity.is_nsfw,
+                    "slowmode_delay": chan_entity.slowmode_delay,
+                    "parent_category_template_id": chan_entity.parent_category_template_id,
+                    "permissions": []
+                }
+                for perm_entity in chan_entity.permissions:
+                    chan_dict["permissions"].append({
+                        "id": perm_entity.id,
+                        "role_name": perm_entity.role_name,
+                        # Use correct attribute names and handle None
+                        "allow": perm_entity.allow_permissions_bitfield if perm_entity.allow_permissions_bitfield is not None else 0,
+                        "deny": perm_entity.deny_permissions_bitfield if perm_entity.deny_permissions_bitfield is not None else 0
+                    })
+                response_dict["channels"].append(chan_dict)
+
+            # Return the manually constructed dictionary.
+            # FastAPI will validate this against the GuildTemplateResponseSchema.
+            return response_dict
+            # --- END Manual Construction --- 
+
         except ValueError as e:
             # Handle specific errors from the service layer (e.g., template not found)
             self.logger.warning(f"Update structure failed for template {template_id}: {e}")

@@ -202,17 +202,52 @@ async function handleSaveStructureClick() {
     saveButton.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Saving...`;
 
     try {
-        await apiRequest(apiUrl, { // response not needed on success for PUT
+        // --- Capture pending changes BEFORE making the API call --- 
+        const pendingChangesPayload = state.getPendingPropertyChanges();
+        // ---------------------------------------------------------
+
+        const responseData = await apiRequest(apiUrl, { // Now we expect response data
             method: 'PUT', 
             headers: { 'Content-Type': 'application/json' }, 
             body: JSON.stringify(payload) 
         });
         
         showToast('success', `Template structure saved successfully!`);
-        // Dispatch event to reset dirty flag
+        
+        // --- NEW: Update State and UI --- 
+        console.log("[DesignerEvents] Received updated template data after save:", responseData);
+        if (responseData) {
+            // 1. Update global state
+            state.setCurrentTemplateData(responseData);
+
+            // 2. Update jsTree node text if name changed
+            if (pendingChangesPayload) {
+                const treeInstance = $('#widget-content-structure-tree').jstree(true);
+                if (treeInstance) {
+                    for (const nodeKey in pendingChangesPayload) {
+                        if (pendingChangesPayload[nodeKey].name !== undefined) {
+                            const node = treeInstance.get_node(nodeKey); // nodeKey is like "category_123"
+                            if (node) {
+                                const newName = pendingChangesPayload[nodeKey].name;
+                                treeInstance.rename_node(node, newName);
+                                console.log(`[DesignerEvents] Renamed node ${nodeKey} in tree to: ${newName}`);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // 3. Clear pending changes AFTER potentially using them for UI update
+        state.clearPendingChanges(); 
+
+        // 4. Reset dirty flag (already done by clearPendingChanges)
+        // state.setDirty(false); // Not needed if clearPendingChanges does it
+        
+        // 5. Dispatch event (if needed by other components, keep it)
         document.dispatchEvent(new CustomEvent('structureSaved', { 
-            detail: { isNew: false } 
+            detail: { isNew: false, updatedData: responseData } // Pass updated data
         }));
+        // --- END NEW --- 
 
     } catch (error) {
         const isPermissionError = error instanceof ApiError && error.status === 403; 
