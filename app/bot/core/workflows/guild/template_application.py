@@ -137,25 +137,25 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
                         log_prefix="      [Create Cat]" # Added prefix for clarity
                     )
                     
-                    new_discord_cat = await discord_guild.create_category(
-                        name=template_cat.category_name,
-                    # position=template_cat.position, # Position often less reliable on creation
-                    overwrites=creation_overwrites, # Apply permissions now
-                        reason=f"Applying template: {template.template_name}"
+                    # Call the category check and create helper from check_structure
+                    new_discord_cat = await self.check_and_create_category(
+                        discord_guild=discord_guild,
+                        template_cat=template_cat,
+                        creation_overwrites=creation_overwrites,
+                        template_name=template.template_name,
+                        session=session
                     )
-                    logger.info(f"      Successfully created category '{new_discord_cat.name}' (ID: {new_discord_cat.id}) at position {new_discord_cat.position}")
+                    
+                    if new_discord_cat:
+                        logger.debug(f"      Successfully created category via helper function")
+                        # Store mapping and mark as processed
+                        created_or_found_discord_categories[template_cat.id] = new_discord_cat
+                        processed_live_category_ids.add(new_discord_cat.id)
+                    else:
+                        logger.warning(f"      Failed to create category '{template_cat.category_name}' via helper function")
 
-                    # Store mapping and mark as processed
-                    created_or_found_discord_categories[template_cat.id] = new_discord_cat
-                    processed_live_category_ids.add(new_discord_cat.id)
-
-                except nextcord.Forbidden:
-                    logger.error(f"      PERMISSION ERROR: Cannot create category '{template_cat.category_name}'. Check bot permissions.")
-                # Decide if this is fatal - potentially skip this category and its channels? For now, continue.
-                except nextcord.HTTPException as http_err:
-                    logger.error(f"      HTTP ERROR creating category '{template_cat.category_name}': {http_err}")
                 except Exception as creation_err:
-                        logger.error(f"      UNEXPECTED ERROR creating category '{template_cat.category_name}': {creation_err}", exc_info=True)
+                    logger.error(f"      UNEXPECTED ERROR during category creation process for '{template_cat.category_name}': {creation_err}", exc_info=True)
 
         # ----------------------------------------------------------
         # 4. Process Channels (Create/Update/Delete)
@@ -275,72 +275,38 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
                 await self._apply_channel_permissions(existing_discord_chan_object, template_chan.id, chan_perm_repo)
 
             else:
-                # --- Create Channel ---
-                logger.info(f"    Channel '{template_chan.channel_name}' does not exist or match type/parent. Creating...")
+                # --- Create Channel using Helper ---
+                logger.info(f"    Channel '{template_chan.channel_name}' not found by template ID or name+parent match. Attempting check & create...")
                 
-                # Prepare overwrites BEFORE creation
+                # Prepare overwrites BEFORE creation check
                 creation_overwrites = await self._prepare_permission_overwrites(
                     guild_roles=discord_guild.roles, 
                     template_perms_getter=chan_perm_repo.get_by_channel_template_id, 
                     template_element_id=template_chan.id,
-                    log_prefix="      [Create Chan]"
+                    log_prefix="      [Check&Create Chan]" # Updated log prefix
                 )
 
-                creation_kwargs = {
-                        'name': template_chan.channel_name,
-                        'category': target_discord_category,
-                        # 'position': template_chan.position, # Position often less reliable on creation
-                        'overwrites': creation_overwrites, # Apply permissions now
-                        'reason': f"Applying template: {template.template_name}"
-                }
-                # Add type-specific args
-                if template_chan.channel_type == 'text':
-                    creation_kwargs.update({
-                        'topic': template_chan.topic,
-                        'slowmode_delay': template_chan.slowmode_delay,
-                        'nsfw': template_chan.is_nsfw
-                    })
-                    channel_creator = discord_guild.create_text_channel
-                elif template_chan.channel_type == 'voice':
-                        creation_kwargs.update({
-                            # Add bitrate, user_limit if stored in template
-                        })
-                        channel_creator = discord_guild.create_voice_channel
-                elif template_chan.channel_type == 'stage_voice': # Check nextcord's exact type string if different
-                        creation_kwargs.update({
-                        # Add stage specific args if needed
-                        })
-                        channel_creator = discord_guild.create_stage_channel
-                elif template_chan.channel_type == 'forum':
-                        creation_kwargs.update({
-                        'topic': template_chan.topic,
-                        # 'slowmode_delay': template_chan.slowmode_delay, # Forum might not have slowmode? Check API
-                        'nsfw': template_chan.is_nsfw
-                        # Add tags etc. if stored in template
-                        })
-                        channel_creator = discord_guild.create_forum # Use create_forum
-                else:
-                    logger.error(f"      Unsupported channel type '{template_chan.channel_type}' in template. Cannot create.")
-                    continue # Skip this channel
+                # Call the channel check and create helper from check_structure
+                new_discord_chan = await self.check_and_create_channel(
+                    discord_guild=discord_guild,
+                    template_chan=template_chan,
+                    target_discord_category=target_discord_category,
+                    creation_overwrites=creation_overwrites,
+                    template_name=template.template_name,
+                    session=session
+                )
 
-                try:
-                    new_discord_chan = await channel_creator(**creation_kwargs)
-                    logger.info(f"      Successfully created {template_chan.channel_type} channel '{new_discord_chan.name}' (ID: {new_discord_chan.id})")
-                    
+                # If helper returned a new channel, update DB and track ID
+                if new_discord_chan:
                     # --- Update DB discord_channel_id --- 
                     logger.info(f"      Updating DB discord_id for template channel {template_chan.id} to {new_discord_chan.id}")
                     template_chan.discord_channel_id = str(new_discord_chan.id)
-                    # Session commit will handle saving this change later
+                    # Session commit will handle saving this change later if session is managed outside
+                    # If session is passed and used inside helper, commit might happen there or be handled by context manager
                     # -------------------------------------
-
                     processed_live_channel_ids.add(new_discord_chan.id) # Track newly created channel ID
-
-                except nextcord.Forbidden:
-                    logger.error(f"      PERMISSION ERROR: Cannot create {template_chan.channel_type} channel '{template_chan.channel_name}'. Check bot permissions.")
-                except nextcord.HTTPException as http_err:
-                    logger.error(f"      HTTP ERROR creating {template_chan.channel_type} channel '{template_chan.channel_name}': {http_err}")
-                except Exception as creation_err:
-                        logger.error(f"      UNEXPECTED ERROR creating {template_chan.channel_type} channel '{template_chan.channel_name}': {creation_err}", exc_info=True)
+                # else: # Helper function already logged the reason for not creating (duplicate or error)
+                #    pass 
 
         # ----------------------------------------------------------
         # 6. Process Channels (Delete from Discord if not in Template - Optional)
@@ -421,79 +387,7 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
                     logger.warning(f"    Found object for ID {discord_cat_id} ('{cat_name_for_log}') but it's not a CategoryChannel (Type: {type(category_to_delete)}). Skipping deletion.")
                 else:
                     logger.warning(f"    Could not find Discord category object with ID {discord_cat_id} ('{cat_name_for_log}') to delete. Already deleted?")
-        # else: # Already logged above
-                # logger.debug("  Deletion of unmanaged categories is disabled (same flag as channels).")
-        # --- END CATEGORY DELETION ---
 
-            # ----------------------------------------------------------
-        # 8. Final Reordering using Bulk Update
-            # ----------------------------------------------------------
-        logger.info("  Attempting final reordering of channels and categories...")
-        try:
-            # Prepare the positions data for the bulk update API
-            # This needs to reflect the desired order based *only* on template items that now exist on Discord
-            final_positions_data = [] # List of tuples: (channel_id, position_index)
-            current_pos = 0
-
-            # Get all relevant template channels and categories again, sorted correctly
-            
-            # Uncategorized channels first, sorted by template position
-            uncategorized_chans = sorted(
-                [ch for ch in template_channels if ch.parent_category_template_id is None],
-                key=lambda c: c.position
-            )
-            for template_chan in uncategorized_chans:
-                if template_chan.discord_channel_id: # Only include channels that now exist on Discord
-                    final_positions_data.append( (int(template_chan.discord_channel_id), current_pos) )
-                    current_pos += 1
-                else:
-                    logger.warning(f"    Skipping uncategorized channel '{template_chan.channel_name}' in final reorder (no Discord ID found/set).")
-
-            # Then categories and their channels, sorted by template position
-            sorted_cats = sorted(template_categories, key=lambda c: c.position)
-            for template_cat in sorted_cats:
-                # Get the corresponding Discord category object (should exist if processed)
-                discord_category = created_or_found_discord_categories.get(template_cat.id)
-                if discord_category:
-                    final_positions_data.append( (discord_category.id, current_pos) )
-                    current_pos += 1
-                    
-                    # Channels within this category, sorted by template position
-                    categorized_chans = sorted(
-                        [ch for ch in template_channels if ch.parent_category_template_id == template_cat.id],
-                        key=lambda c: c.position
-                    )
-                    for template_chan in categorized_chans:
-                        if template_chan.discord_channel_id: # Only include channels that now exist
-                            final_positions_data.append( (int(template_chan.discord_channel_id), current_pos) )
-                            current_pos += 1
-                        else:
-                                logger.warning(f"    Skipping categorized channel '{template_chan.channel_name}' in final reorder (no Discord ID found/set).")
-                else:
-                        logger.warning(f"    Skipping category '{template_cat.category_name}' and its channels in final reorder (Discord category object not found in map).")
-
-            # Convert list of tuples to the dictionary format required by nextcord
-            final_positions_dict = {item[0]: item[1] for item in final_positions_data}
-
-            # Call the bulk update function
-            if final_positions_dict:
-                logger.debug(f"    Prepared final positions dict (first 5): {dict(list(final_positions_dict.items())[:5])}") # Log snippet
-                # --- ADD LOGGING ---
-                logger.debug(f"    Type of discord_guild before calling edit_positions: {type(discord_guild)}")
-                # --- END LOGGING ---
-                await discord_guild.edit_positions(positions=final_positions_dict)
-                logger.info("    Successfully applied final channel and category order.")
-            else:
-                logger.info("    No channels/categories with Discord IDs found to reorder.")
-
-        except nextcord.Forbidden:
-            logger.error("    PERMISSION ERROR during final reordering. Check bot permissions for channel management.")
-            # Decide if this should be a fatal error for the apply process - maybe not?
-        except nextcord.HTTPException as http_err:
-            logger.error(f"    HTTP ERROR during final reordering: {http_err}")
-        except Exception as reorder_err:
-            logger.error(f"    UNEXPECTED ERROR during final reordering: {reorder_err}", exc_info=True)
-        # --- END FINAL REORDERING ---
 
         logger.info(f"[apply_template] Channel and Category Create/Update/Delete/Reorder logic complete. DB updates applied via session commit. Guild: {guild_id}.")
 
@@ -615,3 +509,5 @@ async def _apply_channel_permissions(
     except Exception as perm_err:
         logger.error(f"{log_prefix} UNEXPECTED ERROR applying permissions to channel '{discord_channel.name}': {perm_err}", exc_info=True)
 # --- END HELPER FUNCTIONS ---
+
+# Removed duplicate _check_and_create_channel - now using the implementation from check_structure.py

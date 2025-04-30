@@ -13,6 +13,9 @@ from .approval import approve_guild, deny_guild, enforce_access_control, get_gui
 from .template_application import apply_template, _prepare_permission_overwrites, _apply_category_permissions, _apply_channel_permissions
 from .state import get_guild_status, disable_for_guild, cleanup_guild, cleanup
 
+from .check_structure import check_and_create_category as _check_and_create_category
+from .check_structure import check_and_create_channel as _check_and_create_channel
+
 # Import constants from approval
 from .approval import ACCESS_PENDING, ACCESS_APPROVED, ACCESS_REJECTED, ACCESS_SUSPENDED
 
@@ -51,6 +54,15 @@ class GuildWorkflow(BaseWorkflow):
     disable_for_guild = disable_for_guild
     cleanup_guild = cleanup_guild
     cleanup = cleanup
+    
+    # Assign check_structure functions as static methods
+    @staticmethod
+    async def check_and_create_category(discord_guild, template_cat, creation_overwrites, template_name, session):
+        return await _check_and_create_category(discord_guild, template_cat, creation_overwrites, template_name, session)
+        
+    @staticmethod
+    async def check_and_create_channel(discord_guild, template_chan, target_discord_category, creation_overwrites, template_name, session):
+        return await _check_and_create_channel(discord_guild, template_chan, target_discord_category, creation_overwrites, template_name, session)
 
     # Make constants accessible if needed (optional)
     ACCESS_PENDING = ACCESS_PENDING
