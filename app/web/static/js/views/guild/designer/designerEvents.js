@@ -4,6 +4,7 @@ import { apiRequest, showToast, ApiError } from '/static/js/components/common/no
 import { openSaveAsNewModal } from './modal/saveAsNewModal.js';
 import { openDeleteModal } from './modal/deleteModal.js';
 import { openActivateConfirmModal } from './modal/activateConfirmModal.js';
+import { openNewItemInputModal, openRenameTemplateModal } from './modal/newItemInputModal.js';
 // Import widget initializers needed for refresh
 import { initializeTemplateList } from './widget/templateList.js'; 
 import { initializeStructureTree } from './widget/structureTree.js';
@@ -495,6 +496,83 @@ function handleRequestShareTemplate(event) {
     openShareModal(templateId, templateName);
 }
 
+// --- NEW: Handler for Rename Request (from list widget) ---
+function handleRequestRenameTemplate(event) {
+    console.log("[DesignerEvents] Handling 'requestRenameTemplate' event:", event.detail);
+    const { templateId, currentName } = event.detail;
+
+    if (templateId === undefined || templateId === null || !currentName) {
+        console.error("[DesignerEvents] 'requestRenameTemplate' event missing necessary detail data.");
+        showToast('error', 'Could not initiate rename process: Details missing.');
+        return;
+    }
+
+    // --- MODIFIED: Call the specific open function --- 
+    openRenameTemplateModal(templateId, currentName);
+    // --- END MODIFICATION ---
+}
+// --- END NEW ---
+
+// --- NEW: Handler for Rename Confirmation (from modal) ---
+async function handleRenameTemplateConfirmed(event) {
+    console.log("[DesignerEvents] Handling 'renameTemplateConfirmed' event:", event.detail);
+    const { templateId, newName } = event.detail;
+    const guildId = getGuildIdFromUrl();
+
+    if (!guildId) {
+        console.error("[DesignerEvents] Cannot rename template: Guild ID missing.");
+        showToast('error', 'Rename failed: Guild context unknown.');
+        return;
+    }
+
+    if (templateId === undefined || templateId === null || !newName) {
+        console.error("[DesignerEvents] 'renameTemplateConfirmed' event missing necessary data.");
+        showToast('error', 'Rename confirmation failed: Missing ID or new name.');
+        return;
+    }
+
+    const apiUrl = `/api/v1/guilds/${guildId}/template/${templateId}/metadata`;
+    const payload = { name: newName };
+
+    showToast('info', `Renaming template to '${newName}'...`);
+
+    try {
+        const responseData = await apiRequest(apiUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        showToast('success', `Template renamed to '${newName}' successfully!`);
+        console.log("[DesignerEvents] Template rename successful, API response:", responseData);
+
+        // Refresh the Saved Templates list
+        const templateListContentEl = document.getElementById('widget-content-template-list');
+        const activeId = state.getActiveTemplateId(); // Keep track of active state
+        if (templateListContentEl && guildId) {
+            console.log("[DesignerEvents] Refreshing template list after rename.");
+            initializeTemplateList(templateListContentEl, guildId, activeId);
+        } else {
+            console.warn("[DesignerEvents] Could not find template list or guildId to refresh after rename.");
+        }
+        
+        // Optionally update template info widget if the renamed template is loaded
+        const currentTemplate = state.getCurrentTemplateData();
+        if (currentTemplate && String(currentTemplate.template_id) === String(templateId)) {
+             console.log("[DesignerEvents] Renamed template is currently loaded, updating state and widgets.");
+             state.setCurrentTemplateData(responseData); // Update state with full response from API
+             populateGuildDesignerWidgets(responseData); // Refresh widgets with new data
+             state.setDirty(false); // Should not be dirty after successful rename
+             updateToolbarButtonStates();
+        }
+
+    } catch (error) {
+        console.error(`[DesignerEvents] Error renaming template (ID: ${templateId}):`, error);
+        // apiRequest handles showing the toast
+    }
+}
+// --- END NEW ---
+
 // Handler for Apply Template Button Click
 async function handleApplyTemplateClick() {
     const applyButton = document.getElementById('apply-template-btn');
@@ -724,6 +802,14 @@ export function initializeDesignerEventListeners() {
 
     // Listener for share requests (fired by list widget)
     document.addEventListener('requestShareTemplate', handleRequestShareTemplate);
+
+    // --- NEW: Listener for Rename requests ---
+    document.addEventListener('requestRenameTemplate', handleRequestRenameTemplate);
+    // --- END NEW ---
+
+    // --- NEW: Listener for Rename Confirmation ---
+    document.addEventListener('renameTemplateConfirmed', handleRenameTemplateConfirmed);
+    // --- END NEW ---
 
     // Listener for Apply Template
     const applyBtn = document.getElementById(APPLY_BTN_ID);

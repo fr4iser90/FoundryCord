@@ -91,13 +91,44 @@ async function _renderTemplateList(contentElement, currentGuildId, activeTemplat
             const shareIcon = document.createElement('i');
             shareIcon.className = 'fas fa-share-alt';
             shareButton.appendChild(shareIcon);
-            shareButton.addEventListener('click', (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                handleTemplateShare(templateId, templateName);
-            });
+            // Disable share for initial snapshot
+            if (isInitialSnapshot) {
+                shareButton.disabled = true;
+                shareButton.title = 'Cannot share the initial guild snapshot.';
+                shareButton.classList.add('disabled');
+            } else {
+                shareButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleTemplateShare(templateId, templateName);
+                });
+            }
             buttonGroup.appendChild(shareButton);
 
+            // --- NEW: Rename Button ---
+            const renameButton = document.createElement('button');
+            renameButton.type = 'button';
+            renameButton.className = 'btn btn-outline-secondary btn-rename-template'; // New class
+            renameButton.title = `Rename template '${templateName}'`;
+            renameButton.dataset.templateId = templateId;
+            renameButton.dataset.templateName = templateName; // Store current name
+            const renameIcon = document.createElement('i');
+            renameIcon.className = 'fas fa-pencil-alt'; // Pencil icon
+            renameButton.appendChild(renameIcon);
+            // Disable rename for initial snapshot
+            if (isInitialSnapshot) {
+                renameButton.disabled = true;
+                renameButton.title = 'Cannot rename the initial guild snapshot.';
+                renameButton.classList.add('disabled');
+            } else {
+                renameButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleTemplateRenameRequest(templateId, templateName); // New handler needed
+                });
+            }
+            buttonGroup.appendChild(renameButton);
+            // --- END NEW: Rename Button ---
 
             // Activate Button (MODIFIED LOGIC)
             const activateButton = document.createElement('button');
@@ -254,6 +285,16 @@ function handleTemplateShare(templateId, templateName) {
     // Dispatch event to open the share modal (assuming modal logic handles API call)
     document.dispatchEvent(new CustomEvent('requestShareTemplate', { 
         detail: { templateId: templateId, templateName: templateName } 
+    }));
+}
+
+// --- NEW: Event Handler for Rename Request ---
+function handleTemplateRenameRequest(templateId, currentName) {
+    console.log(`[TemplateList] Rename requested for template ID: ${templateId}, Current Name: ${currentName}`);
+    // Dispatch an event for index.js or a modal manager to handle
+    // We'll re-use the newItemInputModal for simplicity, but need to pass context
+    document.dispatchEvent(new CustomEvent('requestRenameTemplate', {
+        detail: { templateId, currentName }
     }));
 }
 
