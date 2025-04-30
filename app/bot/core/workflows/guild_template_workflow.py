@@ -2,6 +2,7 @@ import asyncio
 import nextcord
 from typing import Dict, Optional, List
 from datetime import datetime # Import datetime
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot.core.workflows.base_workflow import BaseWorkflow, WorkflowStatus
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
@@ -26,6 +27,9 @@ from app.shared.domain.repositories.guild_templates import (
 )
 from app.shared.infrastructure.models.discord.entities import GuildConfigEntity
 from sqlalchemy import select, update
+# --- ADD GuildConfig Repo Import ---
+# from app.shared.infrastructure.repositories.discord.guild_config_repository_impl import GuildConfigRepositoryImpl
+# ----------------------------------
 
 logger = get_bot_logger()
 
@@ -33,7 +37,7 @@ class GuildTemplateWorkflow(BaseWorkflow):
     """Workflow for creating and managing guild structure templates/snapshots."""
 
     def __init__(self, database_workflow: DatabaseWorkflow, guild_workflow: GuildWorkflow, bot):
-        super().__init__("guild_template") # Give it a unique name
+        super().__init__("guild_template")
         self.database_workflow = database_workflow
         self.guild_workflow = guild_workflow
         self.bot = bot
@@ -60,27 +64,52 @@ class GuildTemplateWorkflow(BaseWorkflow):
         logger.info("Guild Template Workflow initialized.")
         return True
 
-    async def create_template_for_guild(self, guild: nextcord.Guild):
-        """Reads the current structure of the guild and saves it as a template."""
+    async def create_template_for_guild(self, 
+                                      guild: nextcord.Guild, 
+                                      guild_config: GuildConfigEntity, # Mandatory guild config object
+                                      db_session: Optional[AsyncSession] = None):
+        """Reads the current structure of the guild and saves it as a template.
+        
+        Args:
+            guild: The nextcord Guild object.
+            guild_config: The existing GuildConfigEntity object for this guild.
+            db_session: An optional existing SQLAlchemy AsyncSession to use. 
+                        If None, a new session context will be created.
+        """
         guild_id_str = str(guild.id)
         logger.info(f"Attempting to create structure template for guild: {guild.name} ({guild_id_str})")
 
+        # Determine if we need to create a session context or use the provided one
+        if db_session:
+            return await self._create_template_with_session(guild, guild_id_str, guild_config, db_session)
+        else:
+            try:
+                async with session_context() as session:
+                    return await self._create_template_with_session(guild, guild_id_str, guild_config, session)
+            except Exception as e:
+                logger.error(f"An error occurred during template creation for guild {guild_id_str} (within session context): {e}", exc_info=True)
+                return False
+
+    async def _create_template_with_session(self, 
+                                            guild: nextcord.Guild, 
+                                            guild_id_str: str, 
+                                            guild_config: GuildConfigEntity, # Use passed object
+                                            session: AsyncSession) -> bool:
+        """Core logic for template creation, requires an active session and the guild config object."""
         try:
-            async with session_context() as session:
-                # Instantiate repositories with the current session
-                template_repo = GuildTemplateRepositoryImpl(session)
-                cat_repo = GuildTemplateCategoryRepositoryImpl(session)
-                chan_repo = GuildTemplateChannelRepositoryImpl(session)
-                cat_perm_repo = GuildTemplateCategoryPermissionRepositoryImpl(session)
-                chan_perm_repo = GuildTemplateChannelPermissionRepositoryImpl(session)
+            template_repo = GuildTemplateRepositoryImpl(session)
+            cat_repo = GuildTemplateCategoryRepositoryImpl(session)
+            chan_repo = GuildTemplateChannelRepositoryImpl(session)
+            cat_perm_repo = GuildTemplateCategoryPermissionRepositoryImpl(session)
+            chan_perm_repo = GuildTemplateChannelPermissionRepositoryImpl(session)
+            # GuildConfig Repo is no longer instantiated here; the object is passed in
 
-                # 1. Check if a template already exists
-                existing_template = await template_repo.get_by_guild_id(guild_id_str)
-                if existing_template:
-                    logger.info(f"Template already exists for guild {guild_id_str}. Skipping creation.")
-                    return True
-
-                # 2. Create the main template record
+            existing_template = await template_repo.get_by_guild_id(guild_id_str)
+            if existing_template:
+                logger.info(f"Template already exists for guild {guild_id_str}. Checking active status.")
+                template_db_id = existing_template.id
+                logger.debug(f"Existing template found ID: {template_db_id}")
+            else:
                 template_name = f"Initial Snapshot - {guild.name} - {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}"
                 template_record = await template_repo.create(
                     guild_id=guild_id_str,
@@ -88,136 +117,129 @@ class GuildTemplateWorkflow(BaseWorkflow):
                 )
                 if not template_record:
                     logger.error(f"Failed to create main template record for guild {guild_id_str}")
-                    await session.rollback() # Rollback on failure
                     return False
                 template_db_id = template_record.id
-                category_template_map = {} # To map Discord category object to template DB ID
                 logger.debug(f"Created main template record ID: {template_db_id} for guild {guild_id_str}")
-
-                # --- NEW: Update Guild Config to set this template as active --- 
-                update_stmt = (
-                    update(GuildConfigEntity)
-                    .where(GuildConfigEntity.guild_id == guild_id_str)
-                    .values(active_template_id=template_db_id)
-                )
-                update_result = await session.execute(update_stmt)
-                if update_result.rowcount == 0:
-                    logger.warning(f"Could not find GuildConfig for guild {guild_id_str} to set initial active template {template_db_id}. Configuration might need creation.")
-                    # Decide if this is a critical error. For now, log warning and continue.
+            
+            # --- Update GuildConfig ---
+            try:
+                # Directly use the passed guild_config object
+                if guild_config.active_template_id != template_db_id:
+                    logger.info(f"Setting active_template_id to {template_db_id} on passed GuildConfig object for guild {guild_id_str}")
+                    guild_config.active_template_id = template_db_id
+                    # The change to guild_config will be committed by the caller (GuildWorkflow)
+                    logger.info(f"Successfully set active_template_id on GuildConfig object for guild {guild_id_str}.")
                 else:
-                    logger.info(f"Set initial snapshot template {template_db_id} as active for guild {guild_id_str}")
-                # ------------------------------------------------------------
+                    logger.info(f"Template {template_db_id} is already active on passed GuildConfig object for guild {guild_id_str}. No change needed.")
+                
+            except AttributeError as attr_err:
+                logger.error(f"AttributeError working with passed GuildConfig object for guild {guild_id_str}: {attr_err}", exc_info=True)
+                return False # Critical error
+            except Exception as config_err:
+                 logger.error(f"Error updating passed GuildConfig object for guild {guild_id_str}: {config_err}", exc_info=True)
+                 return False # Critical error
+            # --- End Update GuildConfig ---
 
-                # --- Initialize Counters ---
-                category_count = 0
-                channel_count = 0
-                cat_perm_count = 0
-                chan_perm_count = 0
+            if existing_template:
+                # If the template already existed, we only needed to ensure it's set as active.
+                # We don't need to re-process the guild structure.
+                logger.debug("Skipping structure processing as template already existed.")
+                return True
 
-                # 3. Iterate through categories (sorted by position)
-                for category in sorted(guild.categories, key=lambda c: c.position):
-                    logger.debug(f"Processing category: {category.name} (Pos: {category.position})")
-                    cat_template_record = await cat_repo.create(
-                        guild_template_id=template_db_id,
-                        category_name=category.name,
-                        position=category.position
-                    )
-                    if not cat_template_record:
-                        logger.error(f"Failed to create template category for '{category.name}' in guild {guild_id_str}")
-                        await session.rollback()
-                        return False
-                    category_template_map[category] = cat_template_record.id # Store mapping
-                    logger.debug(f"  Created category template record ID: {cat_template_record.id}")
-                    category_count += 1 # Increment counter
+            # --- Process Guild Structure --- 
+            category_template_map = {} # Map: nextcord.CategoryChannel -> template_category.id
+            category_count = 0
+            channel_count = 0
+            cat_perm_count = 0
+            chan_perm_count = 0
 
-                    # Save category permissions (overwrites)
-                    for target, overwrite in category.overwrites.items():
-                        if isinstance(target, nextcord.Role):
-                            logger.debug(f"    Processing category permission for role: {target.name}")
-                            allow_perms, deny_perms = overwrite.pair()
-                            perm_record = await cat_perm_repo.create(
-                                category_template_id=cat_template_record.id,
-                                role_name=target.name,
-                                allow_permissions_bitfield=allow_perms.value if allow_perms.value != 0 else None,
-                                deny_permissions_bitfield=deny_perms.value if deny_perms.value != 0 else None
-                            )
-                            if not perm_record:
-                                logger.error(f"    Failed to create category permission for role '{target.name}' in category '{category.name}'")
-                                # Continue processing other permissions/channels, maybe log and flag?
-                                # For now, let's rollback on any failure for simplicity.
-                                await session.rollback()
-                                return False
-                            logger.debug(f"      Created category permission record ID: {perm_record.id}")
-                            cat_perm_count += 1 # Increment counter
+            for category in sorted(guild.categories, key=lambda c: c.position):
+                 logger.debug(f"Processing category: {category.name} (Pos: {category.position})")
+                 cat_template_record = await cat_repo.create(
+                     guild_template_id=template_db_id,
+                     category_name=category.name,
+                     position=category.position
+                 )
+                 if not cat_template_record:
+                     logger.error(f"Failed to create template category for '{category.name}' in guild {guild_id_str}")
+                     return False 
+                 category_template_map[category] = cat_template_record.id 
+                 logger.debug(f"  Created category template record ID: {cat_template_record.id}")
+                 category_count += 1
+                 # Process permissions for the category
+                 for target, overwrite in category.overwrites.items():
+                     if isinstance(target, nextcord.Role):
+                         logger.debug(f"    Processing category permission for role: {target.name}")
+                         allow_perms, deny_perms = overwrite.pair()
+                         perm_record = await cat_perm_repo.create(
+                             category_template_id=cat_template_record.id,
+                             role_name=target.name,
+                             allow_permissions_bitfield=allow_perms.value if allow_perms.value != 0 else None,
+                             deny_permissions_bitfield=deny_perms.value if deny_perms.value != 0 else None
+                         )
+                         if not perm_record:
+                             logger.error(f"    Failed to create category permission for role '{target.name}' in category '{category.name}'")
+                             return False 
+                         logger.debug(f"      Created category permission record ID: {perm_record.id}")
+                         cat_perm_count += 1
 
-
-                # 4. Iterate through channels (Text, Voice, Stage, Forum - sorted by position)
-                # Combine all channel types that have positions and categories/overwrites
-                # Note: ForumChannel might behave differently regarding categories/perms. Adjust if needed.
-                all_channels = sorted(
-                    [ch for ch in guild.channels if isinstance(ch, (nextcord.TextChannel, nextcord.VoiceChannel, nextcord.StageChannel, nextcord.ForumChannel))],
-                    key=lambda c: c.position
-                )
-
-                for channel in all_channels:
-                    logger.debug(f"Processing channel: {channel.name} (Type: {channel.type}, Pos: {channel.position})")
-                    parent_template_category_id = category_template_map.get(channel.category) # Get parent template ID if exists
-                    logger.debug(f"  Parent category: {channel.category.name if channel.category else 'None'} -> Template ID: {parent_template_category_id}")
-
-                    # Create channel template
-                    chan_template_record = await chan_repo.create(
-                        guild_template_id=template_db_id,
-                        channel_name=channel.name,
-                        channel_type=str(channel.type),
-                        position=channel.position,
-                        topic=getattr(channel, 'topic', None),
-                        is_nsfw=getattr(channel, 'nsfw', False),
-                        slowmode_delay=getattr(channel, 'slowmode_delay', 0) if isinstance(channel, nextcord.TextChannel) else 0,
-                        parent_category_template_id=parent_template_category_id
-                    )
-                    if not chan_template_record:
-                         logger.error(f"Failed to create template channel for '{channel.name}' in guild {guild_id_str}")
-                         await session.rollback()
-                         return False
-                    logger.debug(f"  Created channel template record ID: {chan_template_record.id}")
-                    channel_count += 1 # Increment counter
-
-                    # Save channel permissions (overwrites)
-                    for target, overwrite in channel.overwrites.items():
-                        if isinstance(target, nextcord.Role):
-                            logger.debug(f"    Processing channel permission for role: {target.name}")
-                            allow_perms, deny_perms = overwrite.pair()
-                            perm_record = await chan_perm_repo.create(
-                                channel_template_id=chan_template_record.id,
-                                role_name=target.name,
-                                allow_permissions_bitfield=allow_perms.value if allow_perms.value != 0 else None,
-                                deny_permissions_bitfield=deny_perms.value if deny_perms.value != 0 else None
-                            )
-                            if not perm_record:
-                                logger.error(f"    Failed to create channel permission for role '{target.name}' in channel '{channel.name}'")
-                                await session.rollback()
-                                return False
-                            logger.debug(f"      Created channel permission record ID: {perm_record.id}")
-                            chan_perm_count += 1 # Increment counter
-
-                # 5. Log Summary and Commit
-                logger.info(
-                    f"Successfully created template for guild {guild.name} ({guild_id_str}) with: "
-                    f"{category_count} categories, {channel_count} channels, "
-                    f"{cat_perm_count} category permissions, {chan_perm_count} channel permissions."
-                )
-                # Commit is handled automatically by session_context on successful exit
-                return True # Indicate success
+            # Process channels (including those without categories)
+            all_channels = sorted(
+                 [ch for ch in guild.channels if isinstance(ch, (nextcord.TextChannel, nextcord.VoiceChannel, nextcord.StageChannel, nextcord.ForumChannel))],
+                 key=lambda c: c.position
+             )
+            for channel in all_channels:
+                 logger.debug(f"Processing channel: {channel.name} (Type: {channel.type}, Pos: {channel.position})")
+                 parent_template_category_id = category_template_map.get(channel.category) # Returns None if channel.category is None or not in map
+                 logger.debug(f"  Parent category: {channel.category.name if channel.category else 'None'} -> Template ID: {parent_template_category_id}")
+ 
+                 chan_template_record = await chan_repo.create(
+                     guild_template_id=template_db_id,
+                     channel_name=channel.name,
+                     channel_type=str(channel.type),
+                     position=channel.position,
+                     topic=getattr(channel, 'topic', None),
+                     is_nsfw=getattr(channel, 'nsfw', False),
+                     slowmode_delay=getattr(channel, 'slowmode_delay', 0) if isinstance(channel, nextcord.TextChannel) else 0,
+                     parent_category_template_id=parent_template_category_id
+                 )
+                 if not chan_template_record:
+                      logger.error(f"Failed to create template channel for '{channel.name}' in guild {guild_id_str}")
+                      return False 
+                 logger.debug(f"  Created channel template record ID: {chan_template_record.id}")
+                 channel_count += 1 
+                 # Process permissions for the channel
+                 for target, overwrite in channel.overwrites.items():
+                     if isinstance(target, nextcord.Role):
+                         logger.debug(f"    Processing channel permission for role: {target.name}")
+                         allow_perms, deny_perms = overwrite.pair()
+                         perm_record = await chan_perm_repo.create(
+                             channel_template_id=chan_template_record.id,
+                             role_name=target.name,
+                             allow_permissions_bitfield=allow_perms.value if allow_perms.value != 0 else None,
+                             deny_permissions_bitfield=deny_perms.value if deny_perms.value != 0 else None
+                         )
+                         if not perm_record:
+                             logger.error(f"    Failed to create channel permission for role '{target.name}' in channel '{channel.name}'")
+                             return False 
+                         logger.debug(f"      Created channel permission record ID: {perm_record.id}")
+                         chan_perm_count += 1
+            logger.info(
+                f"Successfully created template structure for guild {guild.name} ({guild_id_str}) within session: "
+                f"{category_count} categories, {channel_count} channels, "
+                f"{cat_perm_count} category permissions, {chan_perm_count} channel permissions."
+            )
+            return True
 
         except Exception as e:
-            logger.error(f"An error occurred during template creation for guild {guild_id_str}: {e}", exc_info=True)
-            # Rollback will happen automatically if session_context exits via exception
-            return False # Indicate failure
+            logger.error(f"An error occurred during template creation for guild {guild_id_str} (within _create_template_with_session): {e}", exc_info=True)
+            # Rollback is handled by the session_context manager
+            return False
 
 
     async def initialize_for_guild(self, guild_id: str) -> bool:
         """This workflow doesn't need per-guild initialization in the traditional sense."""
-        # Mark as active conceptually, as it's ready to be triggered.
+        # Mark as active conceptually, as it's ready to be triggered when needed.
         self.guild_status[guild_id] = WorkflowStatus.ACTIVE 
         return True
 

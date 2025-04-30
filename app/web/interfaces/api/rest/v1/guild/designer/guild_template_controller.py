@@ -265,7 +265,7 @@ class GuildTemplateController(BaseController):
 
     # --- RENAMED Method for Get by ID Route (Signature updated) --- 
     async def get_guild_template_by_id(self, 
-                                     guild_id: str, # <<< ADDED guild_id
+                                     guild_id: str, 
                                      template_id: int, 
                                      current_user: AppUserEntity = Depends(get_current_user)
                                     ) -> GuildTemplateResponseSchema:

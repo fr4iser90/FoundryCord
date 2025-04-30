@@ -1,5 +1,6 @@
 import { apiRequest, showToast } from '/static/js/components/common/notifications.js';
 import { getGuildIdFromUrl } from '../designerUtils.js';
+import { initializeSharedTemplateList } from '../widget/sharedTemplateList.js';
 // Potentially needed imports if list refresh is desired:
 // import { initializeTemplateList } from '../widget/templateList.js';
 
@@ -68,12 +69,15 @@ export function initializeShareModal() {
                 console.log('[ShareModal] Share request successful:', response);
                 showToast('success', `Template "${newTemplateName}" shared successfully!`);
                 
-                // TODO: Optionally refresh the template list widget if needed
-                // const templateListWidgetContent = document.getElementById('widget-content-template-list');
-                // if (templateListWidgetContent) {
-                //     const currentGuildId = getGuildIdFromUrl(); // Needs import
-                //     initializeTemplateList(templateListWidgetContent, currentGuildId); // Needs import
-                // }
+                // --- ADD Refresh Shared List Logic --- 
+                const sharedListWidgetContent = document.getElementById('widget-content-shared-template-list');
+                if (sharedListWidgetContent && guildId) {
+                    console.log("[ShareModal] Refreshing shared templates list after successful share.");
+                    initializeSharedTemplateList(sharedListWidgetContent, guildId); // Use the imported function
+                } else {
+                     console.warn("[ShareModal] Could not find shared template list container or guildId to refresh.");
+                }
+                // --- END Refresh Shared List Logic ---
 
                 shareModal.hide(); // Close modal on success
 
