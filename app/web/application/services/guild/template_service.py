@@ -99,8 +99,8 @@ class GuildTemplateService:
                     "template_id": template.id,
                     "template_name": template.template_name,
                     "created_at": template.created_at.isoformat() if template.created_at else None,
-                    "is_shared": template.is_shared, # Include shared status
-                    "creator_user_id": template.creator_user_id, # Include creator ID
+                    "is_shared": template.is_shared,
+                    "creator_user_id": template.creator_user_id,
                     "template_delete_unmanaged": delete_unmanaged_flag,
                     "categories": [],
                     "channels": []
@@ -110,39 +110,25 @@ class GuildTemplateService:
                 for cat in categories:
                     category_data = {
                         "id": cat.id,
-                        "name": cat.category_name,
+                        "template_id": cat.guild_template_id,
+                        "category_name": cat.category_name,
                         "position": cat.position,
-                        "permissions": []
                     }
-                    for perm in cat.permissions:
-                        category_data["permissions"].append({
-                            "id": perm.id,
-                            "role_name": perm.role_name,
-                            "allow": perm.allow_permissions_bitfield,
-                            "deny": perm.deny_permissions_bitfield
-                        })
                     structured_template["categories"].append(category_data)
 
                 # Process channels and their permissions
                 for chan in channels:
                     channel_data = {
                         "id": chan.id,
-                        "name": chan.channel_name,
+                        "template_id": chan.guild_template_id,
+                        "parent_category_template_id": chan.parent_category_template_id,
+                        "channel_name": chan.channel_name,
                         "type": chan.channel_type,
                         "position": chan.position,
                         "topic": chan.topic,
                         "is_nsfw": chan.is_nsfw,
                         "slowmode_delay": chan.slowmode_delay,
-                        "parent_category_template_id": chan.parent_category_template_id,
-                        "permissions": []
                     }
-                    for perm in chan.permissions:
-                        channel_data["permissions"].append({
-                            "id": perm.id,
-                            "role_name": perm.role_name,
-                            "allow": perm.allow_permissions_bitfield if perm.allow_permissions_bitfield is not None else 0,
-                            "deny": perm.deny_permissions_bitfield if perm.deny_permissions_bitfield is not None else 0
-                        })
                     structured_template["channels"].append(channel_data)
                 
 
@@ -212,54 +198,39 @@ class GuildTemplateService:
 
                 # 4. Structure the data for the response
                 structured_template = {
-                    "guild_id": template.guild_id, # Still include guild_id if relevant
                     "template_id": template.id,
+                    "creator_user_id": template.creator_user_id,
                     "template_name": template.template_name,
                     "created_at": template.created_at.isoformat() if template.created_at else None,
-                    "is_shared": template.is_shared, # Include shared status
-                    "creator_user_id": template.creator_user_id, # Include creator ID
+                    "is_shared": template.is_shared,
                     "template_delete_unmanaged": delete_unmanaged_flag,
                     "categories": [],
                     "channels": []
                 }
 
-                # Process categories and their permissions
+                # Process categories
                 for cat in categories:
                     category_data = {
                         "id": cat.id,
-                        "name": cat.category_name,
+                        "template_id": cat.guild_template_id,
+                        "category_name": cat.category_name,
                         "position": cat.position,
-                        "permissions": []
                     }
-                    for perm in cat.permissions:
-                        category_data["permissions"].append({
-                            "id": perm.id,
-                            "role_name": perm.role_name,
-                            "allow": perm.allow_permissions_bitfield,
-                            "deny": perm.deny_permissions_bitfield
-                        })
                     structured_template["categories"].append(category_data)
 
-                # Process channels and their permissions
+                # Process channels
                 for chan in channels:
                     channel_data = {
                         "id": chan.id,
-                        "name": chan.channel_name,
+                        "template_id": chan.guild_template_id,
+                        "parent_category_template_id": chan.parent_category_template_id,
+                        "channel_name": chan.channel_name,
                         "type": chan.channel_type,
                         "position": chan.position,
                         "topic": chan.topic,
                         "is_nsfw": chan.is_nsfw,
                         "slowmode_delay": chan.slowmode_delay,
-                        "parent_category_template_id": chan.parent_category_template_id,
-                        "permissions": []
                     }
-                    for perm in chan.permissions:
-                        channel_data["permissions"].append({
-                            "id": perm.id,
-                            "role_name": perm.role_name,
-                            "allow": perm.allow_permissions_bitfield if perm.allow_permissions_bitfield is not None else 0,
-                            "deny": perm.deny_permissions_bitfield if perm.deny_permissions_bitfield is not None else 0
-                        })
                     structured_template["channels"].append(channel_data)
 
                 logger.info(f"Successfully fetched and structured template data for template {template_id}")
@@ -416,7 +387,6 @@ class GuildTemplateService:
                     .options(selectinload(GuildTemplateChannelEntity.permissions))
                     .order_by(GuildTemplateChannelEntity.position)
                 )
-                chan_result = await session.execute(chan_stmt)
                 channels: List[GuildTemplateChannelEntity] = chan_result.scalars().all()
 
                 # 4. Structure the data (similar to get_template_by_id)

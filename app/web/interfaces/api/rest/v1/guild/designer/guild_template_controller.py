@@ -16,7 +16,8 @@ from app.web.interfaces.api.rest.v1.schemas.guild_template_schemas import (
     GuildStructureUpdatePayload,
     GuildStructureUpdateResponse,
     GuildStructureTemplateCreateFromStructure,
-    GuildStructureTemplateInfo
+    GuildStructureTemplateInfo,
+    GuildTemplateMetadataUpdateSchema
 )
 # --- Define Schemas Locally if not imported --- 
 from pydantic import BaseModel, Field

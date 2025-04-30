@@ -2,6 +2,19 @@ from pydantic import BaseModel, Field, validator, HttpUrl
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
+# --- Base Schemas (if needed, e.g., for common fields) ---
+class BaseTemplateSchema(BaseModel):
+    pass
+
+# --- Specific Schemas for API Endpoints ---
+
+# --- RE-ADD: Schema for creating a new template (e.g., from current guild structure) ---
+class GuildTemplateCreateSchema(BaseModel):
+    template_name: str = Field(..., min_length=3, max_length=100, description="The desired name for the new template.")
+    description: Optional[str] = Field(None, max_length=255, description="Optional description for the template.")
+    # No structure needed here, assumed to be taken from the guild_id in the path
+# --- END RE-ADD ---
+
 # --- Schemas for Permissions (Used by Channel/Category) ---
 class GuildTemplatePermissionBase(BaseModel):
     role_id: Optional[int] = None
@@ -124,96 +137,6 @@ class GuildStructureTemplateCreateFromStructure(BaseModel):
     structure: GuildStructureUpdatePayload = Field(..., description="The structure payload containing the list of nodes (categories/channels) with their parents and positions.")
 
 
-# --- LEGACY SCHEMAS (Likely replaceable by the ones above) ---
-# Keep existing schemas at the end for now to avoid breaking other parts, 
-# but they should be reviewed and potentially removed/merged later.
-
-class GuildTemplateCreateSchema(BaseModel):
-    """Schema for creating a new guild template from an existing guild."""
-    template_name: str = Field(
-        ..., 
-        min_length=3, 
-        max_length=100, 
-        description="Unique name for the new template.",
-        examples=["My Standard Server Template"]
-    )
-    template_description: Optional[str] = Field(
-        None, 
-        max_length=500, 
-        description="Optional description for the template.",
-        examples=["A basic template with general channels and roles."]
-    )
-
-    # Note: source_guild_id is taken from the URL path parameter in the controller,
-    # so it doesn't need to be in the request body schema.
-
-class GuildTemplateShareSchema(BaseModel):
-    """Schema for the request body when sharing/copying a template."""
-    original_template_id: int = Field(..., description="The database ID of the template to be copied.")
-    new_template_name: str = Field(..., min_length=3, max_length=100, description="The unique name for the new shared template.")
-    new_template_description: Optional[str] = Field(None, max_length=500, description="Optional description for the new shared template.")
-
-class PermissionSchema(BaseModel):
-    """Schema for category or channel permissions within a template."""
-    id: int
-    role_name: str
-    allow: int = Field(..., alias="allow_permissions_bitfield", serialization_alias="allow")
-    deny: int = Field(..., alias="deny_permissions_bitfield", serialization_alias="deny")
-
-    class Config:
-        populate_by_name = True # Allow using alias names for population
-
-class CategorySchema(BaseModel):
-    """Schema for a category within a template."""
-    id: int
-    name: str = Field(..., alias="category_name")
-    position: int
-    permissions: List[PermissionSchema] = []
-
-    class Config:
-        populate_by_name = True # Allow using alias names for population
-
-class ChannelSchema(BaseModel):
-    """Schema for a channel within a template."""
-    id: int
-    name: str = Field(..., alias="channel_name")
-    type: str
-    position: int
-    topic: Optional[str] = None
-    is_nsfw: Optional[bool] = False
-    slowmode_delay: Optional[int] = 0
-    parent_category_template_id: Optional[int] = None # Link to category within the template
-    permissions: List[PermissionSchema] = []
-
-    class Config:
-        populate_by_name = True # Allow using alias names for population
-
-class GuildTemplateResponseSchema(BaseModel):
-    """Schema for the detailed response when fetching a guild template."""
-    guild_id: Optional[str] = None # Original guild ID, may be null if template is generic
-    template_id: int
-    template_name: str
-    created_at: Optional[datetime] = None
-    categories: List[CategorySchema] = []
-    channels: List[ChannelSchema] = []
-    is_initial_snapshot: Optional[bool] = False # Indicates if it's the initial auto-generated snapshot
-    template_delete_unmanaged: Optional[bool] = None # Get from GuildConfig
-
-    class Config:
-        from_attributes = True
-        populate_by_name = True # Enable using aliases for population
-        # Ensure nested models also use populate_by_name if needed
-
-# Optional: Add other schemas later if needed, e.g., for responses
-# class GuildTemplateResponseSchema(BaseModel):
-#     id: int
-#     name: str
-#     description: Optional[str]
-#     # ... other fields ...
-#
-#     class Config:
-#         orm_mode = True # If mapping from ORM objects
-
 # --- Schema for Template List Response ---
 
 class GuildTemplateListItemSchema(BaseModel):
@@ -333,14 +256,11 @@ class ChannelResponseSchema(BaseModel):
 
 class GuildTemplateResponseSchema(BaseModel):
     template_id: int
-    creator_user_id: int
+    creator_user_id: Optional[int]
     template_name: str
-    description: Optional[str]
-    created_at: str # Keep as string for simplicity
-    updated_at: str
+    created_at: Optional[str]
     is_shared: bool
-    is_initial_snapshot: bool = False # Add this flag
-    template_delete_unmanaged: bool = False # Added setting
+    template_delete_unmanaged: bool = False
     categories: List[CategoryResponseSchema]
     channels: List[ChannelResponseSchema]
 
@@ -355,7 +275,6 @@ class BasicGuildTemplateInfo(BaseModel):
     template_name: str
     created_at: str
     is_shared: bool
-    is_initial_snapshot: bool = False # Add flag here too
 
 class GuildTemplateListResponseSchema(BaseModel):
     templates: List[BasicGuildTemplateInfo]
