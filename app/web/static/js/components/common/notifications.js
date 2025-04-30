@@ -122,18 +122,20 @@ const apiRequest = async (endpoint, options = {}) => {
                  // Check if response has content before trying to parse
                  const text = await response.text(); // Read as text first
                  if (!text) {
-                     console.debug('[apiRequest] Received empty response body, returning null.');
-                     return null;
+                     // Previously returned null, now throw an error for 200 OK with empty body
+                     console.error('[apiRequest] Received 200 OK but empty response body. Throwing error.');
+                     throw new ApiError('Received OK status but empty response body', response.status, text);
                  }
+                 // Try to parse the non-empty text
                  const data = JSON.parse(text); // Parse the text
                  console.debug('[apiRequest] Response data parsed:', data);
                  return data;
             } catch (parseError) {
+                 // Previously returned null, now throw an error for 200 OK with invalid JSON
                  console.error(`[apiRequest] Error parsing JSON response body (Status: ${response.status}):`, parseError);
-                 // Decide what to return or throw. Returning null might be safer.
-                 // Alternatively, throw the parseError if the caller should handle it.
-                 // throw new Error(`Failed to parse JSON response: ${parseError.message}`); 
-                 return null; // Return null if parsing fails for a successful status code (except 204)
+                 // Include the raw text in the error if possible
+                 const rawText = await response.text().catch(() => 'Could not read raw text'); // Fallback
+                 throw new ApiError(`Failed to parse JSON response (Status: ${response.status})`, response.status, rawText);
             }
         } catch (fetchOrApiError) { // Catch network errors or ApiError thrown earlier
             console.error("Error parsing response body:", fetchOrApiError);

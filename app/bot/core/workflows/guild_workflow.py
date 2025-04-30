@@ -458,7 +458,7 @@ class GuildWorkflow(BaseWorkflow):
                                 reason=f"Applying template: {template.template_name}"
                             )
                             logger.info(f"      Successfully created category '{new_discord_cat.name}' (ID: {new_discord_cat.id}) at position {new_discord_cat.position}")
-                            
+
                             # Apply permissions after creation
                             await self._apply_category_permissions(new_discord_cat, template_cat.id, cat_perm_repo)
 

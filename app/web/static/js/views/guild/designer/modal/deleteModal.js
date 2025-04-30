@@ -6,11 +6,11 @@ import { state } from '../designerState.js'; // <-- Import state
 
 // Variables to store modal elements found during initialization
 let modalElement = null;
-let modalTitleElement = null; // <<< NEW: For dynamic title
-let modalBodyTextElement = null; // <<< NEW: For dynamic body text
+let modalTitleElement = null;
+let modalBodyTextElement = null;
 let confirmButton = null;
-let itemNameElement = null; // <<< RENAMED: More generic
-let itemIdInputElement = null; // <<< RENAMED: More generic
+let itemNameElement = null;
+let itemIdInputElement = null;
 let currentItemType = 'template'; // Default to template, updated on open
 let currentItemId = null; // Store ID separately
 let listTypeToRefresh = 'saved'; // Default, will be updated when modal opens
@@ -25,13 +25,13 @@ export function initializeDeleteModal() {
         return;
     }
 
-    modalTitleElement = modalElement.querySelector('#deleteConfirmationModalLabel'); // <<< NEW
-    modalBodyTextElement = modalElement.querySelector('.modal-body p:first-of-type'); // <<< NEW: Get first paragraph
+    modalTitleElement = modalElement.querySelector('#deleteConfirmationModalLabel');
+    modalBodyTextElement = modalElement.querySelector('.modal-body p:first-of-type');
     confirmButton = modalElement.querySelector('#confirmDeleteButton');
-    itemNameElement = modalElement.querySelector('#deleteItemName'); // <<< UPDATED ID
-    itemIdInputElement = modalElement.querySelector('#deleteItemIdInput'); // <<< UPDATED ID
+    itemNameElement = modalElement.querySelector('#deleteItemName');
+    itemIdInputElement = modalElement.querySelector('#deleteItemIdInput');
     
-    if (!confirmButton || !itemNameElement || !itemIdInputElement || !modalTitleElement || !modalBodyTextElement) { // <<< UPDATED Check
+    if (!confirmButton || !itemNameElement || !itemIdInputElement || !modalTitleElement || !modalBodyTextElement) {
         console.error("[DeleteModal] Could not find essential elements within the delete modal during init.", {
              confirmButton, itemNameElement, itemIdInputElement, modalTitleElement, modalBodyTextElement
         });
@@ -43,9 +43,10 @@ export function initializeDeleteModal() {
 
     // --- Add the confirm listener ONCE during initialization --- 
     confirmButton.addEventListener('click', async () => {
-        const itemId = currentItemId; 
+        const itemId = currentItemId;
         const itemType = currentItemType;
-        const itemName = itemNameElement.textContent; // Get name from display
+        const itemName = itemNameElement.textContent;
+        const guildId = getGuildIdFromUrl();
 
         if (itemId === null || itemId === undefined) {
             console.error("[DeleteModal] Item ID is missing!");
@@ -53,24 +54,31 @@ export function initializeDeleteModal() {
             return;
         }
 
-        console.log(`[DeleteModal] Confirm delete clicked for Item Type: ${itemType}, ID: ${itemId}`);
+        // Check if guildId is available (needed for most deletes now)
+        if (!guildId) {
+            console.error("[DeleteModal] Guild ID is missing! Cannot construct URL.");
+            showToast('error', 'Cannot delete: Guild context unknown.');
+            return;
+        }
+
+        console.log(`[DeleteModal] Confirm delete clicked for Item Type: ${itemType}, ID: ${itemId}, Guild ID: ${guildId}`);
         confirmButton.disabled = true;
         confirmButton.querySelector('.spinner-border').classList.remove('d-none');
         confirmButton.childNodes[confirmButton.childNodes.length - 1].textContent = ' Deleting...';
 
         // --- Determine API URL based on itemType ---
         let deleteApiUrl = '';
-        let itemTypeNameForMsg = 'Item'; // Default for messages
+        let itemTypeNameForMsg = 'Item';
 
-        if (itemType === 'template' || itemType === 'saved' || itemType === 'shared') { // Handle legacy list types too
-            deleteApiUrl = `/templates/guilds/${itemId}`; // Template deletion endpoint
-            itemTypeNameForMsg = 'Template';
+        if (itemType === 'template' || itemType === 'saved' || itemType === 'shared') {
+             deleteApiUrl = `/api/v1/guilds/${guildId}/template/${itemId}`;
+             itemTypeNameForMsg = 'Template';
         } else if (itemType === 'designer_category') {
-            deleteApiUrl = `/templates/guilds/categories/${itemId}`; // Category deletion endpoint
-            itemTypeNameForMsg = 'Category';
+             deleteApiUrl = `/api/v1/guilds/${guildId}/template/categories/${itemId}`;
+             itemTypeNameForMsg = 'Category';
         } else if (itemType === 'designer_channel') {
-            deleteApiUrl = `/templates/guilds/channels/${itemId}`; // Channel deletion endpoint
-            itemTypeNameForMsg = 'Channel';
+             deleteApiUrl = `/api/v1/guilds/${guildId}/template/channels/${itemId}`;
+             itemTypeNameForMsg = 'Channel';
         } else {
             console.error(`[DeleteModal] Unknown item type for deletion: ${itemType}`);
             showToast('error', `Cannot delete: Unknown item type '${itemType}'.`);
@@ -125,7 +133,7 @@ export function initializeDeleteModal() {
  */
 export function openDeleteModal(itemId, itemName, itemType = 'template') {
     // Check if initialization was successful
-    if (!modalElement || !confirmButton || !itemNameElement || !itemIdInputElement || !modalTitleElement || !modalBodyTextElement) { // <<< UPDATED Check
+    if (!modalElement || !confirmButton || !itemNameElement || !itemIdInputElement || !modalTitleElement || !modalBodyTextElement) {
         console.error("[DeleteModal] Cannot open modal: elements not found or init failed.");
         showToast('error', 'Could not open delete confirmation.');
         return;
@@ -167,7 +175,7 @@ export function openDeleteModal(itemId, itemName, itemType = 'template') {
     console.log(`[DeleteModal] Opened modal for Item Type: ${itemType}, ID: ${itemId}, Name: ${itemName}`);
 }
 
-// --- NEW Helper: Close Modal ---
+// Helper: Close Modal
 function closeModal() {
     const modalInstance = bootstrap.Modal.getInstance(modalElement);
     if (modalInstance) {
@@ -175,7 +183,7 @@ function closeModal() {
     }
 }
 
-// --- NEW Helper: Handle successful deletion ---
+// Helper: Handle successful deletion
 function handleSuccessfulDeletion(itemType, itemId) {
     console.log(`[DeleteModal] Handling successful deletion of ${itemType} ID: ${itemId}`);
     if (itemType === 'saved' || itemType === 'shared' || itemType === 'template') {
@@ -222,7 +230,7 @@ function refreshTemplateList(listType) {
             refreshFunction(listElement, guildId);
         } else {
             // Pass current active ID? Let's get it from state.
-            const activeId = state.getActiveTemplateId(); // Need to import state
+            const activeId = state.getActiveTemplateId(); // Use state
             refreshFunction(listElement, guildId, activeId); 
         }
     } else {

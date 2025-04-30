@@ -68,7 +68,7 @@ class ErrorHandler(BaseView):
             # Fallback to generic 500
             render_context["error"] = "Internal server error (template rendering failed)"
             render_context["status_code"] = 500
-            return self.templates.TemplateResponse("views/errors/500.html", render_context)
+            return self.templates.TemplateResponse("views/errors/500.html", render_context, status_code=500)
 
     async def handle_generic_exception(self, request: Request, exc: Exception):
         """Enhanced generic exception handler with unified logging"""

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator, HttpUrl
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
@@ -231,4 +231,137 @@ class GuildTemplateListResponseSchema(BaseModel):
     """Schema for the response when listing guild templates."""
     templates: List[GuildTemplateListItemSchema]
 
-# ... (rest of the file remains unchanged) 
+# --- NEW: Schema for updating template metadata (e.g., name) ---
+class GuildTemplateMetadataUpdateSchema(BaseModel):
+    name: str = Field(..., min_length=3, max_length=100, description="The new name for the template.")
+    # Add description later if needed
+
+# Schema for Node representation in structure updates/creation
+class NodeSchema(BaseModel):
+    id: str # Frontend ID (e.g., "category_123" or "channel_456")
+    parent_id: str # Frontend ID of the parent
+    position: int
+    name: str = Field(..., min_length=1, max_length=100)
+    channel_type: Optional[str] = None # Only for channels (e.g., 'text', 'voice')
+
+    @validator('name')
+    def name_must_not_be_empty(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Name cannot be empty')
+        return v
+
+    @validator('channel_type')
+    def channel_type_valid(cls, v, values):
+        if 'id' in values and values['id'].startswith('channel_') and v not in ['text', 'voice']: # Add other valid types
+            raise ValueError(f"Invalid channel type: {v}")
+        return v
+
+# --- NEW: Schema for Pending Property Changes ---
+class PropertyChangeValue(BaseModel):
+    # Define fields based on what properties can change, e.g.:
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    topic: Optional[str] = Field(None, max_length=1024) # Example length
+    is_nsfw: Optional[bool] = None
+    slowmode_delay: Optional[int] = Field(None, ge=0, le=21600) # Discord limits (0-6h)
+    # Add other properties like permissions later
+
+# Schema for the payload of the structure update endpoint
+class GuildStructureUpdatePayload(BaseModel):
+    nodes: List[NodeSchema] = Field(..., description="The complete list of nodes representing the desired structure.")
+    # --- NEW: Add property_changes field --- 
+    property_changes: Optional[Dict[str, PropertyChangeValue]] = Field(None, description="Dictionary of pending property changes keyed by node ID.")
+    # The keys in property_changes should match the 'id' field in NodeSchema (e.g., "category_123")
+
+# Simplified node for response
+class SimpleNodeSchema(BaseModel):
+    id: int # Database ID
+    name: str
+    # Add other relevant fields like type if needed
+
+class GuildStructureUpdateResponse(BaseModel):
+    message: str
+    updated_nodes: List[SimpleNodeSchema] # Or more detailed info if needed
+
+
+# Schema for CREATING a template FROM a structure payload
+class GuildStructureTemplateCreateFromStructure(BaseModel):
+    new_template_name: str = Field(..., min_length=3, max_length=100)
+    new_template_description: Optional[str] = Field(None, max_length=255)
+    structure: GuildStructureUpdatePayload # Reuse the structure update payload
+
+# Schema for returning basic info about a newly created template
+class GuildStructureTemplateInfo(BaseModel):
+    template_id: int
+    template_name: str
+    message: str
+
+# Schema for sharing a template (creating a shared copy)
+class GuildTemplateShareSchema(BaseModel):
+    original_template_id: int = Field(..., description="The ID of the template to copy and share.")
+    new_template_name: str = Field(..., min_length=3, max_length=100, description="The name for the new shared template copy.")
+    new_template_description: Optional[str] = Field(None, max_length=255, description="Optional description for the shared copy.")
+
+
+# --- Response Schemas --- 
+
+class CategoryResponseSchema(BaseModel):
+    id: int
+    template_id: int
+    category_name: str
+    position: int
+    # Permissions might be added later
+
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True # Allows using db column names
+
+class ChannelResponseSchema(BaseModel):
+    id: int
+    template_id: int
+    parent_category_template_id: Optional[int] # Changed from category_id
+    channel_name: str
+    type: str # e.g., 'text', 'voice'
+    position: int
+    topic: Optional[str] = None # Make optional
+    is_nsfw: Optional[bool] = None # Make optional
+    slowmode_delay: Optional[int] = None # Make optional
+    # Permissions might be added later
+
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True # Allows using db column names
+
+class GuildTemplateResponseSchema(BaseModel):
+    template_id: int
+    creator_user_id: int
+    template_name: str
+    description: Optional[str]
+    created_at: str # Keep as string for simplicity
+    updated_at: str
+    is_shared: bool
+    is_initial_snapshot: bool = False # Add this flag
+    template_delete_unmanaged: bool = False # Added setting
+    categories: List[CategoryResponseSchema]
+    channels: List[ChannelResponseSchema]
+
+    class Config:
+        orm_mode = True # Useful if data comes directly from ORM model
+        allow_population_by_field_name = True
+
+# For listing multiple templates (simplified view)
+class BasicGuildTemplateInfo(BaseModel):
+    template_id: int
+    creator_user_id: Optional[int] = None # Can be None for initial snapshot
+    template_name: str
+    created_at: str
+    is_shared: bool
+    is_initial_snapshot: bool = False # Add flag here too
+
+class GuildTemplateListResponseSchema(BaseModel):
+    templates: List[BasicGuildTemplateInfo]
+
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True
+
+# Ensure all models are loaded 

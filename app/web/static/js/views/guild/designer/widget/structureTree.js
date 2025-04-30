@@ -115,7 +115,6 @@ function getChannelIcon(rawChannelType) {
  * @param {object} templateData - The structured template data.
  */
 export function initializeStructureTree(templateData) { // Export the function
-    // console.log("[TreeWidget] Initializing structure tree..."); // AUSKOMMENTIERT
     const treeContainer = document.getElementById('widget-content-structure-tree');
     if (!treeContainer) {
         console.error('[TreeWidget] Tree container #widget-content-structure-tree not found!'); // BLEIBT (Fehlerlog)
@@ -144,7 +143,7 @@ export function initializeStructureTree(templateData) { // Export the function
     // Destroy previous instance if exists
     if ($(treeContainer).jstree(true)) {
         $(treeContainer).jstree(true).destroy();
-        // console.log("[TreeWidget] Destroyed existing jsTree instance."); // AUSKOMMENTIERT
+        // console.log("[TreeWidget] Destroyed existing jsTree instance."); // REMOVED
     }
     treeContainer.innerHTML = ''; // Clear previous content
 
@@ -171,7 +170,7 @@ export function initializeStructureTree(templateData) { // Export the function
             }
         })
         .on('ready.jstree', function () {
-             // console.log("[TreeWidget] jsTree is ready. Opening root node."); // AUSKOMMENTIERT
+             // console.log("[TreeWidget] jsTree is ready. Opening root node."); // REMOVED
              $(this).jstree('open_node', `template_${templateData.id || 'root'}`);
         })
         .on('select_node.jstree', function (e, data) {
@@ -196,11 +195,11 @@ export function initializeStructureTree(templateData) { // Export the function
                 // Simple display for now - Replace with actual form/fields later
                 propsContent.innerHTML = `<div class="panel-content-area p-3"><h5 class="mt-0">Properties</h5><hr><p><b>${data.node.text}</b></p><p><small>ID: ${data.node.id}</small></p><pre class="small bg-light p-2 rounded">${JSON.stringify(data.node.data || {}, null, 2)}</pre></div>`;
             } else {
-                 // console.log("[TreeWidget] Properties panel is collapsed or not found, skipping update."); // AUSKOMMENTIERT
+                 // console.log("[TreeWidget] Properties panel is collapsed or not found, skipping update."); // REMOVED
             }
         })
         .on('move_node.jstree', function (e, data) {
-            // console.log("[TreeWidget] Raw move_node data:", data);
+            // console.log("[TreeWidget] Raw move_node data:", data); // REMOVED
             const movedNodeId = data.node.id; // e.g., "channel_123" or "category_456"
             const newParentId = data.parent; // e.g., "category_456" or "template_root"
             const newPosition = data.position; // Index among siblings (0-based)
@@ -212,17 +211,18 @@ export function initializeStructureTree(templateData) { // Export the function
             console.log(`  Old Parent: ID=${oldParentId}, Position: ${oldPosition}`);
 
             // Dispatch a custom event to notify index.js
-            document.dispatchEvent(new CustomEvent('structureChanged', {
-                detail: {
-                    nodeId: movedNodeId,
-                    newParentId: newParentId,
-                    newPosition: newPosition,
-                    oldParentId: oldParentId,
-                    oldPosition: oldPosition
-                }
-            }));
+            // REMOVED DUPLICATE DISPATCH - now handled in if/else below
+            // document.dispatchEvent(new CustomEvent('structureChanged', {
+            //     detail: {
+            //         nodeId: movedNodeId,
+            //         newParentId: newParentId,
+            //         newPosition: newPosition,
+            //         oldParentId: oldParentId,
+            //         oldPosition: oldPosition
+            //     }
+            // }));
 
-            // --- Check if the move originated from the toolbox --- 
+            // Check if the move originated from the toolbox
             const isToolboxDrop = data.event?.helper?.hasClass('toolbox-item');
             
             if (isToolboxDrop) {
@@ -247,10 +247,10 @@ export function initializeStructureTree(templateData) { // Export the function
                     // TODO: Prevent the actual move in jsTree for toolbox items (maybe return false in check_callback?)
                     //       For now, we proceed and will create a new node later.
                     showToast('info', `Adding new ${itemType}...`);
-                    // TODO: Trigger Input Modal here, passing itemType, parentDbId, position
+                    // Trigger Input Modal here, passing itemType, parentDbId, position
                     openNewItemInputModal(itemType, data.parent, data.position);
 
-                    // --- TEMPORARY: Prevent default move event for toolbox drops --- 
+                    // TEMPORARY: Prevent default move event for toolbox drops
                     // This is a bit hacky; ideally, check_callback would prevent the move.
                     // We reset the dirty flag set by the move_node event listener above.
                     state.setDirty(false);
@@ -282,7 +282,7 @@ export function initializeStructureTree(templateData) { // Export the function
             }
             // -----------------------------------------------------
         });
-        // console.log("[TreeWidget] jsTree initialized successfully."); // AUSKOMMENTIERT
+        // console.log("[TreeWidget] jsTree initialized successfully."); // REMOVED
     } catch (error) {
         console.error("[TreeWidget] Error initializing jsTree:", error); // BLEIBT (Fehlerlog)
         treeContainer.innerHTML = '<p class="text-danger p-3">Error initializing tree view.</p>';

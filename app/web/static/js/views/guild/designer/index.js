@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeToolbox();
         console.log("[Index] Panels initialized.");
 
-        // --- NEW: Add listener for element deletion --- 
+        // Add listener for element deletion
         document.addEventListener('designerElementDeleted', handleDesignerElementDeleted);
         console.log("[Index] Added listener for 'designerElementDeleted'.");
         // --------------------------------------------
@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 }); 
 
-// --- NEW: Handler function for element deletion ---
+// Handler function for element deletion
 /**
  * Handles the 'designerElementDeleted' event dispatched by the delete modal.
  * Removes the corresponding node from the jsTree view.
@@ -228,7 +228,7 @@ function handleDesignerElementDeleted(event) {
         console.log(`[Index] Successfully deleted node ${nodeIdString} from jsTree.`);
         // Note: state.setDirty(true) is already called by deleteModal.js
         // We might need to trigger an update for other list widgets here if needed
-        // --- Refresh corresponding list widget --- 
+        // Refresh corresponding list widget
         const currentTemplateData = state.getCurrentTemplateData();
         const guildId = getGuildIdFromUrl(); // Needed for list links
 

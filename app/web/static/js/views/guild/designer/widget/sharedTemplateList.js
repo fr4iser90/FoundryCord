@@ -28,7 +28,8 @@ export async function initializeSharedTemplateList(contentElement, currentGuildI
     contentElement.innerHTML = '<p class="panel-placeholder">Loading shared templates...</p>';
 
     // --- API ENDPOINT for SHARED templates --- 
-    const listApiUrl = `/api/v1/templates/guilds/shared/`; 
+    const listApiUrl = `/api/v1/guilds/${currentGuildId}/template/shared/`;
+    console.log(`[SharedTemplateListWidget] Fetching shared templates from: ${listApiUrl}`);
 
     try {
         // Fetch the list of shared templates
@@ -70,11 +71,11 @@ export async function initializeSharedTemplateList(contentElement, currentGuildI
 
             const link = document.createElement('a');
             link.href = '#';
-            link.className = 'text-decoration-none text-body flex-grow-1 me-2 template-use-link'; // Keep original class? Or rename too? Let's rename.
+            link.className = 'text-decoration-none text-body flex-grow-1 me-2 template-use-link';
             link.dataset.templateId = templateId;
             link.addEventListener('click', (event) => {
                 event.preventDefault();
-                handleTemplateLoadShared(templateId, templateName); // <-- RENAME function call
+                handleTemplateLoadShared(templateId, templateName, currentGuildId);
             });
 
             const iconElement = document.createElement('i');
@@ -97,8 +98,8 @@ export async function initializeSharedTemplateList(contentElement, currentGuildI
             // Rename "Use" Button to "Load"
             const loadButton = document.createElement('button');
             loadButton.type = 'button';
-            loadButton.className = 'btn btn-outline-primary btn-load-shared-template'; // <-- RENAME class
-            loadButton.title = `Load shared template '${templateName}' into designer`; // <-- RENAME title
+            loadButton.className = 'btn btn-outline-primary btn-load-shared-template';
+            loadButton.title = `Load shared template '${templateName}' into designer`;
             loadButton.dataset.templateId = templateId;
             loadButton.dataset.templateName = templateName;
             const loadIcon = document.createElement('i');
@@ -107,7 +108,7 @@ export async function initializeSharedTemplateList(contentElement, currentGuildI
             loadButton.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                handleTemplateLoadShared(templateId, templateName, currentGuildId); // <-- RENAME function call
+                handleTemplateLoadShared(templateId, templateName, currentGuildId);
             });
             buttonGroup.appendChild(loadButton);
 
@@ -124,7 +125,7 @@ export async function initializeSharedTemplateList(contentElement, currentGuildI
             saveButton.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                handleSharedTemplateSave(templateId, templateName, currentGuildId); // Pass guildId
+                handleSharedTemplateSave(templateId, templateName, currentGuildId);
             });
             buttonGroup.appendChild(saveButton);
             // --- End Save/Copy Button ---
@@ -189,9 +190,16 @@ export async function initializeSharedTemplateList(contentElement, currentGuildI
  * (Previously handleTemplateUse)
  * @param {string} templateId - The ID of the template to load.
  * @param {string} templateName - The name of the template.
+ * @param {string} currentGuildId - The current guild ID.
  */
-async function handleTemplateLoadShared(templateId, templateName) { // <-- RENAME function name
-    console.log(`[SharedTemplateListWidget] Load shared template selected: ${templateId}, Name: ${templateName}`);
+async function handleTemplateLoadShared(templateId, templateName, currentGuildId) {
+    console.log(`[SharedTemplateListWidget] Load shared template selected: ${templateId}, Name: ${templateName}, Guild: ${currentGuildId}`);
+
+    if (!currentGuildId) {
+        console.error("[SharedTemplateListWidget] Cannot load shared template details: Guild ID is missing.");
+        showToast('error', 'Cannot load template: Guild context missing.');
+        return;
+    }
 
     if (!confirm(`Are you sure you want to load the shared template "${templateName}"?\nThis will replace the current structure in the designer.`)) {
         console.log("[SharedTemplateListWidget] 'Load template' action cancelled by user.");
@@ -201,8 +209,8 @@ async function handleTemplateLoadShared(templateId, templateName) { // <-- RENAM
     console.log(`[SharedTemplateListWidget] Attempting to load structure for shared template ID: ${templateId}`);
     showToast('info', `Loading structure for "${templateName}"...`);
 
-    // Keep the ORIGINAL, WORKING API URL
-    const apiUrl = `/api/v1/templates/guilds/shared/${templateId}`;
+    const apiUrl = `/api/v1/guilds/${currentGuildId}/template/shared/${templateId}`;
+    console.log(`[SharedTemplateListWidget] Fetching shared template details from: ${apiUrl}`);
     try {
         const templateData = await apiRequest(apiUrl); // GET request by default
 
@@ -232,7 +240,13 @@ async function handleTemplateLoadShared(templateId, templateName) { // <-- RENAM
  * @param {string} currentGuildId - The current guild context ID (needed to refresh saved list).
  */
 async function handleSharedTemplateSave(templateId, templateName, currentGuildId) {
-    console.log(`[SharedTemplateListWidget] Save shared template selected: ${templateId}, Name: ${templateName}`);
+    console.log(`[SharedTemplateListWidget] Save shared template selected: ${templateId}, Name: ${templateName}, Guild: ${currentGuildId}`);
+
+    if (!currentGuildId) {
+        console.error("[SharedTemplateListWidget] Cannot copy shared template: Guild ID is missing.");
+        showToast('error', 'Cannot copy template: Guild context missing.');
+        return;
+    }
 
     // Optional: Prompt for a new name for the saved copy?
     // const newName = prompt(`Enter a name for your saved copy of "${templateName}":`, templateName);
@@ -241,7 +255,8 @@ async function handleSharedTemplateSave(templateId, templateName, currentGuildId
     //     return;
     // }
 
-    const apiUrl = `/api/v1/templates/guilds/copy_shared`;
+    const apiUrl = `/api/v1/guilds/${currentGuildId}/template/copy_shared`;
+    console.log(`[SharedTemplateListWidget] Copying shared template via: ${apiUrl}`);
     const payload = {
         shared_template_id: templateId,
         // new_name: newName // Include if using prompt

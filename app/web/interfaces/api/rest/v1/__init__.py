@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from app.web.interfaces.api.rest.v1.auth import router as auth_router
 
-from app.web.interfaces.api.rest.v1.guild import router as guild_router, general_template_router
+from app.web.interfaces.api.rest.v1.guild import router as guild_router
 
 from app.web.interfaces.api.rest.v1.owner import (
     router as owner_router, 
@@ -24,7 +24,6 @@ router = APIRouter(prefix="/api/v1")
 router.include_router(auth_router)
 #router.include_router(dashboard_router)
 router.include_router(guild_router) # Guild-specific routes
-router.include_router(general_template_router) # General template routes
 router.include_router(owner_router)
 router.include_router(bot_control_router)
 router.include_router(guild_management_router)

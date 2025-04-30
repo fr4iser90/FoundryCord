@@ -1,5 +1,5 @@
 import { apiRequest, showToast, ApiError } from '/static/js/components/common/notifications.js';
-// --- NEW: Import state functions --- 
+// Import state functions
 import { state } from './designerState.js';
 // ---------------------------------
 
@@ -170,14 +170,14 @@ export function formatStructureForApi(templateId) {
 
         console.log(`[DesignerUtils] Formatted ${nodesPayload.length} nodes for API payload from flat list.`);
         
-        // --- NEW: Get pending property changes from state --- 
+        // Get pending property changes from state
         const pendingChanges = state.getPendingPropertyChanges(); 
         console.log("[DesignerUtils - formatStructureForApi] Pending property changes retrieved from state:", pendingChanges);
         // ---------------------------------------------------
 
         return {
             nodes: nodesPayload,
-            // --- NEW: Add pending changes to payload --- 
+            // Add pending changes to payload
             property_changes: pendingChanges // Include the pending changes object
             // ------------------------------------------
         };
@@ -189,5 +189,5 @@ export function formatStructureForApi(templateId) {
     }
 }
 
-// Initial log to confirm loading
+// Initial log
 console.log("[DesignerUtils] Utils module loaded.");

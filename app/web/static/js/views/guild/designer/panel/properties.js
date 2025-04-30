@@ -25,7 +25,7 @@ let propNsfwSwitch = null;
 let propSlowmodeInput = null;
 let propDeleteBtn = null;
 
-// --- NEW: Store current node info --- 
+// Store current node info
 let currentNodeType = null;
 let currentNodeDbId = null;
 let currentNodeName = null;
@@ -129,7 +129,7 @@ function handleNodeSelection(event) {
         nameToStore = fullNodeData.name;
     }
     currentNodeName = nameToStore; // Store the correctly extracted name
-    console.log(`[PropertiesPanel] Stored currentNodeName: ${currentNodeName}`); // Add log
+    console.log(`[PropertiesPanel] Stored currentNodeName: ${currentNodeName}`);
     // --- END MODIFICATION ---
 }
 
@@ -137,8 +137,7 @@ function handleNodeSelection(event) {
 /**
  * Handles input changes in the properties form fields.
  * Sets the designer state to dirty and updates toolbar buttons.
- * 
- * TODO: Store the specific change temporarily in the state.
+ * Stores the pending change in the designer state.
  * @param {Event} event - The input or change event object.
  */
 function handleInputChange(event) {
@@ -179,7 +178,6 @@ function handleInputChange(event) {
     }
     // --- END NEW --- 
 }
-// --- END NEW --- 
 
 // --- NEW: Handle Delete Click --- 
 /**
@@ -193,22 +191,14 @@ function handleDeleteClick() {
         return;
     }
 
-    // --- REVERTED: Use the internally stored name --- 
+    // Use the internally stored name
     const currentName = currentNodeName || 'Unnamed Item'; 
-    // --- END REVERT ---
-
-    // --- Debug log for name ---
-    console.log(`[PropertiesPanel] Debug: handleDeleteClick - Name being used = ${currentName}`);
-    // -------------------------
 
     console.log(`[PropertiesPanel] Requesting delete confirmation for ${currentNodeType} ID: ${currentNodeDbId}, Name: ${currentName}`);
 
     // Open the existing delete modal, passing type information
-    // The modal currently only handles templates, this needs modification later.
-    // Pass a prefixed type to distinguish from template deletion requests later.
     openDeleteModal(currentNodeDbId, currentName, `designer_${currentNodeType}`);
 }
-// --- END NEW ---
 
 // --- UI Logic ---
 
@@ -235,9 +225,9 @@ function populatePanel(data, nodeType) {
     // --- Fill Common Fields ---
     propTypeSpan.textContent = nodeType.charAt(0).toUpperCase() + nodeType.slice(1);
     propTypeSpan.className = `badge ${nodeType === 'category' ? 'bg-warning text-dark' : 'bg-info text-dark'}`; // Basic styling
-    propIdSpan.textContent = data.id; // Use ID from the full data object
+    propIdSpan.textContent = data.id;
     
-    // --- MODIFIED: Use type-specific name field --- 
+    // Use type-specific name field
     let currentName = '';
     if (nodeType === 'category' && data.category_name) {
         currentName = data.category_name;
@@ -250,13 +240,8 @@ function populatePanel(data, nodeType) {
     // --- END MODIFICATION ---
 
     // --- Reset all fields to default visibility/state/value ---
-    // Inputs are now enabled/disabled based on type below, remove general disable
-    // propNameInput.disabled = true; // REMOVED
-    // propTopicInput.disabled = true; // REMOVED
     propTopicInput.value = ''; 
-    // propNsfwSwitch.disabled = true; // REMOVED
     propNsfwSwitch.checked = false;
-    // propSlowmodeInput.disabled = true; // REMOVED
     propSlowmodeInput.value = 0;
     propDeleteBtn.disabled = true; // Keep delete disabled by default
 

@@ -1,6 +1,6 @@
 // Module to manage shared state for the Guild Designer
 
-// --- Private State Variables ---
+// State Variables
 let _isDirty = false;
 let _currentTemplateData = null; // Holds the full structure { template_id, name, categories: [], channels: [] }
 let _activeTemplateId = null; // DB ID of the template marked active in the guild config
@@ -8,7 +8,7 @@ let _initialTemplateDataJson = null; // Store the initial unmodified structure a
 let _pendingPropertyChanges = {};
 let _pendingAdditions = [];
 
-// --- Public State Object ---
+// Public State Object
 export const state = {
 
     setActiveTemplateId: function(id) {
@@ -93,5 +93,5 @@ export const state = {
     }
 }; // End state object definition
 
-// Initial log to confirm loading
+// Initial log
 console.log("[DesignerState] State module loaded.");

@@ -15,6 +15,20 @@ class GuildTemplateChannelRepositoryImpl(BaseRepositoryImpl[GuildTemplateChannel
     def __init__(self, session: AsyncSession):
         super().__init__(GuildTemplateChannelEntity, session)
 
+    async def get_by_id(self, template_id: int) -> Optional[GuildTemplateChannelEntity]:
+        """Retrieve a guild template channel by its primary key."""
+        try:
+            # Use session.get() for efficient primary key lookup
+            entity = await self.session.get(self.model, template_id) 
+            if entity:
+                logger.debug(f"Retrieved template channel {template_id} by ID.")
+            else:
+                logger.debug(f"Template channel {template_id} not found by ID.")
+            return entity
+        except Exception as e:
+            logger.error(f"Error retrieving guild template channel by id {template_id}: {e}", exc_info=True)
+            return None
+
     async def create(
         self, 
         guild_template_id: int, 

@@ -10,7 +10,7 @@ let currentGuildIdForActivation = null;
 async function _renderTemplateList(contentElement, currentGuildId, activeTemplateId) {
     if (!contentElement) return;
     
-    currentGuildIdForActivation = currentGuildId; // <<<--- STORE GUILD ID
+    currentGuildIdForActivation = currentGuildId; // Store guild ID for later use (like loading details)
     
     if (!currentGuildId) {
         contentElement.innerHTML = '<p class="panel-placeholder">Guild context not available.</p>';
@@ -20,7 +20,8 @@ async function _renderTemplateList(contentElement, currentGuildId, activeTemplat
     console.log(`[GuildTemplateListWidget] Rendering template list. Active ID: ${activeTemplateId}`);
     contentElement.innerHTML = '<p class="panel-placeholder">Loading saved guild structure templates...</p>';
 
-    const listApiUrl = `/api/v1/templates/guilds/?context_guild_id=${encodeURIComponent(currentGuildId)}`; 
+    const listApiUrl = `/api/v1/guilds/${currentGuildId}/template/?context_guild_id=${currentGuildId}`;
+    console.log(`[GuildTemplateListWidget] Fetching templates from: ${listApiUrl}`); 
 
     try {
         const response = await apiRequest(listApiUrl); 
@@ -115,12 +116,12 @@ async function _renderTemplateList(contentElement, currentGuildId, activeTemplat
             } else {
                  activateButton.title = `Activate template '${templateName}' for this guild`;
                  activateIcon.className = 'fas fa-check-circle'; // Use checkmark when inactive
-                 // ---> MODIFIED: Call API directly instead of dispatching event
-                 activateButton.addEventListener('click', async (event) => { // Make listener async
+                 // Call API directly instead of dispatching event
+                 activateButton.addEventListener('click', async (event) => {
                      event.preventDefault();
                      event.stopPropagation();
                      // Call the direct activation function
-                     await handleTemplateActivateDirect(templateId, templateName, event.currentTarget); // Pass button for state change
+                     await handleTemplateActivateDirect(templateId, templateName, event.currentTarget);
                  });
             }
             activateButton.appendChild(activateIcon);
@@ -205,11 +206,18 @@ async function handleTemplateLoad(templateId) {
         showToast('error', 'Cannot load template: ID missing.');
         return;
     }
-    console.log(`[TemplateList] Requesting load for template ID: ${templateId}`);
-    // TODO: Show loading indicator?
+    // <<< GET GUILD ID needed for the URL >>>
+    const currentGuildId = currentGuildIdForActivation; 
+    if (!currentGuildId) {
+        console.error("[TemplateList] Cannot load template details: Guild ID is missing.");
+        showToast('error', 'Cannot load template: Guild context missing.');
+        return;
+    }
+    console.log(`[TemplateList] Requesting load for template ID: ${templateId} in Guild: ${currentGuildId}`);
     
     // API endpoint to fetch FULL structure data for a specific template
-    const detailApiUrl = `/api/v1/templates/guilds/${templateId}`;
+    const detailApiUrl = `/api/v1/guilds/${currentGuildId}/template/${templateId}`; // <<< CORRECTED URL
+    console.log(`[TemplateList] Fetching template details from: ${detailApiUrl}`); // Log the new URL
 
     try {
         showToast('info', `Loading template (ID: ${templateId})...`);
@@ -258,26 +266,16 @@ async function handleTemplateActivateDirect(templateId, templateName, buttonElem
         return;
     }
     
-    // ---> GET STORED GUILD ID <---
     const targetGuildId = currentGuildIdForActivation;
     if (!targetGuildId) {
         showToast('error', 'Activation failed: Guild context ID missing.');
         console.error('[TemplateList] Cannot activate: currentGuildIdForActivation is null/undefined.');
         return;
     }
-    // ---> END GET STORED GUILD ID <---
 
-    // ---> BUILD NEW API URL <---
-    const apiUrl = `/api/v1/guilds/${targetGuildId}/templates/${templateId}/activate`;
+    const apiUrl = `/api/v1/guilds/${targetGuildId}/template/${templateId}/activate`;
     console.log(`[TemplateList] Activation API URL: ${apiUrl}`);
-    // ---> END BUILD NEW API URL <---
     
-    // ---> DEBUGGING LOGS START <---
-    console.log(`[TemplateList Activate DEBUG] targetGuildId = '${targetGuildId}' (Type: ${typeof targetGuildId})`);
-    console.log(`[TemplateList Activate DEBUG] templateId = '${templateId}' (Type: ${typeof templateId})`);
-    console.log(`[TemplateList Activate DEBUG] Constructed apiUrl = '${apiUrl}'`);
-    // ---> DEBUGGING LOGS END <---
-
     const originalButtonHtml = buttonElement.innerHTML; // Store original content
     const originalTitle = buttonElement.title;
 
@@ -305,6 +303,3 @@ async function handleTemplateActivateDirect(templateId, templateName, buttonElem
         buttonElement.title = originalTitle;
     } 
 }
-
-// --- Initial log ---
-console.log("[GuildTemplateListWidget] Module loaded.");

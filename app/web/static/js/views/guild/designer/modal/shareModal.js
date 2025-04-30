@@ -1,6 +1,6 @@
 import { apiRequest, showToast } from '/static/js/components/common/notifications.js';
+import { getGuildIdFromUrl } from '../designerUtils.js';
 // Potentially needed imports if list refresh is desired:
-// import { getGuildIdFromUrl } from '../index.js'; // Adjust path if needed
 // import { initializeTemplateList } from '../widget/templateList.js';
 
 /**
@@ -25,6 +25,13 @@ export function initializeShareModal() {
             const originalTemplateId = shareTemplateIdInput.value;
             const newTemplateName = shareTemplateNameInput.value.trim();
             const newTemplateDescription = shareTemplateDescInput.value.trim();
+            const guildId = getGuildIdFromUrl();
+
+            if (!guildId) {
+                console.error("[ShareModal] Cannot share template: Guild ID missing.");
+                showToast('error', 'Share failed: Guild context unknown.');
+                return;
+            }
 
             // Basic Validation
             shareTemplateNameInput.classList.remove('is-invalid'); // Reset validation state
@@ -35,14 +42,14 @@ export function initializeShareModal() {
             }
 
             // API Call
-            const shareApiUrl = '/api/v1/templates/guilds/share'; 
+            const shareApiUrl = `/api/v1/guilds/${guildId}/template/share`;
             const payload = {
                 original_template_id: originalTemplateId,
                 new_template_name: newTemplateName,
                 new_template_description: newTemplateDescription,
             };
 
-            console.log(`[ShareModal] Attempting to share template. Payload:`, payload);
+            console.log(`[ShareModal] Attempting to share template via: ${shareApiUrl}. Payload:`, payload);
 
             try {
                 confirmShareBtn.disabled = true;

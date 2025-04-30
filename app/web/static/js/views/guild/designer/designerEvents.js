@@ -2,37 +2,25 @@ import { state } from './designerState.js';
 import { getGuildIdFromUrl, formatStructureForApi } from './designerUtils.js';
 import { apiRequest, showToast, ApiError } from '/static/js/components/common/notifications.js';
 import { openSaveAsNewModal } from './modal/saveAsNewModal.js';
-import { openDeleteModal } from './modal/deleteModal.js'; // Import delete modal opener
-import { openActivateConfirmModal } from './modal/activateConfirmModal.js'; // Import activation modal opener
+import { openDeleteModal } from './modal/deleteModal.js';
+import { openActivateConfirmModal } from './modal/activateConfirmModal.js';
 // Import widget initializers needed for refresh
 import { initializeTemplateList } from './widget/templateList.js'; 
 import { initializeStructureTree } from './widget/structureTree.js';
-import { populateGuildDesignerWidgets } from './designerWidgets.js'; // Needed for loadTemplateData
-import { openShareModal } from './modal/shareModal.js'; // Add import for share modal opener
+import { populateGuildDesignerWidgets } from './designerWidgets.js';
+import { openShareModal } from './modal/shareModal.js';
 
-// --- Constants for Element IDs ---
+// Element IDs
 const SAVE_BTN_ID = 'save-structure-btn';
 const ACTIVATE_BTN_ID = 'activate-template-btn';
 const APPLY_BTN_ID = 'apply-template-btn';
-const DELETE_UNMANAGED_CHECKBOX_ID = 'delete-unmanaged-checkbox'; // <<< NEW
+const DELETE_UNMANAGED_CHECKBOX_ID = 'delete-unmanaged-checkbox';
 
-// --- Function to update save button state --- 
-// DEPRECATED: Logic moved to updateToolbarButtonStates
-/*
-function updateSaveButtonState() {
-    const saveButton = document.getElementById('save-structure-btn');
-    if (saveButton) {
-        // Access dirty state via the state module
-        saveButton.disabled = !state.isDirty(); 
-    } 
-}
-*/
-
-// --- Function to update toolbar button states ---
+// Function to update toolbar button states
 export function updateToolbarButtonStates() {
     const saveButton = document.getElementById('save-structure-btn');
     const activateButton = document.getElementById('activate-template-btn');
-    const applyButton = document.getElementById('apply-template-btn'); // Get the new button
+    const applyButton = document.getElementById('apply-template-btn');
     
     const isDirty = state.isDirty();
     const currentTemplate = state.getCurrentTemplateData();
@@ -97,7 +85,6 @@ export function updateToolbarButtonStates() {
 function handleStructureSaved(event) {
     console.log("[DesignerEvents] Handling 'structureSaved' event:", event.detail);
     state.setDirty(false); // Use state setter
-    // ---> UPDATED: Use new function
     updateToolbarButtonStates();
     
     // Optionally refresh the template list if a new template was created
@@ -122,6 +109,13 @@ function handleStructureSaved(event) {
 async function handleSaveAsNewConfirmed(event) {
     console.log("[DesignerEvents] Handling 'saveAsNewConfirmed' event:", event.detail);
     const { newName, newDescription } = event.detail;
+    const guildId = getGuildIdFromUrl();
+
+    if (!guildId) {
+        console.error("[DesignerEvents] Cannot save as new: Guild ID missing.");
+        showToast('error', 'Failed to save: Guild context unknown.');
+        return;
+    }
 
     if (!newName) {
         console.error("[DesignerEvents] 'saveAsNewConfirmed' event missing new name.");
@@ -142,7 +136,7 @@ async function handleSaveAsNewConfirmed(event) {
         return; // Error already shown by formatStructureForApi
     }
 
-    const apiUrl = '/api/v1/templates/guilds/from_structure';
+    const apiUrl = `/api/v1/guilds/${guildId}/template/from_structure`;
     const payload = {
         new_template_name: newName,
         new_template_description: newDescription,
@@ -176,6 +170,14 @@ async function handleSaveAsNewConfirmed(event) {
 // Handles the main Save Structure button click (PUT request)
 async function handleSaveStructureClick() {
     const saveButton = document.getElementById('save-structure-btn');
+    const guildId = getGuildIdFromUrl();
+
+    if (!guildId) {
+        console.error("[DesignerEvents] Cannot save structure: Guild ID missing.");
+        showToast('error', 'Failed to save: Guild context unknown.');
+        return;
+    }
+
     if (!saveButton || !state.isDirty()) {
         console.log("[DesignerEvents] Save button clicked but not dirty or button missing.");
         return;
@@ -197,7 +199,7 @@ async function handleSaveStructureClick() {
         return; // Error already shown
     }
     
-    const apiUrl = `/api/v1/templates/guilds/${templateId}/structure`;
+    const apiUrl = `/api/v1/guilds/${guildId}/template/${templateId}/structure`;
     saveButton.disabled = true;
     saveButton.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Saving...`;
 
@@ -271,7 +273,7 @@ async function handleSaveStructureClick() {
     }
 }
 
-// NEW: Handles the Toolbar "Activate" button click
+// Handler for the Toolbar "Activate" button click
 function handleToolbarActivateClick() {
     console.log("[DesignerEvents] Activate button clicked.");
     const templateData = state.getCurrentTemplateData();
@@ -337,7 +339,7 @@ function handleStructureChange(event) {
     updateToolbarButtonStates();
 }
 
-// --- NEW: Handler for delete request --- 
+// Handler for delete request
 function handleRequestDeleteTemplate(event) {
     console.log("[DesignerEvents] Handling 'requestDeleteTemplate' event:", event.detail);
     const { templateId, templateName, listType } = event.detail;
@@ -349,7 +351,7 @@ function handleRequestDeleteTemplate(event) {
     }
 }
 
-// NEW: Handler for activation request (e.g., from list widget)
+// Handler for activation request
 function handleRequestActivateTemplate(event) {
     console.log("[DesignerEvents] Handling 'requestActivateTemplate' event:", event.detail);
     const { templateId, templateName } = event.detail;
@@ -364,10 +366,17 @@ function handleRequestActivateTemplate(event) {
     openActivateConfirmModal(templateId, templateName);
 }
 
-// --- NEW: Handler for confirmed delete ---
+// Handler for confirmed delete
 async function handleTemplateDeleteConfirmed(event) {
     console.log("[DesignerEvents] Handling 'deleteConfirmed' event:", event.detail);
     const { templateId, listType } = event.detail;
+    const guildId = getGuildIdFromUrl();
+
+    if (!guildId) {
+        console.error("[DesignerEvents] Cannot delete template: Guild ID missing.");
+        showToast('error', 'Delete failed: Guild context unknown.');
+        return;
+    }
 
     if (templateId === undefined || templateId === null || !listType) {
         console.error("[DesignerEvents] 'deleteConfirmed' event missing necessary data.");
@@ -375,7 +384,7 @@ async function handleTemplateDeleteConfirmed(event) {
         return;
     }
 
-    const apiUrl = `/api/v1/templates/guilds/${templateId}`;
+    const apiUrl = `/api/v1/guilds/${guildId}/template/${templateId}`;
     showToast('info', `Attempting to delete template ID: ${templateId}...`);
 
     try {
@@ -385,7 +394,6 @@ async function handleTemplateDeleteConfirmed(event) {
         // Determine which list widget to refresh
         let listContentEl = null;
         let initializer = null;
-        const guildId = getGuildIdFromUrl();
 
         if (listType === 'saved') {
             listContentEl = document.getElementById('widget-content-template-list');
@@ -413,10 +421,17 @@ async function handleTemplateDeleteConfirmed(event) {
     }
 }
 
-// NEW: Handles the confirmation from the Activate modal
+// Handles the confirmation from the Activate modal
 async function handleActivateConfirmed(event) {
     console.log("[DesignerEvents] Handling 'activateConfirmed' event:", event.detail);
     const { templateId } = event.detail;
+    const guildId = getGuildIdFromUrl();
+
+    if (!guildId) {
+        console.error("[DesignerEvents] Cannot activate: Guild ID missing.");
+        showToast('error', 'Activation failed: Guild context unknown.');
+        return;
+    }
 
     if (templateId === undefined || templateId === null) {
         console.error("[DesignerEvents] 'activateConfirmed' event missing templateId.");
@@ -424,19 +439,11 @@ async function handleActivateConfirmed(event) {
         return;
     }
 
-    // ---> NEU: Guild ID holen <---
-    const guildId = getGuildIdFromUrl();
-    if (!guildId) {
-        console.error("[DesignerEvents] Cannot activate: Could not get Guild ID from URL.");
-        showToast('error', 'Activation failed: Could not determine Guild ID.');
-        // Optional: Button wiederherstellen?
-        return;
-    }
-
     const apiUrl = `/api/v1/guilds/${guildId}/template/templates/${templateId}/activate`;
+    console.log(`[DesignerEvents] Activation API URL corrected to: ${apiUrl}`);
 
     
-    const activateButton = document.getElementById('activate-template-btn'); // Need button for loading state
+    const activateButton = document.getElementById('activate-template-btn');
     const originalButtonText = activateButton ? activateButton.innerHTML : ''; // Store original content
 
     if (activateButton) {
@@ -474,7 +481,7 @@ async function handleActivateConfirmed(event) {
     }
 }
 
-// NEW: Handler for share request (from list widget)
+// Handler for share request (from list widget)
 function handleRequestShareTemplate(event) {
     console.log("[DesignerEvents] Handling 'requestShareTemplate' event:", event.detail);
     const { templateId, templateName } = event.detail;
@@ -488,7 +495,7 @@ function handleRequestShareTemplate(event) {
     openShareModal(templateId, templateName);
 }
 
-// --- NEW: Handler for Apply Template Button Click ---
+// Handler for Apply Template Button Click
 async function handleApplyTemplateClick() {
     const applyButton = document.getElementById('apply-template-btn');
     if (!applyButton || applyButton.disabled) {
@@ -548,9 +555,8 @@ async function handleApplyTemplateClick() {
         updateToolbarButtonStates(); // Refresh button state based on current conditions
     }
 }
-// --- END NEW ---
 
-// --- NEW: Handler for Delete Unmanaged Checkbox Change ---
+// Handler for Delete Unmanaged Checkbox Change
 async function handleDeleteUnmanagedChange(event) {
     const checkbox = event.target;
     const deleteUnmanaged = checkbox.checked;
@@ -589,9 +595,8 @@ async function handleDeleteUnmanagedChange(event) {
         checkbox.disabled = false; // Re-enable checkbox
     }
 }
-// --- END NEW ---
 
-// --- NEW: Handler for newItemConfirmed --- 
+// Handler for newItemConfirmed
 /**
  * Handles the confirmation of adding a new item from the input modal.
  * Adds a temporary node to the tree and marks the state as dirty.
@@ -658,7 +663,6 @@ function handleNewItemConfirmed(event) {
 
     showToast('success', `Added '${itemName}'. Save structure to make it permanent.`);
 }
-// -------------------------------------
 
 // --- Event Listener Setup Functions --- 
 
@@ -715,28 +719,26 @@ export function initializeDesignerEventListeners() {
     // Listener for activation confirmation (fired by activate confirm modal)
     document.addEventListener('activateConfirmed', handleActivateConfirmed);
 
-    // ---> ADDED: Listener for activation requests (fired by list widget)
+    // Listener for activation requests (fired by list widget)
     document.addEventListener('requestActivateTemplate', handleRequestActivateTemplate);
 
-    // ---> ADDED: Listener for share requests (fired by list widget)
+    // Listener for share requests (fired by list widget)
     document.addEventListener('requestShareTemplate', handleRequestShareTemplate);
 
-    // --- NEW: Listener for Apply Template ---
+    // Listener for Apply Template
     const applyBtn = document.getElementById(APPLY_BTN_ID);
     if (applyBtn) {
         applyBtn.addEventListener('click', handleApplyTemplateClick);
     } else {
         console.warn(`[DesignerEvents] Toolbar button '${APPLY_BTN_ID}' not found.`);
     }
-    // --- END NEW ---
 
-    // --- NEW: Delete Unmanaged Checkbox Listener ---
+    // Delete Unmanaged Checkbox Listener
     const deleteUnmanagedCheckbox = document.getElementById(DELETE_UNMANAGED_CHECKBOX_ID);
     deleteUnmanagedCheckbox?.addEventListener('change', handleDeleteUnmanagedChange);
 
-    // --- NEW: Listener for New Item Confirmation ---
+    // Listener for New Item Confirmation
     document.addEventListener('newItemConfirmed', handleNewItemConfirmed);
-    // ---------------------------------------------
 
     // Setup panel toggles (if they exist)
     setupPanelToggles(); 

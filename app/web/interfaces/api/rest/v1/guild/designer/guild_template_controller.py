@@ -33,6 +33,9 @@ from sqlalchemy.ext.asyncio import AsyncSession # Import AsyncSession
 from app.shared.domain.exceptions import TemplateNotFound, PermissionDenied, InvalidOperation, ConfigurationNotFound # Added ConfigurationNotFound
 # --- NEW: Add HTTP client import (adjust based on available library) ---
 import httpx 
+# --- NEW: Import logging API and create logger ---
+from app.shared.interface.logging.api import get_web_logger
+logger = get_web_logger()
 # -------------------------------------------------------------------
 # --- NEW: Import settings if available --- 
 # from app.web.core.config import settings # Example, adjust path as needed
@@ -54,8 +57,8 @@ class GuildTemplateController(BaseController):
         # Define API prefix and tags for guild-specific routes
         super().__init__(prefix="/guilds/{guild_id}/template", tags=["Guild Templates (Guild-Specific)"])
         
-        # Define a separate router for non-guild-specific template routes
-        self.general_template_router = APIRouter(tags=["Guild Templates (General)"])
+        # Define a separate router for non-guild-specific template routes - REMOVED
+        # self.general_template_router = APIRouter(tags=["Guild Templates (General)"])
 
         # Instantiate the service directly for now
         # TODO: Replace with proper injection/factory later
@@ -103,94 +106,100 @@ class GuildTemplateController(BaseController):
                         )(self.update_template_settings)
         # ------------------------------------------
 
-        # === General Template Routes (using separate router, NO prefix) ===
+        # === General Template Routes (MOVED to self.router, NO prefix needed) ===
 
-        # --- List Guild Structure Templates ---
-        self.general_template_router.get("/templates/guilds/", 
-                                         response_model=GuildTemplateListResponseSchema,
-                                         summary="List Guild Structure Templates",
-                                         description="Retrieves a list of accessible guild structure templates."
-                                        )(self.list_guild_templates) # NEW method
+        # --- List Guild Structure Templates --- (Path changed to relative '/', method signature updated)
+        self.router.get("/", 
+                        response_model=GuildTemplateListResponseSchema,
+                        summary="List Guild Structure Templates (Now Guild-Specific Context)",
+                        description="Retrieves a list of accessible guild structure templates (now relative to guild)."
+                       )(self.list_guild_templates) # Signature updated
 
-        # --- Get Specific Guild Structure Template by DB ID ---
-        self.general_template_router.get("/templates/guilds/{template_id}", 
-                                         response_model=GuildTemplateResponseSchema,
-                                         summary="Get Guild Structure Template by DB ID",
-                                         description="Retrieves a specific guild structure template using its unique database ID."
-                                        )(self.get_guild_template_by_id) # RENAMED method
+        # --- Get Specific Guild Structure Template by DB ID --- (Path changed, method signature updated)
+        self.router.get("/{template_id}", 
+                        response_model=GuildTemplateResponseSchema,
+                        summary="Get Guild Structure Template by DB ID (Now Guild-Specific Context)",
+                        description="Retrieves a specific guild structure template using its unique database ID."
+                       )(self.get_guild_template_by_id) # Signature updated
         
-        # --- Delete Specific Guild Structure Template by DB ID ---
-        self.general_template_router.delete("/templates/guilds/{template_id}", 
-                                          status_code=status.HTTP_204_NO_CONTENT,
-                                          summary="Delete Guild Structure Template by DB ID",
-                                          description="Deletes a specific guild structure template using its unique database ID."
-                                         )(self.delete_guild_template_by_id) # NEW method
+        # --- NEW: Route for updating template metadata (e.g., name) ---
+        self.router.put("/{template_id}/metadata",
+                        response_model=GuildTemplateResponseSchema, # Return the updated template
+                        status_code=status.HTTP_200_OK,
+                        summary="Update Guild Template Metadata (Name, etc.)",
+                        description="Updates the metadata (like the name) of a specific guild template."
+                        )(self.update_template_metadata)
 
-        # === NEW Share Route (using general router) ===
-        self.general_template_router.post("/templates/guilds/share",
-                                          status_code=status.HTTP_201_CREATED,
-                                          # response_model=GuildTemplateResponseSchema, # Optional: return the created template
-                                          summary="Share/Copy Guild Structure Template",
-                                          description="Creates a new template by copying an existing one."
-                                          )(self.share_guild_template) # NEW method
+        # --- Delete Specific Guild Structure Template by DB ID --- (Path changed, method signature updated)
+        self.router.delete("/{template_id}", 
+                           status_code=status.HTTP_204_NO_CONTENT,
+                           summary="Delete Guild Structure Template by DB ID (Now Guild-Specific Context)",
+                           description="Deletes a specific guild structure template using its unique database ID."
+                          )(self.delete_guild_template_by_id) # Signature updated
 
-        # === NEW Shared Templates List Route ===
-        self.general_template_router.get("/templates/guilds/shared/",
-                                         response_model=GuildTemplateListResponseSchema, # Use the same list schema for now
-                                         summary="List Shared Guild Structure Templates",
-                                         description="Retrieves a list of publicly shared guild structure templates."
-                                         )(self.list_shared_guild_templates) # NEW method
+        # === NEW Share Route (Path changed, method signature updated) ===
+        self.router.post("/share",
+                         status_code=status.HTTP_201_CREATED,
+                         # response_model=GuildTemplateResponseSchema, # Optional: return the created template
+                         summary="Share/Copy Guild Structure Template (Now Guild-Specific Context)",
+                         description="Creates a new template by copying an existing one."
+                         )(self.share_guild_template) # Signature updated
 
-        # === NEW Get Shared Template Details Route ===
-        self.general_template_router.get("/templates/guilds/shared/{template_id}",
-                                         response_model=GuildTemplateResponseSchema, # Use the detailed schema
-                                         summary="Get Shared Guild Structure Template Details by ID",
-                                         description="Retrieves the full structure of a specific publicly shared guild template by its ID."
-                                         )(self.get_shared_guild_template_details) # NEW method
+        # === NEW Shared Templates List Route (Path changed, method signature updated) ===
+        self.router.get("/shared/",
+                        response_model=GuildTemplateListResponseSchema, # Use the same list schema for now
+                        summary="List Shared Guild Structure Templates (Now Guild-Specific Context)",
+                        description="Retrieves a list of publicly shared guild structure templates."
+                        )(self.list_shared_guild_templates) # Signature updated
+
+        # === NEW Get Shared Template Details Route (Path changed, method signature updated) ===
+        self.router.get("/shared/{template_id}",
+                        response_model=GuildTemplateResponseSchema, # Use the detailed schema
+                        summary="Get Shared Guild Structure Template Details by ID (Now Guild-Specific Context)",
+                        description="Retrieves the full structure of a specific publicly shared guild template by its ID."
+                        )(self.get_shared_guild_template_details) # Signature updated
         
-        # === NEW Copy Shared Template Route ===
-        self.general_template_router.post("/templates/guilds/copy_shared",
-                                          status_code=status.HTTP_201_CREATED,
-                                          # response_model=GuildTemplateResponseSchema, # Optional: Return the new saved template
-                                          summary="Copy Shared Template to Saved Templates",
-                                          description="Creates a copy of a shared guild structure template and saves it for the current user."
-                                          )(self.copy_shared_template) # NEW method
+        # === NEW Copy Shared Template Route (Path changed, method signature updated) ===
+        self.router.post("/copy_shared",
+                         status_code=status.HTTP_201_CREATED,
+                         # response_model=GuildTemplateResponseSchema, # Optional: Return the new saved template
+                         summary="Copy Shared Template to Saved Templates (Now Guild-Specific Context)",
+                         description="Creates a copy of a shared guild structure template and saves it for the current user."
+                         )(self.copy_shared_template) # Signature updated
 
-        # --- REGISTER NEW PUT Route for Structure Update --- 
-        self.general_template_router.put(
-            "/templates/guilds/{template_id}/structure",
-            summary="Update Guild Template Structure",
+        # --- REGISTER NEW PUT Route for Structure Update (Path changed, signature updated) --- 
+        self.router.put(
+            "/{template_id}/structure",
+            summary="Update Guild Template Structure (Now Guild-Specific Context)",
             description="Updates the categories and channels structure of a specific guild template based on provided node list.",
             response_model=GuildTemplateResponseSchema,
             status_code=status.HTTP_200_OK,
-            dependencies=[Depends(get_current_user)] # Add dependency here for route protection
-        )(self.update_guild_template_structure)
+            dependencies=[Depends(get_current_user)] # Keep dependency here
+        )(self.update_guild_template_structure) # Signature updated
 
-        # --- REGISTER NEW POST Route for Creating from Structure --- 
-        self.general_template_router.post(
-            "/templates/guilds/from_structure",
-            summary="Create Guild Template from Structure Payload",
+        # --- REGISTER NEW POST Route for Creating from Structure (Path changed, signature updated) --- 
+        self.router.post(
+            "/from_structure",
+            summary="Create Guild Template from Structure Payload (Now Guild-Specific Context)",
             description="Creates a new guild template based on a provided structure payload (typically from the designer).",
             response_model=GuildStructureTemplateInfo, # Return info of the new template
             status_code=status.HTTP_201_CREATED,
-            dependencies=[Depends(get_current_user)]
-        )(self.create_template_from_structure)
+            dependencies=[Depends(get_current_user)] # Keep dependency here
+        )(self.create_template_from_structure) # Signature updated
 
-        # === NEW DELETE Endpoints for Categories/Channels ===
-        self.general_template_router.delete(
-            "/templates/guilds/categories/{category_id}",
+        # === NEW DELETE Endpoints for Categories/Channels (Already moved to self.router) ===
+        self.router.delete(
+            "/categories/{category_id}",
             status_code=status.HTTP_204_NO_CONTENT,
-            summary="Delete Template Category by DB ID",
-            description="Deletes a specific category from a guild template using its unique database ID.",
-            dependencies=[Depends(get_current_user)]
+            summary="Delete Template Category by DB ID (Now Guild-Specific Context)",
+            description="Deletes a specific category from a guild template using its unique database ID."
         )(self.delete_template_category)
 
-        self.general_template_router.delete(
-            "/templates/guilds/channels/{channel_id}",
+        self.router.delete(
+            "/channels/{channel_id}",
             status_code=status.HTTP_204_NO_CONTENT,
-            summary="Delete Template Channel by DB ID",
-            description="Deletes a specific channel from a guild template using its unique database ID.",
-            dependencies=[Depends(get_current_user)]
+            summary="Delete Template Channel by DB ID (Now Guild-Specific Context)",
+            description="Deletes a specific channel from a guild template using its unique database ID."
         )(self.delete_template_channel)
         # ====================================================
 
@@ -202,16 +211,16 @@ class GuildTemplateController(BaseController):
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to view guild template.")
 
             # --- Call Service Layer ---
-            self.logger.info(f"Calling GuildTemplateService to fetch template for guild {guild_id}")
+            logger.info(f"Calling GuildTemplateService to fetch template for guild {guild_id}")
             template_data: Optional[Dict[str, Any]] = await self.template_service.get_template_by_guild(guild_id)
             
             # --- Handle Not Found --- 
             if not template_data:
-                self.logger.warning(f"Template not found for guild {guild_id} by service.")
+                logger.warning(f"Template not found for guild {guild_id} by service.")
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Guild template not found for this guild.")
             
             # --- Return Success Response (Data automatically validated by response_model) ---
-            self.logger.info(f"Successfully retrieved template data for guild {guild_id}")
+            logger.info(f"Successfully retrieved template data for guild {guild_id}")
             # FastAPI handles validation against GuildTemplateResponseSchema
             # We might need to adjust the keys from the service dict to match the schema field names/aliases
             # Pydantic's populate_by_name in the schema helps here if dict keys match aliases
@@ -220,11 +229,12 @@ class GuildTemplateController(BaseController):
         except HTTPException as http_exc:
             raise http_exc
         except Exception as e:
-            self.logger.error(f"Error fetching guild template for {guild_id}: {e}", exc_info=True)
+            logger.error(f"Error fetching guild template for {guild_id}: {e}", exc_info=True)
             return self.handle_exception(e)
 
-    # --- Method for NEW List Route --- 
+    # --- Method for NEW List Route (Signature updated) --- 
     async def list_guild_templates(self, 
+                                   guild_id: str, # <<< ADDED guild_id
                                    current_user: AppUserEntity = Depends(get_current_user),
                                    # Add context_guild_id as an optional query parameter
                                    context_guild_id: Optional[str] = None 
@@ -232,7 +242,7 @@ class GuildTemplateController(BaseController):
         """API endpoint to list guild structure templates visible to the current user,
            optionally including the initial snapshot for a specific context guild.
         """ # Updated docstring
-        self.logger.info(f"Listing templates requested by user {current_user.id}. Context guild_id: {context_guild_id}") # Updated log
+        logger.info(f"Listing templates requested by user {current_user.id}. Context guild_id: {context_guild_id}") # Updated log
         try:
             # TODO: Add permission check if needed 
             pass 
@@ -248,34 +258,42 @@ class GuildTemplateController(BaseController):
             return {"templates": templates_list}
 
         except Exception as e:
-            self.logger.error(f"Error listing guild templates: {e}", exc_info=True)
+            logger.error(f"Error listing guild templates: {e}", exc_info=True)
             # Use base controller handler or raise generic 500
             return self.handle_exception(e)
 
-    # --- RENAMED Method for Get by ID Route --- 
-    async def get_guild_template_by_id(self, template_id: int, current_user: AppUserEntity = Depends(get_current_user)) -> GuildTemplateResponseSchema:
+    # --- RENAMED Method for Get by ID Route (Signature updated) --- 
+    async def get_guild_template_by_id(self, 
+                                     guild_id: str, # <<< ADDED guild_id
+                                     template_id: int, 
+                                     current_user: AppUserEntity = Depends(get_current_user)
+                                    ) -> GuildTemplateResponseSchema:
         """API endpoint to retrieve a specific guild template by its database ID."""
         try:
             pass # Assuming any authenticated user can fetch for now (permissions check placeholder)
             
-            self.logger.info(f"Calling GuildTemplateService to fetch template by database ID {template_id}")
+            logger.info(f"Calling GuildTemplateService to fetch template by database ID {template_id}")
             template_data: Optional[Dict[str, Any]] = await self.template_service.get_template_by_id(template_id)
 
             if not template_data:
-                self.logger.warning(f"Template not found for database ID {template_id} by service.")
+                logger.warning(f"Template not found for database ID {template_id} by service.")
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Guild template not found.")
             
-            self.logger.info(f"Successfully retrieved template data for database ID {template_id}")
+            logger.info(f"Successfully retrieved template data for database ID {template_id}")
             return template_data
 
         except HTTPException as http_exc:
             raise http_exc
         except Exception as e:
-            self.logger.error(f"Error fetching template for database ID {template_id}: {e}", exc_info=True)
+            logger.error(f"Error fetching template for database ID {template_id}: {e}", exc_info=True)
             return self.handle_exception(e)
             
-    # --- Method for NEW Delete Route --- 
-    async def delete_guild_template_by_id(self, template_id: int, current_user: AppUserEntity = Depends(get_current_user)):
+    # --- Method for NEW Delete Route (Signature updated) --- 
+    async def delete_guild_template_by_id(self, 
+                                        guild_id: str, # <<< ADDED guild_id
+                                        template_id: int, 
+                                        current_user: AppUserEntity = Depends(get_current_user)
+                                       ):
         """API endpoint to delete a specific guild template by its database ID."""
         try:
             # --- Permission Check --- 
@@ -290,7 +308,7 @@ class GuildTemplateController(BaseController):
             template_to_delete = await self.template_service.get_template_by_id(template_id)
             
             if not template_to_delete:
-                self.logger.warning(f"Delete failed: Template ID {template_id} not found.")
+                logger.warning(f"Delete failed: Template ID {template_id} not found.")
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found.")
             
             # Check if the current user is the creator OR a bot owner
@@ -301,10 +319,10 @@ class GuildTemplateController(BaseController):
             is_owner = current_user.is_owner # Assuming is_owner flag is available
 
             if not is_creator and not is_owner:
-                self.logger.warning(f"Permission denied: User {current_user.id} attempted to delete template {template_id} created by {creator_id}.")
+                logger.warning(f"Permission denied: User {current_user.id} attempted to delete template {template_id} created by {creator_id}.")
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to delete this template.")
             
-            self.logger.info(f"Permission granted for user {current_user.id} to delete template {template_id} (Is Creator: {is_creator}, Is Owner: {is_owner}).")
+            logger.info(f"Permission granted for user {current_user.id} to delete template {template_id} (Is Creator: {is_creator}, Is Owner: {is_owner}).")
             # --- End Permission Check ---
 
             # --- Call Service Layer --- 
@@ -312,28 +330,29 @@ class GuildTemplateController(BaseController):
             deleted_successfully = await self.template_service.delete_template(template_id)
 
             if not deleted_successfully:
-                 self.logger.warning(f"Failed to delete template ID {template_id}. It might not exist or service failed.")
+                 logger.warning(f"Failed to delete template ID {template_id}. It might not exist or service failed.")
                  # Keep 404 if not found, maybe 500 if service failed unexpectedly?
                  # Since we checked existence above, this implies a service/DB error during delete
                  raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not delete template due to a server error.")
 
-            self.logger.info(f"Successfully deleted template ID {template_id}")
+            logger.info(f"Successfully deleted template ID {template_id}")
             # Return nothing for 204 No Content status
             return
 
         except HTTPException as http_exc:
             raise http_exc # Includes 404 if not found
         except NotImplementedError:
-             self.logger.error(f"Template deletion service method not implemented for ID {template_id}")
+             logger.error(f"Template deletion service method not implemented for ID {template_id}")
              raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Template deletion not implemented.")
         except Exception as e:
-            self.logger.error(f"Error deleting template ID {template_id}: {e}", exc_info=True)
+            logger.error(f"Error deleting template ID {template_id}: {e}", exc_info=True)
             return self.handle_exception(e)
 
-    # --- NEW Method for Share Route ---
+    # --- NEW Method for Share Route (Signature updated) --- 
     async def share_guild_template(
         self,
-        share_data: GuildTemplateShareSchema, # <-- Use the imported schema
+        guild_id: str, # <<< ADDED guild_id
+        share_data: GuildTemplateShareSchema,
         current_user: AppUserEntity = Depends(get_current_user)
         # Optional: Return type can be GuildTemplateResponseSchema if you return the new template
     ): # -> GuildTemplateResponseSchema: 
@@ -344,7 +363,7 @@ class GuildTemplateController(BaseController):
             if not current_user:
                  raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
 
-            self.logger.info(f"User {current_user.id} requesting to share/copy template ID {share_data.original_template_id} as '{share_data.new_template_name}'")
+            logger.info(f"User {current_user.id} requesting to share/copy template ID {share_data.original_template_id} as '{share_data.new_template_name}'")
 
             # --- Call Service Layer (Assumes service method exists) ---
             # TODO: Implement self.template_service.share_template
@@ -357,11 +376,11 @@ class GuildTemplateController(BaseController):
 
             # --- Handle Service Failure ---
             if not new_template:
-                self.logger.error(f"Service failed to share/copy template ID {share_data.original_template_id} as '{share_data.new_template_name}'")
+                logger.error(f"Service failed to share/copy template ID {share_data.original_template_id} as '{share_data.new_template_name}'")
                 # More specific error checking might be needed in the service layer
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to share template. Ensure original template exists and new name '{share_data.new_template_name}' is valid/unique.")
 
-            self.logger.info(f"Successfully shared/copied template ID {share_data.original_template_id} as '{share_data.new_template_name}' (New ID: {new_template.get('template_id', 'N/A')})")
+            logger.info(f"Successfully shared/copied template ID {share_data.original_template_id} as '{share_data.new_template_name}' (New ID: {new_template.get('template_id', 'N/A')})")
             # Option 1: Return 201 No Content (if frontend doesn't need the new template details)
             # return 
             # Option 2: Return the newly created template data (requires response_model setup)
@@ -372,17 +391,20 @@ class GuildTemplateController(BaseController):
         except HTTPException as http_exc:
             raise http_exc
         except NotImplementedError:
-             self.logger.error(f"Template sharing service method not implemented for original ID {share_data.original_template_id}")
+             logger.error(f"Template sharing service method not implemented for original ID {share_data.original_template_id}")
              raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Template sharing not implemented.")
         except Exception as e:
-            self.logger.error(f"Error sharing template ID {share_data.original_template_id} as '{share_data.new_template_name}': {e}", exc_info=True)
+            logger.error(f"Error sharing template ID {share_data.original_template_id} as '{share_data.new_template_name}': {e}", exc_info=True)
             # Use base controller handler or raise generic 500
             return self.handle_exception(e)
 
-    # --- NEW Method for Shared List Route ---
-    async def list_shared_guild_templates(self, current_user: AppUserEntity = Depends(get_current_user)) -> GuildTemplateListResponseSchema:
+    # --- NEW Method for Shared List Route (Signature updated) ---
+    async def list_shared_guild_templates(self, 
+                                        guild_id: str, # <<< ADDED guild_id
+                                        current_user: AppUserEntity = Depends(get_current_user)
+                                       ) -> GuildTemplateListResponseSchema:
         """API endpoint to list publicly shared guild structure templates."""
-        self.logger.info(f"Listing shared templates requested by user {current_user.id}")
+        logger.info(f"Listing shared templates requested by user {current_user.id}")
         try:
             # --- Permission Check (Example: Any logged-in user can view shared?) ---
             pass
@@ -397,17 +419,21 @@ class GuildTemplateController(BaseController):
             return {"templates": templates_list}
 
         except NotImplementedError: # Keep this handler in case service method is somehow still missing
-             self.logger.error(f"Shared template listing service method not implemented.")
+             logger.error(f"Shared template listing service method not implemented.")
              raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Shared template listing not implemented.")
         except Exception as e:
-            self.logger.error(f"Error listing shared guild templates: {e}", exc_info=True)
+            logger.error(f"Error listing shared guild templates: {e}", exc_info=True)
             # Use base controller handler or raise generic 500
             return self.handle_exception(e)
 
-    # --- NEW Method for Get Shared Template Details Route ---
-    async def get_shared_guild_template_details(self, template_id: int, current_user: AppUserEntity = Depends(get_current_user)) -> GuildTemplateResponseSchema:
+    # --- NEW Method for Get Shared Template Details Route (Signature updated) ---
+    async def get_shared_guild_template_details(self, 
+                                              guild_id: str, # <<< ADDED guild_id
+                                              template_id: int, 
+                                              current_user: AppUserEntity = Depends(get_current_user)
+                                             ) -> GuildTemplateResponseSchema:
         """API endpoint to retrieve the full details of a specific shared guild template by its ID."""
-        self.logger.info(f"Fetching details for shared template ID {template_id} requested by user {current_user.id}")
+        logger.info(f"Fetching details for shared template ID {template_id} requested by user {current_user.id}")
         try:
             # --- Permission Check (Example: Any logged-in user can view shared?) ---
             pass
@@ -416,26 +442,25 @@ class GuildTemplateController(BaseController):
             template_data: Optional[Dict[str, Any]] = await self.template_service.get_shared_template_details(template_id)
 
             if not template_data:
-                self.logger.warning(f"Shared template not found for ID {template_id} by service.")
+                logger.warning(f"Shared template not found for ID {template_id} by service.")
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shared guild template not found.")
             
-            self.logger.info(f"Successfully retrieved shared template data for ID {template_id}")
+            logger.info(f"Successfully retrieved shared template data for ID {template_id}")
             return template_data
 
         except HTTPException as http_exc:
             raise http_exc
         except NotImplementedError as nie:
-             self.logger.error(f"Shared template detail fetch service method not implemented for ID {template_id}")
+             logger.error(f"Shared template detail fetch service method not implemented for ID {template_id}")
              raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=str(nie))
         except Exception as e:
-            self.logger.error(f"Error fetching shared template details for ID {template_id}: {e}", exc_info=True)
+            logger.error(f"Error fetching shared template details for ID {template_id}: {e}", exc_info=True)
             return self.handle_exception(e)
             
-    # --- NEW Method for Copy Shared Template Route ---
+    # --- NEW Method for Copy Shared Template Route (Signature updated) ---
     async def copy_shared_template(
         self,
-        # TODO: Define input schema if needed (e.g., just the ID, maybe new name?)
-        # For now, assume body contains { "shared_template_id": int, "new_name": str (optional) }
+        guild_id: str, # <<< ADDED guild_id
         copy_request: dict, 
         current_user: AppUserEntity = Depends(get_current_user)
         # Optional: response_model=GuildTemplateResponseSchema
@@ -447,7 +472,7 @@ class GuildTemplateController(BaseController):
         if not shared_template_id:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing 'shared_template_id' in request body.")
 
-        self.logger.info(f"User {current_user.id} requested copy of shared template ID {shared_template_id}. Optional new name: '{new_name_optional}'")
+        logger.info(f"User {current_user.id} requested copy of shared template ID {shared_template_id}. Optional new name: '{new_name_optional}'")
         try:
             # --- Permission Check (Any logged-in user?) ---
             pass
@@ -460,10 +485,10 @@ class GuildTemplateController(BaseController):
             )
 
             if not new_saved_template_info:
-                self.logger.error(f"Service failed to copy shared template ID {shared_template_id} for user {current_user.id}")
+                logger.error(f"Service failed to copy shared template ID {shared_template_id} for user {current_user.id}")
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to copy shared template. Ensure original exists and name is valid.")
 
-            self.logger.info(f"Successfully copied shared template ID {shared_template_id} for user {current_user.id}. New template info: {new_saved_template_info}")
+            logger.info(f"Successfully copied shared template ID {shared_template_id} for user {current_user.id}. New template info: {new_saved_template_info}")
             # Return None for 201 No Content status (as defined in the route decorator)
             # If you wanted to return the new template data, change the route's status_code 
             # and add response_model=GuildTemplateResponseSchema, then return new_saved_template_info
@@ -472,10 +497,10 @@ class GuildTemplateController(BaseController):
         except HTTPException as http_exc:
             raise http_exc
         except NotImplementedError as nie:
-            self.logger.error(f"Copy shared template service method not implemented for ID {shared_template_id}")
+            logger.error(f"Copy shared template service method not implemented for ID {shared_template_id}")
             raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=str(nie))
         except Exception as e:
-            self.logger.error(f"Error copying shared template ID {shared_template_id} for user {current_user.id}: {e}", exc_info=True)
+            logger.error(f"Error copying shared template ID {shared_template_id} for user {current_user.id}: {e}", exc_info=True)
             return self.handle_exception(e)
 
     # --- NEUE METHODE --- 
@@ -492,7 +517,7 @@ class GuildTemplateController(BaseController):
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to create guild templates.")
 
             # --- Call Service Layer --- 
-            self.logger.info(f"User {current_user.id} requesting to save guild {guild_id} structure as template '{template_data.template_name}'")
+            logger.info(f"User {current_user.id} requesting to save guild {guild_id} structure as template '{template_data.template_name}'")
             
             # Pass guild_id from path to service
             created_template = await self.template_service.create_template_from_guild(
@@ -504,16 +529,16 @@ class GuildTemplateController(BaseController):
             
             # --- Handle Service Failure --- 
             if not created_template:
-                 self.logger.error(f"Service failed to create template '{template_data.template_name}' from guild {guild_id}")
+                 logger.error(f"Service failed to create template '{template_data.template_name}' from guild {guild_id}")
                  raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to create template. Ensure source guild exists and template name '{template_data.template_name}' is unique.")
             
-            self.logger.info(f"Successfully created guild template '{template_data.template_name}' by user {current_user.id}")
+            logger.info(f"Successfully created guild template '{template_data.template_name}' by user {current_user.id}")
             return # Status 201 indicates success
 
         except HTTPException as http_exc:
             raise http_exc
         except Exception as e:
-            self.logger.error(f"Error creating guild template '{template_data.template_name}' from {guild_id}: {e}", exc_info=True)
+            logger.error(f"Error creating guild template '{template_data.template_name}' from {guild_id}: {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create guild template due to an unexpected error.")
 
     # --- NEW Method for Activate Route --- 
@@ -525,7 +550,7 @@ class GuildTemplateController(BaseController):
         db: AsyncSession = Depends(get_web_db_session) # Get DB session
     ):
         """API endpoint to activate a specific guild template *for a specific guild*."""
-        self.logger.info(f"User {current_user.id} requesting activation for template ID: {template_id} *for guild ID: {guild_id}*") # Updated log
+        logger.info(f"User {current_user.id} requesting activation for template ID: {template_id} *for guild ID: {guild_id}*") # Updated log
         try:
             # --- Call Service Layer (Pass guild_id now) --- 
             await self.template_service.activate_template(
@@ -536,32 +561,33 @@ class GuildTemplateController(BaseController):
             )
             
             # --- Return Success Response --- 
-            self.logger.info(f"Template ID {template_id} activated successfully for guild {guild_id} by user {current_user.id}.")
+            logger.info(f"Template ID {template_id} activated successfully for guild {guild_id} by user {current_user.id}.")
             return {"message": "Template activated successfully."}
 
         # --- Map Domain Exceptions to HTTP Exceptions (as per convention) ---
         except TemplateNotFound as e:
-            self.logger.warning(f"Activation failed: Template ID {template_id} not found.")
+            logger.warning(f"Activation failed: Template ID {template_id} not found.")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
         except PermissionDenied as e:
-            self.logger.warning(f"Activation failed for template ID {template_id} on guild {guild_id}: User {current_user.id} lacks permissions. Details: {str(e)}")
+            logger.warning(f"Activation failed for template ID {template_id} on guild {guild_id}: User {current_user.id} lacks permissions. Details: {str(e)}")
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
         # --- ADD InvalidOperation for missing GuildConfig --- 
         except InvalidOperation as e:
-            self.logger.error(f"Activation failed for template {template_id} on guild {guild_id}: {e}", exc_info=True)
+            logger.error(f"Activation failed for template {template_id} on guild {guild_id}: {e}", exc_info=True)
             # Return 400 Bad Request or 500? 400 seems appropriate if config is missing/invalid.
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
         except Exception as e:
-            self.logger.error(f"Unexpected error activating template ID {template_id} for guild {guild_id}: {e}", exc_info=True)
+            logger.error(f"Unexpected error activating template ID {template_id} for guild {guild_id}: {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An internal error occurred during template activation.")
 
-    # --- Method Definition for Structure Update --- 
+    # --- Method Definition for Structure Update (Signature updated) --- 
     async def update_guild_template_structure(
         self,
-        template_id: int, # From path parameter
-        payload: GuildStructureUpdatePayload, # From request body
-        current_user: AppUserEntity = Depends(get_current_user), # From dependency
-        db: AsyncSession = Depends(get_web_db_session) # Use the correct session dependency
+        guild_id: str, # <<< ADDED guild_id
+        template_id: int,
+        payload: GuildStructureUpdatePayload,
+        current_user: AppUserEntity = Depends(get_current_user),
+        db: AsyncSession = Depends(get_web_db_session)
     ) -> GuildTemplateResponseSchema:
         """Updates the structure (categories and channels) of a specific guild template."""
         # 1. Authorization Check (Ensure user can edit this template)
@@ -594,7 +620,7 @@ class GuildTemplateController(BaseController):
             delete_unmanaged_flag = service_result["delete_unmanaged"]
 
             # --- Manually Construct the Response Dictionary --- 
-            self.logger.debug(f"Manually constructing response dictionary for template {template_entity.id}")
+            logger.debug(f"Manually constructing response dictionary for template {template_entity.id}")
             response_dict = {
                 "guild_id": template_entity.guild_id,
                 "template_id": template_entity.id,
@@ -655,28 +681,29 @@ class GuildTemplateController(BaseController):
 
         except ValueError as e:
             # Handle specific errors from the service layer (e.g., template not found)
-            self.logger.warning(f"Update structure failed for template {template_id}: {e}")
+            logger.warning(f"Update structure failed for template {template_id}: {e}")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
         except NotImplementedError:
-             self.logger.error(f"Template structure update service method not implemented for ID {template_id}")
+             logger.error(f"Template structure update service method not implemented for ID {template_id}")
              raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Template structure update not implemented.")
         except Exception as e:
             # Generic error handling
-            self.logger.error(f"Error updating template structure for ID {template_id}: {e}", exc_info=True)
+            logger.error(f"Error updating template structure for ID {template_id}: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred while updating the template structure."
             )
 
-    # --- NEW Method for Creating Template from Structure --- 
+    # --- NEW Method for Creating Template from Structure (Signature updated) --- 
     async def create_template_from_structure(
         self,
+        guild_id: str, # <<< ADDED guild_id
         payload: GuildStructureTemplateCreateFromStructure,
         current_user: AppUserEntity = Depends(get_current_user),
         db: AsyncSession = Depends(get_web_db_session)
     ) -> GuildStructureTemplateInfo:
         """Creates a new guild template based on the provided structure data."""
-        self.logger.info(f"User {current_user.id} attempting to create new template '{payload.new_template_name}' from structure.")
+        logger.info(f"User {current_user.id} attempting to create new template '{payload.new_template_name}' from structure.")
 
         try:
             # Call the new service method
@@ -700,18 +727,18 @@ class GuildTemplateController(BaseController):
                 created_at=new_template_entity.created_at
             )
 
-            self.logger.info(f"Successfully created template '{response_data.template_name}' (ID: {response_data.template_id}) from structure.")
+            logger.info(f"Successfully created template '{response_data.template_name}' (ID: {response_data.template_id}) from structure.")
             return response_data
 
         except ValueError as e:
             # Handle potential errors like invalid structure or duplicate name from service
-            self.logger.warning(f"Failed to create template from structure: {e}")
+            logger.warning(f"Failed to create template from structure: {e}")
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
         except NotImplementedError:
-             self.logger.error(f"Create template from structure service method not implemented.")
+             logger.error(f"Create template from structure service method not implemented.")
              raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Creating template from structure not implemented.")
         except Exception as e:
-            self.logger.error(f"Error creating template from structure: {e}", exc_info=True)
+            logger.error(f"Error creating template from structure: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred while creating the template."
@@ -726,12 +753,12 @@ class GuildTemplateController(BaseController):
         db: AsyncSession = Depends(get_web_db_session)
     ):
         """API endpoint to update guild-specific template application settings."""
-        self.logger.info(f"User {current_user.id} updating template settings for guild {guild_id}: {settings_update.dict()}")
+        logger.info(f"User {current_user.id} updating template settings for guild {guild_id}: {settings_update.dict()}")
         try:
             # Basic permission check (e.g., only owner or specific admin role)
             # TODO: Refine permission check logic
             if not current_user.is_owner:
-                 self.logger.warning(f"Permission denied: User {current_user.id} attempted to update template settings for guild {guild_id}.")
+                 logger.warning(f"Permission denied: User {current_user.id} attempted to update template settings for guild {guild_id}.")
                  raise PermissionDenied("Insufficient permissions to update template settings.")
 
             # Call the service layer method (assuming it exists)
@@ -744,10 +771,10 @@ class GuildTemplateController(BaseController):
             
             if not success:
                 # This might indicate the GuildConfig wasn't found
-                self.logger.warning(f"Template settings update failed for guild {guild_id} (potentially config not found).")
+                logger.warning(f"Template settings update failed for guild {guild_id} (potentially config not found).")
                 raise ConfigurationNotFound(f"Configuration for guild {guild_id} not found.")
 
-            self.logger.info(f"Successfully updated template settings for guild {guild_id}.")
+            logger.info(f"Successfully updated template settings for guild {guild_id}.")
             return {"message": "Template settings updated successfully."}
 
         except PermissionDenied as e:
@@ -755,7 +782,7 @@ class GuildTemplateController(BaseController):
         except ConfigurationNotFound as e:
              raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) 
         except Exception as e:
-            self.logger.error(f"Unexpected error updating template settings for guild {guild_id}: {e}", exc_info=True)
+            logger.error(f"Unexpected error updating template settings for guild {guild_id}: {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An internal error occurred while updating template settings.")
     # ------------------------------------------
 
@@ -768,20 +795,20 @@ class GuildTemplateController(BaseController):
         # http_client: httpx.AsyncClient = Depends(get_http_client) # Example dependency
     ):
         """API endpoint to trigger applying the active template to the Discord guild via Internal API."""
-        self.logger.info(f"User {current_user.id} requesting template application for guild ID: {guild_id}")
+        logger.info(f"User {current_user.id} requesting template application for guild ID: {guild_id}")
 
         # --- 1. Permission Check (Remains the same) --- 
         if not current_user.is_owner:
-             self.logger.warning(f"Permission denied: User {current_user.id} (not bot owner) attempted to apply template for guild {guild_id}.")
+             logger.warning(f"Permission denied: User {current_user.id} (not bot owner) attempted to apply template for guild {guild_id}.")
              raise HTTPException(
                  status_code=status.HTTP_403_FORBIDDEN, 
                  detail="You do not have permission to apply templates to this guild." 
              )
-        self.logger.info(f"Permission granted for user {current_user.id} to apply template for guild {guild_id}.")
+        logger.info(f"Permission granted for user {current_user.id} to apply template for guild {guild_id}.")
 
         # --- 2. Trigger Bot via Internal API --- 
         internal_api_url = f"{INTERNAL_API_BASE_URL}/guilds/{guild_id}/apply_template"
-        self.logger.info(f"Making POST request to internal API: {internal_api_url}")
+        logger.info(f"Making POST request to internal API: {internal_api_url}")
 
         try:
             # Use httpx client (instantiate directly for now, ideally inject)
@@ -790,36 +817,37 @@ class GuildTemplateController(BaseController):
             
             # Check response status from internal API
             if response.status_code == 202: # 202 Accepted is expected success
-                 self.logger.info(f"Internal API accepted template application trigger for guild {guild_id}.")
+                 logger.info(f"Internal API accepted template application trigger for guild {guild_id}.")
                  response_data = response.json()
                  return {"message": response_data.get("message", "Template application trigger accepted by bot.")}
             elif response.status_code == 400:
-                 self.logger.error(f"Internal API returned 400 Bad Request for guild {guild_id}: {response.text}")
+                 logger.error(f"Internal API returned 400 Bad Request for guild {guild_id}: {response.text}")
                  raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Internal bot error: {response.json().get('message', 'Bad request')}")
             elif response.status_code == 500 or response.status_code == 503:
-                 self.logger.error(f"Internal API returned {response.status_code} for guild {guild_id}: {response.text}")
+                 logger.error(f"Internal API returned {response.status_code} for guild {guild_id}: {response.text}")
                  raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Internal bot error: {response.json().get('message', 'Server error')}")
             else:
                  # Handle other unexpected statuses from internal API
-                 self.logger.error(f"Internal API returned unexpected status {response.status_code} for guild {guild_id}: {response.text}")
+                 logger.error(f"Internal API returned unexpected status {response.status_code} for guild {guild_id}: {response.text}")
                  raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Unexpected response from internal bot API (Status: {response.status_code})")
 
         except httpx.RequestError as exc:
-            self.logger.error(f"HTTP request to internal bot API failed: {exc}", exc_info=True)
+            logger.error(f"HTTP request to internal bot API failed: {exc}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Failed to communicate with the internal bot service.")
         except Exception as e:
-            self.logger.error(f"Unexpected error calling internal API for guild {guild_id}: {e}", exc_info=True)
+            logger.error(f"Unexpected error calling internal API for guild {guild_id}: {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred while communicating with the bot.")
 
     # === NEW Controller Methods for Deleting Elements ===
     async def delete_template_category(
         self,
+        guild_id: str, # <<< ADDED guild_id from path
         category_id: int,
         current_user: AppUserEntity = Depends(get_current_user),
         db: AsyncSession = Depends(get_web_db_session)
     ):
         """API endpoint to delete a category from a template."""
-        self.logger.info(f"User {current_user.id} requesting deletion of template category ID: {category_id}")
+        logger.info(f"User {current_user.id} requesting deletion of template category ID: {category_id}")
         try:
             # --- Re-inserted Permission Check ---
             try:
@@ -835,13 +863,15 @@ class GuildTemplateController(BaseController):
                 if not can_edit:
                     raise PermissionDenied("Permission denied to modify this template.")
                 
-                self.logger.info(f"Permission granted for user {current_user.id} to delete category {category_id} (Template ID: {parent_template_id})")
+                logger.info(f"Permission granted for user {current_user.id} to delete category {category_id} (Template ID: {parent_template_id})")
 
             except (TemplateNotFound, ValueError) as e: # Catch potential service errors
-                self.logger.warning(f"Permission check failed for category {category_id}: {e}")
+                logger.warning(f"Permission check failed for category {category_id}: {e}")
+                logger.warning(f"CONTROLLER INTENTION: Raising 404 - Permission Check Failed for ID: {category_id}")
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
             except PermissionDenied as e:
-                self.logger.warning(f"Permission denied for user {current_user.id} on category {category_id}: {e}")
+                logger.warning(f"Permission denied for user {current_user.id} on category {category_id}: {e}")
+                logger.warning(f"CONTROLLER INTENTION: Raising 403 - Permission Denied for ID: {category_id}")
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
             # --- End Permission Check ---
 
@@ -849,33 +879,31 @@ class GuildTemplateController(BaseController):
             deleted = await self.template_service.delete_template_category(db, category_id)
             
             if not deleted:
-                # If permission passed, but delete failed, it's likely a 404 or 500 during delete itself
-                self.logger.warning(f"Service failed to delete category {category_id} after permission check. Might not exist or DB error.")
-                # We rely on the service potentially raising an exception here if needed.
-                # If service just returns False, we translate to 404 as the most likely cause.
+                logger.warning(f"Service failed to delete category {category_id} after permission check. Might not exist or DB error.")
+                logger.warning(f"CONTROLLER INTENTION: Raising 404 - Service returned False for ID: {category_id}")
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found or could not be deleted.")
 
-            self.logger.info(f"Successfully deleted template category ID: {category_id}")
-            # No content to return for 204
+            logger.info(f"CONTROLLER INTENTION: Returning SUCCESS (implicit 204 No Content) for ID: {category_id}")
             return
 
         except HTTPException as http_exc:
             raise http_exc
         except NotImplementedError:
-            self.logger.error(f"Category deletion service method not implemented for ID {category_id}")
+            logger.error(f"CONTROLLER INTENTION: Raising 501 - Not Implemented for ID: {category_id}")
             raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Category deletion not implemented.")
         except Exception as e:
-            self.logger.error(f"Error deleting template category ID {category_id}: {e}", exc_info=True)
+            logger.error(f"CONTROLLER INTENTION: Raising 500 - Internal Server Error for ID: {category_id}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An internal error occurred while deleting the category.")
 
     async def delete_template_channel(
         self,
+        guild_id: str, # <<< ADDED guild_id from path
         channel_id: int,
         current_user: AppUserEntity = Depends(get_current_user),
         db: AsyncSession = Depends(get_web_db_session)
     ):
         """API endpoint to delete a channel from a template."""
-        self.logger.info(f"User {current_user.id} requesting deletion of template channel ID: {channel_id}")
+        logger.info(f"User {current_user.id} requesting deletion of template channel ID: {channel_id}")
         try:
             # --- Re-inserted Permission Check ---
             try:
@@ -891,13 +919,15 @@ class GuildTemplateController(BaseController):
                 if not can_edit:
                     raise PermissionDenied("Permission denied to modify this template.")
 
-                self.logger.info(f"Permission granted for user {current_user.id} to delete channel {channel_id} (Template ID: {parent_template_id})")
+                logger.info(f"Permission granted for user {current_user.id} to delete channel {channel_id} (Template ID: {parent_template_id})")
 
             except (TemplateNotFound, ValueError) as e: # Catch potential service errors
-                self.logger.warning(f"Permission check failed for channel {channel_id}: {e}")
+                logger.warning(f"Permission check failed for channel {channel_id}: {e}")
+                logger.warning(f"CONTROLLER INTENTION: Raising 404 - Permission Check Failed for ID: {channel_id}")
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
             except PermissionDenied as e:
-                self.logger.warning(f"Permission denied for user {current_user.id} on channel {channel_id}: {e}")
+                logger.warning(f"Permission denied for user {current_user.id} on channel {channel_id}: {e}")
+                logger.warning(f"CONTROLLER INTENTION: Raising 403 - Permission Denied for ID: {channel_id}")
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
             # --- End Permission Check ---
             
@@ -905,24 +935,60 @@ class GuildTemplateController(BaseController):
             deleted = await self.template_service.delete_template_channel(db, channel_id)
             
             if not deleted:
-                self.logger.warning(f"Service failed to delete channel {channel_id} after permission check. Might not exist or DB error.")
-                # We rely on the service potentially raising an exception here if needed.
-                # If service just returns False, we translate to 404 as the most likely cause.
+                logger.warning(f"Service failed to delete channel {channel_id} after permission check. Might not exist or DB error.")
+                logger.warning(f"CONTROLLER INTENTION: Raising 404 - Service returned False for ID: {channel_id}")
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Channel not found or could not be deleted.")
 
-            self.logger.info(f"Successfully deleted template channel ID: {channel_id}")
-            # No content to return for 204
+            logger.info(f"CONTROLLER INTENTION: Returning SUCCESS (implicit 204 No Content) for ID: {channel_id}")
             return
 
         except HTTPException as http_exc:
             raise http_exc
         except NotImplementedError:
-            self.logger.error(f"Channel deletion service method not implemented for ID {channel_id}")
+            logger.error(f"CONTROLLER INTENTION: Raising 501 - Not Implemented for ID: {channel_id}")
             raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Channel deletion not implemented.")
         except Exception as e:
-            self.logger.error(f"Error deleting template channel ID {channel_id}: {e}", exc_info=True)
+            logger.error(f"CONTROLLER INTENTION: Raising 500 - Internal Server Error for ID: {channel_id}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An internal error occurred while deleting the channel.")
-    # =======================================================
+
+    # --- NEW Method for Metadata Update --- 
+    async def update_template_metadata(
+        self,
+        guild_id: str, # From path
+        template_id: int, # From path
+        metadata_update: GuildTemplateMetadataUpdateSchema, # From request body
+        current_user: AppUserEntity = Depends(get_current_user),
+        db: AsyncSession = Depends(get_web_db_session)
+    ) -> GuildTemplateResponseSchema:
+        """API endpoint to update the metadata (e.g., name) of a guild template."""
+        logger.info(f"Metadata update requested for template {template_id} in guild {guild_id} by user {current_user.id}")
+        try:
+            # Call the service layer to perform the update
+            updated_template_data = await self.template_service.update_template_metadata(
+                db=db,
+                template_id=template_id,
+                new_name=metadata_update.name,
+                requesting_user=current_user
+            )
+            
+            # Service returns None or raises exception on failure/not found/permission denied
+            if not updated_template_data:
+                # This case might not be reached if service raises exceptions correctly
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found or update failed.")
+
+            logger.info(f"Successfully updated metadata for template {template_id}")
+            # Return the full, updated template data validated by the response model
+            return updated_template_data
+
+        except (TemplateNotFound, PermissionDenied) as service_exc:
+            # Re-raise specific exceptions from the service as HTTPExceptions
+            status_code = status.HTTP_404_NOT_FOUND if isinstance(service_exc, TemplateNotFound) else status.HTTP_403_FORBIDDEN
+            logger.warning(f"Service error during metadata update for template {template_id}: {service_exc}")
+            raise HTTPException(status_code=status_code, detail=str(service_exc))
+        except Exception as e:
+            logger.error(f"Unexpected error updating metadata for template {template_id}: {e}", exc_info=True)
+            # Use the generic exception handler from BaseController
+            return self.handle_exception(e)
 
 # Instantiate the controller for registration
 guild_template_controller = GuildTemplateController() 

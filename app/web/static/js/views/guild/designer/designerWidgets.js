@@ -1,7 +1,7 @@
 // Import specific widget initializers
 import { initializeStructureTree } from './widget/structureTree.js';
 import { initializeTemplateInfo } from './widget/templateInfo.js';
-// Import the *actual* list functions to be exported below
+// Import the list functions
 import { initializeCategoriesList as _initializeCategoriesList } from './widget/categoriesList.js';
 import { initializeChannelsList as _initializeChannelsList } from './widget/channelsList.js';
 import { initializeTemplateList } from './widget/templateList.js';
@@ -25,7 +25,7 @@ export function populateGuildDesignerWidgets(templateData) {
     
     const guildId = getGuildIdFromUrl(); // Needed for manage links
 
-    // --- Get User ID from main container (needed for shared list) ---
+    // Get User ID from main container
     const mainContainer = document.getElementById('designer-main-container');
     const currentUserId = mainContainer?.dataset.currentUserId;
     // --- 
@@ -77,10 +77,10 @@ export function populateGuildDesignerWidgets(templateData) {
     console.log("[DesignerWidgets] Widget content population finished.");
 }
 
-// Initial log to confirm loading
+// Initial log
 console.log("[DesignerWidgets] Widgets module loaded.");
 
-// --- Export individual list initializers --- 
+// Export individual list initializers
 export const initializeCategoriesList = _initializeCategoriesList;
 export const initializeChannelsList = _initializeChannelsList;
 // -------------------------------------------
