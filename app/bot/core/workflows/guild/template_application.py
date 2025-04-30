@@ -478,7 +478,10 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
             # Call the bulk update function
             if final_positions_dict:
                 logger.debug(f"    Prepared final positions dict (first 5): {dict(list(final_positions_dict.items())[:5])}") # Log snippet
-                await discord_guild.edit_channel_positions(positions=final_positions_dict)
+                # --- ADD LOGGING ---
+                logger.debug(f"    Type of discord_guild before calling edit_positions: {type(discord_guild)}")
+                # --- END LOGGING ---
+                await discord_guild.edit_positions(positions=final_positions_dict)
                 logger.info("    Successfully applied final channel and category order.")
             else:
                 logger.info("    No channels/categories with Discord IDs found to reorder.")

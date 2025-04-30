@@ -2,7 +2,7 @@
 import nextcord
 from nextcord.ext import commands
 from app.shared.interface.logging.api import get_bot_logger
-from app.bot.core.workflows.guild_workflow import ACCESS_APPROVED # Import constant
+from app.bot.core.workflows.guild import ACCESS_APPROVED # Import constant
 
 logger = get_bot_logger()
 

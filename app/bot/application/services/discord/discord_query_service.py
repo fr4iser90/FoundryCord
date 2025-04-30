@@ -56,6 +56,9 @@ class DiscordQueryService:
                  # Add permissions if needed in the future
                 # 'permissions': {role.id: overwrite.pair() for target, overwrite in channel.overwrites.items() if isinstance(target, nextcord.Role)}
             }
+            # --- ADD LOGGING ---
+            logger.debug(f"    QueryService: Processing channel '{channel.name}' (ID: {channel.id}, Type: {channel.type}). Assigning to live_channels.")
+            # --- END LOGGING ---
             live_channels[channel.id] = channel_data
             
         logger.debug(f"Fetched {len(live_categories)} categories and {len(live_channels)} channels for guild {guild.id}")
