@@ -1376,33 +1376,33 @@ class GuildTemplateService:
         """Updates metadata (like name) for a specific template. Checks ownership."""
         logger.info(f"SERVICE: Attempting metadata update for template {template_id} by user {requesting_user.id}. New name: '{new_name}'")
 
-        async with db.begin(): # Use transaction
-            # 1. Fetch the template
-            result = await db.execute(select(GuildTemplateEntity).where(GuildTemplateEntity.template_id == template_id))
-            template = result.scalars().first()
+        # 1. Fetch the template
+        result = await db.execute(select(GuildTemplateEntity).where(GuildTemplateEntity.id == template_id))
+        template = result.scalars().first()
 
-            if not template:
-                logger.warning(f"SERVICE: Template {template_id} not found for metadata update.")
-                raise TemplateNotFound(f"Template with ID {template_id} not found.")
+        if not template:
+            logger.warning(f"SERVICE: Template {template_id} not found for metadata update.")
+            raise TemplateNotFound(f"Template with ID {template_id} not found.")
 
-            # 2. Check Permissions (User must be the creator)
-            # TODO: Define permission logic more clearly (e.g., allow admins?)
-            if template.creator_user_id != requesting_user.id:
-                logger.warning(f"SERVICE: Permission denied. User {requesting_user.id} cannot update metadata for template {template_id} owned by {template.creator_user_id}.")
-                raise PermissionDenied("You do not have permission to modify this template.")
+        # 2. Check Permissions (User must be the creator)
+        # TODO: Define permission logic more clearly (e.g., allow admins?)
+        if template.creator_user_id != requesting_user.id:
+            logger.warning(f"SERVICE: Permission denied. User {requesting_user.id} cannot update metadata for template {template_id} owned by {template.creator_user_id}.")
+            raise PermissionDenied("You do not have permission to modify this template.")
 
-            # Cannot modify initial snapshot metadata
-            if template.is_initial_snapshot:
-                logger.warning(f"SERVICE: Attempted to modify metadata of initial snapshot template {template_id}.")
-                raise PermissionDenied("Cannot modify the initial guild snapshot.")
+        # Cannot modify initial snapshot metadata
+        if template.is_initial_snapshot:
+            logger.warning(f"SERVICE: Attempted to modify metadata of initial snapshot template {template_id}.")
+            raise PermissionDenied("Cannot modify the initial guild snapshot.")
 
-            # 3. Update fields
-            template.template_name = new_name
-            template.updated_at = datetime.utcnow() # Update timestamp
-            # Update description if added later
-            
-            # Add the updated template back to the session
-            db.add(template)
+        # 3. Update fields
+        template.template_name = new_name
+        template.updated_at = datetime.utcnow() # Update timestamp
+        # Update description if added later
+        
+        # Add the updated template back to the session (SQLAlchemy handles merge/update)
+        db.add(template)
+        # Commit/Flush happens when the caller's session context ends
 
         # Re-fetch the full updated data to return it
         # This ensures categories/channels are included as expected by the response schema

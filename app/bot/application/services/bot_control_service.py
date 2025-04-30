@@ -1,6 +1,8 @@
 import asyncio
 from typing import Any
 from app.shared.interface.logging.api import get_bot_logger
+from app.shared.infrastructure.repositories.discord.guild_config_repository_impl import GuildConfigRepositoryImpl
+from app.shared.infrastructure.database.session.context import session_context
 
 
 logger = get_bot_logger()
@@ -79,12 +81,34 @@ class BotControlService:
                 logger.error("GuildWorkflow not found in workflow manager.")
                 return False
             
-            # Call the actual workflow method
-            logger.info(f"Calling guild_workflow.apply_template('{guild_id}')")
-            # We await the result here as the service call should reflect the outcome
-            success = await guild_workflow.apply_template(guild_id)
-            logger.info(f"guild_workflow.apply_template('{guild_id}') returned: {success}")
-            return success
+            # --- BEGIN FIX: Fetch config and session before calling apply_template --- 
+            try:
+                async with session_context() as session:
+                    # Fetch the GuildConfig using the session
+                    guild_config_repo = GuildConfigRepositoryImpl(session)
+                    config = await guild_config_repo.get_by_guild_id(guild_id)
+                    if not config:
+                        logger.error(f"GuildConfigEntity not found for guild {guild_id} within BotControlService trigger. Cannot apply template.")
+                        return False
+                    if config.active_template_id is None:
+                         logger.error(f"Guild {guild_id} has no active template set in GuildConfig. Cannot apply template.")
+                         return False
+
+                    # Call the workflow method with all required arguments
+                    logger.info(f"Calling guild_workflow.apply_template with guild_id={guild_id}, config={config.id}, session")
+                    success = await guild_workflow.apply_template(
+                        guild_id=guild_id, 
+                        config=config, 
+                        session=session
+                    )
+                    logger.info(f"guild_workflow.apply_template('{guild_id}') returned: {success}")
+                    return success
+                
+            except Exception as apply_exec_err:
+                logger.error(f"Error executing apply_template within session for guild {guild_id}: {apply_exec_err}", exc_info=True)
+                return False
+            # --- END FIX --- 
+
         except Exception as e:
             logger.error(f"Error in BotControlService while triggering template application for {guild_id}: {e}", exc_info=True)
             return False
