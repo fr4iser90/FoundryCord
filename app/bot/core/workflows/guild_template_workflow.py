@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot.core.workflows.base_workflow import BaseWorkflow, WorkflowStatus
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
-from app.bot.core.workflows.guild_workflow import GuildWorkflow # May need interaction
+from app.bot.core.workflows.guild import GuildWorkflow # May need interaction
 from app.shared.interface.logging.api import get_bot_logger
 from app.shared.infrastructure.database.session.context import session_context
 # --- Import Repository Implementations ---

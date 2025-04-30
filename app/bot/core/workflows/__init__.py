@@ -1,6 +1,6 @@
 from .base_workflow import BaseWorkflow, WorkflowStatus
 from .database_workflow import DatabaseWorkflow
-from .guild_workflow import GuildWorkflow
+from .guild import GuildWorkflow
 from .category_workflow import CategoryWorkflow
 from .channel_workflow import ChannelWorkflow
 from .dashboard_workflow import DashboardWorkflow
