@@ -227,19 +227,31 @@ class GuildTemplateShareSchema(BaseModel):
 
 # --- Response Schemas --- 
 
+# NEW: Clear schema for permission responses
+class PermissionResponseSchema(BaseModel):
+    permission_id: int # Explicitly named ID for the permission rule itself
+    role_name: str # Assuming role_name is more useful than role_id here
+    allow: int
+    deny: int
+
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True
+
+
 class CategoryResponseSchema(BaseModel):
-    id: int
+    category_id: int # Renamed from id for clarity
     template_id: int
     category_name: str
     position: int
-    # Permissions might be added later
+    permissions: List[PermissionResponseSchema] = [] # Use the clear permission schema
 
     class Config:
         orm_mode = True
         allow_population_by_field_name = True # Allows using db column names
 
 class ChannelResponseSchema(BaseModel):
-    id: int
+    channel_id: int # Renamed from id for clarity
     template_id: int
     parent_category_template_id: Optional[int] # Changed from category_id
     channel_name: str
@@ -248,7 +260,7 @@ class ChannelResponseSchema(BaseModel):
     topic: Optional[str] = None # Make optional
     is_nsfw: Optional[bool] = None # Make optional
     slowmode_delay: Optional[int] = None # Make optional
-    # Permissions might be added later
+    permissions: List[PermissionResponseSchema] = [] # Use the clear permission schema
 
     class Config:
         orm_mode = True

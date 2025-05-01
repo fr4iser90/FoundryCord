@@ -1,5 +1,6 @@
 """
 Service responsible for guild selection logic within the web application.
+Acts as a Facade, delegating calls to more specific guild services.
 """
 from fastapi import Request, HTTPException, status
 from app.shared.infrastructure.models.auth import AppUserEntity
@@ -13,316 +14,52 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import httpx # Added httpx import
 
+# Import the specific services
+from .query_service import GuildQueryService
+from .selection_service import GuildSelectionService
+from .management_service import GuildManagementService
+
 logger = get_web_logger()
 
 class GuildService:
-    """Handles logic related to guild selection and session management for guilds."""
+    """Facade that delegates guild-related logic to specialized services."""
 
     def __init__(self):
-        """Initialize GuildService."""
-        logger.info("GuildService initialized.")
-        # In a real application, repositories should be injected here
-        # For now, we use the session context directly
+        """Initialize GuildService and its underlying specific services."""
+        # Instantiate the specific services
+        # In a production system with dependency injection, these might be injected
+        self._query_service = GuildQueryService()
+        self._selection_service = GuildSelectionService()
+        self._management_service = GuildManagementService()
+        logger.info("GuildService Facade initialized, delegating to Query, Selection, and Management services.")
 
-    async def get_available_guilds(self, user: AppUserEntity) -> List[GuildEntity]: # Return type is now List[GuildEntity]
-        """Get list of guilds the user has access to (approved status)."""
-        logger.debug(f"Fetching available guilds for user: {user.id}")
-        
-        guilds: List[GuildEntity] = []
-        try:
-            async with session_context() as session:
-                if user.is_owner:
-                    # Owners see all approved guilds
-                    stmt = (
-                        select(GuildEntity)
-                        .where(GuildEntity.access_status == 'approved')
-                        # Optionally load relationships if needed for GuildInfo conversion
-                        # .options(selectinload(GuildEntity.some_relationship))
-                        .order_by(GuildEntity.name)
-                    )
-                    result = await session.execute(stmt)
-                    guilds = result.scalars().all()
-                    logger.info(f"Owner {user.id} has access to {len(guilds)} approved guilds.")
-                else:
-                    # Non-owners: Find guilds they are associated with AND are approved
-                    # We need to join AppUser -> DiscordGuildUserEntity -> GuildEntity
-                    stmt = (
-                        select(GuildEntity)
-                        .join(DiscordGuildUserEntity, DiscordGuildUserEntity.guild_id == GuildEntity.guild_id)
-                        .where(DiscordGuildUserEntity.user_id == user.id)
-                        .where(GuildEntity.access_status == 'approved')
-                        # Optionally load relationships
-                        .order_by(GuildEntity.name)
-                        # Use distinct() to avoid duplicates if a user has multiple roles in one guild (rare)
-                        .distinct()
-                    )
-                    result = await session.execute(stmt)
-                    guilds = result.scalars().all()
-                    logger.info(f"User {user.id} has access to {len(guilds)} approved guilds they are members of.")
-            
-            # --- DEBUG LOGGING --- 
-            logger.debug(f"Returning {len(guilds)} guilds from GuildService.get_available_guilds.")
-            for i, g in enumerate(guilds):
-                # Log type and relevant attributes to check before Pydantic conversion
-                logger.debug(f"  Guild {i}: Type={type(g)}, ID={getattr(g, 'guild_id', 'N/A')}, Name={getattr(g, 'name', 'N/A')}, Status={getattr(g, 'access_status', 'N/A')}, Icon={getattr(g, 'icon_url', 'N/A')}, Members={getattr(g, 'member_count', 'N/A')}") 
-            # --- END DEBUG LOGGING ---
-
-            # The list of GuildEntity objects will be automatically converted 
-            # by FastAPI using the GuildInfo response_model with orm_mode=True.
-            return guilds
-            
-        except Exception as e:
-            logger.exception(f"Error fetching available guilds for user {user.id}: {e}", exc_info=e)
-            # Let the controller/global handler deal with the exception
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve guild list")
+    # --- Query Methods --- 
+    async def get_available_guilds(self, user: AppUserEntity) -> List[GuildEntity]:
+        """Delegates to GuildQueryService to get available guilds."""
+        logger.debug(f"GuildService facade delegating get_available_guilds for user {user.id}")
+        return await self._query_service.get_available_guilds(user)
 
     async def get_all_manageable_guilds(self, user: AppUserEntity) -> List[GuildEntity]:
-        """Get all guilds relevant for owner management (all statuses)."""
-        logger.debug(f"Fetching all manageable guilds for owner: {user.id}")
-        if not user.is_owner:
-            logger.warning(f"Non-owner {user.id} attempted to fetch all manageable guilds.")
-            # Return empty list or raise 403 - raising is probably better
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only owners can view all manageable guilds.")
+        """Delegates to GuildQueryService to get all manageable guilds."""
+        logger.debug(f"GuildService facade delegating get_all_manageable_guilds for user {user.id}")
+        return await self._query_service.get_all_manageable_guilds(user)
 
-        guilds: List[GuildEntity] = []
-        try:
-            async with session_context() as session:
-                # Owners see all guilds, ordered by name
-                stmt = (
-                    select(GuildEntity)
-                    # Optionally load relationships needed for display later
-                    # .options(selectinload(GuildEntity.config), selectinload(GuildEntity.user_roles))
-                    .order_by(GuildEntity.name)
-                )
-                result = await session.execute(stmt)
-                guilds = result.scalars().all()
-                logger.info(f"Owner {user.id} fetching {len(guilds)} total guilds for management.")
-            return guilds
-        except Exception as e:
-            logger.exception(f"Error fetching all manageable guilds for owner {user.id}: {e}", exc_info=e)
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve manageable guild list")
+    # --- Selection Methods --- 
+    async def get_current_guild(self, request: Request, user: AppUserEntity) -> Optional[GuildEntity]:
+        """Delegates to GuildSelectionService to get the current guild."""
+        logger.debug(f"GuildService facade delegating get_current_guild for user {user.id}")
+        return await self._selection_service.get_current_guild(request, user)
 
-    async def get_current_guild(self, request: Request, user: AppUserEntity) -> Optional[GuildEntity]: # Return type can also be GuildEntity
-        """Get the currently selected guild from the user's session or last selection."""
-        selected_guild_data = request.session.get('selected_guild')
-        guild_id_to_fetch = None
+    async def select_guild(self, request: Request, guild_id: str, user: AppUserEntity) -> GuildEntity:
+        """Delegates to GuildSelectionService to select a guild."""
+        logger.debug(f"GuildService facade delegating select_guild for user {user.id}, guild {guild_id}")
+        return await self._selection_service.select_guild(request, guild_id, user)
 
-        if selected_guild_data and 'guild_id' in selected_guild_data:
-            guild_id_to_fetch = selected_guild_data['guild_id']
-            logger.debug(f"Found guild {guild_id_to_fetch} in session for user {user.id}")
-        elif user.last_selected_guild_id:
-            guild_id_to_fetch = user.last_selected_guild_id
-            logger.debug(f"No guild in session, checking last selected: {guild_id_to_fetch} for user {user.id}")
-        else:
-            logger.debug(f"No guild in session and no last selection for user {user.id}")
-            return None
-
-        if not guild_id_to_fetch:
-            return None # Should not happen if logic above is correct, but defensive check
-
-        logger.debug(f"Attempting to fetch current/last guild {guild_id_to_fetch} from DB for user {user.id}")
-        try:
-             async with session_context() as session:
-                # Fetch the full GuildEntity
-                # Verify guild exists and is approved. Check user access only if not owner.
-                stmt = (
-                    select(GuildEntity)
-                    .outerjoin(DiscordGuildUserEntity, DiscordGuildUserEntity.guild_id == GuildEntity.guild_id)
-                    .where(GuildEntity.guild_id == guild_id_to_fetch)
-                    .where(GuildEntity.access_status == 'approved')
-                )
-                # If user is not owner, add condition to check their membership via the join
-                if not user.is_owner:
-                    stmt = stmt.where(DiscordGuildUserEntity.user_id == user.id)
-
-                result = await session.execute(stmt.limit(1))
-                guild = result.scalar_one_or_none()
-
-                if not guild:
-                     logger.warning(f"Guild {guild_id_to_fetch} (from session or last_selected) not found, not approved, or user {user.id} lost access.")
-                     # Clear invalid session data if it came from there
-                     if selected_guild_data and selected_guild_data.get('guild_id') == guild_id_to_fetch:
-                         request.session.pop('selected_guild', None)
-                         logger.debug(f"Removed invalid guild {guild_id_to_fetch} from session.")
-                     # Clear invalid last_selected_guild_id if it came from there and user still exists
-                     if not selected_guild_data and user.last_selected_guild_id == guild_id_to_fetch:
-                         try:
-                            update_stmt = (
-                                update(AppUserEntity)
-                                .where(AppUserEntity.id == user.id)
-                                .values(last_selected_guild_id=None)
-                            )
-                            await session.execute(update_stmt)
-                            await session.commit()
-                            user.last_selected_guild_id = None # Update in-memory object too
-                            logger.debug(f"Cleared invalid last_selected_guild_id {guild_id_to_fetch} for user {user.id}")
-                         except Exception as db_exc:
-                             logger.error(f"Failed to clear invalid last_selected_guild_id for user {user.id}: {db_exc}", exc_info=True)
-                             await session.rollback() # Rollback only the failed update
-
-                     return None
-
-                # If we fetched based on last_selected_guild_id, update the session now
-                if not selected_guild_data and guild:
-                    selected_data = {
-                        "guild_id": guild.guild_id,
-                        "name": guild.name,
-                        "icon_url": str(guild.icon_url) if guild.icon_url else None
-                    }
-                    request.session['selected_guild'] = selected_data
-                    logger.info(f"Updated session with last selected guild {guild.guild_id} for user {user.id}")
-
-                return guild # Return the ORM object
-        except Exception as e:
-            logger.exception(f"Error fetching current/last guild {guild_id_to_fetch} for user {user.id}: {e}", exc_info=e)
-            # Don't raise HTTPException here, let the controller handle it if needed,
-            # returning None might be sufficient depending on usage.
-            # Consider if clearing session/last_selected is appropriate on general exception
-            return None # Indicate failure to retrieve
-
-    async def select_guild(self, request: Request, guild_id: str, user: AppUserEntity) -> GuildEntity: # Return GuildEntity
-        """Select a guild, store its basic info in the session, and update user's last selection."""
-        logger.info(f"User {user.id} attempting to select guild: {guild_id}")
-        
-        try:
-            async with session_context() as session:
-                # Verify guild exists and is approved. Check user access only if not owner.
-                stmt = (
-                    select(GuildEntity)
-                    # Always OUTER JOIN to potentially check membership for non-owners
-                    .join(DiscordGuildUserEntity, DiscordGuildUserEntity.guild_id == GuildEntity.guild_id, isouter=True)
-                    .where(GuildEntity.guild_id == guild_id)
-                    .where(GuildEntity.access_status == 'approved')
-                )
-                # If user is not owner, add condition to check their membership via the join
-                if not user.is_owner:
-                    stmt = stmt.where(DiscordGuildUserEntity.user_id == user.id)
-
-                # Execute the query
-                result = await session.execute(stmt.limit(1))
-                guild = result.scalar_one_or_none() # Renamed variable
-                
-                if not guild: # Use renamed variable
-                    logger.warning(f"User {user.id} denied access to select guild {guild_id} (not found, not approved, or no access).")
-                    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied to this guild")
-
-                # --- Update User's Last Selected Guild ---
-                try:
-                    # Use SQLAlchemy update for efficiency, especially if user object isn't fully loaded/managed
-                    update_stmt = (
-                        update(AppUserEntity)
-                        .where(AppUserEntity.id == user.id)
-                        .values(last_selected_guild_id=guild.guild_id) # Use renamed variable
-                    )
-                    await session.execute(update_stmt)
-                    logger.debug(f"Attempting to update last_selected_guild_id for user {user.id} to {guild.guild_id}") # Use renamed variable
-                    # We don't commit yet, let it be part of the transaction with session update
-                except Exception as db_exc:
-                    # Log error but proceed with session update if possible
-                    logger.error(f"Failed to update last_selected_guild_id for user {user.id}: {db_exc}", exc_info=True)
-                    await session.rollback() # Rollback the failed update attempt
-                    # Consider re-raising or handling differently if this update is critical
-                    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to save selection preference") from db_exc
-                # --- End Update ---
-
-                # Store essential info in session
-                selected_data = {
-                    "guild_id": guild.guild_id, # Use renamed variable
-                    "name": guild.name, # Use renamed variable
-                    "icon_url": str(guild.icon_url) if guild.icon_url else None # Use renamed variable
-                }
-                request.session['selected_guild'] = selected_data
-                logger.info(f"Stored selected guild in session for user {user.id}: {selected_data}")
-
-                # Commit both the user update and session changes implicitly by exiting context manager without error
-                # Explicit commit after both potentially risky operations succeed
-                await session.commit()
-                logger.info(f"Successfully updated last_selected_guild_id and session for user {user.id}")
-
-                # Refresh the user object in memory if needed elsewhere in the request lifecycle
-                user.last_selected_guild_id = guild.guild_id # Use renamed variable
-
-                # Return the full GuildEntity object
-                return guild # Use renamed variable
-                
-        except HTTPException as http_exc:
-            await session.rollback() # Rollback on HTTP exceptions triggered within the block
-            raise http_exc
-        except Exception as e:
-            await session.rollback() # Rollback on general exceptions
-            logger.exception(f"Error selecting guild {guild_id} for user {user.id}: {e}", exc_info=e)
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Guild selection failed")
-
+    # --- Management Methods --- 
     async def update_guild_access_status(self, guild_id: str, new_status: str, reviewed_by_user_id: int) -> GuildEntity:
-        """Updates the access status of a specific guild and triggers bot action if approved."""
-        logger.info(f"Attempting to update guild {guild_id} status to {new_status} by user {reviewed_by_user_id}")
-        
-        valid_statuses = ['pending', 'approved', 'rejected', 'blocked', 'suspended']
-        normalized_new_status = new_status.lower()
-        if normalized_new_status not in valid_statuses:
-            logger.error(f"Invalid status '{new_status}' provided for guild {guild_id}.")
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid status: {new_status}")
-
-        try:
-            async with session_context() as session:
-                stmt = select(GuildEntity).where(GuildEntity.guild_id == guild_id)
-                result = await session.execute(stmt)
-                guild = result.scalar_one_or_none()
-                
-                if not guild:
-                    logger.warning(f"Attempted to update status for non-existent guild {guild_id}")
-                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Guild not found")
-                
-                guild.access_status = normalized_new_status
-                guild.access_reviewed_at = datetime.utcnow() # Use UTC time
-                guild.access_reviewed_by = str(reviewed_by_user_id) # Store user ID as string
-                
-                await session.commit()
-                await session.refresh(guild) # Refresh to get updated data
-                
-                logger.info(f"Successfully updated guild {guild_id} status in DB to {normalized_new_status}")
-
-                # --- Trigger Bot Action --- 
-                if normalized_new_status == 'approved':
-                    logger.info(f"Status updated to approved. Triggering bot's approve_guild workflow for {guild_id} via internal API...")
-                    # Define the internal API endpoint URL
-                    # TODO: Move this URL to a configuration file/environment variable
-                    internal_api_url = f"http://foundrycord-bot:9090/internal/trigger/approve_guild/{guild_id}"
-                    
-                    try:
-                        async with httpx.AsyncClient() as client:
-                            response = await client.post(internal_api_url, timeout=10.0) # Added timeout
-                            response.raise_for_status() # Raise an exception for bad status codes (4xx or 5xx)
-                            
-                            # Log success based on status code
-                            logger.info(f"Internal API call to trigger approve_guild for {guild_id} succeeded with status {response.status_code}.")
-                            # Optionally check response content if the API returns data
-                            # bot_result = response.json() 
-                            # logger.info(f"Bot response: {bot_result}")
-
-                    except httpx.HTTPStatusError as http_err:
-                        # Error from the bot API itself (e.g., 404, 500)
-                        logger.error(f"HTTP error occurred when calling internal API for guild {guild_id}: {http_err}", exc_info=True)
-                        # Decide if this should fail the web request or just log. For now, just log.
-                    except httpx.RequestError as req_err:
-                        # Error during the request (e.g., connection error, timeout)
-                        logger.error(f"Request error occurred when calling internal API for guild {guild_id}: {req_err}", exc_info=True)
-                        # Decide if this should fail the web request or just log. For now, just log.
-                    except Exception as e:
-                        # Catch any other unexpected errors during the API call
-                        logger.error(f"An unexpected error occurred during the internal API call for guild {guild_id}: {e}", exc_info=True)
-                        # Decide if this should fail the web request or just log. For now, just log.
-                    finally:
-                        logger.info(f"Finished attempt to trigger approve_guild via internal API for guild {guild_id}.")
-                # --- End Bot Action --- 
-
-                return guild
-                
-        except HTTPException as http_exc:
-            raise http_exc # Re-raise specific HTTP errors
-        except Exception as e:
-            logger.exception(f"Database error updating guild {guild_id} status: {e}", exc_info=e)
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error during status update")
+        """Delegates to GuildManagementService to update guild access status."""
+        logger.debug(f"GuildService facade delegating update_guild_access_status for guild {guild_id}")
+        return await self._management_service.update_guild_access_status(guild_id, new_status, reviewed_by_user_id)
 
     # --- Placeholder for potential helper --- 
     # async def check_user_guild_access(self, user_id: int, guild_id: str) -> bool:

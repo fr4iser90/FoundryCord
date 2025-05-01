@@ -626,9 +626,13 @@ class GuildTemplateController(BaseController):
                 "guild_id": template_entity.guild_id,
                 "template_id": template_entity.id,
                 "template_name": template_entity.template_name,
-                "created_at": template_entity.created_at,
+                # Format created_at as string
+                "created_at": template_entity.created_at.isoformat() if template_entity.created_at else None, 
                 # Determine initial snapshot based on creator_user_id being None
                 "is_initial_snapshot": template_entity.creator_user_id is None,
+                # Add missing fields
+                "creator_user_id": template_entity.creator_user_id,
+                "is_shared": template_entity.is_shared,
                 "template_delete_unmanaged": delete_unmanaged_flag,
                 "categories": [],
                 "channels": []
@@ -637,16 +641,18 @@ class GuildTemplateController(BaseController):
             # Populate categories (using schema logic manually)
             for cat_entity in template_entity.categories:
                 cat_dict = {
-                    "id": cat_entity.id,
-                    "name": cat_entity.category_name, # Use correct attribute name
+                    # Use clear key name based on updated schema
+                    "category_id": cat_entity.id, 
+                    "template_id": template_entity.id, # Template ID this category belongs to
+                    "category_name": cat_entity.category_name, 
                     "position": cat_entity.position,
                     "permissions": []
                 }
                 for perm_entity in cat_entity.permissions:
                     cat_dict["permissions"].append({
-                        "id": perm_entity.id,
+                        # Use clear key name based on updated schema
+                        "permission_id": perm_entity.id,
                         "role_name": perm_entity.role_name,
-                        # Use correct attribute names and handle None
                         "allow": perm_entity.allow_permissions_bitfield if perm_entity.allow_permissions_bitfield is not None else 0,
                         "deny": perm_entity.deny_permissions_bitfield if perm_entity.deny_permissions_bitfield is not None else 0
                     })
@@ -655,8 +661,10 @@ class GuildTemplateController(BaseController):
             # Populate channels (using schema logic manually)
             for chan_entity in template_entity.channels:
                 chan_dict = {
-                    "id": chan_entity.id,
-                    "name": chan_entity.channel_name, # Use correct attribute name
+                    # Use clear key name based on updated schema
+                    "channel_id": chan_entity.id, 
+                    "template_id": template_entity.id, # Template ID this channel belongs to
+                    "channel_name": chan_entity.channel_name,
                     "type": chan_entity.channel_type,
                     "position": chan_entity.position,
                     "topic": chan_entity.topic,
@@ -667,9 +675,9 @@ class GuildTemplateController(BaseController):
                 }
                 for perm_entity in chan_entity.permissions:
                     chan_dict["permissions"].append({
-                        "id": perm_entity.id,
+                        # Use clear key name based on updated schema
+                        "permission_id": perm_entity.id,
                         "role_name": perm_entity.role_name,
-                        # Use correct attribute names and handle None
                         "allow": perm_entity.allow_permissions_bitfield if perm_entity.allow_permissions_bitfield is not None else 0,
                         "deny": perm_entity.deny_permissions_bitfield if perm_entity.deny_permissions_bitfield is not None else 0
                     })

@@ -15,15 +15,17 @@ function formatDataForJsTree(templateData) {
     if (!templateData) return [];
 
     const treeData = [];
-    const categoriesById = {}; // Keep this map needed for categorized channels
+    const categoriesById = {}; // Map DB Category ID -> Category Object
 
     // 1. Root node for the template
     treeData.push({
-        id: `template_${templateData.id || 'root'}`,
-        parent: '#', // # denotes the root
-        text: 'Guild Structure', // Use a static label for the root
-        icon: 'fas fa-server', // Example icon
-        type: 'template' // Custom type for styling/behavior
+        id: `template_${templateData.template_id || 'root'}`, // Use template_id from data
+        parent: '#',
+        text: templateData.template_name || 'Guild Structure', // Use actual template name if available
+        icon: 'fas fa-server',
+        type: 'template',
+        // Store minimal root data if needed by properties panel
+        data: { type: 'template', dbId: templateData.template_id, name: templateData.template_name }
     });
 
     // Process channels first to separate them
@@ -31,7 +33,8 @@ function formatDataForJsTree(templateData) {
     const categorizedChannels = [];
     if (Array.isArray(templateData.channels)) {
         templateData.channels.forEach(chan => {
-            if (chan && chan.id) {
+            // Use channel_id for check
+            if (chan && chan.channel_id !== undefined && chan.channel_id !== null) {
                 if (chan.parent_category_template_id === null || chan.parent_category_template_id === undefined) {
                     uncategorizedChannels.push(chan);
                 } else {
@@ -45,32 +48,33 @@ function formatDataForJsTree(templateData) {
     uncategorizedChannels.sort((a, b) => (a?.position ?? Infinity) - (b?.position ?? Infinity));
     categorizedChannels.sort((a, b) => (a?.position ?? Infinity) - (b?.position ?? Infinity));
 
-    // 2. Add uncategorized channels to treeData (parent is root)
+    // 2. Add uncategorized channels FIRST (parent is root)
     uncategorizedChannels.forEach(chan => {
         const icon = getChannelIcon(chan.type);
         treeData.push({
-            id: `channel_${chan.id}`,
-            parent: `template_${templateData.id || 'root'}`, // Assign to root
-            text: `${chan.channel_name || 'Unnamed Channel'} (Pos: ${chan.position})`,
+            id: `channel_${chan.channel_id}`, // Use channel_id
+            parent: `template_${templateData.template_id || 'root'}`, // Assign to root
+            text: `${chan.channel_name || 'Unnamed Channel'}`,
             icon: icon,
             type: 'channel',
-            data: { type: 'channel', dbId: chan.id, channelType: chan.type }
+            data: { type: 'channel', dbId: chan.channel_id, channelType: chan.type } // Use channel_id
         });
     });
 
     // 3. Process and Add categories (parent is root)
     if (Array.isArray(templateData.categories)) {
-        templateData.categories.sort((a, b) => (a?.position ?? Infinity) - (b?.position ?? Infinity)); // Also sort categories
+        templateData.categories.sort((a, b) => (a?.position ?? Infinity) - (b?.position ?? Infinity));
         templateData.categories.forEach(cat => {
-            if (cat && cat.id) {
-                categoriesById[cat.id] = cat; // Store for channel lookup
+            // Use category_id for check and map key
+            if (cat && cat.category_id !== undefined && cat.category_id !== null) {
+                categoriesById[cat.category_id] = cat; // Use category_id as key
                 treeData.push({
-                    id: `category_${cat.id}`,
-                    parent: `template_${templateData.id || 'root'}`, // Assign to root
-                    text: `${cat.category_name || 'Unnamed Category'} (Pos: ${cat.position})`,
-                    icon: 'fas fa-folder', // Example icon
+                    id: `category_${cat.category_id}`, // Use category_id
+                    parent: `template_${templateData.template_id || 'root'}`, // Assign to root
+                    text: `${cat.category_name || 'Unnamed Category'}`,
+                    icon: 'fas fa-folder',
                     type: 'category',
-                    data: { type: 'category', dbId: cat.id } // Store original data if needed
+                    data: { type: 'category', dbId: cat.category_id } // Use category_id
                 });
             }
         });
@@ -78,26 +82,34 @@ function formatDataForJsTree(templateData) {
 
     // 4. Add categorized channels to treeData (parent is category)
     categorizedChannels.forEach(chan => {
-        // Check if parent category actually exists in the data we processed
+        // Use category_id from map
         if (categoriesById[chan.parent_category_template_id]) {
              const icon = getChannelIcon(chan.type);
+             // Use category_id for parent ID string
              const parentId = `category_${chan.parent_category_template_id}`;
              treeData.push({
-                 id: `channel_${chan.id}`,
+                 id: `channel_${chan.channel_id}`, // Use channel_id
                  parent: parentId,
-                 text: `${chan.channel_name || 'Unnamed Channel'} (Pos: ${chan.position})`,
+                 text: `${chan.channel_name || 'Unnamed Channel'}`,
                  icon: icon,
                  type: 'channel',
-                 data: { type: 'channel', dbId: chan.id, channelType: chan.type }
+                 data: { type: 'channel', dbId: chan.channel_id, channelType: chan.type } // Use channel_id
              });
         } else {
-            // Log a warning if a channel references a non-existent parent category ID
-            console.warn(`[TreeWidget] Channel '${chan.channel_name}' (ID: ${chan.id}) references non-existent parent category ID: ${chan.parent_category_template_id}. Skipping.`);
+            console.warn(`[TreeWidget] Channel '${chan.channel_name}' (ID: ${chan.channel_id}) references non-existent parent category ID: ${chan.parent_category_template_id}. Placing under root.`);
+            // Fallback: Add to root if parent category is missing
+            const icon = getChannelIcon(chan.type);
+            treeData.push({
+                 id: `channel_${chan.channel_id}`, // Use channel_id
+                 parent: `template_${templateData.template_id || 'root'}`, // Assign to root as fallback
+                 text: `${chan.channel_name || 'Unnamed Channel'} (Orphaned)`,
+                 icon: icon,
+                 type: 'channel',
+                 data: { type: 'channel', dbId: chan.channel_id, channelType: chan.type } // Use channel_id
+             });
         }
     });
 
-    // Debug log for the final structure
-    // console.log("[TreeWidget] Final formatted data for jsTree:", JSON.stringify(treeData, null, 2));
     return treeData;
 }
 
@@ -171,7 +183,7 @@ export function initializeStructureTree(templateData) { // Export the function
         })
         .on('ready.jstree', function () {
              // console.log("[TreeWidget] jsTree is ready. Opening root node."); // REMOVED
-             $(this).jstree('open_node', `template_${templateData.id || 'root'}`);
+             $(this).jstree('open_node', `template_${templateData.template_id || 'root'}`);
         })
         .on('select_node.jstree', function (e, data) {
             console.log("[TreeWidget] Node selected:", data.node);
