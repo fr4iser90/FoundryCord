@@ -6,27 +6,28 @@ from app.shared.infrastructure.models.dashboards.component_layout_entity import 
 from app.shared.infrastructure.models.dashboards.content_template_entity import ContentTemplateEntity
 from typing import Optional, List, Dict, Any
 from app.shared.domain.repositories.discord.dashboard_repository import DashboardRepository
+from app.shared.infrastructure.repositories.base_repository_impl import BaseRepositoryImpl
 
-class DashboardRepositoryImpl(DashboardRepository):
+class DashboardRepositoryImpl(BaseRepositoryImpl[DashboardEntity], DashboardRepository):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(DashboardEntity, session)
     
     async def get_dashboard_by_id(self, dashboard_id: int) -> Optional[DashboardEntity]:
         """Get a dashboard by its ID"""
-        result = await self.session.execute(select(DashboardEntity).where(DashboardEntity.id == dashboard_id))
+        result = await self.session.execute(select(self.model).where(self.model.id == dashboard_id))
         return result.scalar_one_or_none()
     
     async def get_dashboard_by_type(self, dashboard_type: str, guild_id: str = None) -> Optional[DashboardEntity]:
         """Get a dashboard by its type and optionally guild ID"""
-        query = select(DashboardEntity).where(DashboardEntity.dashboard_type == dashboard_type)
+        query = select(self.model).where(self.model.dashboard_type == dashboard_type)
         if guild_id:
-            query = query.where(DashboardEntity.guild_id == guild_id)
+            query = query.where(self.model.guild_id == guild_id)
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
     
     async def get_dashboards_by_channel(self, channel_id: int) -> List[DashboardEntity]:
         """Get all dashboards for a specific channel"""
-        result = await self.session.execute(select(DashboardEntity).where(DashboardEntity.channel_id == channel_id))
+        result = await self.session.execute(select(self.model).where(self.model.channel_id == channel_id))
         return result.scalars().all()
     
     async def create_dashboard(self, name: str, dashboard_type: str, guild_id: str, 
@@ -44,33 +45,34 @@ class DashboardRepositoryImpl(DashboardRepository):
             config=kwargs.get('config')
         )
         self.session.add(dashboard)
-        await self.session.commit()
+        await self.session.flush()
+        await self.session.refresh(dashboard)
         return dashboard
     
     async def update_dashboard(self, dashboard: DashboardEntity) -> DashboardEntity:
         """Update an existing dashboard"""
         self.session.add(dashboard)
-        await self.session.commit()
+        await self.session.flush()
+        await self.session.refresh(dashboard)
         return dashboard
     
     async def delete_dashboard(self, dashboard: DashboardEntity) -> None:
         """Delete a dashboard and all its components"""
-        await self.session.delete(dashboard)
-        await self.session.commit()
+        await super().delete(dashboard)
     
     async def get_all_dashboards(self) -> List[DashboardEntity]:
         """Get all dashboards"""
-        result = await self.session.execute(select(DashboardEntity))
+        result = await self.session.execute(select(self.model))
         return result.scalars().all()
     
     async def get_dashboards_by_guild(self, guild_id: str) -> List[DashboardEntity]:
         """Get all dashboards for a guild"""
-        result = await self.session.execute(select(DashboardEntity).where(DashboardEntity.guild_id == guild_id))
+        result = await self.session.execute(select(self.model).where(self.model.guild_id == guild_id))
         return result.scalars().all()
     
     async def get_active_dashboards(self) -> List[DashboardEntity]:
         """Get all active dashboards"""
-        result = await self.session.execute(select(DashboardEntity).where(DashboardEntity.is_active == True))
+        result = await self.session.execute(select(self.model).where(self.model.is_active == True))
         return result.scalars().all()
     
     async def get_component_by_id(self, component_id: int) -> Optional[DashboardComponentEntity]:
@@ -99,19 +101,21 @@ class DashboardRepositoryImpl(DashboardRepository):
             config=kwargs.get('config')
         )
         self.session.add(component)
-        await self.session.commit()
+        await self.session.flush()
+        await self.session.refresh(component)
         return component
     
     async def update_component(self, component: DashboardComponentEntity) -> DashboardComponentEntity:
         """Update an existing component"""
         self.session.add(component)
-        await self.session.commit()
+        await self.session.flush()
+        await self.session.refresh(component)
         return component
     
     async def delete_component(self, component: DashboardComponentEntity) -> None:
         """Delete a component"""
         await self.session.delete(component)
-        await self.session.commit()
+        await self.session.flush()
     
     async def get_layout_by_component(self, component_id: int) -> Optional[ComponentLayoutEntity]:
         """Get layout for a specific component"""
@@ -143,7 +147,8 @@ class DashboardRepositoryImpl(DashboardRepository):
             )
             
         self.session.add(layout)
-        await self.session.commit()
+        await self.session.flush()
+        await self.session.refresh(layout)
         return layout
     
     async def get_templates_by_component(self, component_id: int, locale: str = None) -> List[ContentTemplateEntity]:
@@ -167,23 +172,25 @@ class DashboardRepositoryImpl(DashboardRepository):
             variables=kwargs.get('variables')
         )
         self.session.add(template)
-        await self.session.commit()
+        await self.session.flush()
+        await self.session.refresh(template)
         return template
     
     async def update_template(self, template: ContentTemplateEntity) -> ContentTemplateEntity:
         """Update a content template"""
         self.session.add(template)
-        await self.session.commit()
+        await self.session.flush()
+        await self.session.refresh(template)
         return template
     
     async def delete_template(self, template: ContentTemplateEntity) -> None:
         """Delete a content template"""
         await self.session.delete(template)
-        await self.session.commit()
+        await self.session.flush()
     
     async def get_all_dashboard_types(self) -> List[str]:
         """Get all available dashboard types"""
-        query = select(DashboardEntity.dashboard_type.distinct())
+        query = select(self.model.dashboard_type.distinct())
         result = await self.session.execute(query)
         return [row[0] for row in result.fetchall()]
     

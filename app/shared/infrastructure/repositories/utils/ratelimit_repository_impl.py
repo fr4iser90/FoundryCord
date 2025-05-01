@@ -1,22 +1,23 @@
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.shared.infrastructure.models import RateLimitEntity
+from app.shared.infrastructure.repositories.base_repository_impl import BaseRepositoryImpl
 from typing import Optional, List
 from datetime import datetime
 
-class RateLimitRepositoryImpl:
+class RateLimitRepositoryImpl(BaseRepositoryImpl[RateLimitEntity]):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(RateLimitEntity, session)
     
     async def get_by_id(self, rate_limit_id: int) -> Optional[RateLimitEntity]:
-        result = await self.session.execute(select(RateLimitEntity).where(RateLimitEntity.id == rate_limit_id))
+        result = await self.session.execute(select(self.model).where(self.model.id == rate_limit_id))
         return result.scalar_one_or_none()
     
     async def get_by_user_and_command(self, user_id: str, command_type: str) -> Optional[RateLimitEntity]:
         result = await self.session.execute(
-            select(RateLimitEntity).where(
-                RateLimitEntity.user_id == user_id,
-                RateLimitEntity.command_type == command_type
+            select(self.model).where(
+                self.model.user_id == user_id,
+                self.model.command_type == command_type
             )
         )
         return result.scalar_one_or_none()
@@ -24,9 +25,9 @@ class RateLimitRepositoryImpl:
     async def get_blocked_commands(self, user_id: str) -> List[RateLimitEntity]:
         now = datetime.utcnow()
         result = await self.session.execute(
-            select(RateLimitEntity).where(
-                RateLimitEntity.user_id == user_id,
-                RateLimitEntity.blocked_until > now
+            select(self.model).where(
+                self.model.user_id == user_id,
+                self.model.blocked_until > now
             )
         )
         return result.scalars().all()
@@ -50,7 +51,8 @@ class RateLimitRepositoryImpl:
             )
             self.session.add(rate_limit)
             
-        await self.session.commit()
+        await self.session.flush()
+        await self.session.refresh(rate_limit)
         return rate_limit
     
     async def set_block(self, user_id: str, command_type: str, blocked_until: datetime) -> RateLimitEntity:
@@ -58,7 +60,8 @@ class RateLimitRepositoryImpl:
         if rate_limit:
             rate_limit.blocked_until = blocked_until
             self.session.add(rate_limit)
-            await self.session.commit()
+            await self.session.flush()
+            await self.session.refresh(rate_limit)
             return rate_limit
         else:
             return await self.create_or_update(
@@ -72,7 +75,8 @@ class RateLimitRepositoryImpl:
         if rate_limit:
             rate_limit.blocked_until = None
             self.session.add(rate_limit)
-            await self.session.commit()
+            await self.session.flush()
+            await self.session.refresh(rate_limit)
             return rate_limit
         return None
     
@@ -81,10 +85,10 @@ class RateLimitRepositoryImpl:
         if rate_limit:
             rate_limit.attempt_count = 0
             self.session.add(rate_limit)
-            await self.session.commit()
+            await self.session.flush()
+            await self.session.refresh(rate_limit)
             return rate_limit
         return None
     
     async def delete(self, rate_limit: RateLimitEntity) -> None:
-        await self.session.delete(rate_limit)
-        await self.session.commit()
+        await super().delete(rate_limit)

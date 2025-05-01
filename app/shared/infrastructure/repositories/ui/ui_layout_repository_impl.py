@@ -6,22 +6,23 @@ import logging
 
 from app.shared.domain.repositories.ui.ui_layout_repository import UILayoutRepository
 from app.shared.infrastructure.models.ui.ui_layout_entity import UILayoutEntity
+from app.shared.infrastructure.repositories.base_repository_impl import BaseRepositoryImpl
 
 logger = logging.getLogger(__name__)
 
-class UILayoutRepositoryImpl(UILayoutRepository):
+class UILayoutRepositoryImpl(BaseRepositoryImpl[UILayoutEntity], UILayoutRepository):
     """
     Concrete implementation of the UILayoutRepository interface using SQLAlchemy.
     """
 
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(UILayoutEntity, session)
 
     async def get_layout(self, user_id: int, page_identifier: str) -> Optional[UILayoutEntity]:
         """Retrieves the layout entity for a specific user and page identifier."""
         try:
             result = await self.session.execute(
-                select(UILayoutEntity)
+                select(self.model)
                 .filter_by(user_id=user_id, page_identifier=page_identifier)
             )
             return result.scalars().first()
@@ -35,7 +36,7 @@ class UILayoutRepositoryImpl(UILayoutRepository):
     async def list_layouts(self, user_id: int, guild_id: Optional[str] = None, scope: Optional[str] = None) -> List[UILayoutEntity]:
         """Retrieves a list of layout entities based on filter criteria."""
         try:
-            stmt = select(UILayoutEntity).filter_by(user_id=user_id)
+            stmt = select(self.model).filter_by(user_id=user_id)
 
             # TODO: Implement filtering logic based on guild_id and scope
             # This might involve parsing the page_identifier or adding dedicated columns
@@ -69,11 +70,12 @@ class UILayoutRepositoryImpl(UILayoutRepository):
                 existing_layout.layout_data = layout_data
                 # updated_at is handled by onupdate
                 self.session.add(existing_layout)
-                await self.session.commit() # Commit the transaction
+                await self.session.flush()
+                await self.session.refresh(existing_layout)
                 logger.info(f"Updated layout for user {user_id}, page {page_identifier}")
                 # Consider refreshing if needed after commit, depends on session config
                 # await self.session.refresh(existing_layout)
-                return existing_layout # Return the committed entity
+                return existing_layout # Return the updated entity
             else:
                 # Create new layout
                 new_layout = UILayoutEntity(
@@ -82,11 +84,12 @@ class UILayoutRepositoryImpl(UILayoutRepository):
                     layout_data=layout_data
                 )
                 self.session.add(new_layout)
-                await self.session.commit() # Commit the transaction
+                await self.session.flush()
+                await self.session.refresh(new_layout)
                 logger.info(f"Created new layout for user {user_id}, page {page_identifier}")
                 # Consider refreshing if needed after commit
                 # await self.session.refresh(new_layout)
-                return new_layout # Return the committed entity
+                return new_layout # Return the created entity
 
         except SQLAlchemyError as e:
             logger.error(f"Database error saving layout for user {user_id}, page {page_identifier}: {e}")
@@ -102,8 +105,7 @@ class UILayoutRepositoryImpl(UILayoutRepository):
         try:
             layout_to_delete = await self.get_layout(user_id, page_identifier)
             if layout_to_delete:
-                await self.session.delete(layout_to_delete)
-                await self.session.commit() # Commit the deletion
+                await super().delete(layout_to_delete)
                 logger.info(f"Deleted layout for user {user_id}, page {page_identifier}")
                 return True
             else:

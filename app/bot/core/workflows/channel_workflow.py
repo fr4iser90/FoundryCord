@@ -16,6 +16,8 @@ from app.shared.domain.repositories.discord import GuildConfigRepository
 from app.shared.infrastructure.repositories.discord import ChannelRepositoryImpl
 from app.bot.application.services.channel.channel_setup_service import ChannelSetupService
 from app.shared.infrastructure.repositories.discord.guild_config_repository_impl import GuildConfigRepositoryImpl
+from app.shared.infrastructure.repositories.discord.category_repository_impl import CategoryRepositoryImpl
+from app.bot.application.services.channel.channel_builder import ChannelBuilder
 
 logger = get_bot_logger()
 
@@ -26,8 +28,6 @@ class ChannelWorkflow(BaseWorkflow):
         super().__init__("channel")
         self.category_workflow = category_workflow
         self.database_workflow = database_workflow
-        self.channel_repository = None
-        self.channel_setup_service = None
         self.bot = bot
         
         # Define dependencies
@@ -42,43 +42,8 @@ class ChannelWorkflow(BaseWorkflow):
         try:
             logger.info("Initializing channel workflow")
             
-            # Get database service from the database workflow
-            db_service = self.database_workflow.get_db_service()
-            if not db_service:
-                logger.error("Database service not available, cannot initialize channel workflow")
-                return False
-            
-            # Get category setup service from the category workflow
-            category_service = self.category_workflow.get_category_setup_service()
-            if not category_service:
-                logger.error("Category service not available, cannot initialize channel workflow")
-                return False
-            
-            # Get category repository from the category workflow
-            category_repository = self.category_workflow.get_category_repository()
-            if not category_repository:
-                logger.error("Category repository not available, cannot initialize channel workflow")
-                return False
-            
-            # Create repository and builder
-            from app.bot.application.services.channel.channel_builder import ChannelBuilder
-            
-            self.channel_repository = ChannelRepositoryImpl(db_service)
-            
-            # Pass both repositories to the channel builder
-            channel_builder = ChannelBuilder(self.channel_repository, category_repository)
-            
-            # Create the channel setup service with all required dependencies
-            self.channel_setup_service = ChannelSetupService(
-                self.channel_repository,
-                channel_builder,
-                category_service
-            )
-            
-            # Initialize cache as empty (it will be populated by template application)
-            self.channel_setup_service.channels_cache = {}
-            logger.info("Channel workflow initialized globally (skipping old data load). Cache is empty.")
-            return True
+            logger.info("Channel workflow initialized globally (no services/repos stored).")
+            return True # Return True outside the try/except for session
             
         except Exception as e:
             logger.error(f"Channel workflow initialization failed: {e}", exc_info=True)
@@ -103,26 +68,25 @@ class ChannelWorkflow(BaseWorkflow):
                 self.guild_status[guild_id] = WorkflowStatus.FAILED
                 return False
                 
-            # Check if channels are enabled for this guild
-            async with session_context() as session:
-                # Use the implementation class
-                guild_config_repo = GuildConfigRepositoryImpl(session)
-                config = await guild_config_repo.get_by_guild_id(str(guild.id))
-                
-                if not config or not config.enable_channels:
-                    logger.info(f"Channels are disabled for guild {guild_id}")
-                    self.guild_status[guild_id] = WorkflowStatus.DISABLED
-                    return True
+            # Check if channels are enabled for this guild (Now done via GuildConfig repo)
+            try:
+                async with session_context() as session:
+                    guild_config_repo = GuildConfigRepositoryImpl(session)
+                    config = await guild_config_repo.get_by_guild_id(str(guild.id))
+                    
+                    if not config:
+                         logger.warning(f"No GuildConfig found for guild {guild_id}, cannot determine channel settings (assuming enabled)." )
+                         
+            except Exception as session_err:
+                 logger.error(f"Failed to get session or check guild config in ChannelWorkflow for guild {guild_id}: {session_err}", exc_info=True)
+                 self.guild_status[guild_id] = WorkflowStatus.FAILED
+                 return False
             
-            # --- Temporarily Disable Old Logic ---
+            # --- Temporarily Disable Old Logic (Already disabled) ---
             logger.warning(f"ChannelWorkflow.initialize_for_guild: Old setup/sync logic for guild {guild_id} is disabled. Structure now comes from templates.")
             # # Set up channels (OLD LOGIC - accesses discord_channels)
             # channels = await self.setup_channels(guild)
-            # if not channels:
-            #     logger.error(f"Failed to set up channels for guild {guild_id}")
-            #     self.guild_status[guild_id] = WorkflowStatus.FAILED
-            #     return False
-                
+            # ...
             # # Sync with Discord (OLD LOGIC)
             # await self.sync_with_discord(guild)
             # --- End Disable ---
@@ -141,56 +105,34 @@ class ChannelWorkflow(BaseWorkflow):
         logger.info("Cleaning up channel workflow")
         await super().cleanup()
         
-        # Clear channel cache
-        if self.channel_setup_service:
-            self.channel_setup_service.channels_cache.clear()
-        
     async def setup_channels(self, guild: nextcord.Guild) -> Dict[str, nextcord.TextChannel]:
-        """Set up all channels for the guild"""
-        if not self.channel_setup_service:
-            logger.error("Channel setup service not initialized")
+        """Set up all channels for the guild (Now likely obsolete - Template handles this)"""
+        logger.warning("ChannelWorkflow.setup_channels called, but this logic is likely obsolete due to template application.")
+        try:
+             async with session_context() as session:
+                  channel_repo = ChannelRepositoryImpl(session)
+                  category_repo = CategoryRepositoryImpl(session)
+                  builder = ChannelBuilder(channel_repo, category_repo)
+                  setup_service = ChannelSetupService(builder)
+                  return await setup_service.setup_channels(guild, session)
+        except Exception as e:
+            logger.error(f"Error in setup_channels: {e}", exc_info=True)
             return {}
-            
-        # Check if this workflow is enabled for this guild
-        async with session_context() as session:
-            # Use the implementation class instead of the abstract base class
-            from app.shared.infrastructure.repositories.discord.guild_config_repository_impl import GuildConfigRepositoryImpl
-            guild_config_repo = GuildConfigRepositoryImpl(session)
-            config = await guild_config_repo.get_by_guild_id(str(guild.id))
-            
-            if not config or not config.enable_channels:
-                logger.info(f"Channel workflow is disabled for guild: {guild.name}")
-                return {}
-        
-        logger.info(f"Setting up channels for guild: {guild.name}")
-        return await self.channel_setup_service.setup_channels(guild)
     
     async def sync_with_discord(self, guild: nextcord.Guild) -> None:
-        """Sync channels with existing Discord channels"""
-        if not self.channel_setup_service:
-            logger.error("Channel setup service not initialized")
-            return
-            
-        logger.info(f"Syncing channels with Discord for guild: {guild.name}")
-        await self.channel_setup_service.sync_with_discord(guild)
-
-    def get_channel_repository(self):
-        """Get the channel repository"""
-        return self.channel_repository
-    
-    def get_channel_setup_service(self):
-        """Get the channel setup service"""
-        return self.channel_setup_service
+        """Sync channels with existing Discord channels (Now likely obsolete)"""
+        logger.warning("ChannelWorkflow.sync_with_discord called, but this logic is likely obsolete due to template application.")
+        try:
+             async with session_context() as session:
+                  channel_repo = ChannelRepositoryImpl(session)
+                  category_repo = CategoryRepositoryImpl(session)
+                  builder = ChannelBuilder(channel_repo, category_repo)
+                  setup_service = ChannelSetupService(builder)
+                  await setup_service.sync_with_discord(guild, session)
+        except Exception as e:
+            logger.error(f"Error in sync_with_discord: {e}", exc_info=True)
         
     async def cleanup_guild(self, guild_id: str) -> None:
         """Cleanup resources for a specific guild"""
         logger.info(f"Cleaning up channel workflow for guild {guild_id}")
         await super().cleanup_guild(guild_id)
-        
-        # Clear any cached data for this guild
-        if self.channel_setup_service and hasattr(self.channel_setup_service, 'channels_cache'):
-            # Remove any guild-specific channels from cache
-            self.channel_setup_service.channels_cache = {
-                name: data for name, data in self.channel_setup_service.channels_cache.items()
-                if not data.get('guild_id') or data.get('guild_id') != guild_id
-            }

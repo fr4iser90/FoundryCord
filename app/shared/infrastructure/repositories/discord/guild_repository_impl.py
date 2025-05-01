@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.shared.infrastructure.models.discord.entities.guild_entity import GuildEntity
+from app.shared.infrastructure.repositories.base_repository_impl import BaseRepositoryImpl
 from app.shared.domain.repositories.discord.guild_repository import GuildRepository
 from typing import Optional, List, Dict, Any
 import json
@@ -12,28 +13,28 @@ ACCESS_APPROVED = "approved"
 ACCESS_REJECTED = "rejected"
 ACCESS_SUSPENDED = "suspended"
 
-class GuildRepositoryImpl(GuildRepository):
+class GuildRepositoryImpl(BaseRepositoryImpl[GuildEntity], GuildRepository):
     """Implementation of the Guild repository for Discord server management"""
     
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(GuildEntity, session)
     
     async def get_by_id(self, guild_id: str) -> Optional[GuildEntity]:
         """Get a guild by its Discord ID"""
         result = await self.session.execute(
-            select(GuildEntity).where(GuildEntity.guild_id == guild_id)
+            select(self.model).where(self.model.guild_id == guild_id)
         )
         return result.scalar_one_or_none()
     
     async def get_all(self) -> List[GuildEntity]:
         """Get all guilds"""
-        result = await self.session.execute(select(GuildEntity))
+        result = await self.session.execute(select(self.model))
         return result.scalars().all()
     
     async def get_by_access_status(self, status: str) -> List[GuildEntity]:
         """Get all guilds with a specific access status"""
         result = await self.session.execute(
-            select(GuildEntity).where(GuildEntity.access_status == status)
+            select(self.model).where(self.model.access_status == status)
         )
         return result.scalars().all()
     
@@ -50,21 +51,22 @@ class GuildRepositoryImpl(GuildRepository):
             settings=kwargs.get('settings')
         )
         self.session.add(guild)
-        await self.session.commit()
+        await self.session.flush()
+        await self.session.refresh(guild)
         return guild
     
     async def update(self, guild: GuildEntity) -> GuildEntity:
         """Update an existing guild"""
         self.session.add(guild)
-        await self.session.commit()
+        await self.session.flush()
+        await self.session.refresh(guild)
         return guild
     
     async def delete(self, guild_id: str) -> None:
-        """Delete a guild"""
+        """Delete a guild by its Discord ID."""
         guild = await self.get_by_id(guild_id)
         if guild:
-            await self.session.delete(guild)
-            await self.session.commit()
+            await super().delete(guild)
     
     async def create_or_update(self, guild_id: str, name: str, **kwargs) -> GuildEntity:
         """Create a new guild or update if it already exists"""
@@ -83,7 +85,8 @@ class GuildRepositoryImpl(GuildRepository):
                 existing.access_status = kwargs['access_status']
                 
             self.session.add(existing)
-            await self.session.commit()
+            await self.session.flush()
+            await self.session.refresh(existing)
             return existing
         else:
             # Create new guild with default PENDING status if not specified
@@ -98,8 +101,7 @@ class GuildRepositoryImpl(GuildRepository):
             guild.access_status = status
             guild.access_reviewed_at = datetime.utcnow()
             guild.access_reviewed_by = reviewer_id
-            await self.session.commit()
-            return guild
+            return await self.update(guild)
         return None
     
     async def update_member_count(self, guild_id: str, count: int) -> Optional[GuildEntity]:
@@ -107,8 +109,7 @@ class GuildRepositoryImpl(GuildRepository):
         guild = await self.get_by_id(guild_id)
         if guild:
             guild.member_count = count
-            await self.session.commit()
-            return guild
+            return await self.update(guild)
         return None
     
     async def update_settings(self, guild_id: str, settings: Dict[str, Any]) -> Optional[GuildEntity]:
@@ -116,8 +117,7 @@ class GuildRepositoryImpl(GuildRepository):
         guild = await self.get_by_id(guild_id)
         if guild:
             guild.settings = settings
-            await self.session.commit()
-            return guild
+            return await self.update(guild)
         return None
     
     async def get_active_guilds(self) -> List[GuildEntity]:

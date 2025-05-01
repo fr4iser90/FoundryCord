@@ -3,38 +3,60 @@ import nextcord
 from app.shared.infrastructure.models.discord.entities.category_entity import CategoryEntity
 from app.shared.domain.repositories.discord.category_repository import CategoryRepository
 import logging
+from app.shared.infrastructure.repositories.discord.category_repository_impl import CategoryRepositoryImpl
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 logger = logging.getLogger("homelab.bot")
 
 class CategoryBuilder:
     """Service for building Discord categories from database models"""
     
-    def __init__(self, category_repository: CategoryRepository):
-        """Initialize the category builder with a repository"""
-        self.category_repository = category_repository
+    def __init__(self):
+        """Initialize the category builder"""
+        pass
     
     async def create_category(
         self, guild: nextcord.Guild, 
-        name: str, 
-        position: int = 0, 
-        permissions: List[Dict] = None
+        category_model: CategoryEntity,
+        session: AsyncSession
     ) -> Optional[nextcord.CategoryChannel]:
-        """Create a new category in the guild"""
+        """Create a new category in the guild from a model"""
+        name = category_model.name
+        position = category_model.position
+        # Permissions need to be handled based on the model's relation
+        # Placeholder: Assume permissions are not directly passed anymore, 
+        # but accessed via the model if needed after creation or configured separately.
+        permissions_data = [] # category_model.permissions should be accessed if needed
+        
         logger.info(f"Creating category {name} at position {position}")
         
+        # Instantiate repo if needed
+        category_repo = CategoryRepositoryImpl(session)
+
         # Create category with optional permissions
         try:
             overwrites = {}
-            if permissions:
-                for perm in permissions:
-                    role = nextcord.utils.get(guild.app_roles, id=perm.get('role_id'))
+            await session.refresh(category_model, ['permissions'])
+            if hasattr(category_model, 'permissions') and category_model.permissions:
+                for perm in category_model.permissions:
+                    # Ensure role ID exists
+                    if perm.role_id is None:
+                        logger.warning(f"Skipping permission for category {name}: role_id is None")
+                        continue
+                        
+                    role = guild.get_role(perm.role_id)
                     if role:
+                        # Use getattr to safely access permission attributes
                         overwrites[role] = nextcord.PermissionOverwrite(
-                            view_channel=perm.get('view', False),
-                            send_messages=perm.get('send_messages', False),
-                            manage_messages=perm.get('manage_messages', False),
-                            manage_channels=perm.get('manage_channels', False)
+                            view_channel=getattr(perm, 'view_channel', None),
+                            send_messages=getattr(perm, 'send_messages', None),
+                            manage_messages=getattr(perm, 'manage_messages', None),
+                            manage_channels=getattr(perm, 'manage_channel', None)
+                            # Add other permissions as needed from CategoryPermissionEntity
                         )
+                    else:
+                        logger.warning(f"Role with ID {perm.role_id} not found in guild {guild.name} for category {name}")
             
             category = await guild.create_category(
                 name=name,
@@ -43,6 +65,9 @@ class CategoryBuilder:
             )
             
             logger.info(f"Created category: {name} with ID {category.id}")
+            
+            # Update DB with Discord ID using repo
+            await category_repo.update_discord_id(category_model.id, category.id)
             return category
             
         except nextcord.Forbidden:
@@ -53,40 +78,4 @@ class CategoryBuilder:
             return None
         except Exception as e:
             logger.error(f"Unexpected error creating category {name}: {e}")
-            return None
-    
-    async def setup_all_categories(self, guild: nextcord.Guild) -> List[nextcord.CategoryChannel]:
-        """Set up all enabled categories from the database"""
-        categories = self.category_repository.get_enabled_categories()
-        created_categories = []
-        
-        # Sort categories by position
-        categories.sort(key=lambda c: c.position)
-        
-        for category in categories:
-            # Skip if category is already created in Discord
-            if category.discord_id:
-                existing = nextcord.utils.get(guild.categories, id=category.discord_id)
-                if existing:
-                    created_categories.append(existing)
-                    continue
-            
-            # Create the category
-            discord_category = await self.create_category(guild, category.name, category.position, category.permissions)
-            if discord_category:
-                created_categories.append(discord_category)
-        
-        return created_categories
-    
-    async def sync_categories(self, guild: nextcord.Guild) -> None:
-        """Sync database categories with existing Discord categories"""
-        for discord_category in guild.categories:
-            # Check if category exists in database
-            category = self.category_repository.get_category_by_discord_id(discord_category.id)
-            if not category:
-                # Find by name
-                category = self.category_repository.get_category_by_name(discord_category.name)
-                if category:
-                    # Update Discord ID
-                    self.category_repository.update_discord_id(category.id, discord_category.id)
-                    print(f"Linked existing category: {discord_category.name} (ID: {discord_category.id})") 
+            return None 

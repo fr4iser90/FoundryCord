@@ -1,24 +1,25 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.shared.infrastructure.models.discord.entities.guild_config_entity import GuildConfigEntity
+from app.shared.infrastructure.repositories.base_repository_impl import BaseRepositoryImpl
 from app.shared.domain.repositories.discord.guild_config_repository import GuildConfigRepository
 from typing import Optional, List, Dict, Any
 import json
 
-class GuildConfigRepositoryImpl(GuildConfigRepository):
+class GuildConfigRepositoryImpl(BaseRepositoryImpl[GuildConfigEntity], GuildConfigRepository):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(GuildConfigEntity, session)
     
     async def get_by_guild_id(self, guild_id: str) -> Optional[GuildConfigEntity]:
         """Get configuration for a specific guild"""
         result = await self.session.execute(
-            select(GuildConfigEntity).where(GuildConfigEntity.guild_id == guild_id)
+            select(self.model).where(self.model.guild_id == guild_id)
         )
         return result.scalar_one_or_none()
     
     async def get_all(self) -> List[GuildConfigEntity]:
         """Get configurations for all guilds"""
-        result = await self.session.execute(select(GuildConfigEntity))
+        result = await self.session.execute(select(self.model))
         return result.scalars().all()
     
     async def create_or_update(self, guild_id: str, guild_name: str,
@@ -70,7 +71,10 @@ class GuildConfigRepositoryImpl(GuildConfigRepository):
             config.settings = json.dumps(settings)
 
         self.session.add(config)
-        # Commit/flush is handled by the calling context
+        # Caller might expect commit, so keeping add() only might be correct here.
+        # Let's add flush/refresh for consistency, assuming caller doesn't commit.
+        await self.session.flush()
+        await self.session.refresh(config)
         return config
         
     async def update_template_delete_unmanaged(self, guild_id: str, delete_unmanaged: bool) -> bool:
@@ -81,12 +85,10 @@ class GuildConfigRepositoryImpl(GuildConfigRepository):
         
         config.template_delete_unmanaged = delete_unmanaged
         self.session.add(config)
-        # Commit will be handled by the calling service/controller context
-        # await self.session.commit()
+        # Add flush to ensure change is sent before potential commit by caller
+        await self.session.flush()
         return True
 
     async def delete(self, config: GuildConfigEntity) -> None:
         """Delete a guild configuration"""
-        await self.session.delete(config)
-        # Commit will be handled by the calling service/controller context
-        # await self.session.commit()
+        await super().delete(config)

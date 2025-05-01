@@ -23,7 +23,6 @@ class CategoryWorkflow(BaseWorkflow):
         super().__init__("category")
         self.database_workflow = database_workflow
         self.bot = bot
-        self.category_repository = None
         self.category_service = None
         self.category_setup_service = None
         
@@ -60,22 +59,42 @@ class CategoryWorkflow(BaseWorkflow):
             # Initialize components needed later, but don't load old data
             async with session_context() as session:
                 # Still create the repository implementation
-                self.category_repository = CategoryRepositoryImpl(session)
-                logger.debug("CategoryRepositoryImpl initialized.")
+                # --- MODIFY: Create repo only if needed locally, don't store --- 
+                # self.category_repository = CategoryRepositoryImpl(session)
+                # logger.debug("CategoryRepositoryImpl initialized.")
+                # Instead, pass the session to services that need to create it.
+                # -------------------------------------------------------------
 
                 # Create a simplified builder and service (if needed by other components)
                 # These might need further refactoring if they still rely on old structures.
-                category_builder = CategoryBuilder(self.category_repository)
+                # --- MODIFY: Pass session to builder/service if they need to create repo ---
+                # Option 1: Pass session (cleaner)
+                # category_builder = CategoryBuilder(session)
+                # Option 2: Pass repo instance created here (less ideal)
+                # temp_repo = CategoryRepositoryImpl(session) # Create temporary instance if needed NOW
+                # --- FIX: CategoryBuilder now takes no arguments --- 
+                category_builder = CategoryBuilder()
+                # ---------------------------------------------------
                 self.category_setup_service = CategorySetupService(
-                    self.category_repository,
+                    # --- MODIFY: Pass session or repo instance? ---
+                    # Option 1: Modify Service to accept session
+                    # session,
+                    # Option 2: Pass temporary repo instance (requires service adjustment?)
+                    # --- FIX: CategorySetupService takes CategoryBuilder, not repo --- 
+                    # temp_repo, # Assuming Service takes repo instance for now - INCORRECT
+                    # ------------------------------------------
                     category_builder
                 )
                 # Initialize cache as empty
-                self.category_setup_service.categories_cache = {}
-                logger.debug("CategorySetupService initialized with empty cache.")
+                # --- REMOVE Cache initialization here - Service handles it --- 
+                # self.category_setup_service.categories_cache = {}
+                # -----------------------------------------------------------
+                logger.debug("CategorySetupService initialized (internally stateless). Cache removed from workflow.")
 
                 # Maintain backwards compatibility if needed
-                self.category_service = self.category_setup_service
+                # --- REMOVE old service assignment --- 
+                # self.category_service = self.category_setup_service
+                # -----------------------------------
 
             logger.info("Category workflow initialized globally (skipping old data load).")
             return True
@@ -125,17 +144,15 @@ class CategoryWorkflow(BaseWorkflow):
             self.guild_status[guild_id] = WorkflowStatus.FAILED
             return False
     
-    def get_category_repository(self):
-        """Get the category repository"""
-        return self.category_repository
-    
     def get_category_service(self):
         """Get the category service (backward compatibility)"""
+        # This might be broken now as service might not have a persistent repo
         return self.category_service
     
     def get_category_setup_service(self):
         """Get the category setup service"""
-        return self.category_service
+        # This might be broken now as service might not have a persistent repo
+        return self.category_service # Should be self.category_setup_service?
 
     async def setup_categories(self, guild):
         """Set up all categories for the guild"""
@@ -144,7 +161,22 @@ class CategoryWorkflow(BaseWorkflow):
             return {}
         
         logger.info(f"Setting up categories for guild: {guild.name}")
-        return await self.category_setup_service.setup_categories(guild)
+        # --- MODIFY: setup_categories likely needs a session now --- 
+        # It needs to create repo instances. Pass session down?
+        # return await self.category_setup_service.setup_categories(guild) 
+        try:
+            async with session_context() as session:
+                # --- FIX: Instantiate service within session --- 
+                # Assuming setup_categories method in service now accepts session
+                # return await self.category_setup_service.setup_categories(guild, session)
+                builder = CategoryBuilder()
+                setup_service = CategorySetupService(builder)
+                return await setup_service.setup_categories(guild, session)
+                # ------------------------------------------------
+        except Exception as e:
+             logger.error(f"Error during setup_categories: {e}", exc_info=True)
+             return {}
+        # ---------------------------------------------------------
         
     async def sync_with_discord(self, guild: nextcord.Guild) -> None:
         """Sync categories with existing Discord categories"""
@@ -153,20 +185,35 @@ class CategoryWorkflow(BaseWorkflow):
             return
             
         logger.info(f"Syncing categories with Discord for guild: {guild.name}")
-        await self.category_setup_service.sync_with_discord(guild)
-        
+        # --- MODIFY: sync_with_discord likely needs a session now --- 
+        # return await self.category_setup_service.sync_with_discord(guild)
+        try:
+            async with session_context() as session:
+                # --- FIX: Instantiate service within session --- 
+                # Assuming sync_with_discord method in service now accepts session
+                # await self.category_setup_service.sync_with_discord(guild, session)
+                builder = CategoryBuilder()
+                setup_service = CategorySetupService(builder)
+                await setup_service.sync_with_discord(guild, session)
+                # -----------------------------------------------
+        except Exception as e:
+             logger.error(f"Error during sync_with_discord: {e}", exc_info=True)
+        # ---------------------------------------------------------
+
     async def cleanup_guild(self, guild_id: str) -> None:
         """Cleanup resources for a specific guild"""
         logger.info(f"Cleaning up category workflow for guild {guild_id}")
         await super().cleanup_guild(guild_id)
         
         # Clear any cached data for this guild
-        if self.category_setup_service and hasattr(self.category_setup_service, 'categories_cache'):
-            # Remove any guild-specific categories from cache
-            self.category_setup_service.categories_cache = {
-                name: data for name, data in self.category_setup_service.categories_cache.items()
-                if not data.get('guild_id') or data.get('guild_id') != guild_id
-            }
+        # --- REMOVE Cache manipulation - Service is stateless --- 
+        # if self.category_setup_service and hasattr(self.category_setup_service, 'categories_cache'):
+        #     # Remove any guild-specific categories from cache
+        #     self.category_setup_service.categories_cache = {
+        #         name: data for name, data in self.category_setup_service.categories_cache.items()
+        #         if not data.get('guild_id') or data.get('guild_id') != guild_id
+        #     }
+        # -----------------------------------------------------
             
     async def cleanup(self) -> None:
         """Cleanup all resources"""
@@ -174,5 +221,7 @@ class CategoryWorkflow(BaseWorkflow):
         await super().cleanup()
         
         # Clear all caches
-        if self.category_setup_service:
-            self.category_setup_service.categories_cache.clear()
+        # --- REMOVE Cache clear - Service is stateless --- 
+        # if self.category_setup_service:
+        #     self.category_setup_service.categories_cache.clear()
+        # --------------------------------------------------

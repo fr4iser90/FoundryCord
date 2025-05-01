@@ -16,8 +16,6 @@ async def initialize(self) -> bool:
         async with session_context() as session:
             guild_repo = GuildRepositoryImpl(session)
             guild_config_repo = GuildConfigRepositoryImpl(session)
-            self.guild_repo = guild_repo
-            self.guild_config_repo = guild_config_repo
             
             guilds = await guild_repo.get_all()
             logger.info(f"[Initialize] Found {len(guilds)} guilds in database")

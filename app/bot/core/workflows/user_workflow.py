@@ -6,6 +6,8 @@ from app.shared.domain.repositories.auth.user_repository import UserRepository
 from .base_workflow import BaseWorkflow, WorkflowStatus
 from app.shared.interface.logging.api import get_bot_logger
 from sqlalchemy import select
+from app.shared.infrastructure.database.session import session_context
+from app.shared.infrastructure.repositories.auth.user_repository_impl import UserRepositoryImpl
 
 logger = get_bot_logger()
 
@@ -15,7 +17,6 @@ class UserWorkflow(BaseWorkflow):
     def __init__(self, database_workflow, bot=None):
         super().__init__("user")
         self.database_workflow = database_workflow
-        self.user_repository = None
         self.bot = bot
         
         # Add dependencies
@@ -29,13 +30,6 @@ class UserWorkflow(BaseWorkflow):
         logger.info("Initializing user workflow")
         
         try:
-            # Initialize user repository
-            from app.shared.infrastructure.repositories.auth.user_repository_impl import UserRepositoryImpl
-            from app.shared.infrastructure.database.session import session_context
-            
-            async with session_context() as session:
-                self.user_repository = UserRepositoryImpl(session)
-            
             # Mark all guilds as pending initially
             if hasattr(self, 'bot') and self.bot:
                 for guild in self.bot.guilds:
@@ -84,7 +78,6 @@ class UserWorkflow(BaseWorkflow):
         """Synchronize guild data to database"""
         try:
             from app.shared.infrastructure.models.discord import GuildEntity
-            from app.shared.infrastructure.database.session import session_context
             
             async with session_context() as session:
                 # Check if guild exists
@@ -129,30 +122,33 @@ class UserWorkflow(BaseWorkflow):
             skipped_count = 0
             error_count = 0
             
-            for member in members:
-                try:             
-                    user_data = {
-                        'discord_id': member.id,
-                        'username': member.name,
-                        'discriminator': member.discriminator,
-                        'guild_id': str(guild.id),  # Convert to string for consistency
-                        'is_bot': member.bot,
-                        'joined_at': member.joined_at,
-                        'nickname': member.nick,
-                        'avatar': str(member.avatar.url) if member.avatar else "https://cdn.discordapp.com/embed/avatars/0.png"
-                    }
-                    
-                    if member.bot:
-                        skipped_count += 1
-                        continue
-                        
-                    await self.user_repository.create_or_update(user_data)
-                    synced_count += 1
-                    
-                except Exception as e:
-                    error_count += 1
-                    logger.error(f"Failed to sync member {member.name}: {str(e)}")
-                    continue
+            async with session_context() as session:
+                 # Instantiate repo inside session
+                 user_repo = UserRepositoryImpl(session)
+                 for member in members:
+                     try:             
+                         user_data = {
+                             'discord_id': member.id,
+                             'username': member.name,
+                             'discriminator': member.discriminator,
+                             'guild_id': str(guild.id),  # Convert to string for consistency
+                             'is_bot': member.bot,
+                             'joined_at': member.joined_at,
+                             'nickname': member.nick,
+                             'avatar': str(member.avatar.url) if member.avatar else "https://cdn.discordapp.com/embed/avatars/0.png"
+                         }
+                         
+                         if member.bot:
+                             skipped_count += 1
+                             continue
+                         
+                         await user_repo.create_or_update(user_data)
+                         synced_count += 1
+                         
+                     except Exception as e:
+                         error_count += 1
+                         logger.error(f"Failed to sync member {member.name}: {str(e)}")
+                         continue
             
             # Log final statistics
             logger.info(f"Guild {guild.name} sync complete:")

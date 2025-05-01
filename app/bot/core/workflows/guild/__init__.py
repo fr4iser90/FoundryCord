@@ -31,8 +31,6 @@ class GuildWorkflow(BaseWorkflow):
         self.requires_guild_approval = True
         self._guild_statuses: Dict[str, WorkflowStatus] = {}
         self._guild_access_statuses: Dict[str, str] = {}
-        self.guild_repo = None
-        self.guild_config_repo = None
         
         # Add database dependency
         self.add_dependency("database")

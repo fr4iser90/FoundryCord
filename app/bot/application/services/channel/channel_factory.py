@@ -6,28 +6,33 @@ from app.shared.infrastructure.models.discord.enums.channels import ChannelType,
 from app.shared.domain.repositories.discord.channel_repository import ChannelRepository
 from app.shared.domain.repositories.discord.category_repository import CategoryRepository
 from app.bot.application.services.channel.channel_builder import ChannelBuilder
+from app.shared.infrastructure.repositories.discord.channel_repository_impl import ChannelRepositoryImpl
+from app.shared.infrastructure.repositories.discord.category_repository_impl import CategoryRepositoryImpl
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 
 class ChannelFactory:
     """Factory for creating specialized channels with predefined configurations"""
     
-    def __init__(self, channel_repository: ChannelRepository, 
-                 category_repository: CategoryRepository,
-                 channel_builder: ChannelBuilder):
-        self.channel_repository = channel_repository
-        self.category_repository = category_repository
-        self.channel_builder = channel_builder
+    def __init__(self):
+        pass
     
     async def create_game_server_channel(
         self, 
         guild: nextcord.Guild, 
         game_name: str,
+        session: AsyncSession,
         category_name: str = "GAME SERVERS",
         permissions: List[ChannelPermissionEntity] = None,
         metadata_json: Dict[str, Any] = None
     ) -> Optional[nextcord.TextChannel]:
         """Create a channel for a specific game server"""
+        
+        channel_repo = ChannelRepositoryImpl(session)
+        category_repo = CategoryRepositoryImpl(session)
+        channel_builder = ChannelBuilder()
         
         if permissions is None:
             permissions = []
@@ -38,19 +43,18 @@ class ChannelFactory:
         metadata_json["game_type"] = game_name.lower()
         metadata_json["icon"] = self._get_game_icon(game_name)
         
-        # Find category
-        category = self.category_repository.get_category_by_name(category_name)
+        cat_result = await session.execute(select(CategoryEntity).where(CategoryEntity.name == category_name))
+        category = cat_result.scalars().first()
         if not category:
             logger.error(f"Category not found: {category_name}")
             return None
         
-        # Get the last position in the category
-        existing_channels = self.channel_repository.get_channels_by_category_id(category.id)
+        chan_result = await session.execute(select(ChannelEntity).where(ChannelEntity.category_id == category.id))
+        existing_channels = chan_result.scalars().all()
         position = 0
         if existing_channels:
             position = max(ch.position for ch in existing_channels) + 1
         
-        # Create a game server channel model
         channel = ChannelEntity(
             name=game_name.lower(),
             description=f"{game_name} server channel",
@@ -64,30 +68,30 @@ class ChannelFactory:
             metadata_json=metadata_json
         )
         
-        # First check if this is an update or a new channel
-        existing = self.channel_repository.get_channel_by_name_and_category(
-            channel.name, 
-            channel.category_id
-        )
+        exist_result = await session.execute(select(ChannelEntity).where(ChannelEntity.name == channel.name, ChannelEntity.category_id == channel.category_id))
+        existing = exist_result.scalars().first()
         if existing:
-            # Update existing channel
             channel.id = existing.id
-        saved_channel = self.channel_repository.save_channel(channel)
+        saved_channel = await channel_repo.save_channel(channel)
         
-        # Create in Discord
-        discord_channel = await self.channel_builder.create_channel(guild, saved_channel)
+        discord_channel = await channel_builder.create_channel(guild, saved_channel, session)
         return discord_channel
     
     async def create_project_channel(
         self, 
         guild: nextcord.Guild, 
         project_name: str,
+        session: AsyncSession,
         description: str = None,
         category_name: str = "PROJECTS",
         permissions: List[ChannelPermissionEntity] = None,
         metadata_json: Dict[str, Any] = None
     ) -> Optional[nextcord.TextChannel]:
         """Create a channel for a specific project"""
+        
+        channel_repo = ChannelRepositoryImpl(session)
+        category_repo = CategoryRepositoryImpl(session)
+        channel_builder = ChannelBuilder()
         
         if permissions is None:
             permissions = []
@@ -98,19 +102,18 @@ class ChannelFactory:
         metadata_json["project_name"] = project_name
         metadata_json["icon"] = "🛠️"
         
-        # Find category
-        category = self.category_repository.get_category_by_name(category_name)
+        cat_result = await session.execute(select(CategoryEntity).where(CategoryEntity.name == category_name))
+        category = cat_result.scalars().first()
         if not category:
             logger.error(f"Category not found: {category_name}")
             return None
         
-        # Get the last position in the category
-        existing_channels = self.channel_repository.get_channels_by_category_id(category.id)
+        chan_result = await session.execute(select(ChannelEntity).where(ChannelEntity.category_id == category.id))
+        existing_channels = chan_result.scalars().all()
         position = 0
         if existing_channels:
             position = max(ch.position for ch in existing_channels) + 1
         
-        # Create a project channel model
         channel = ChannelEntity(
             name=f"project-{project_name.lower().replace(' ', '-')}",
             description=description or f"Discussion for {project_name} project",
@@ -124,18 +127,13 @@ class ChannelFactory:
             metadata_json=metadata_json
         )
         
-        # First check if this is an update or a new channel
-        existing = self.channel_repository.get_channel_by_name_and_category(
-            channel.name, 
-            channel.category_id
-        )
+        exist_result = await session.execute(select(ChannelEntity).where(ChannelEntity.name == channel.name, ChannelEntity.category_id == channel.category_id))
+        existing = exist_result.scalars().first()
         if existing:
-            # Update existing channel
             channel.id = existing.id
-        saved_channel = self.channel_repository.save_channel(channel)
+        saved_channel = await channel_repo.save_channel(channel)
         
-        # Create in Discord
-        discord_channel = await self.channel_builder.create_channel(guild, saved_channel)
+        discord_channel = await channel_builder.create_channel(guild, saved_channel, session)
         return discord_channel
     
     async def create_forum_channel(
@@ -144,12 +142,17 @@ class ChannelFactory:
         name: str,
         description: str,
         category_name: str,
+        session: AsyncSession,
         available_tags: List[Dict[str, Any]] = None,
         require_tag: bool = True,
         permissions: List[ChannelPermissionEntity] = None,
         metadata_json: Dict[str, Any] = None
     ) -> Optional[nextcord.ForumChannel]:
         """Create a forum channel with tags"""
+        
+        channel_repo = ChannelRepositoryImpl(session)
+        category_repo = CategoryRepositoryImpl(session)
+        channel_builder = ChannelBuilder()
         
         if permissions is None:
             permissions = []
@@ -164,19 +167,18 @@ class ChannelFactory:
                 {"name": "Announcement", "emoji": "📢"}
             ]
             
-        # Find category
-        category = self.category_repository.get_category_by_name(category_name)
+        cat_result = await session.execute(select(CategoryEntity).where(CategoryEntity.name == category_name))
+        category = cat_result.scalars().first()
         if not category:
             logger.error(f"Category not found: {category_name}")
             return None
         
-        # Get the last position in the category
-        existing_channels = self.channel_repository.get_channels_by_category_id(category.id)
+        chan_result = await session.execute(select(ChannelEntity).where(ChannelEntity.category_id == category.id))
+        existing_channels = chan_result.scalars().all()
         position = 0
         if existing_channels:
             position = max(ch.position for ch in existing_channels) + 1
         
-        # Create thread config
         thread_config = {
             "default_auto_archive_duration": 10080,  # 7 days
             "default_thread_slowmode_delay": 0,
@@ -184,7 +186,6 @@ class ChannelFactory:
             "available_tags": available_tags
         }
         
-        # Create a forum channel model
         channel = ChannelEntity(
             name=name.lower().replace(' ', '-'),
             description=description,
@@ -199,18 +200,13 @@ class ChannelFactory:
             metadata_json=metadata_json
         )
         
-        # First check if this is an update or a new channel
-        existing = self.channel_repository.get_channel_by_name_and_category(
-            channel.name, 
-            channel.category_id
-        )
+        exist_result = await session.execute(select(ChannelEntity).where(ChannelEntity.name == channel.name, ChannelEntity.category_id == channel.category_id))
+        existing = exist_result.scalars().first()
         if existing:
-            # Update existing channel
             channel.id = existing.id
-        saved_channel = self.channel_repository.save_channel(channel)
+        saved_channel = await channel_repo.save_channel(channel)
         
-        # Create in Discord
-        discord_channel = await self.channel_builder.create_channel(guild, saved_channel)
+        discord_channel = await channel_builder.create_channel(guild, saved_channel, session)
         return discord_channel
     
     def _get_game_icon(self, game_name: str) -> str:
