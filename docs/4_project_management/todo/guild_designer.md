@@ -81,28 +81,28 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [x] **UI Grundstruktur:** HTML für Properties-Panel erstellt.
     *   [x] **Selektion:** Event (`nodeSelected`) wird bei Auswahl ausgelöst und verarbeitet.
     *   [x] **Datenfindung:** Logik (`findNodeDataInState`) korrigiert, um korrekte IDs zu verwenden.
-    *   [x] **Anzeige (Basis):** `properties.js` implementiert, Panel wird mit Basisdaten gefüllt. Felder sind noch nicht dynamisch/deaktiviert.
-    *   [ ] **Dynamische Felder:** Felder je nach selektiertem Typ (Server, Kategorie, Kanal) korrekt ein-/ausblenden.
-    *   [ ] **Initialer Zustand:** Felder initial deaktivieren/placeholder anzeigen.
+    *   [x] **Anzeige (Basis):** `properties.js` implementiert, Panel wird mit Basisdaten gefüllt.
+    *   [x] **Dynamische Felder:** Felder werden je nach selektiertem Typ (Server, Kategorie, Kanal) korrekt ein-/ausgeblendet.
+    *   [x] **Initialer Zustand:** Felder werden initial deaktiviert/placeholder angezeigt und bei Auswahl aktiviert.
 *   [ ] **Properties Panel - Editing aktivieren:**
     *   **Files:** `properties.js`, `designerState.js`, `designerEvents.js`.
-    *   [ ] **Felder aktivieren:** Input-Felder bei Auswahl aktivieren.
-    *   [ ] **Änderungen verfolgen:** Listener in `properties.js` hinzufügen: Bei Änderung -> temporäre Daten speichern (im State/Node-Data), `state.setDirty(true)`, `updateToolbarButtonStates()` aufrufen.
-    *   [ ] **State erweitern:** `designerState.js` ggf. anpassen, um "pending property changes" zu speichern.
+    *   [x] **Felder aktivieren:** Input-Felder sind bei Auswahl aktiv.
+    *   [x] **Änderungen verfolgen:** Listener in `properties.js` speichern Änderungen im `designerState` (`addPendingPropertyChange`).
+    *   [x] **State erweitert:** `designerState.js` speichert "pending property changes".
 *   [ ] **Save Button - Properties speichern:**
     *   **Files:** `designerUtils.js`, `template_service.py`, `guild_template_controller.py`.
-    *   [ ] **Daten formatieren (`formatStructureForApi`):** Funktion erweitern, um geänderte Properties für jeden Knoten mitzusenden.
-    *   [ ] **Backend erweitern (`update_template_structure`):** PUT `/templates/guilds/{template_id}/structure` Endpunkt/Service anpassen, um Property-Updates zu empfangen und in DB zu speichern (Kategorie-/Kanal-Entitäten aktualisieren).
-    *   [ ] **State aufräumen:** Nach erfolgreichem Speichern "pending property changes" löschen.
+    *   [x] **Daten formatieren (`formatStructureForApi`):** Funktion sendet geänderte Properties mit.
+    *   [x] **Backend erweitert (`update_template_structure`):** PUT `/templates/guilds/{template_id}/structure` Endpunkt/Service verarbeitet Property-Updates.
+    *   [x] **State aufräumen:** Nach erfolgreichem Speichern werden "pending property changes" gelöscht.
 *   [ ] **Elemente löschen implementieren:**
     *   **Files:** `properties.js` / `structureTree.js`, `deleteModal.js`, `designerEvents.js`, `template_service.py`, `guild_template_controller.py`, Repos.
-    *   [ ] **UI Trigger:** Löschen-Button im Properties Panel hinzufügen.
+    *   [x] **UI Trigger:** Löschen-Button im Properties Panel hinzugefügt.
     *   [x] **Bestätigung:** Vorhandener `deleteModal` wird korrekt getriggert.
     *   [x] **Backend API (DELETE):** Neue Endpunkte (`DELETE /.../categories/{id}`, `DELETE /.../channels/{id}`) erstellt.
     *   [x] **Backend Logik:** Service/Repo-Methoden zum Löschen der DB-Entitäten implementiert.
     *   [x] **Frontend Events:** Event-Listener (`designerElementDeleted`, `requestPanelReset`) implementiert.
-    *   [ ] **Frontend Call:** API-Aufruf nach Modal-Bestätigung implementieren.
-    *   [ ] **UI Update:** Knoten aus Baum/Listen nach Erfolg entfernen.
+    *   [x] **Frontend Call:** API-Aufruf nach Modal-Bestätigung implementiert.
+    *   [x] **UI Update:** Knoten wird aus Baum/Listen nach Erfolg entfernt.
 *   [ ] **Elemente hinzufügen (Toolbox):**
     *   **Files:** `toolboxList.js`, `toolbox.html`, `structureTree.js`, `designerEvents.js`, `template_service.py`, `guild_template_controller.py`, Repos.
     *   [ ] **Toolbox UI:** Draggable Elemente für "Neue Kategorie", "Neuer Textkanal" etc. erstellen.

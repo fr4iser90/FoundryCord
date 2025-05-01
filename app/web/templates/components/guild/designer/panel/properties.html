@@ -11,24 +11,28 @@
 
     <!-- Form fields container (initially hidden or empty) -->
     <div id="properties-form-container" class="d-none">
-        <div class="mb-3" id="properties-general">
+        <!-- General Info (Always visible when something is selected) -->
+        <div class="mb-3 property-group" id="properties-general">
             <label class="form-label form-label-sm">Type:</label>
             <span id="prop-type" class="badge bg-secondary">N/A</span>
             <label class="form-label form-label-sm ms-3">ID:</label>
             <span id="prop-id" class="small text-muted">N/A</span>
         </div>
 
-        <div class="mb-3" id="properties-name">
+        <!-- Name (Applies to Categories and Channels) -->
+        <div class="mb-3 property-group category-property channel-property" id="properties-name">
             <label for="prop-name-input" class="form-label form-label-sm">Name</label>
             <input type="text" class="form-control form-control-sm" id="prop-name-input" placeholder="Enter name..." disabled>
         </div>
 
-        <div class="mb-3" id="properties-topic">
+        <!-- Topic (Applies to Text/Forum Channels) -->
+        <div class="mb-3 property-group channel-property text-channel-property forum-channel-property" id="properties-topic">
              <label for="prop-topic-input" class="form-label form-label-sm">Topic</label>
              <textarea class="form-control form-control-sm" id="prop-topic-input" rows="2" placeholder="Enter topic..." disabled></textarea>
         </div>
 
-        <div class="mb-3" id="properties-settings">
+        <!-- Settings (NSFW/Slowmode for Text/Forum Channels) -->
+        <div class="mb-3 property-group channel-property text-channel-property forum-channel-property" id="properties-settings">
             <div class="form-check form-switch d-inline-block me-3">
                 <input class="form-check-input" type="checkbox" role="switch" id="prop-nsfw-switch" disabled>
                 <label class="form-check-label small" for="prop-nsfw-switch">NSFW</label>
@@ -39,29 +43,35 @@
              </div>
         </div>
 
-        <!-- Platzhalter für Webhooks (wird von JS ein-/ausgeblendet) -->
-        <div id="prop-webhook-placeholder" class="mb-3 d-none">
+        <!-- TODO: Add properties specific to Voice channels (e.g., Bitrate, User Limit) -->
+        <div class="mb-3 property-group channel-property voice-channel-property d-none" id="properties-voice-settings">
+            <label class="form-label form-label-sm">Voice Settings</label>
+            <p class="form-text small">Bitrate, User Limit etc. (Not implemented)</p>
+        </div>
+
+        <!-- Platzhalter für Webhooks (Text channels?) -->
+        <div id="prop-webhook-placeholder" class="mb-3 property-group channel-property text-channel-property d-none">
             <label class="form-label form-label-sm">Webhook</label>
             <p class="form-text small">Webhook configuration placeholder...</p>
             <!-- Füge hier später die echten Steuerelemente hinzu -->
         </div>
 
-        <!-- Platzhalter für Dashboards (wird von JS ein-/ausgeblendet) -->
-        <div id="prop-dashboard-placeholder" class="mb-3 d-none">
+        <!-- Platzhalter für Dashboards (Text channels?) -->
+        <div id="prop-dashboard-placeholder" class="mb-3 property-group channel-property text-channel-property d-none">
             <label class="form-label form-label-sm">Dashboard</label>
             <p class="form-text small">Dashboard configuration placeholder...</p>
             <!-- Füge hier später die echten Steuerelemente hinzu -->
         </div>
 
-        <hr>
+        <hr class="property-group category-property channel-property">
 
         {# Use Flexbox to stack buttons vertically #}
-        <div id="properties-actions" class="d-flex flex-column gap-2">
+        <div id="properties-actions" class="d-flex flex-column gap-2 property-group category-property channel-property">
              <button id="prop-delete-btn" class="btn btn-sm btn-danger w-100" disabled>
                  <i class="fas fa-trash me-1"></i> Delete Element
              </button>
-             {# Move Save button inside and make full width #}
-             <button id="prop-save-inline-btn" class="btn btn-sm btn-primary w-100 d-none" disabled>
+             {# Move Save button inside and make full width - Assuming this is the inline save button #}
+             <button id="prop-save-inline-btn" class="btn btn-sm btn-primary w-100" disabled>
                  <i class="bi bi-save me-1"></i> Save Changes
              </button>
              <!-- Add other actions like permissions later -->
