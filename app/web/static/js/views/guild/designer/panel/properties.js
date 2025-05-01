@@ -99,6 +99,10 @@ export function initializePropertiesPanel() {
 
     resetPanel(); // Show placeholder initially
     console.log("[PropertiesPanel] Initialization complete.");
+
+    // --- NEW: Listener to reset panel when requested --- 
+    document.addEventListener('requestPanelReset', resetPanel);
+    // ---------------------------------------------------
 }
 
 // --- Event Handlers ---

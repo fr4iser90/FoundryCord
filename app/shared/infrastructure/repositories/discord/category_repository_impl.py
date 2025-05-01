@@ -4,10 +4,13 @@ from app.shared.infrastructure.models.discord.entities.category_entity import Ca
 from app.shared.infrastructure.models.discord.mappings.category_mapping import CategoryMapping
 from typing import Optional, List
 from app.shared.domain.repositories.discord import CategoryRepository
+from app.shared.infrastructure.repositories.base_repository_impl import BaseRepositoryImpl
 
-class CategoryRepositoryImpl(CategoryRepository):
+class CategoryRepositoryImpl(BaseRepositoryImpl[CategoryEntity], CategoryRepository):
     def __init__(self, session: AsyncSession = None):
-        self.session = session
+        if session is None:
+            raise ValueError("AsyncSession must be provided to CategoryRepositoryImpl")
+        super().__init__(CategoryEntity, session)
     
     def _entity_to_mapping(self, entity: CategoryEntity) -> CategoryMapping:
         """Convert a database entity to a mapping"""
@@ -86,21 +89,26 @@ class CategoryRepositoryImpl(CategoryRepository):
             is_enabled=True
         )
         self.session.add(entity)
-        await self.session.commit()
+        await self.session.flush()
+        await self.session.refresh(entity)
         return self._entity_to_mapping(entity)
     
     async def update(self, category: CategoryMapping) -> CategoryMapping:
         """Update an existing category mapping"""
         entity = self._mapping_to_entity(category)
         self.session.add(entity)
-        await self.session.commit()
-        return category
+        await self.session.flush()
+        await self.session.refresh(entity)
+        return self._entity_to_mapping(entity)
     
     async def delete(self, category: CategoryMapping) -> None:
         """Delete a category mapping"""
         entity = self._mapping_to_entity(category)
-        await self.session.delete(entity)
-        await self.session.commit()
+        db_entity = await self.session.get(self.model, entity.id)
+        if db_entity:
+            await super().delete(db_entity)
+        else:
+            pass
     
     async def save_or_update(self, guild_id: str, category_id: str, category_name: str, category_type: str) -> CategoryMapping:
         """Save a new category or update existing one"""

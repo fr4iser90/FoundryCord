@@ -218,51 +218,107 @@ class TemplateManagementService:
             logger.error(f"Unexpected error in update_template_settings for guild {guild_id}: {e}", exc_info=True)
             raise DomainException(f"An unexpected error occurred while updating template settings for guild {guild_id}.") from e
 
-    async def delete_template_category(self, db: AsyncSession, category_id: int) -> bool:
-        """Deletes a specific category from a template database entry."""
-        logger.info(f"Service attempting to delete template category ID: {category_id}")
+    async def delete_template_category(self, db: AsyncSession, category_id: int, requesting_user_id: int, is_owner: bool) -> bool:
+        """
+        Deletes a specific category from a template database entry after checking permissions.
+        Raises TemplateNotFound or PermissionDenied on failure.
+        Returns True on success.
+        """
+        logger.info(f"Service attempting to delete template category ID: {category_id} by user {requesting_user_id}")
         try:
             category_repo = GuildTemplateCategoryRepositoryImpl(db)
+            template_repo = GuildTemplateRepositoryImpl(db) # Needed for permission check
+
+            # 1. Find the category
             category_to_delete = await category_repo.get_by_id(category_id)
-
             if not category_to_delete:
-                logger.warning(f"Category ID {category_id} not found for deletion.")
-                return False
+                logger.warning(f"Delete category failed: Category ID {category_id} not found.")
+                raise TemplateNotFound(f"Category with ID {category_id} not found.")
 
-            # TODO: Check permissions before deleting? Depends on requirements.
+            # 2. Find the parent template for permission check
+            parent_template_id = category_to_delete.guild_template_id
+            if not parent_template_id:
+                 logger.error(f"Data integrity issue: Category {category_id} has no parent template ID.")
+                 raise DomainException(f"Cannot determine parent template for category {category_id}.")
 
+            parent_template = await template_repo.get_by_id(parent_template_id)
+            if not parent_template:
+                 logger.error(f"Data integrity issue: Parent template {parent_template_id} for category {category_id} not found.")
+                 raise TemplateNotFound(f"Parent template with ID {parent_template_id} not found.")
+
+            # 3. Permission Check
+            is_creator = parent_template.creator_user_id == requesting_user_id
+            if not is_creator and not is_owner:
+                logger.warning(f"Permission denied: User {requesting_user_id} is not owner or creator ({parent_template.creator_user_id}) of template {parent_template_id}.")
+                raise PermissionDenied(f"User does not have permission to modify template {parent_template_id}.")
+
+            logger.debug(f"Permission granted for user {requesting_user_id} to delete category {category_id} from template {parent_template_id}.")
+
+            # 4. Delete the category
             await category_repo.delete(category_to_delete)
-            # Commit handled by caller
+            # Commit handled by caller (controller)
+
             logger.info(f"Successfully marked category ID {category_id} for deletion (pending commit).")
             return True
 
+        except (TemplateNotFound, PermissionDenied, DomainException) as specific_exception:
+             # Re-raise specific exceptions for the controller to handle
+             raise specific_exception
         except Exception as e:
             logger.error(f"Error deleting template category ID {category_id}: {e}", exc_info=True)
-            # Rollback handled by caller
-            raise DomainException(f"Failed to delete category {category_id} due to database error.") from e
+            # Rollback handled by caller (controller)
+            raise DomainException(f"Failed to delete category {category_id} due to a database error.") from e
 
-    async def delete_template_channel(self, db: AsyncSession, channel_id: int) -> bool:
-        """Deletes a specific channel from a template database entry."""
-        logger.info(f"Service attempting to delete template channel ID: {channel_id}")
+    async def delete_template_channel(self, db: AsyncSession, channel_id: int, requesting_user_id: int, is_owner: bool) -> bool:
+        """
+        Deletes a specific channel from a template database entry after checking permissions.
+        Raises TemplateNotFound or PermissionDenied on failure.
+        Returns True on success.
+        """
+        logger.info(f"Service attempting to delete template channel ID: {channel_id} by user {requesting_user_id}")
         try:
             channel_repo = GuildTemplateChannelRepositoryImpl(db)
+            template_repo = GuildTemplateRepositoryImpl(db) # Needed for permission check
+
+            # 1. Find the channel
             channel_to_delete = await channel_repo.get_by_id(channel_id)
-
             if not channel_to_delete:
-                logger.warning(f"Channel ID {channel_id} not found for deletion.")
-                return False
+                logger.warning(f"Delete channel failed: Channel ID {channel_id} not found.")
+                raise TemplateNotFound(f"Channel with ID {channel_id} not found.")
 
-            # TODO: Check permissions before deleting?
+            # 2. Find the parent template for permission check
+            parent_template_id = channel_to_delete.guild_template_id
+            if not parent_template_id:
+                 logger.error(f"Data integrity issue: Channel {channel_id} has no parent template ID.")
+                 raise DomainException(f"Cannot determine parent template for channel {channel_id}.")
 
+            parent_template = await template_repo.get_by_id(parent_template_id)
+            if not parent_template:
+                 logger.error(f"Data integrity issue: Parent template {parent_template_id} for channel {channel_id} not found.")
+                 raise TemplateNotFound(f"Parent template with ID {parent_template_id} not found.")
+
+            # 3. Permission Check
+            is_creator = parent_template.creator_user_id == requesting_user_id
+            if not is_creator and not is_owner:
+                logger.warning(f"Permission denied: User {requesting_user_id} is not owner or creator ({parent_template.creator_user_id}) of template {parent_template_id}.")
+                raise PermissionDenied(f"User does not have permission to modify template {parent_template_id}.")
+
+            logger.debug(f"Permission granted for user {requesting_user_id} to delete channel {channel_id} from template {parent_template_id}.")
+
+            # 4. Delete the channel
             await channel_repo.delete(channel_to_delete)
-            # Commit handled by caller
+            # Commit handled by caller (controller)
+
             logger.info(f"Successfully marked channel ID {channel_id} for deletion (pending commit).")
             return True
 
+        except (TemplateNotFound, PermissionDenied, DomainException) as specific_exception:
+             # Re-raise specific exceptions for the controller to handle
+             raise specific_exception
         except Exception as e:
             logger.error(f"Error deleting template channel ID {channel_id}: {e}", exc_info=True)
-            # Rollback handled by caller
-            raise DomainException(f"Failed to delete channel {channel_id} due to database error.") from e
+            # Rollback handled by caller (controller)
+            raise DomainException(f"Failed to delete channel {channel_id} due to a database error.") from e
 
     async def update_template_metadata(
         self,

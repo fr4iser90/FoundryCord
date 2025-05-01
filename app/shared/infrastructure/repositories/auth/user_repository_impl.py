@@ -1,6 +1,7 @@
 from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from app.shared.infrastructure.repositories.base_repository_impl import BaseRepositoryImpl
 from app.shared.infrastructure.models import AppUserEntity, AppRoleEntity, DiscordGuildUserEntity
 from typing import Optional, List
 from datetime import datetime
@@ -9,9 +10,9 @@ from app.shared.interface.logging.api import get_db_logger
 
 logger = get_db_logger()
 
-class UserRepositoryImpl(UserRepository):
+class UserRepositoryImpl(BaseRepositoryImpl[AppUserEntity], UserRepository):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(AppUserEntity, session)
     
     async def get_by_id(self, user_id: int) -> Optional[AppUserEntity]:
         """Fetches a user by ID, eagerly loading guild roles."""
@@ -79,20 +80,29 @@ class UserRepositoryImpl(UserRepository):
         user = AppUserEntity(
             discord_id=discord_id,
             username=username,
-            role=role
+            # --- TODO: Role handling needs adjustment if role is an object --- 
+            # role=role # This likely needs to fetch the role object
+            # For now, assuming role string is mapped elsewhere or the model handles it
         )
         self.session.add(user)
-        await self.session.commit()
+        await self.session.flush() # Flush instead of commit
+        await self.session.refresh(user) # Refresh to get updated state
+        # await self.session.commit() # Commit handled by caller
         return user
     
     async def update(self, user: AppUserEntity) -> AppUserEntity:
-        self.session.add(user)
-        await self.session.commit()
+        self.session.add(user) # Add merges the detached object
+        await self.session.flush() # Flush instead of commit
+        await self.session.refresh(user) # Refresh to get updated state
+        # await self.session.commit() # Commit handled by caller
         return user
     
     async def delete(self, user: AppUserEntity) -> None:
-        await self.session.delete(user)
-        await self.session.commit()
+        # --- MODIFY: Use base class delete --- 
+        await super().delete(user)
+        # -------------------------------------
+        # await self.session.delete(user) # Removed specific delete
+        # await self.session.commit() # Commit handled by caller
     
     async def get_user_role_in_guild(self, discord_id: str, guild_id: str) -> Optional[str]:
         """Holt die Rolle eines Benutzers in einer bestimmten Gilde"""

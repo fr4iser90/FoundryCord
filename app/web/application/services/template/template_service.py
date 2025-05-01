@@ -93,15 +93,21 @@ class GuildTemplateService:
         logger.debug(f"GuildTemplateService facade delegating update_template_settings for guild {guild_id}")
         return await self._management_service.update_template_settings(db, guild_id, delete_unmanaged, requesting_user)
 
-    async def delete_template_category(self, db: AsyncSession, category_id: int) -> bool:
-        """Delegates to TemplateManagementService."""
+    async def delete_template_category(self, db: AsyncSession, category_id: int, requesting_user_id: int, is_owner: bool) -> bool:
+        """Delegates to TemplateManagementService, now passing user info."""
         logger.debug(f"GuildTemplateService facade delegating delete_template_category for {category_id}")
-        return await self._management_service.delete_template_category(db, category_id)
+        # Pass the user info to the management service
+        return await self._management_service.delete_template_category(
+            db, category_id, requesting_user_id, is_owner
+        )
 
-    async def delete_template_channel(self, db: AsyncSession, channel_id: int) -> bool:
-        """Delegates to TemplateManagementService."""
+    async def delete_template_channel(self, db: AsyncSession, channel_id: int, requesting_user_id: int, is_owner: bool) -> bool:
+        """Delegates to TemplateManagementService, now passing user info."""
         logger.debug(f"GuildTemplateService facade delegating delete_template_channel for {channel_id}")
-        return await self._management_service.delete_template_channel(db, channel_id)
+        # Pass the user info to the management service
+        return await self._management_service.delete_template_channel(
+            db, channel_id, requesting_user_id, is_owner
+        )
 
     async def update_template_metadata(
         self, db: AsyncSession, template_id: int, requesting_user: AppUserEntity, 

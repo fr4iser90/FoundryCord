@@ -193,14 +193,16 @@ class GuildTemplateController(BaseController):
             "/categories/{category_id}",
             status_code=status.HTTP_204_NO_CONTENT,
             summary="Delete Template Category by DB ID (Now Guild-Specific Context)",
-            description="Deletes a specific category from a guild template using its unique database ID."
+            description="Deletes a specific category from a guild template using its unique database ID.",
+            dependencies=[Depends(get_current_user)] # Add dependency
         )(self.delete_template_category)
 
         self.router.delete(
             "/channels/{channel_id}",
             status_code=status.HTTP_204_NO_CONTENT,
             summary="Delete Template Channel by DB ID (Now Guild-Specific Context)",
-            description="Deletes a specific channel from a guild template using its unique database ID."
+            description="Deletes a specific channel from a guild template using its unique database ID.",
+            dependencies=[Depends(get_current_user)] # Add dependency
         )(self.delete_template_channel)
         # ====================================================
 
@@ -293,7 +295,8 @@ class GuildTemplateController(BaseController):
     async def delete_guild_template_by_id(self, 
                                         guild_id: str, # <<< ADDED guild_id
                                         template_id: int, 
-                                        current_user: AppUserEntity = Depends(get_current_user)
+                                        current_user: AppUserEntity = Depends(get_current_user),
+                                        db: AsyncSession = Depends(get_web_db_session) # Added DB session
                                        ):
         """API endpoint to delete a specific guild template by its database ID."""
         try:
@@ -354,9 +357,9 @@ class GuildTemplateController(BaseController):
         self,
         guild_id: str, # <<< ADDED guild_id
         share_data: GuildTemplateShareSchema,
-        current_user: AppUserEntity = Depends(get_current_user)
-        # Optional: Return type can be GuildTemplateResponseSchema if you return the new template
-    ): # -> GuildTemplateResponseSchema: 
+        current_user: AppUserEntity = Depends(get_current_user),
+        db: AsyncSession = Depends(get_web_db_session) # Added DB Session
+    ):
         """API endpoint to create a new template by sharing/copying an existing one."""
         try:
             # --- Permission Check (Example: Any logged-in user can share?) ---
@@ -402,7 +405,8 @@ class GuildTemplateController(BaseController):
     # --- NEW Method for Shared List Route (Signature updated) ---
     async def list_shared_guild_templates(self, 
                                         guild_id: str, # <<< ADDED guild_id
-                                        current_user: AppUserEntity = Depends(get_current_user)
+                                        current_user: AppUserEntity = Depends(get_current_user),
+                                        db: AsyncSession = Depends(get_web_db_session) # Added DB Session
                                        ) -> GuildTemplateListResponseSchema:
         """API endpoint to list publicly shared guild structure templates."""
         logger.info(f"Listing shared templates requested by user {current_user.id}")
@@ -431,7 +435,8 @@ class GuildTemplateController(BaseController):
     async def get_shared_guild_template_details(self, 
                                               guild_id: str, # <<< ADDED guild_id
                                               template_id: int, 
-                                              current_user: AppUserEntity = Depends(get_current_user)
+                                              current_user: AppUserEntity = Depends(get_current_user),
+                                              db: AsyncSession = Depends(get_web_db_session) # Added DB Session
                                              ) -> GuildTemplateResponseSchema:
         """API endpoint to retrieve the full details of a specific shared guild template by its ID."""
         logger.info(f"Fetching details for shared template ID {template_id} requested by user {current_user.id}")
@@ -462,9 +467,9 @@ class GuildTemplateController(BaseController):
     async def copy_shared_template(
         self,
         guild_id: str, # <<< ADDED guild_id
-        copy_request: dict, 
-        current_user: AppUserEntity = Depends(get_current_user)
-        # Optional: response_model=GuildTemplateResponseSchema
+        copy_request: dict, # Assuming body contains {"shared_template_id": int, "new_name": str}
+        current_user: AppUserEntity = Depends(get_current_user),
+        db: AsyncSession = Depends(get_web_db_session) # Added DB Session
     ):
         """API endpoint to copy a shared template to the current user's saved templates."""
         shared_template_id = copy_request.get('shared_template_id')
@@ -509,7 +514,8 @@ class GuildTemplateController(BaseController):
         self, 
         guild_id: str, # Get guild_id from path
         template_data: GuildTemplateCreateSchema, # Use schema for body
-        current_user: AppUserEntity = Depends(get_current_user)
+        current_user: AppUserEntity = Depends(get_current_user),
+        db: AsyncSession = Depends(get_web_db_session) # Added DB Session
     ):
         """API endpoint to save the current guild's structure as a new template."""
         try:
@@ -847,118 +853,67 @@ class GuildTemplateController(BaseController):
             logger.error(f"Unexpected error calling internal API for guild {guild_id}: {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred while communicating with the bot.")
 
-    # === NEW Controller Methods for Deleting Elements ===
+    # --- NEW: Delete Category Handler --- 
     async def delete_template_category(
         self,
-        guild_id: str, # <<< ADDED guild_id from path
-        category_id: int,
+        guild_id: str, # From path
+        category_id: int, # From path
         current_user: AppUserEntity = Depends(get_current_user),
         db: AsyncSession = Depends(get_web_db_session)
     ):
-        """API endpoint to delete a category from a template."""
-        logger.info(f"User {current_user.id} requesting deletion of template category ID: {category_id}")
+        """API endpoint to delete a specific category from a guild template."""
+        logger.info(f"Attempting to delete template category {category_id} in guild context {guild_id} by user {current_user.id}")
         try:
-            # --- Re-inserted Permission Check ---
-            try:
-                parent_template_id = await self.template_service.get_parent_template_id_for_element(
-                    db=db, element_id=category_id, element_type='category'
-                )
-                if parent_template_id is None: # Service should ideally raise if not found
-                    raise TemplateNotFound("Category or its parent template not found.")
-
-                can_edit = await self.template_service.check_user_can_edit_template(
-                    db=db, user_id=current_user.id, template_id=parent_template_id
-                )
-                if not can_edit:
-                    raise PermissionDenied("Permission denied to modify this template.")
-                
-                logger.info(f"Permission granted for user {current_user.id} to delete category {category_id} (Template ID: {parent_template_id})")
-
-            except (TemplateNotFound, ValueError) as e: # Catch potential service errors
-                logger.warning(f"Permission check failed for category {category_id}: {e}")
-                logger.warning(f"CONTROLLER INTENTION: Raising 404 - Permission Check Failed for ID: {category_id}")
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-            except PermissionDenied as e:
-                logger.warning(f"Permission denied for user {current_user.id} on category {category_id}: {e}")
-                logger.warning(f"CONTROLLER INTENTION: Raising 403 - Permission Denied for ID: {category_id}")
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-            # --- End Permission Check ---
-
-            # Call the service layer method
-            deleted = await self.template_service.delete_template_category(db, category_id)
-            
-            if not deleted:
-                logger.warning(f"Service failed to delete category {category_id} after permission check. Might not exist or DB error.")
-                logger.warning(f"CONTROLLER INTENTION: Raising 404 - Service returned False for ID: {category_id}")
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found or could not be deleted.")
-
-            logger.info(f"CONTROLLER INTENTION: Returning SUCCESS (implicit 204 No Content) for ID: {category_id}")
+            # Call the service method (to be implemented)
+            await self.template_service.delete_category(
+                db=db,
+                category_id=category_id,
+                requesting_user_id=current_user.id,
+                is_owner=current_user.is_owner
+            )
+            # No response body needed for 204
             return
-
-        except HTTPException as http_exc:
-            raise http_exc
-        except NotImplementedError:
-            logger.error(f"CONTROLLER INTENTION: Raising 501 - Not Implemented for ID: {category_id}")
-            raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Category deletion not implemented.")
+        except TemplateNotFound as e:
+             logger.warning(f"Delete category failed: {e}")
+             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        except PermissionDenied as e:
+             logger.warning(f"Permission denied for category deletion: {e}")
+             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
         except Exception as e:
-            logger.error(f"CONTROLLER INTENTION: Raising 500 - Internal Server Error for ID: {category_id}")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An internal error occurred while deleting the category.")
+             logger.error(f"Error deleting template category {category_id}: {e}", exc_info=True)
+             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error deleting category.")
+    # ------------------------------------
 
+    # --- NEW: Delete Channel Handler --- 
     async def delete_template_channel(
         self,
-        guild_id: str, # <<< ADDED guild_id from path
-        channel_id: int,
+        guild_id: str, # From path
+        channel_id: int, # From path
         current_user: AppUserEntity = Depends(get_current_user),
         db: AsyncSession = Depends(get_web_db_session)
     ):
-        """API endpoint to delete a channel from a template."""
-        logger.info(f"User {current_user.id} requesting deletion of template channel ID: {channel_id}")
+        """API endpoint to delete a specific channel from a guild template."""
+        logger.info(f"Attempting to delete template channel {channel_id} in guild context {guild_id} by user {current_user.id}")
         try:
-            # --- Re-inserted Permission Check ---
-            try:
-                parent_template_id = await self.template_service.get_parent_template_id_for_element(
-                    db=db, element_id=channel_id, element_type='channel'
-                )
-                if parent_template_id is None: # Service should ideally raise if not found
-                    raise TemplateNotFound("Channel or its parent template not found.")
-
-                can_edit = await self.template_service.check_user_can_edit_template(
-                    db=db, user_id=current_user.id, template_id=parent_template_id
-                )
-                if not can_edit:
-                    raise PermissionDenied("Permission denied to modify this template.")
-
-                logger.info(f"Permission granted for user {current_user.id} to delete channel {channel_id} (Template ID: {parent_template_id})")
-
-            except (TemplateNotFound, ValueError) as e: # Catch potential service errors
-                logger.warning(f"Permission check failed for channel {channel_id}: {e}")
-                logger.warning(f"CONTROLLER INTENTION: Raising 404 - Permission Check Failed for ID: {channel_id}")
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-            except PermissionDenied as e:
-                logger.warning(f"Permission denied for user {current_user.id} on channel {channel_id}: {e}")
-                logger.warning(f"CONTROLLER INTENTION: Raising 403 - Permission Denied for ID: {channel_id}")
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-            # --- End Permission Check ---
-            
-            # Call the service layer method
-            deleted = await self.template_service.delete_template_channel(db, channel_id)
-            
-            if not deleted:
-                logger.warning(f"Service failed to delete channel {channel_id} after permission check. Might not exist or DB error.")
-                logger.warning(f"CONTROLLER INTENTION: Raising 404 - Service returned False for ID: {channel_id}")
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Channel not found or could not be deleted.")
-
-            logger.info(f"CONTROLLER INTENTION: Returning SUCCESS (implicit 204 No Content) for ID: {channel_id}")
+            # Call the service method (to be implemented)
+            await self.template_service.delete_template_channel(
+                db=db,
+                channel_id=channel_id,
+                requesting_user_id=current_user.id,
+                is_owner=current_user.is_owner
+            )
+            # No response body needed for 204
             return
-
-        except HTTPException as http_exc:
-            raise http_exc
-        except NotImplementedError:
-            logger.error(f"CONTROLLER INTENTION: Raising 501 - Not Implemented for ID: {channel_id}")
-            raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Channel deletion not implemented.")
+        except TemplateNotFound as e:
+             logger.warning(f"Delete channel failed: {e}")
+             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        except PermissionDenied as e:
+             logger.warning(f"Permission denied for channel deletion: {e}")
+             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
         except Exception as e:
-            logger.error(f"CONTROLLER INTENTION: Raising 500 - Internal Server Error for ID: {channel_id}")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An internal error occurred while deleting the channel.")
+             logger.error(f"Error deleting template channel {channel_id}: {e}", exc_info=True)
+             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error deleting channel.")
+    # ------------------------------------
 
     # --- NEW Method for Metadata Update --- 
     async def update_template_metadata(

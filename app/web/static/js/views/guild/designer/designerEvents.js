@@ -862,8 +862,56 @@ export function initializeDesignerEventListeners() {
     // Initial button state update
     updateToolbarButtonStates();
 
+    // --- NEW: Listener for Element Deletion (from modal) ---
+    document.addEventListener('designerElementDeleted', handleElementDeleted);
+    // -----------------------------------------------------
+
     console.log("[DesignerEvents] All designer event listeners initialized.");
 }
+
+// --- NEW: Handler for Deleting Elements --- 
+/**
+ * Handles the 'designerElementDeleted' event triggered by the delete modal.
+ * Removes the corresponding node from the jsTree and resets the properties panel.
+ * @param {CustomEvent} event - The event object containing itemType and itemId.
+ */
+async function handleElementDeleted(event) {
+    const { itemType, itemId } = event.detail;
+    console.log(`[DesignerEvents] Handling 'designerElementDeleted' for ${itemType} ID ${itemId}`);
+
+    const treeContainer = document.getElementById('widget-content-structure-tree');
+    const treeInstance = treeContainer ? $(treeContainer).jstree(true) : null;
+
+    if (!treeInstance) {
+        console.error("[DesignerEvents] Cannot remove node: Tree instance not found.");
+        showToast('error', 'Failed to update UI after deletion.');
+        return;
+    }
+
+    // Construct the jsTree node ID (e.g., category_123)
+    const jstreeNodeId = `${itemType.replace('designer_', '')}_${itemId}`;
+
+    try {
+        const nodeToDelete = treeInstance.get_node(jstreeNodeId);
+        if (nodeToDelete) {
+            treeInstance.delete_node(nodeToDelete);
+            console.log(`[DesignerEvents] Node ${jstreeNodeId} removed from tree.`);
+            
+            // Reset properties panel by dispatching an event
+            document.dispatchEvent(new CustomEvent('requestPanelReset'));
+            console.log("[DesignerEvents] Dispatched 'requestPanelReset' event.");
+
+            // Update toolbar buttons (state should already be dirty from modal)
+            updateToolbarButtonStates(); 
+        } else {
+            console.warn(`[DesignerEvents] Node ${jstreeNodeId} not found in tree for deletion.`);
+        }
+    } catch (error) {
+        console.error(`[DesignerEvents] Error removing node ${jstreeNodeId} from tree:`, error);
+        showToast('error', 'UI Error: Failed to remove element from tree.');
+    }
+}
+// ----------------------------------------
 
 // Initial log to confirm loading
 console.log("[DesignerEvents] Events module loaded.");

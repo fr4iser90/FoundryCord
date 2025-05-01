@@ -1,13 +1,14 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.shared.infrastructure.models import SessionEntity
+from app.shared.infrastructure.repositories.base_repository_impl import BaseRepositoryImpl
 from typing import Optional, List
 from datetime import datetime
 from app.shared.domain.repositories.auth.session_repository import SessionRepository
 
-class SessionRepositoryImpl(SessionRepository):
+class SessionRepositoryImpl(BaseRepositoryImpl[SessionEntity], SessionRepository):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(SessionEntity, session)
     
     async def get_by_id(self, session_id: int) -> Optional[SessionEntity]:
         result = await self.session.execute(select(SessionEntity).where(SessionEntity.id == session_id))
@@ -29,17 +30,18 @@ class SessionRepositoryImpl(SessionRepository):
     async def create(self, user_id: str, token: str, expires_at: datetime) -> SessionEntity:
         session_obj = SessionEntity(user_id=user_id, token=token, expires_at=expires_at)
         self.session.add(session_obj)
-        await self.session.commit()
+        await self.session.flush()
+        await self.session.refresh(session_obj)
         return session_obj
     
     async def update(self, session_obj: SessionEntity) -> SessionEntity:
         self.session.add(session_obj)
-        await self.session.commit()
+        await self.session.flush()
+        await self.session.refresh(session_obj)
         return session_obj
     
     async def delete(self, session_obj: SessionEntity) -> None:
-        await self.session.delete(session_obj)
-        await self.session.commit()
+        await super().delete(session_obj)
     
     async def delete_expired(self) -> int:
         now = datetime.utcnow()

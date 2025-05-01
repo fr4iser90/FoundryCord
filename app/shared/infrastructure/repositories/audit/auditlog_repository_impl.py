@@ -1,13 +1,14 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.shared.infrastructure.models import AuditLogEntity
+from app.shared.infrastructure.repositories.base_repository_impl import BaseRepositoryImpl
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
 from app.shared.domain.repositories.audit.audit_log_repository import AuditLogRepository
 
-class AuditLogRepositoryImpl(AuditLogRepository):
+class AuditLogRepositoryImpl(BaseRepositoryImpl[AuditLogEntity], AuditLogRepository):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(AuditLogEntity, session)
     
     async def get_by_id(self, log_id: int) -> Optional[AuditLogEntity]:
         result = await self.session.execute(select(AuditLogEntity).where(AuditLogEntity.id == log_id))
@@ -46,7 +47,8 @@ class AuditLogRepositoryImpl(AuditLogRepository):
             details=details
         )
         self.session.add(audit_log)
-        await self.session.commit()
+        await self.session.flush()
+        await self.session.refresh(audit_log)
         return audit_log
     
     async def delete_older_than(self, days: int) -> int:
@@ -58,7 +60,6 @@ class AuditLogRepositoryImpl(AuditLogRepository):
         
         count = len(old_logs)
         for log in old_logs:
-            await self.session.delete(log)
+            await super().delete(log)
         
-        await self.session.commit()
         return count
