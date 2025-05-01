@@ -24,6 +24,11 @@ let propTopicInput = null;
 let propNsfwSwitch = null;
 let propSlowmodeInput = null;
 let propDeleteBtn = null;
+// --- NEW: Placeholders & Inline Save ---
+let propWebhookPlaceholder = null;
+let propDashboardPlaceholder = null;
+let propSaveInlineBtn = null;
+// ------------------------------------
 
 // Store current node info
 let currentNodeType = null;
@@ -48,11 +53,18 @@ function cacheDomElements() {
     propNsfwSwitch = panelContent.querySelector('#prop-nsfw-switch');
     propSlowmodeInput = panelContent.querySelector('#prop-slowmode-input');
     propDeleteBtn = panelContent.querySelector('#prop-delete-btn');
+    // --- NEW: Cache new elements ---
+    propWebhookPlaceholder = panelContent.querySelector('#prop-webhook-placeholder');
+    propDashboardPlaceholder = panelContent.querySelector('#prop-dashboard-placeholder');
+    propSaveInlineBtn = panelContent.querySelector('#prop-save-inline-btn');
+    // -------------------------------
 
     // Check if all essential elements were found
+    // Basic check, assuming placeholders/save button might not exist yet
     return !!(placeholderDiv && formContainer && propTypeSpan && propIdSpan && 
               propNameInput && propTopicInput && propNsfwSwitch && 
-              propSlowmodeInput && propDeleteBtn);
+              propSlowmodeInput && propDeleteBtn); 
+              // Note: Not checking new elements strictly here allows gradual HTML implementation
 }
 
 /**
@@ -78,6 +90,12 @@ export function initializePropertiesPanel() {
     // --- Add event listener for the delete button --- 
     propDeleteBtn.addEventListener('click', handleDeleteClick);
     // ---------------------------------------------
+
+    // --- NEW: Add event listener for the inline save button ---
+    if (propSaveInlineBtn) {
+        propSaveInlineBtn.addEventListener('click', handleInlineSaveClick);
+    }
+    // -------------------------------------------------------
 
     resetPanel(); // Show placeholder initially
     console.log("[PropertiesPanel] Initialization complete.");
@@ -153,14 +171,13 @@ function handleInputChange(event) {
     // 2. Update the toolbar button states (e.g., enable Save)
     updateToolbarButtonStates(); 
 
-    // 3. TODO: Store the pending change
-    // This requires knowing the ID and type of the currently edited node.
-    // We might need to store the current node's ID/type within the properties.js scope
-    // when populatePanel is called, or retrieve it from the state again here.
-    // Example (Conceptual - requires storing current node info):
-    // state.addPendingPropertyChange(currentNodeDbId, currentNodeType, propertyName, newValue);
+    // --- NEW: Enable inline save button ---
+    if (propSaveInlineBtn) {
+        propSaveInlineBtn.disabled = false;
+    }
+    // ------------------------------------
 
-    // --- NEW: Call state to add the change --- 
+    // --- Call state to add the change --- 
     if (currentNodeType && currentNodeDbId !== null) {
         // Map the input ID back to a simpler property name if needed
         let statePropertyName = propertyName.replace('prop-', '').replace('-input', '').replace('-switch', ''); 
@@ -200,6 +217,33 @@ function handleDeleteClick() {
     openDeleteModal(currentNodeDbId, currentName, `designer_${currentNodeType}`);
 }
 
+// --- NEW: Handle Inline Save Click ---
+/**
+ * Handles the click event for the inline save button.
+ * Placeholder for future implementation.
+ */
+function handleInlineSaveClick() {
+    if (!state.isDirty()) {
+        console.log("[PropertiesPanel] Inline Save clicked, but no changes detected.");
+        showToast('info', 'No changes to save.');
+        return;
+    }
+
+    console.log("[PropertiesPanel] Inline Save button clicked. Triggering save process...");
+    showToast('info', 'Saving changes... (Placeholder)'); // Placeholder feedback
+
+    // TODO: Implement actual save logic here.
+    // This likely involves calling a method similar to what the main save button does, e.g.:
+    // try {
+    //     await state.saveCurrentTemplateStructure(); // Or equivalent function
+    //     showToast('success', 'Changes saved successfully.');
+    //     if (propSaveInlineBtn) propSaveInlineBtn.disabled = true; // Disable after successful save
+    // } catch (error) {
+    //     console.error("[PropertiesPanel] Error saving changes:", error);
+    //     showToast('error', 'Failed to save changes.');
+    // }
+}
+
 // --- UI Logic ---
 
 /**
@@ -210,13 +254,14 @@ function handleDeleteClick() {
 function populatePanel(data, nodeType) {
     if (!formContainer || !placeholderDiv) return;
 
-    // Ensure data has an ID (should always be true if findNodeDataInState worked)
-    if (data.id === undefined || data.id === null) {
-        console.error("[PropertiesPanel] populatePanel called with data missing ID.", data);
+    // Use the correct ID field based on nodeType for check and display
+    const correctId = (nodeType === 'category') ? data.category_id : data.channel_id;
+    if (correctId === undefined || correctId === null) {
+        console.error(`[PropertiesPanel] populatePanel called with data missing correct ID (${nodeType} ID).`, data);
         resetPanel();
         return;
     }
-    console.log(`[PropertiesPanel] Populating panel for ${nodeType} ID ${data.id}`);
+    console.log(`[PropertiesPanel] Populating panel for ${nodeType} ID ${correctId}`);
 
     // Show form, hide placeholder
     formContainer.classList.remove('d-none');
@@ -224,8 +269,8 @@ function populatePanel(data, nodeType) {
 
     // --- Fill Common Fields ---
     propTypeSpan.textContent = nodeType.charAt(0).toUpperCase() + nodeType.slice(1);
-    propTypeSpan.className = `badge ${nodeType === 'category' ? 'bg-warning text-dark' : 'bg-info text-dark'}`; // Basic styling
-    propIdSpan.textContent = data.id;
+    propTypeSpan.className = `badge ${nodeType === 'category' ? 'bg-warning text-dark' : 'bg-info text-dark'}`; 
+    propIdSpan.textContent = correctId; // Display the correct ID
     
     // Use type-specific name field
     let currentName = '';
@@ -233,69 +278,89 @@ function populatePanel(data, nodeType) {
         currentName = data.category_name;
     } else if (nodeType === 'channel' && data.channel_name) {
         currentName = data.channel_name;
-    } else if (data.name) { // Fallback to generic name if specific one is missing
+    } else if (data.name) { // Fallback for root node?
         currentName = data.name;
     }
     propNameInput.value = currentName;
-    // --- END MODIFICATION ---
 
     // --- Reset all fields to default visibility/state/value ---
     propTopicInput.value = ''; 
     propNsfwSwitch.checked = false;
     propSlowmodeInput.value = 0;
     propDeleteBtn.disabled = true; // Keep delete disabled by default
+    // --- NEW: Reset placeholders and inline save button ---
+    if (propWebhookPlaceholder) propWebhookPlaceholder.classList.add('d-none');
+    if (propDashboardPlaceholder) propDashboardPlaceholder.classList.add('d-none');
+    if (propSaveInlineBtn) {
+         propSaveInlineBtn.classList.add('d-none'); // Hide initially
+         propSaveInlineBtn.disabled = true; // Disable initially
+    }
+    // ----------------------------------------------------
 
     // Hide type-specific fields/sections initially
-    const topicSection = propTopicInput.closest('.mb-3'); // Get parent div
-    const settingsSection = propNsfwSwitch.closest('.mb-3'); // Get parent div
-    const slowmodeContainer = propSlowmodeInput.closest('.d-inline-block'); // Get specific container for slowmode
+    const topicSection = propTopicInput.closest('.mb-3'); 
+    const settingsSection = propNsfwSwitch.closest('.mb-3');
+    const slowmodeContainer = propSlowmodeInput.closest('.d-inline-block');
 
     topicSection.classList.add('d-none'); 
-    settingsSection.classList.add('d-none'); // Hide the whole settings div containing NSFW and Slowmode
-    // No need to hide slowmode separately if its parent div is hidden, but good practice to manage its container too
+    settingsSection.classList.add('d-none'); 
     slowmodeContainer.classList.add('d-none');
 
 
-    // --- Fill Type-Specific Fields & Adjust Visibility (Controls remain disabled) ---
+    // --- Fill Type-Specific Fields & Adjust Visibility ---
     if (nodeType === 'category') {
-        // Nothing specific to show/hide for categories yet besides common fields
-        propDeleteBtn.disabled = false; // Enable delete button for categories
-        propNameInput.disabled = false; // Enable name editing for categories
-        // Delete button logic will be added later
+        propDeleteBtn.disabled = false; 
+        propNameInput.disabled = false; 
+        // --- NEW: Show inline save for editable nodes ---
+        if (propSaveInlineBtn) propSaveInlineBtn.classList.remove('d-none');
+        // ---------------------------------------------
         
     } else if (nodeType === 'channel') {
-        propNameInput.disabled = false; // Enable name editing for channels
-        propDeleteBtn.disabled = false; // Enable delete button for channels
+        propNameInput.disabled = false; 
+        propDeleteBtn.disabled = false; 
+        // --- NEW: Show inline save for editable nodes ---
+        if (propSaveInlineBtn) propSaveInlineBtn.classList.remove('d-none');
+        // ---------------------------------------------
 
-        // Show/Populate fields applicable to the specific channel type
-        const channelType = data.type ? data.type.toLowerCase() : ''; // Use 'type' from full data
+        // Use 'type' from channel data
+        const channelType = data.type ? data.type.toLowerCase() : ''; 
         
         // Topic: Text channels only
         if (channelType === 'text') {
-            topicSection.classList.remove('d-none'); // Show topic section
+            topicSection.classList.remove('d-none');
             propTopicInput.value = data.topic || '';
-            propTopicInput.disabled = false; // Enable topic editing
+            propTopicInput.disabled = false; 
         }
         
         // Settings Div (NSFW): Text & Voice channels 
         if (channelType === 'text' || channelType === 'voice') {
-            settingsSection.classList.remove('d-none'); // Show settings section
+            settingsSection.classList.remove('d-none');
             propNsfwSwitch.checked = data.is_nsfw || false;
-            propNsfwSwitch.disabled = false; // Enable NSFW toggle
+            propNsfwSwitch.disabled = false; 
         }
 
         // Slowmode (within the settings div): Text channels only
         if (channelType === 'text') {
-            // Ensure settings section is visible first if needed (already handled above)
-            slowmodeContainer.classList.remove('d-none'); // Show slowmode input within the settings div
+            slowmodeContainer.classList.remove('d-none');
             propSlowmodeInput.value = data.slowmode_delay || 0;
-            propSlowmodeInput.disabled = false; // Enable slowmode editing
+            propSlowmodeInput.disabled = false; 
         }
-        // Delete button logic will be added later
         
+        // --- NEW: Show placeholders for channels ---
+        if (propWebhookPlaceholder) propWebhookPlaceholder.classList.remove('d-none');
+        if (propDashboardPlaceholder) propDashboardPlaceholder.classList.remove('d-none');
+        // -----------------------------------------
+        
+    } else if (nodeType === 'template') {
+         // Special handling for the root template node
+         propNameInput.disabled = false; // Allow renaming the template itself?
+         propDeleteBtn.disabled = true; // Cannot delete the root node from here
+         // --- NEW: Show inline save for root node (for name changes) ---
+         if (propSaveInlineBtn) propSaveInlineBtn.classList.remove('d-none');
+         // -----------------------------------------------------------
+         // Keep other fields hidden/disabled
     } else {
-         // Handle template root node or other types - reset to placeholder
-         console.log("[PropertiesPanel] Selected node is not a category or channel. Resetting panel.");
+         console.log(`[PropertiesPanel] Selected node type '${nodeType}' not handled explicitly. Resetting panel.`);
          resetPanel(); 
     }
 }
@@ -320,6 +385,15 @@ function resetPanel() {
     if (propNsfwSwitch) propNsfwSwitch.disabled = true;
     if (propSlowmodeInput) propSlowmodeInput.disabled = true;
     if (propDeleteBtn) propDeleteBtn.disabled = true;
+
+    // --- NEW: Hide/disable placeholders and inline save button ---
+    if (propWebhookPlaceholder) propWebhookPlaceholder.classList.add('d-none');
+    if (propDashboardPlaceholder) propDashboardPlaceholder.classList.add('d-none');
+    if (propSaveInlineBtn) {
+        propSaveInlineBtn.classList.add('d-none');
+        propSaveInlineBtn.disabled = true;
+    }
+    // ---------------------------------------------------------
 }
 
 // --- Helper Functions ---
@@ -332,18 +406,36 @@ function resetPanel() {
  */
 function findNodeDataInState(nodeType, dbId) {
     const currentTemplate = state.getCurrentTemplateData();
-    if (!currentTemplate || !dbId) return null;
+    // Check if currentTemplate and its lists exist
+    if (!currentTemplate || !dbId) {
+        console.warn("[PropertiesPanel] State or dbId missing in findNodeDataInState");
+        return null;
+    }
 
     if (nodeType === 'category') {
-        return currentTemplate.categories?.find(cat => cat.id === dbId) || null;
+        // Use the correct key 'category_id' to find the category
+        if (!Array.isArray(currentTemplate.categories)) {
+            console.warn("[PropertiesPanel] currentTemplate.categories is not an array");
+            return null;
+        }
+        return currentTemplate.categories.find(cat => cat && cat.category_id === dbId) || null;
     } else if (nodeType === 'channel') {
-        return currentTemplate.channels?.find(chan => chan.id === dbId) || null;
+        // Use the correct key 'channel_id' to find the channel
+        if (!Array.isArray(currentTemplate.channels)) {
+             console.warn("[PropertiesPanel] currentTemplate.channels is not an array");
+             return null;
+        }
+        return currentTemplate.channels.find(chan => chan && chan.channel_id === dbId) || null;
     } else {
         // Handle root node or other types if necessary
         if (nodeType === 'template') {
-            // Return a mock object or the main template data if useful
-            return { id: dbId, name: currentTemplate.template_name, type: 'template' };
+            // Check against the main template ID
+            if (currentTemplate.template_id === dbId) {
+                // Return data consistent with what populatePanel might expect for the root
+                return { id: dbId, name: currentTemplate.template_name, type: 'template' }; 
+            }
         }
+        console.warn(`[PropertiesPanel] Unknown nodeType '${nodeType}' or ID mismatch in findNodeDataInState`);
         return null;
     }
 }
