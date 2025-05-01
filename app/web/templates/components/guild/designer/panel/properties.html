@@ -38,12 +38,31 @@
                 <input type="number" class="form-control form-control-sm d-inline-block" id="prop-slowmode-input" style="width: 80px;" min="0" max="21600" step="1" placeholder="0" disabled>
              </div>
         </div>
-        
+
+        <!-- Platzhalter für Webhooks (wird von JS ein-/ausgeblendet) -->
+        <div id="prop-webhook-placeholder" class="mb-3 d-none">
+            <label class="form-label form-label-sm">Webhook</label>
+            <p class="form-text small">Webhook configuration placeholder...</p>
+            <!-- Füge hier später die echten Steuerelemente hinzu -->
+        </div>
+
+        <!-- Platzhalter für Dashboards (wird von JS ein-/ausgeblendet) -->
+        <div id="prop-dashboard-placeholder" class="mb-3 d-none">
+            <label class="form-label form-label-sm">Dashboard</label>
+            <p class="form-text small">Dashboard configuration placeholder...</p>
+            <!-- Füge hier später die echten Steuerelemente hinzu -->
+        </div>
+
         <hr>
 
-        <div id="properties-actions">
-             <button id="prop-delete-btn" class="btn btn-sm btn-danger" disabled>
+        {# Use Flexbox to stack buttons vertically #}
+        <div id="properties-actions" class="d-flex flex-column gap-2">
+             <button id="prop-delete-btn" class="btn btn-sm btn-danger w-100" disabled>
                  <i class="fas fa-trash me-1"></i> Delete Element
+             </button>
+             {# Move Save button inside and make full width #}
+             <button id="prop-save-inline-btn" class="btn btn-sm btn-primary w-100 d-none" disabled>
+                 <i class="bi bi-save me-1"></i> Save Changes
              </button>
              <!-- Add other actions like permissions later -->
         </div>
