@@ -1,155 +1,64 @@
-# Discord Server Management Bot
+# FoundryCord
 ## ⚠️ Experimental Project – JUST A HOBBY ⚠️
 
-A Discord bot with web interface for managing Discord servers, channels, and dashboards. Built with Python and Docker, featuring an intuitive web UI for server administration and monitoring.
+FoundryCord is a Discord bot combined with a web interface designed for managing Discord servers, channels, and potentially integrating custom dashboards or structure management features. Built with Python and Docker.
 
-## Core Features
+## Core Concepts (Examples)
 
-- **Server Management**
-  - Create and manage categories and channels
-  - Set up automated dashboards in channels
-  - Monitor server activity and member stats
-  - Role-based access control
-
-- **Web Interface**
-  - Dashboard for server overview
-  - Visual channel & category builder
-  - User and permission management
-  - Real-time server statistics
-
-- **Discord Dashboards**
-  - Create interactive dashboards in channels
-  - System monitoring displays
-  - Welcome dashboards with auto-updates
-  - Project management boards
-
-- **Bot Commands**
-  - Slash commands for server management
-  - Channel creation and configuration
-  - Dashboard setup and control
-  - User management commands
-
-## Additional Features
-
-- **HomeLab Integration** (Optional)
-  - Container management
-  - System monitoring
-  - IP whitelisting
-  - Resource tracking
+- **Server Structure Management:** Tools to visualize, design, and apply server structures (categories, channels) potentially via templates (See Guild Designer Feature).
+- **Web Interface:** A UI for administration, visualization, and configuration.
+- **Discord Integration:** Bot commands and background tasks interacting with the Discord API.
+- **Extensibility:** Designed with modularity in mind for adding features like dashboards, monitoring, etc.
 
 ## Requirements
 
 - Docker & Docker Compose
 - Discord Bot Token
-- Python 3.8+
+- Python 3.11+ (Check `pyproject.toml`)
 
 ## Quick Setup
 
-1. **Configure the bot**:
-   ```bash
-   cd docker
-   mv .env.example .env
-   nano .env
-   cd ..
-   ```
+1.  **Prepare Docker Environment:**
+    *   Navigate to the `docker/` directory.
+    *   Copy the example environment file: `cp .env.example .env`
+    *   Edit the `.env` file to add your `DISCORD_BOT_TOKEN` and set necessary passwords (e.g., `POSTGRES_PASSWORD`, `APP_DB_PASSWORD`). Refer to the main documentation for details on all variables.
 
-2. **Start the services**:
-   ```bash
-   docker compose up -d --build
-   ```
+2.  **Start Services:**
+    *   From the project root directory, run:
+        ```bash
+        docker compose up -d --build
+        ```
 
-The web interface will be available at `http://localhost:8080`
-
-## Project Structure
-
-
-
-## Configuration
-
-### Environment Variables
-
-#### Discord Bot Configuration (.env.discordbot)
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `DISCORD_BOT_TOKEN` | Your Discord bot token | Yes |
-| `OWNER` | Discord users with full access (NAME\|ID format) | Yes |
-
-All other variables have sensible defaults and will be auto-generated if needed.
-
-#### Database Configuration (.env.postgres)
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `POSTGRES_PASSWORD` | Database admin password | Yes |
-| `APP_DB_PASSWORD` | Application database password | Yes |
-
-All other database variables use appropriate defaults.
-
-### Docker Compose
-
-
-## Security Implementation
-
-### Authentication & Authorization
-
-
-
-### Data Protection
-
-
-
-### Network Security
-
-
-
-### Monitoring & Auditing
-
-
-
-## Usage
-
-## Maintenance
-
-## Contributing
-
-1. Fork the repository
-2. Create a new branch
-3. Make your changes
-4. Submit a pull request
-
-### Security Reporting
+The web interface should become available at `http://localhost:8000` (or the configured port).
 
 ## Documentation
 
-This project includes comprehensive documentation to help you understand and use the bot effectively.
+This project includes comprehensive documentation within the `/docs` directory. Key starting points include:
 
-### Core Documentation
-- [Development Protocol](docs/core/PROTOCOL.md): Our methodical development workflow
-- [Architecture](docs/core/ARCHITECTURE.md): High-level system architecture
-- [Coding Conventions](docs/core/CONVENTIONS.md): Code standards and practices
-- [Security Policy](docs/core/SECURITY_POLICY.md): Security practices and guidelines
-- [Environment Variables](docs/core/VARIABLES.md): Configuration variables reference
+*   **Architecture Overview:** [`docs/architecture/01_overview.md`](docs/architecture/01_overview.md) - Understand the high-level system design.
+*   **Backend & Frontend Design:** See respective files in [`docs/architecture/`](docs/architecture/) for details on backend/frontend structure.
+*   **Database Schema:** [`docs/architecture/04_database_schema.md`](docs/architecture/04_database_schema.md) - Overview of the database structure.
+*   **API Specification:** [`docs/architecture/05_api_specification.md`](docs/architecture/05_api_specification.md) - Details about the REST API.
+*   **Coding Conventions:** [`docs/architecture/08_coding_conventions.md`](docs/architecture/08_coding_conventions.md) - Standards for writing code in this project.
+*   **Architectural Decisions:** [`docs/architecture/09_adr_log.md`](docs/architecture/09_adr_log.md) - Log of important design choices.
+*   **Feature Documentation:** Specific features are detailed in [`docs/development/features/`](docs/development/features/) (e.g., Guild Designer, State Monitor).
+*   **Project Management:** Roadmap, TODOs, etc., can be found in [`docs/project_management/`](docs/project_management/).
+*   **Security:** Refer to the security policy within the documentation.
+*   **Configuration:** Detailed environment variable descriptions are part of the architecture documentation.
 
-### Implementation Guides
-- **Patterns**:
-  - [Design Patterns](docs/development/patterns/DESIGN_PATTERN.md): Architecture patterns
-  - [Dashboard Implementation](docs/development/patterns/DASHBOARD_PATTERN.md): Dashboard UI patterns
-  - [Slash Command Pattern](docs/development/patterns/SLASHCOMMAND_PATTERN.md): Command implementation
-- **Development Roles**:
-  - [Bot Framework Developer](docs/development/roles/BOT_FRAMEWORK_DEVELOPER.md): Core bot development
-  - [Security Specialist](docs/development/roles/SECURITY_SPECIALIST.md): Security implementation
-  - [System Monitoring Developer](docs/development/roles/SYSTEM_MONITORING_DEVELOPER.py): Monitoring features
-  - [Slash Command Developer](docs/development/roles/SLASH_COMMAND_DEVELOPER.py): Command implementation
-  - [UI/UX Designer](docs/development/roles/UI_UX_DESIGNER.py): Dashboard and UI development
+## Contributing
 
-### Project Planning
-- [Current Action Plan](docs/planning/ACTION_PLAN.md): Tasks in progress
-- [Roadmap](docs/planning/ROADMAP.md): Future development plans
-- [Milestones](docs/planning/MILESTONES.md): Project progress tracking
+Contributions are welcome! Please follow these general steps:
 
-### Templates
-- [Role Definition Template](docs/development/template/ROLE_DEFINITION.md): Template for defining roles
+1.  Fork the repository.
+2.  Create a new branch for your feature or bugfix.
+3.  Make your changes, adhering to the [Coding Conventions](docs/architecture/08_coding_conventions.md).
+4.  Ensure necessary documentation is updated.
+5.  Submit a pull request.
+
+### Security Reporting
+
+Please report security vulnerabilities responsibly. Refer to the security policy in the documentation for details.
 
 ## License
 
