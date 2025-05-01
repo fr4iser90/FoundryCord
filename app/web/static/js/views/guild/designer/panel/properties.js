@@ -136,14 +136,22 @@ function handleNodeSelection(event) {
 
     // --- MODIFIED: Store current node info for input handler --- 
     currentNodeType = nodeData.type;
-    currentNodeDbId = fullNodeData.id; // Use ID from the full data object
+    // --- CORRECTED: Use the correct ID based on type ---
+    currentNodeDbId = (currentNodeType === 'category') 
+                        ? fullNodeData.category_id 
+                        : (currentNodeType === 'channel') 
+                            ? fullNodeData.channel_id 
+                            : null; // Fallback to null if type is unknown
+    console.log(`[PropertiesPanel] Stored currentNodeType: ${currentNodeType}, currentNodeDbId: ${currentNodeDbId}`);
+    // --------------------------------------------------
+    
     // Extract name based on type, similar to populatePanel
     let nameToStore = 'Unnamed Item';
     if (currentNodeType === 'category' && fullNodeData.category_name) {
         nameToStore = fullNodeData.category_name;
     } else if (currentNodeType === 'channel' && fullNodeData.channel_name) {
         nameToStore = fullNodeData.channel_name;
-    } else if (fullNodeData.name) { // Fallback
+    } else if (fullNodeData.name) { // Fallback for template root?
         nameToStore = fullNodeData.name;
     }
     currentNodeName = nameToStore; // Store the correctly extracted name
@@ -229,19 +237,19 @@ function handleInlineSaveClick() {
         return;
     }
 
-    console.log("[PropertiesPanel] Inline Save button clicked. Triggering save process...");
-    showToast('info', 'Saving changes... (Placeholder)'); // Placeholder feedback
+    console.log("[PropertiesPanel] Inline Save button clicked. Dispatching 'requestSaveStructure' event.");
+    showToast('info', 'Saving changes...'); // Immediate feedback
 
-    // TODO: Implement actual save logic here.
-    // This likely involves calling a method similar to what the main save button does, e.g.:
-    // try {
-    //     await state.saveCurrentTemplateStructure(); // Or equivalent function
-    //     showToast('success', 'Changes saved successfully.');
-    //     if (propSaveInlineBtn) propSaveInlineBtn.disabled = true; // Disable after successful save
-    // } catch (error) {
-    //     console.error("[PropertiesPanel] Error saving changes:", error);
-    //     showToast('error', 'Failed to save changes.');
-    // }
+    // Dispatch an event that the main save handler in designerEvents.js can listen for
+    document.dispatchEvent(new CustomEvent('requestSaveStructure'));
+
+    // Disable the button immediately to prevent double-clicks while saving
+    if (propSaveInlineBtn) {
+        propSaveInlineBtn.disabled = true;
+    }
+
+    // The actual saving logic (API call, state update) is handled by the listener
+    // for 'requestSaveStructure' in designerEvents.js, which calls handleSaveStructureClick.
 }
 
 // --- UI Logic ---

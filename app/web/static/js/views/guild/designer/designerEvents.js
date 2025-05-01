@@ -774,7 +774,11 @@ export function initializeDesignerEventListeners() {
     saveButton?.addEventListener('click', handleSaveStructureClick);
 
     const activateButton = document.getElementById(ACTIVATE_BTN_ID);
-    activateButton?.addEventListener('click', handleToolbarActivateClick);
+    if (activateButton) {
+        activateButton.addEventListener('click', handleToolbarActivateClick);
+    } else {
+        console.warn("[DesignerEvents] Activate button not found during initialization.");
+    }
 
     // Listener for the 'Save As New' confirmation event (fired by the modal)
     document.addEventListener('saveAsNewConfirmed', handleSaveAsNewConfirmed);
@@ -821,10 +825,18 @@ export function initializeDesignerEventListeners() {
 
     // Delete Unmanaged Checkbox Listener
     const deleteUnmanagedCheckbox = document.getElementById(DELETE_UNMANAGED_CHECKBOX_ID);
-    deleteUnmanagedCheckbox?.addEventListener('change', handleDeleteUnmanagedChange);
+    if (deleteUnmanagedCheckbox) {
+        deleteUnmanagedCheckbox.addEventListener('change', handleDeleteUnmanagedChange);
+    } else {
+        console.warn("[DesignerEvents] Delete unmanaged checkbox not found during initialization.");
+    }
 
     // Listener for New Item Confirmation
     document.addEventListener('newItemConfirmed', handleNewItemConfirmed);
+
+    // --- NEW: Listener for Inline Save Request from Properties Panel ---
+    document.addEventListener('requestSaveStructure', handleSaveStructureClick); 
+    // ---------------------------------------------------------------
 
     // Setup panel toggles (if they exist)
     setupPanelToggles(); 
@@ -832,7 +844,7 @@ export function initializeDesignerEventListeners() {
     // Initial button state update
     updateToolbarButtonStates();
 
-    console.log("[DesignerEvents] Designer event listeners initialized.");
+    console.log("[DesignerEvents] All designer event listeners initialized.");
 }
 
 // Initial log to confirm loading
