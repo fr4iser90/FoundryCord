@@ -39,10 +39,11 @@ The Guild Structure Designer provides a web interface to manage and visualize Di
     *   Updating names and topics of existing categories/channels.
     *   Optionally deleting categories and channels that exist on Discord but are not in the template (controlled by the "Clean Apply" setting in the UI / `template_delete_unmanaged` flag in the database).
     *   Storing the corresponding Discord ID (`discord_channel_id`) in the template channel definition after creation/matching.
+    *   **Detailed implementation notes for applying structures, managing related features like channel following, and interacting with the Discord API can be found in `structure_workflow.md` and `channel_follow_implementation.md`.**
 
 ## Current Limitations
 
 *   **Property/Element Editing:** The designer currently only supports **reordering and re-parenting** existing elements via drag-and-drop. Editing properties (like names, topics) or adding/deleting categories/channels directly within the designer UI is **not implemented**.
 *   **Applying Edits (Reordering):** The bot's `apply_template` function currently only sets the basic position during creation/update. Complex **reordering** of existing categories and channels to precisely match the template order is **not yet implemented**.
 *   **Visual Accuracy:** The current views (especially the Tree View) do not perfectly replicate the Discord standard where uncategorized channels appear strictly at the top of the list.
-*   **No "Undo" Functionality:** Changes made via "Apply to Discord" are direct and currently lack an undo mechanism.
+*   **No "Undo" Functionality:** Changes made via "Apply to Discord" are direct and currently lack an undo mechanism. 

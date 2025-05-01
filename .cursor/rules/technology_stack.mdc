@@ -3,6 +3,6 @@ description:
 globs: 
 alwaysApply: false
 ---
- # Technology Stack Context
+# Technology Stack Context
 
-See: @docs/architecture/07_technology_stack.md
+See: @docs/1_introduction/tech_stack.md

@@ -3,6 +3,6 @@ description:
 globs: 
 alwaysApply: false
 ---
- # Deployment Guidelines Context
+# Deployment Guidelines Context
 
-See: @docs/architecture/06_deployment.md
+See: @docs/3_developer_guides/05_deployment/README.md

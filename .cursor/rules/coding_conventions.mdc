@@ -3,6 +3,6 @@ description:
 globs: 
 alwaysApply: true
 ---
- # Coding Conventions Context
+# Coding Conventions Context
 
-See: @docs/architecture/08_coding_conventions.md
+See: @docs/3_developer_guides/01_getting_started/coding_conventions.md

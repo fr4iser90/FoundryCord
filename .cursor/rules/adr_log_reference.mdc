@@ -5,4 +5,4 @@ alwaysApply: true
 ---
  # Architectural Decision Records (ADR) Log Context
 
-See: @docs/architecture/09_adr_log.md
+See: @docs/4_project_management/adr/README.md

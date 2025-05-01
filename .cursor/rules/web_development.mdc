@@ -7,9 +7,9 @@ alwaysApply: false
 
 ## Key Architecture Documents
 
-- Overall Frontend Design: @docs/architecture/02_frontend_design.md
-- Relevant Coding Conventions (JS/CSS): @docs/architecture/08_coding_conventions.md
-- Technology Stack (Frontend Section): @docs/architecture/07_technology_stack.md
+- Overall Frontend Design: @docs/3_developer_guides/02_architecture/frontend_design.md
+- Relevant Coding Conventions (JS/CSS): @docs/3_developer_guides/01_getting_started/coding_conventions.md
+- Technology Stack (Frontend Section): @docs/1_introduction/tech_stack.md
 
 ## Frontend Specific Rules & Verifications
 

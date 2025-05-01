@@ -69,4 +69,4 @@ The module works with these primary database entities:
 - Interacts with Discord API for server structure operations
 - Uses database to persist configuration and state
 - Interfaces with template system for standardized layouts
-- Coordinates with permission system for access control
+- Coordinates with permission system for access control 

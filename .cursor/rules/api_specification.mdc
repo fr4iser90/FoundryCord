@@ -3,6 +3,6 @@ description:
 globs: 
 alwaysApply: true
 ---
- # API Specification Context
+# API Specification Context
 
-See: @docs/architecture/05_api_specification.md
+See: @docs/3_developer_guides/02_architecture/api_specification.md

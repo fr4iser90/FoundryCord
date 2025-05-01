@@ -3,7 +3,7 @@ description:
 globs: 
 alwaysApply: true
 ---
- # Current Task & TODO Focus
+# Current Task & TODO Focus
 
 **Instructions:**
 - **Update this file** to reflect the current feature you are working on.
@@ -15,7 +15,7 @@ alwaysApply: true
 
 ## TODO List Adherence
 
-- **TODO File:** @docs/development/features/guild_designer/guild_designer_todo.md
+- **TODO File:** @docs/4_project_management/todo/guild_designer.md
 - **Rule:** Strictly follow the order and content of the specified TODO file unless explicitly told otherwise by the user *for the current step*.
 
 ## Specific Task Context (Optional)

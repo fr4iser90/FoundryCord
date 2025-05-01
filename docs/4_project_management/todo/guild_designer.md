@@ -1,5 +1,9 @@
 # Guild Designer TODO
 
+## Structure Application & Related Features (See `structure_workflow_todo.md`)
+
+_(This section covers applying templates to Discord, managing channel follows, dashboards, etc. Details are tracked in the separate `structure_workflow_todo.md` file within this directory.)_
+
 ## Core Functionality
 
 ### Phase 1: Saving Edited Structure & Basic Actions
