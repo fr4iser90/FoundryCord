@@ -42,6 +42,7 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [x] **API Route (POST):** Define `POST /api/v1/templates/guilds/{template_id}/activate` in `guild_template_controller.py`.
     *   [x] **Service Logic:** Implement `activate_template` in `template_service.py` to set `is_active` flag (ensure only one per guild).
     *   [x] **Permissions:** Ensure only owner or GUILD ADMIN can activate (Basic check implemented, comments added for future enhancement).
+*   [x] **Refactor Core Bot Workflows/Services:** Implemented session-based repository handling to ensure reliable database interactions for template application and future API calls.
 
 ### Phase 2: Applying Template to Discord
 
@@ -76,10 +77,13 @@ _(This section covers applying templates to Discord, managing channel follows, d
 ### Phase 3: Full Designer Editing Capabilities
 
 *   [ ] **Properties Panel - Setup & Display:**
-    *   **Files:** `properties.js`, `properties.html` (widget template), `structureTree.js`, Listen-Widgets (`categoriesList.js`, `channelsList.js`).
-    *   [ ] **UI Grundstruktur:** HTML für Properties-Panel erstellen (Felder für Name, Topic, Slowmode, NSFW etc.), initial ausgeblendet/placeholder.
-    *   [ ] **Selektion:** Event (`nodeSelected`) aus Baum/Listen bei Auswahl auslösen.
-    *   [ ] **Anzeige:** `properties.js` implementieren: Auf `nodeSelected` hören, Panel mit Daten füllen, Felder je nach Typ ein-/ausblenden, Felder (noch) deaktivieren.
+    *   **Files:** `properties.js`, `properties.html`, `structureTree.js`, Listen-Widgets (`categoriesList.js`, `channelsList.js`).
+    *   [x] **UI Grundstruktur:** HTML für Properties-Panel erstellt.
+    *   [x] **Selektion:** Event (`nodeSelected`) wird bei Auswahl ausgelöst und verarbeitet.
+    *   [x] **Datenfindung:** Logik (`findNodeDataInState`) korrigiert, um korrekte IDs zu verwenden.
+    *   [x] **Anzeige (Basis):** `properties.js` implementiert, Panel wird mit Basisdaten gefüllt. Felder sind noch nicht dynamisch/deaktiviert.
+    *   [ ] **Dynamische Felder:** Felder je nach selektiertem Typ (Server, Kategorie, Kanal) korrekt ein-/ausblenden.
+    *   [ ] **Initialer Zustand:** Felder initial deaktivieren/placeholder anzeigen.
 *   [ ] **Properties Panel - Editing aktivieren:**
     *   **Files:** `properties.js`, `designerState.js`, `designerEvents.js`.
     *   [ ] **Felder aktivieren:** Input-Felder bei Auswahl aktivieren.
@@ -92,12 +96,13 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [ ] **State aufräumen:** Nach erfolgreichem Speichern "pending property changes" löschen.
 *   [ ] **Elemente löschen implementieren:**
     *   **Files:** `properties.js` / `structureTree.js`, `deleteModal.js`, `designerEvents.js`, `template_service.py`, `guild_template_controller.py`, Repos.
-    *   [ ] **UI Trigger:** Löschen-Button im Properties Panel ODER Kontextmenü im Baum hinzufügen.
-    *   [ ] **Bestätigung:** Vorhandenen `deleteModal` verwenden.
-    *   [ ] **Backend API (DELETE):** Neue Endpunkte (`DELETE /.../categories/{id}`, `DELETE /.../channels/{id}`) erstellen.
-    *   [ ] **Backend Logik:** Service/Repo-Methoden zum Löschen der DB-Entitäten implementieren (inkl. Checks).
-    *   [ ] **Frontend Call:** API-Aufruf nach Modal-Bestätigung in `designerEvents.js`.
-    *   [ ] **UI Update:** Nach Erfolg: Knoten aus Baum/Listen entfernen, `state.setDirty(true)`.
+    *   [ ] **UI Trigger:** Löschen-Button im Properties Panel hinzufügen.
+    *   [x] **Bestätigung:** Vorhandener `deleteModal` wird korrekt getriggert.
+    *   [x] **Backend API (DELETE):** Neue Endpunkte (`DELETE /.../categories/{id}`, `DELETE /.../channels/{id}`) erstellt.
+    *   [x] **Backend Logik:** Service/Repo-Methoden zum Löschen der DB-Entitäten implementiert.
+    *   [x] **Frontend Events:** Event-Listener (`designerElementDeleted`, `requestPanelReset`) implementiert.
+    *   [ ] **Frontend Call:** API-Aufruf nach Modal-Bestätigung implementieren.
+    *   [ ] **UI Update:** Knoten aus Baum/Listen nach Erfolg entfernen.
 *   [ ] **Elemente hinzufügen (Toolbox):**
     *   **Files:** `toolboxList.js`, `toolbox.html`, `structureTree.js`, `designerEvents.js`, `template_service.py`, `guild_template_controller.py`, Repos.
     *   [ ] **Toolbox UI:** Draggable Elemente für "Neue Kategorie", "Neuer Textkanal" etc. erstellen.
