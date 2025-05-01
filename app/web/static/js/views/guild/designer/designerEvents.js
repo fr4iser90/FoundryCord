@@ -241,16 +241,34 @@ async function handleSaveStructureClick() {
             }
         }
         // 3. Clear pending changes AFTER potentially using them for UI update
-        state.clearPendingChanges(); 
+        console.log('[DesignerEvents] Checking state before clearPendingChanges:', state);
+        // --- DEBUG: Try calling indirectly with explicit context ---
+        const clearFunc = state.clearPendingPropertyChanges;
+        console.log('[DesignerEvents] Type of clearFunc:', typeof clearFunc);
+        if (typeof clearFunc === 'function') {
+            try {
+                clearFunc.call(state); // Explicitly set context to 'state'
+                console.log('[DesignerEvents] clearPendingChanges called successfully via .call()');
+            } catch (e) {
+                console.error('[DesignerEvents] Error calling clearFunc.call(state):', e);
+            }
+        } else {
+            console.error('[DesignerEvents] state.clearPendingPropertyChanges is not a function!', clearFunc);
+            // Fallback or further debugging needed
+        }
+        // --- END DEBUG ---
+        // state.clearPendingChanges(); // Original call commented out
 
-        // 4. Reset dirty flag (already done by clearPendingChanges)
-        // state.setDirty(false); // Not needed if clearPendingChanges does it
+        // 4. Reset dirty flag - Explicitly call setDirty(false) AFTER clearing changes
+        state.setDirty(false); 
         
         // 5. Dispatch event (if needed by other components, keep it)
         document.dispatchEvent(new CustomEvent('structureSaved', { 
-            detail: { isNew: false, updatedData: responseData } // Pass updated data
+            detail: { isNew: false, templateId: templateId } 
         }));
-        // --- END NEW --- 
+
+        // 6. Update button states AFTER dirty state is false
+        updateToolbarButtonStates(); 
 
     } catch (error) {
         const isPermissionError = error instanceof ApiError && error.status === 403; 
