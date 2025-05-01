@@ -106,13 +106,24 @@ class GuildTemplateService:
     async def update_template_metadata(
         self, db: AsyncSession, template_id: int, requesting_user: AppUserEntity, 
         new_name: Optional[str] = None, new_description: Optional[str] = None, is_shared: Optional[bool] = None
-    ) -> GuildTemplateEntity:
-        """Delegates to TemplateManagementService."""
+    ) -> Optional[Dict[str, Any]]: # Return full structured data
+        """Delegates metadata update to ManagementService, then fetches full data via QueryService."""
         logger.debug(f"GuildTemplateService facade delegating update_template_metadata for {template_id}")
-        # Pass arguments in the correct order expected by the management service
-        return await self._management_service.update_template_metadata(
-            db, template_id, requesting_user, new_name, new_description, is_shared
-        )
+        try:
+            # Call management service to perform the update, it returns the ID on success
+            updated_template_id = await self._management_service.update_template_metadata(
+                db, template_id, requesting_user, new_name, new_description, is_shared
+            )
+            
+            # If successful (returned ID), fetch the full data using the query service
+            logger.debug(f"Metadata update successful for ID {updated_template_id}. Fetching full data...")
+            full_updated_data = await self._query_service.get_template_by_id(updated_template_id)
+            return full_updated_data
+        except Exception as e:
+            # Log the exception if needed, or let the controller handle it
+            logger.error(f"Error during update_template_metadata facade call for {template_id}: {e}", exc_info=True)
+            # Re-raise the exception so the controller can map it to an HTTP response
+            raise e
 
     # --- Sharing Methods Delegation --- 
 

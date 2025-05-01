@@ -272,8 +272,8 @@ class TemplateManagementService:
         new_name: Optional[str] = None,
         new_description: Optional[str] = None,
         is_shared: Optional[bool] = None
-    ) -> GuildTemplateEntity:
-        """Updates metadata (name, description, is_shared) for a template. Checks ownership."""
+    ) -> int: # Return template_id on success
+        """Updates metadata (name, description, is_shared) for a template. Checks ownership. Returns template ID on success."""
         logger.info(f"SERVICE: Attempting metadata update for template {template_id} by user {requesting_user.id}. Update fields: name={new_name}, desc={new_description}, shared={is_shared}")
 
         result = await db.execute(select(GuildTemplateEntity).where(GuildTemplateEntity.id == template_id))
@@ -312,10 +312,8 @@ class TemplateManagementService:
             template.updated_at = datetime.utcnow()
             db.add(template)
             # Commit handled by caller
-            logger.info(f"SERVICE: Metadata for template {template_id} updated successfully (pending commit).")
-            # Refresh needed if caller uses the object immediately after
-            # await db.refresh(template) 
+            logger.info(f"SERVICE: Metadata for template {template_id} updated successfully (pending commit). Returning ID.")
         else:
-             logger.info(f"SERVICE: No metadata changes detected for template {template_id}.")
+             logger.info(f"SERVICE: No metadata changes detected for template {template_id}. Returning ID.")
 
-        return template # Return the (potentially updated) entity 
+        return template.id # Return the ID 
