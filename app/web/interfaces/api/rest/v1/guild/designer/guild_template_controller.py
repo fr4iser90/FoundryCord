@@ -4,7 +4,7 @@ from app.web.interfaces.api.rest.v1.base_controller import BaseController
 from app.shared.infrastructure.models.auth import AppUserEntity
 from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user, get_web_db_session
 # Import the new GuildTemplateService
-from app.web.application.services.guild.template_service import GuildTemplateService 
+from app.web.application.services.template.template_service import GuildTemplateService 
 # TODO: Define response model schema when created
 # from app.web.interfaces.api.rest.v1.schemas.guild_template_schemas import GuildTemplateResponse
 # Assuming schema exists or define inline for now

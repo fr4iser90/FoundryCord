@@ -1,6 +1,10 @@
 # Structure Workflow Implementation TODO
 
+**(See also: [Guild Designer Main TODO](../../../../4_project_management/todo/guild_designer.md))**
+
 ## Channel Following Feature
+
+**(Implementation Details: [channel_follow_implementation.md](./channel_follow_implementation.md))**
 
 - [ ] **Create Database Entities**
   - [ ] Create `ChannelFollowEntity` table for storing follow relationships

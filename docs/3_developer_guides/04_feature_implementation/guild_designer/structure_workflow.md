@@ -1,5 +1,7 @@
 # Structure Workflow Documentation
 
+**(See also: [Guild Designer Main TODO](../../../../4_project_management/todo/guild_designer.md))**
+
 ## Overview
 
 The Structure Workflow is responsible for managing the Discord server structure, including categories, channels, and their relationships. This module handles operations such as:
@@ -15,6 +17,8 @@ The Structure Workflow is responsible for managing the Discord server structure,
 ### Channel Following
 
 Discord offers a feature called "Channel Following" that allows announcement channels (news channels) to be followed by other channels. When a message is posted in the source channel, it's automatically crossposted to all follower channels.
+
+**(See [Channel Follow Implementation Details](./channel_follow_implementation.md))**
 
 **Technical Implementation:**
 - Uses Discord's built-in webhook system to relay messages

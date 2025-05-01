@@ -1,5 +1,7 @@
 # Channel Follow Implementation
 
+**(Related: [Structure Workflow Overview](./structure_workflow.md), [Structure Workflow TODO](./structure_workflow_todo.md))**
+
 This document outlines the implementation details for the Channel Follow feature in the FoundryCord bot.
 
 ## Database Schema

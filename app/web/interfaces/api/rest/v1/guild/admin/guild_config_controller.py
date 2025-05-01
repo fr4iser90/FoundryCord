@@ -2,7 +2,7 @@ from fastapi import Depends
 from app.web.interfaces.api.rest.v1.base_controller import BaseController
 from app.shared.infrastructure.models.auth import AppUserEntity, AppRoleEntity
 from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
-from app.web.application.services.guild.template_service import GuildTemplateService
+from app.web.application.services.template.template_service import GuildTemplateService
 
 class GuildConfigController(BaseController):
     """Controller for guild configuration functionality"""
