@@ -2,6 +2,7 @@
 SQLAlchemy model for guild template channels.
 """
 from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey, JSON
+from sqlalchemy.dialects.postgresql import ARRAY  # Import ARRAY for PostgreSQL
 from sqlalchemy.orm import relationship
 from app.shared.infrastructure.models.base import Base
 
@@ -17,6 +18,8 @@ class GuildTemplateChannelEntity(Base):
     topic = Column(Text, nullable=True)
     is_nsfw = Column(Boolean, server_default='false', nullable=False)
     slowmode_delay = Column(Integer, server_default='0', nullable=False)
+    is_dashboard_enabled = Column(Boolean, server_default='false', nullable=False)
+    dashboard_types = Column(ARRAY(String), nullable=True, default=lambda: []) # Default to empty list
     parent_category_template_id = Column(Integer, ForeignKey('guild_template_categories.id', ondelete='SET NULL'), nullable=True, index=True)
     discord_channel_id = Column(String, nullable=True, index=True, unique=False) # Store actual Discord ID when applied/synced
     metadata_json = Column(JSON, nullable=True)

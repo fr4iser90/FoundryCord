@@ -26,10 +26,15 @@ let propSlowmodeInput = null;
 let propDeleteBtn = null;
 // --- NEW: Placeholders & Inline Save ---
 let propWebhookPlaceholder = null;
-let propDashboardPlaceholder = null;
 let propSaveInlineBtn = null;
 // --- NEW: Add refs for property groups --- 
 let propertyGroups = [];
+// --- NEW: Add ref for dashboard enabled switch ---
+let propDashboardEnabledSwitch = null; 
+// --- NEW: Add refs for dashboard config section ---
+let propDashboardConfigContainer = null;
+let propDashboardSelectedDisplay = null;
+let propDashboardAddInput = null;
 // --------------------------------------
 
 // Store current node info
@@ -57,17 +62,27 @@ function cacheDomElements() {
     propDeleteBtn = panelContent.querySelector('#prop-delete-btn');
     // --- NEW: Cache new elements ---
     propWebhookPlaceholder = panelContent.querySelector('#prop-webhook-placeholder');
-    propDashboardPlaceholder = panelContent.querySelector('#prop-dashboard-placeholder');
+    // --- REMOVED old dashboard placeholder caching ---
+    // propDashboardPlaceholder = panelContent.querySelector('#prop-dashboard-placeholder');
     propSaveInlineBtn = panelContent.querySelector('#prop-save-inline-btn');
     // --- NEW: Cache property groups --- 
     propertyGroups = formContainer.querySelectorAll('.property-group');
+    // --- NEW: Cache dashboard enabled switch ---
+    propDashboardEnabledSwitch = panelContent.querySelector('#prop-dashboard-enabled-switch'); 
+    // --- NEW: Cache dashboard config elements ---
+    propDashboardConfigContainer = panelContent.querySelector('#properties-dashboard-config-container');
+    propDashboardSelectedDisplay = panelContent.querySelector('#prop-dashboard-selected-display');
+    propDashboardAddInput = panelContent.querySelector('#prop-dashboard-add-input');
     // -------------------------------
 
     // Check if all essential elements were found
-    // Basic check, assuming placeholders/save button might not exist yet
+    // We check the display span, not necessarily the buttons inside it initially
     return !!(placeholderDiv && formContainer && propTypeSpan && propIdSpan && 
               propNameInput && propTopicInput && propNsfwSwitch && 
-              propSlowmodeInput && propDeleteBtn && propertyGroups.length > 0); 
+              propSlowmodeInput && propDeleteBtn && propertyGroups.length > 0 && 
+              propDashboardEnabledSwitch && 
+              propDashboardConfigContainer && propDashboardSelectedDisplay && 
+              propDashboardAddInput);
               // Note: Not checking new elements strictly here allows gradual HTML implementation
 }
 
@@ -89,11 +104,17 @@ export function initializePropertiesPanel() {
     propTopicInput.addEventListener('input', handleInputChange);
     propSlowmodeInput.addEventListener('input', handleInputChange);
     propNsfwSwitch.addEventListener('change', handleInputChange); // Use 'change' for checkbox/switch
-    // -----------------------------------------
+    // --- NEW: Add event listener for dashboard enabled switch ---
+    propDashboardEnabledSwitch.addEventListener('change', handleInputChange); 
+    // ---------------------------------------------------------
 
     // --- Add event listener for the delete button --- 
     propDeleteBtn.addEventListener('click', handleDeleteClick);
     // ---------------------------------------------
+
+    // --- NEW: Add event listeners for dashboard buttons ---
+    propDashboardAddInput.addEventListener('keydown', handleDashboardAddInputKeydown);
+    // ----------------------------------------------------
 
     // --- NEW: Add event listener for the inline save button ---
     if (propSaveInlineBtn) {
@@ -203,9 +224,30 @@ function handleInputChange(event) {
         if (statePropertyName === 'nsfw') {
             statePropertyName = 'is_nsfw';
         }
+        // Special handling for the new dashboard enabled switch
+        if (statePropertyName === 'dashboard-enabled') { 
+            statePropertyName = 'is_dashboard_enabled';
+        }
         // Add more mappings if needed
         
         state.addPendingPropertyChange(currentNodeType, currentNodeDbId, statePropertyName, newValue);
+
+        // --- NEW: Handle dashboard config container visibility and content ---
+        if (propDashboardConfigContainer && propDashboardSelectedDisplay && propDashboardAddInput) {
+            const isEnabled = propDashboardEnabledSwitch.checked; // Check current state
+            if (isEnabled) {
+                propDashboardConfigContainer.classList.remove('d-none');
+                propDashboardAddInput.disabled = false;
+                // Populate selected dashboards display 
+                const selectedTypes = findNodeDataInState(currentNodeType, currentNodeDbId)?.dashboard_types || [];
+                renderDashboardBadges(selectedTypes); // Use helper to render badges
+            } else {
+                propDashboardConfigContainer.classList.add('d-none');
+                propDashboardAddInput.disabled = true;
+            }
+        }
+        // ----------------------------------------------------------------
+        
     } else {
         console.warn("[PropertiesPanel] Cannot store pending change: Current node type or ID is not set.");
     }
@@ -258,6 +300,113 @@ function handleInlineSaveClick() {
 
     // The actual saving logic (API call, state update) is handled by the listener
     // for 'requestSaveStructure' in designerEvents.js, which calls handleSaveStructureClick.
+}
+
+// --- NEW: Dashboard Input Handler (Placeholder) ---
+
+/**
+ * Handles keydown events on the 'Add Dashboard' input field.
+ * TODO: Implement Enter key press to add type, and potentially autocomplete.
+ * @param {KeyboardEvent} event
+ */
+function handleDashboardAddInputKeydown(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault(); // Prevent form submission
+        const inputElement = event.target;
+        const newDashboardType = inputElement.value.trim().toLowerCase(); // Trim and normalize
+        console.log(`[PropertiesPanel] Enter pressed in dashboard input. Value: ${newDashboardType}`);
+
+        if (newDashboardType && currentNodeType === 'channel' && currentNodeDbId !== null) {
+            // Get current types from state or fallback to empty array
+            const currentData = findNodeDataInState(currentNodeType, currentNodeDbId);
+            let currentTypes = currentData?.dashboard_types || [];
+
+            // Prevent duplicates
+            if (currentTypes.includes(newDashboardType)) {
+                showToast('warning', `Dashboard type '${newDashboardType}' is already added.`);
+                return;
+            }
+
+            // Add the new type and update state
+            const newList = [...currentTypes, newDashboardType];
+            state.addPendingPropertyChange(currentNodeType, currentNodeDbId, 'dashboard_types', newList);
+            
+            // Update UI
+            renderDashboardBadges(newList);
+            inputElement.value = ''; // Clear input
+            state.setDirty(true);
+            updateToolbarButtonStates();
+            if (propSaveInlineBtn) propSaveInlineBtn.disabled = false;
+
+        } else if (!newDashboardType) {
+            console.log("[PropertiesPanel] Dashboard input empty on Enter press.");
+        } else {
+             console.warn("[PropertiesPanel] Cannot add dashboard type: No channel selected.");
+        }
+    }
+    // No autocomplete for now
+}
+
+// --- NEW: Helper to render dashboard badges ---
+/**
+ * Clears and renders the dashboard type badges in the display area.
+ * @param {string[]} types - Array of dashboard type strings.
+ */
+function renderDashboardBadges(types) {
+    if (!propDashboardSelectedDisplay) return;
+
+    propDashboardSelectedDisplay.innerHTML = ''; // Clear existing badges
+    propDashboardSelectedDisplay.classList.remove('text-muted', 'fst-italic'); // Remove default style
+
+    if (!types || types.length === 0) {
+        propDashboardSelectedDisplay.textContent = 'None';
+        propDashboardSelectedDisplay.classList.add('text-muted', 'fst-italic');
+        return;
+    }
+
+    types.forEach(type => {
+        const badge = document.createElement('span');
+        badge.className = 'badge bg-secondary me-1 mb-1'; // Style as a badge
+        badge.textContent = type;
+
+        const removeBtn = document.createElement('span');
+        removeBtn.className = 'badge-remove-btn ms-1'; // Style for the remove button
+        removeBtn.innerHTML = '&times;'; // Simple 'x' character
+        removeBtn.style.cursor = 'pointer';
+        removeBtn.style.fontWeight = 'bold';
+        removeBtn.title = `Remove ${type}`;
+        removeBtn.addEventListener('click', () => handleRemoveDashboardType(type));
+
+        badge.appendChild(removeBtn);
+        propDashboardSelectedDisplay.appendChild(badge);
+    });
+}
+
+// --- NEW: Handler to remove a dashboard type ---
+/**
+ * Handles the click on a remove button of a dashboard badge.
+ * @param {string} typeToRemove - The dashboard type string to remove.
+ */
+function handleRemoveDashboardType(typeToRemove) {
+    console.log(`[PropertiesPanel] Requesting removal of dashboard type: ${typeToRemove}`);
+    if (currentNodeType === 'channel' && currentNodeDbId !== null) {
+        const currentData = findNodeDataInState(currentNodeType, currentNodeDbId);
+        let currentTypes = currentData?.dashboard_types || [];
+
+        const newList = currentTypes.filter(t => t !== typeToRemove);
+
+        // Update state
+        state.addPendingPropertyChange(currentNodeType, currentNodeDbId, 'dashboard_types', newList);
+        
+        // Update UI
+        renderDashboardBadges(newList);
+        state.setDirty(true);
+        updateToolbarButtonStates();
+        if (propSaveInlineBtn) propSaveInlineBtn.disabled = false;
+
+    } else {
+        console.warn("[PropertiesPanel] Cannot remove dashboard type: No channel selected.");
+    }
 }
 
 // --- UI Logic ---
@@ -341,6 +490,12 @@ function populatePanel(data, nodeType) {
              formContainer.querySelectorAll('.forum-channel-property').forEach(el => el.classList.remove('d-none'));
         } // Add more types (stage?) if needed
         
+        // --- NEW: Set dashboard enabled switch state ---
+        propDashboardEnabledSwitch.checked = data.is_dashboard_enabled || false; 
+        // Ensure the activation group itself is visible (it has channel-property class, so should be covered)
+        // document.getElementById('properties-dashboard-activation')?.classList.remove('d-none'); 
+        // -----------------------------------------------
+        
     } else {
         // Unknown type, reset the panel
         console.warn(`[PropertiesPanel] Unknown node type received: ${nodeType}`);
@@ -407,6 +562,20 @@ function resetPanel() {
     currentNodeType = null;
     currentNodeDbId = null;
     currentNodeName = null;
+
+    // --- NEW: Reset dashboard enabled switch ---
+    if (propDashboardEnabledSwitch) {
+        propDashboardEnabledSwitch.checked = false;
+        propDashboardEnabledSwitch.disabled = true;
+    }
+    // --- NEW: Reset dashboard config section ---
+    if (propDashboardConfigContainer && propDashboardSelectedDisplay && propDashboardAddInput) {
+        propDashboardConfigContainer.classList.add('d-none');
+        renderDashboardBadges([]); // Clear display by rendering empty list
+        propDashboardAddInput.value = ''; // Clear input
+        propDashboardAddInput.disabled = true; // Disable input
+    }
+    // ----------------------------------------
 }
 
 // --- Helper Functions ---

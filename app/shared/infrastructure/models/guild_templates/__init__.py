@@ -9,5 +9,5 @@ __all__ = [
     'GuildTemplateCategoryEntity',
     'GuildTemplateChannelEntity',
     'GuildTemplateCategoryPermissionEntity',
-    'GuildTemplateChannelPermissionEntity'
+    'GuildTemplateChannelPermissionEntity',
 ]

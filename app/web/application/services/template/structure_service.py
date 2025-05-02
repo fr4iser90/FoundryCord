@@ -12,15 +12,15 @@ from app.shared.interface.logging.api import get_web_logger
 from app.shared.infrastructure.repositories.guild_templates import (
     GuildTemplateRepositoryImpl,
     GuildTemplateCategoryRepositoryImpl,
-    GuildTemplateChannelRepositoryImpl
+    GuildTemplateChannelRepositoryImpl,
 )
 from app.shared.infrastructure.models.guild_templates import (
     GuildTemplateEntity,
     GuildTemplateCategoryEntity,
-    GuildTemplateChannelEntity
+    GuildTemplateChannelEntity,
 )
 # Import Schemas
-from app.web.interfaces.api.rest.v1.schemas.guild_template_schemas import GuildStructureUpdatePayload, GuildStructureTemplateCreateFromStructure
+from app.web.interfaces.api.rest.v1.schemas.guild_template_schemas import GuildStructureUpdatePayload, GuildStructureTemplateCreateFromStructure, PropertyChangeValue
 # Import Exceptions
 from app.shared.domain.exceptions import TemplateNotFound, PermissionDenied, DomainException
 # Import User Entity for permission checks
@@ -124,11 +124,19 @@ class TemplateStructureService:
         # --- 5a. Process Property Changes --- 
         if structure_payload.property_changes:
              logger.info(f"Processing {len(structure_payload.property_changes)} nodes with property changes for template {template_id}")
-             for node_key, changes in structure_payload.property_changes.items():
+             for node_key, changes_data in structure_payload.property_changes.items():
                  try:
+                     # Parse the node key
                      item_type, item_db_id_str = node_key.split('_')
                      item_db_id = int(item_db_id_str)
 
+                     # Validate changes data using Pydantic model
+                     try:
+                         changes = PropertyChangeValue.model_validate(changes_data)
+                     except Exception as validation_error:
+                         logger.warning(f"Invalid property change data for node '{node_key}': {validation_error}. Skipping changes: {changes_data}")
+                         continue
+                     
                      target_entity = None
                      if item_type == 'category' and item_db_id in existing_cats_by_dbid:
                          target_entity = existing_cats_by_dbid[item_db_id]
@@ -138,40 +146,66 @@ class TemplateStructureService:
                      if target_entity:
                          logger.debug(f"Applying property changes to {item_type} ID {item_db_id}: {changes}")
                          update_applied = False
+                         
+                         # --- Process standard properties (name, topic, etc.) ---
                          for prop_name, new_value in changes.model_dump(exclude_unset=True).items():
                              entity_attr_name = prop_name
+                             # --- Field Name Mapping ---
                              if item_type == 'category':
                                  if prop_name == 'name': entity_attr_name = 'category_name'
+                                 # Add other category field mappings if needed
                              elif item_type == 'channel':
                                  if prop_name == 'name': entity_attr_name = 'channel_name'
+                                 # elif prop_name == 'is_dashboard_enabled': entity_attr_name = 'is_dashboard_enabled' # Direct mapping
+                                 # elif prop_name == 'dashboard_types': entity_attr_name = 'dashboard_types' # Direct mapping
+                             # --------------------------
                              
                              if hasattr(target_entity, entity_attr_name):
                                  current_value = getattr(target_entity, entity_attr_name)
                                  try:
-                                     expected_type = type(current_value) if current_value is not None else str # Default to string if None
-                                     # Special handling for bool from JS strings
-                                     if expected_type is bool and isinstance(new_value, str):
-                                          casted_value = new_value.lower() == 'true'
+                                     # Determine expected type (handle None)
+                                     expected_type = type(current_value) if current_value is not None else None 
+                                     # If expected_type is still None, try to infer from attr name
+                                     if expected_type is None:
+                                         # --- REMOVE mirror field from inference --- 
+                                         # if entity_attr_name in ['is_nsfw', 'mirror_dashboard_in_followers']:
+                                         if entity_attr_name in ['is_nsfw']: 
+                                         # ----------------------------------------
+                                             expected_type = bool
+                                         elif entity_attr_name in ['slowmode_delay']: 
+                                             expected_type = int
+                                         # --- ADD: Expected type for dashboard_types ---
+                                         elif entity_attr_name == 'dashboard_types':
+                                             expected_type = list
+                                         else:
+                                             expected_type = str # Default guess
+                                             
+                                     # --- Type Casting Logic --- 
+                                     casted_value = None
+                                     # Special handling for bool from JS strings or bools
+                                     if expected_type is bool and isinstance(new_value, (str, bool)):
+                                         if isinstance(new_value, bool):
+                                             casted_value = new_value
+                                         else:
+                                             casted_value = new_value.lower() == 'true'
                                      # Special handling for int/float that might come as strings
-                                     elif expected_type is int and isinstance(new_value, (str, bool)):
-                                          # Handle potential empty string for optional int fields like slowmode
-                                          casted_value = int(new_value) if str(new_value).strip() else None 
+                                     elif expected_type is int and isinstance(new_value, (str, bool, int)):
+                                         casted_value = int(new_value) if str(new_value).strip() else None
                                      elif expected_type is float and isinstance(new_value, (str, bool, int)):
-                                          casted_value = float(new_value)
-                                     # Generic cast, handle None target
+                                         casted_value = float(new_value)
+                                     # Generic cast for other types, handling potential None
                                      elif new_value is None:
                                          casted_value = None
-                                     # Handle case where expected type is Optional[str] or similar and current value is None
-                                     elif current_value is None and new_value is not None:
-                                         # Try to determine type from schema or common types
-                                         if entity_attr_name in ['topic']: expected_type = str
-                                         # Add other potential None fields if needed
-                                         casted_value = expected_type(new_value) 
+                                     # --- ADD: Handle list type directly ---
+                                     elif expected_type is list and isinstance(new_value, list):
+                                         casted_value = new_value # Assume it's already a list of strings from JSON
+                                     # -------------------------------------
                                      else:
                                          casted_value = expected_type(new_value)
+                                     # --- End Type Casting ---
                                      
                                      if current_value != casted_value:
-                                          logger.debug(f"  Updating {entity_attr_name} from '{current_value}' to '{casted_value}'")
+                                          logger.debug(f"  Updating {entity_attr_name} from '{current_value}' ({type(current_value).__name__}) to '{casted_value}' ({type(casted_value).__name__})")
                                           setattr(target_entity, entity_attr_name, casted_value)
                                           update_applied = True
                                      else:
@@ -180,14 +214,16 @@ class TemplateStructureService:
                                       logger.warning(f"  Could not apply change for {entity_attr_name}: Failed to cast new value '{new_value}' to expected type {expected_type}. Error: {cast_err}")
                              else:
                                  logger.warning(f"  Property '{prop_name}' (mapped to '{entity_attr_name}') not found on {item_type} entity ID {item_db_id}. Skipping.")
+                         # --- End standard properties --- 
                          
+                         # Add entity to update list if any property changed
                          if update_applied and target_entity not in items_to_update:
                              items_to_update.append(target_entity)
                      else:
-                         logger.warning(f"Node key '{node_key}' in property changes refers to a non-existent or mismatched item. Skipping changes: {changes}")
+                         logger.warning(f"Node key '{node_key}' in property changes refers to a non-existent or mismatched item. Skipping changes: {changes_data}")
 
                  except (ValueError, IndexError) as e:
-                     logger.warning(f"Could not parse node key '{node_key}' from property changes payload: {e}. Skipping changes: {changes}")
+                     logger.warning(f"Could not parse node key '{node_key}' from property changes payload: {e}. Skipping changes: {changes_data}")
         # --- End Property Changes --- 
 
         # Update existing categories (position)
@@ -266,7 +302,7 @@ class TemplateStructureService:
                     selectinload(GuildTemplateEntity.categories)
                     .selectinload(GuildTemplateCategoryEntity.permissions),
                     selectinload(GuildTemplateEntity.channels)
-                    .selectinload(GuildTemplateChannelEntity.permissions)
+                    .selectinload(GuildTemplateChannelEntity.permissions),
                 )
                 .where(GuildTemplateEntity.id == template_id)
             )

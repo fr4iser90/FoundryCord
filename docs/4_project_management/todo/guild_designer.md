@@ -118,6 +118,48 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [ ] **Events definieren:** Klare Events für Aktionen wie `propertyUpdated`, `nodeDeleted`, `nodeAdded` definieren.
     *   [ ] **Listener implementieren:** Alle relevanten Widgets müssen auf diese Events hören und ihre Anzeige entsprechend aktualisieren (nicht nur auf `loadTemplateData`).
 
+# --- ADD Dashboard Assignment TODOs ---
+*   [ ] **Properties Panel - Dashboard Assignments:** (Assign multiple dashboards to a channel)
+    *   **Files:** 
+        - **New:** `app/shared/infrastructure/models/guild_templates/guild_template_channel_dashboard_assignment_entity.py`
+        - **Edit:** `app/shared/infrastructure/models/guild_templates/__init__.py`
+        - **New:** Alembic Migration File
+        - **New:** `app/shared/infrastructure/repositories/guild_templates/guild_template_channel_dashboard_assignment_repository.py`
+        - **Edit:** `app/shared/infrastructure/repositories/guild_templates/__init__.py`
+        - **Edit:** `app/web/interfaces/api/rest/v1/schemas/guild_template_schemas.py`
+        - **Edit:** `app/web/application/services/template/structure_service.py`
+        - **Edit:** `app/web/interfaces/api/rest/v1/guild/designer/guild_template_controller.py`
+        - **Edit:** `app/web/templates/components/guild/designer/panel/properties.html`
+        - **Edit:** `app/web/static/js/views/guild/designer/panel/properties.js`
+    *   [ ] **DB Model:** Create new SQLAlchemy model `GuildTemplateChannelDashboardAssignment` (or similar) with fields for `channel_template_id` (FK), `dashboard_type` (string), and potentially `config_json`. + Migration.
+    *   [ ] **Repository/Service:** Create Repository and potentially a small Service for managing these dashboard assignments (CRUD operations).
+    *   [ ] **Schema:** Create Pydantic schemas for dashboard assignment data (input/output).
+    *   [ ] **Backend Service:** Adapt `structure_service.py` (`update_template_structure` or a dedicated method) to handle creation/deletion of dashboard assignments when the template is saved. This might involve receiving a list of desired `dashboard_type` strings for a channel.
+    *   [ ] **Backend API:**
+        *   [ ] Adapt main template payload (`GET /templates/guilds/{template_id}`) to include a list of assigned `dashboard_type`s for each channel.
+        *   [ ] Provide an endpoint to list all available `dashboard_type`s the bot knows.
+    *   [ ] **UI (HTML):** Add UI elements in `properties.html` to:
+        *   [ ] Display a list of currently assigned dashboard types for the selected channel.
+        *   [ ] Allow adding a new dashboard assignment (e.g., a dropdown with available types and an "Add" button).
+        *   [ ] Allow removing an existing dashboard assignment (e.g., a "Remove" button next to each assigned type).
+    *   [ ] **UI (JS):** Implement logic in `properties.js`:
+        *   [ ] Fetch and display the list of assigned dashboards for the selected channel.
+        *   [ ] Fetch the list of available dashboard types to populate the "Add" dropdown.
+        *   [ ] Handle adding/removing assignments in the UI and track these changes (e.g., in a `pendingDashboardAssignmentChanges` array in the state).
+        *   [ ] Send the final list of desired `dashboard_type`s for the channel when saving the structure (`formatStructureForApi`).
+
+# --- ADD Channel Follow TODOs --- 
+*   [ ] **Properties Panel - Channel Follows anzeigen:**
+    *   **Files:** `properties.js`, `properties.html`, `guild_template_controller.py` (API Anpassung).
+    *   [ ] **API:** Backend API anpassen, um Follow-Informationen (wer folgt wem) für den ausgewählten Kanal bereitzustellen (entweder im Haupt-Template-Payload oder separater Endpunkt).
+    *   [ ] **UI:** Bereich im Properties-Panel (`properties.html`) hinzufügen, um Follower/Following-Kanäle anzuzeigen.
+    *   [ ] **JS:** Logik in `properties.js` implementieren, um Follow-Daten abzurufen und im Panel darzustellen.
+*   [ ] **Properties Panel - Channel Follows verwalten (Optional):**
+    *   **Files:** `properties.js`, `properties.html`, `channel_follow_api_controller.py`.
+    *   [ ] **UI:** Buttons/Elemente im Panel hinzufügen, um Follows zu erstellen/löschen.
+    *   [ ] **JS:** Event-Handler in `properties.js` implementieren, die `POST /api/v1/channel-follows` oder `DELETE /api/v1/channel-follows/{id}` aufrufen.
+
+
 ### Phase 4: Template Synchronization Job (Future)
 
 *   [ ] **Implement Scheduled Template Sync Job:**

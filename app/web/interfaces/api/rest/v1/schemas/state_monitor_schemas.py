@@ -95,7 +95,8 @@ class StateSnapshotMetadata(BaseModel):
     context: Optional[Dict[str, Any]] = None
 
     class Config:
-        orm_mode = True # If loading from SQLAlchemy model
+        # orm_mode = True # If loading from SQLAlchemy model
+        from_attributes = True
 
 class FullSnapshotData(BaseModel):
     """Represents the full snapshot data structure (server + browser)."""
@@ -111,4 +112,5 @@ class StoredSnapshotResponse(BaseModel):
     snapshot: FullSnapshotData
 
     class Config:
-        orm_mode = True 
+        # orm_mode = True
+        from_attributes = True 

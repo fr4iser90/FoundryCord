@@ -8,12 +8,11 @@ class BaseTemplateSchema(BaseModel):
 
 # --- Specific Schemas for API Endpoints ---
 
-# --- RE-ADD: Schema for creating a new template (e.g., from current guild structure) ---
+# Schema for creating a new template (e.g., from current guild structure)
 class GuildTemplateCreateSchema(BaseModel):
     template_name: str = Field(..., min_length=3, max_length=100, description="The desired name for the new template.")
     description: Optional[str] = Field(None, max_length=255, description="Optional description for the template.")
     # No structure needed here, assumed to be taken from the guild_id in the path
-# --- END RE-ADD ---
 
 # --- Schemas for Permissions (Used by Channel/Category) ---
 class GuildTemplatePermissionBase(BaseModel):
@@ -39,6 +38,7 @@ class GuildChannelTemplateBase(BaseModel):
     topic: Optional[str] = Field(None, max_length=1024)
     position: int = Field(..., ge=0)
     parent_category_template_id: Optional[int] = None
+    permissions: List[GuildTemplatePermission] = []
 
 class GuildChannelTemplateCreate(GuildChannelTemplateBase):
     permissions: List[GuildTemplatePermissionCreate] = []
@@ -57,10 +57,11 @@ class GuildChannelTemplate(GuildChannelTemplateBase):
 class GuildCategoryTemplateBase(BaseModel):
     category_name: str = Field(..., min_length=1, max_length=100)
     position: int = Field(..., ge=0)
+    is_nsfw: Optional[bool] = None
+    slowmode_delay: Optional[int] = Field(None, ge=0, le=21600) # Discord limits (0-6h)
 
 class GuildCategoryTemplateCreate(GuildCategoryTemplateBase):
     permissions: List[GuildTemplatePermissionCreate] = []
-    channels: List[GuildChannelTemplateCreate] = []
 
 class GuildCategoryTemplate(GuildCategoryTemplateBase):
     id: int
@@ -68,7 +69,6 @@ class GuildCategoryTemplate(GuildCategoryTemplateBase):
     created_at: datetime
     updated_at: datetime
     permissions: List[GuildTemplatePermission] = []
-    channels: List[GuildChannelTemplate] = []
 
     class Config:
         from_attributes = True
@@ -81,7 +81,6 @@ class GuildStructureTemplateBase(BaseModel):
 
 class GuildStructureTemplateCreate(GuildStructureTemplateBase):
     # On creation, structure is often defined separately or copied
-    # Now GuildCategoryTemplateCreate is defined
     categories: List[GuildCategoryTemplateCreate] = []
 
 class GuildStructureTemplate(GuildStructureTemplateBase):
@@ -129,15 +128,14 @@ class GuildStructureUpdateResponse(BaseModel):
     message: str
     updated_template_id: int
 
-# --- Schema for Creating Template from Structure --- 
+# Schema for Creating Template from Structure
 class GuildStructureTemplateCreateFromStructure(BaseModel):
     new_template_name: str = Field(..., min_length=3, max_length=100, description="The name for the new template.")
     new_template_description: Optional[str] = Field(None, max_length=500, description="Optional description for the new template.")
-    # Now GuildStructureUpdatePayload is defined
     structure: GuildStructureUpdatePayload = Field(..., description="The structure payload containing the list of nodes (categories/channels) with their parents and positions.")
 
 
-# --- Schema for Template List Response ---
+# Schema for Template List Response
 
 class GuildTemplateListItemSchema(BaseModel):
     """Schema for a single item in the template list response."""
@@ -154,7 +152,7 @@ class GuildTemplateListResponseSchema(BaseModel):
     """Schema for the response when listing guild templates."""
     templates: List[GuildTemplateListItemSchema]
 
-# --- NEW: Schema for updating template metadata (e.g., name) ---
+# Schema for updating template metadata (e.g., name)
 class GuildTemplateMetadataUpdateSchema(BaseModel):
     name: str = Field(..., min_length=3, max_length=100, description="The new name for the template.")
     # Add description later if needed
@@ -179,19 +177,21 @@ class NodeSchema(BaseModel):
             raise ValueError(f"Invalid channel type: {v}")
         return v
 
-# --- NEW: Schema for Pending Property Changes ---
+# Schema for Pending Property Changes
 class PropertyChangeValue(BaseModel):
     # Define fields based on what properties can change, e.g.:
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     topic: Optional[str] = Field(None, max_length=1024) # Example length
     is_nsfw: Optional[bool] = None
     slowmode_delay: Optional[int] = Field(None, ge=0, le=21600) # Discord limits (0-6h)
-    # Add other properties like permissions later
+    is_dashboard_enabled: Optional[bool] = None
+    dashboard_types: Optional[List[str]] = None # List of dashboard type strings
+
 
 # Schema for the payload of the structure update endpoint
 class GuildStructureUpdatePayload(BaseModel):
     nodes: List[NodeSchema] = Field(..., description="The complete list of nodes representing the desired structure.")
-    # --- NEW: Add property_changes field --- 
+    # Add property_changes field
     property_changes: Optional[Dict[str, PropertyChangeValue]] = Field(None, description="Dictionary of pending property changes keyed by node ID.")
     # The keys in property_changes should match the 'id' field in NodeSchema (e.g., "category_123")
 
@@ -204,7 +204,6 @@ class SimpleNodeSchema(BaseModel):
 class GuildStructureUpdateResponse(BaseModel):
     message: str
     updated_nodes: List[SimpleNodeSchema] # Or more detailed info if needed
-
 
 # Schema for CREATING a template FROM a structure payload
 class GuildStructureTemplateCreateFromStructure(BaseModel):
@@ -235,7 +234,7 @@ class PermissionResponseSchema(BaseModel):
     deny: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         allow_population_by_field_name = True
 
 
@@ -247,7 +246,7 @@ class CategoryResponseSchema(BaseModel):
     permissions: List[PermissionResponseSchema] = [] # Use the clear permission schema
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         allow_population_by_field_name = True # Allows using db column names
 
 class ChannelResponseSchema(BaseModel):
@@ -261,9 +260,12 @@ class ChannelResponseSchema(BaseModel):
     is_nsfw: Optional[bool] = None # Make optional
     slowmode_delay: Optional[int] = None # Make optional
     permissions: List[PermissionResponseSchema] = [] # Use the clear permission schema
+    # Assigned dashboard types
+    is_dashboard_enabled: bool = False # Add new field, default to False
+    dashboard_types: List[str] = Field(default_factory=list, description="List of dashboard type strings assigned.") # Add new field
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         allow_population_by_field_name = True # Allows using db column names
 
 class GuildTemplateResponseSchema(BaseModel):
@@ -277,7 +279,7 @@ class GuildTemplateResponseSchema(BaseModel):
     channels: List[ChannelResponseSchema]
 
     class Config:
-        orm_mode = True # Useful if data comes directly from ORM model
+        from_attributes = True
         allow_population_by_field_name = True
 
 # For listing multiple templates (simplified view)
@@ -292,7 +294,7 @@ class GuildTemplateListResponseSchema(BaseModel):
     templates: List[BasicGuildTemplateInfo]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         allow_population_by_field_name = True
 
 # Ensure all models are loaded 

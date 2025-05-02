@@ -3,7 +3,7 @@ Service responsible for querying template information.
 """
 from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy import select, and_, or_
 
 from app.shared.infrastructure.database.session.context import session_context
@@ -75,11 +75,13 @@ class TemplateQueryService:
                 chan_stmt = (
                     select(GuildTemplateChannelEntity)
                     .where(GuildTemplateChannelEntity.guild_template_id == template_db_id)
-                    .options(selectinload(GuildTemplateChannelEntity.permissions))
+                    .options(
+                        selectinload(GuildTemplateChannelEntity.permissions),
+                    )
                     .order_by(GuildTemplateChannelEntity.position)
                 )
                 chan_result = await session.execute(chan_stmt)
-                channels: List[GuildTemplateChannelEntity] = chan_result.scalars().all()
+                channels: List[GuildTemplateChannelEntity] = chan_result.scalars().unique().all()
                 logger.debug(f"Found {len(channels)} channels for template {template_db_id}")
 
                 # Structure the data using the UPDATED field names expected by the schema
@@ -118,7 +120,9 @@ class TemplateQueryService:
                         "topic": chan.topic,
                         "is_nsfw": chan.is_nsfw,
                         "slowmode_delay": chan.slowmode_delay,
-                        "permissions": [] # Add permissions if ChannelResponseSchema requires them
+                        "permissions": [], # Add permissions if ChannelResponseSchema requires them
+                        "is_dashboard_enabled": chan.is_dashboard_enabled,
+                        "dashboard_types": chan.dashboard_types if chan.dashboard_types else []
                     }
                     # TODO: Add manual permission construction if schema requires it and ORM mode doesn't handle it
                     structured_template["channels"].append(channel_data)
@@ -170,11 +174,13 @@ class TemplateQueryService:
                 chan_stmt = (
                     select(GuildTemplateChannelEntity)
                     .where(GuildTemplateChannelEntity.guild_template_id == template_db_id)
-                    .options(selectinload(GuildTemplateChannelEntity.permissions))
+                    .options(
+                        selectinload(GuildTemplateChannelEntity.permissions),
+                    )
                     .order_by(GuildTemplateChannelEntity.position)
                 )
                 chan_result = await session.execute(chan_stmt)
-                channels: List[GuildTemplateChannelEntity] = chan_result.scalars().all()
+                channels: List[GuildTemplateChannelEntity] = chan_result.scalars().unique().all()
                 logger.debug(f"Found {len(channels)} channels for template {template_db_id}")
 
                 # Structure the data using the UPDATED field names expected by the schema
@@ -212,7 +218,9 @@ class TemplateQueryService:
                         "topic": chan.topic,
                         "is_nsfw": chan.is_nsfw,
                         "slowmode_delay": chan.slowmode_delay,
-                        "permissions": [] # Add permissions if ChannelResponseSchema requires them
+                        "permissions": [], # Add permissions if ChannelResponseSchema requires them
+                        "is_dashboard_enabled": chan.is_dashboard_enabled,
+                        "dashboard_types": chan.dashboard_types if chan.dashboard_types else []
                     }
                     # TODO: Add manual permission construction if schema requires it and ORM mode doesn't handle it
                     structured_template["channels"].append(channel_data)
