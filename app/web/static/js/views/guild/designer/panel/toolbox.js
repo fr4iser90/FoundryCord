@@ -280,7 +280,10 @@ export function initializeToolbox() {
                         // Dispatch event to load the new config into editor/config widgets
                         console.log("[Toolbox] Dispatching 'dashboardConfigLoaded' for new config.");
                         document.dispatchEvent(new CustomEvent('dashboardConfigLoaded', { 
-                            detail: { configData: newConfig } 
+                            detail: { 
+                                configData: newConfig, 
+                                isNew: true
+                            } 
                         }));
 
                     } else {

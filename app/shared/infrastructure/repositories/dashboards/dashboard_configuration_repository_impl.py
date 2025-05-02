@@ -19,8 +19,19 @@ class DashboardConfigurationRepositoryImpl(BaseRepositoryImpl[DashboardInstanceE
 
     async def get_by_id(self, config_id: int) -> Optional[DashboardInstanceEntity]:
         """Retrieves a dashboard configuration by its unique ID."""
-        logger.debug(f"Repository: Getting dashboard configuration by ID: {config_id}")
-        return await super().get_by_id(config_id)
+        session_id = id(self.session) # Get ID of the session instance being used
+        logger.debug(f"Repository (Session {session_id}): Attempting to get {self.model.__name__} by ID: {config_id}")
+        try:
+            # Use session.get for primary key lookup
+            entity = await self.session.get(self.model, config_id)
+            if entity:
+                logger.info(f"Repository (Session {session_id}): Found {self.model.__name__} with ID: {config_id}")
+            else:
+                logger.warning(f"Repository (Session {session_id}): Could not find {self.model.__name__} with ID: {config_id}")
+            return entity
+        except Exception as e:
+            logger.error(f"Repository (Session {session_id}): Error during get_by_id for ID {config_id}: {e}", exc_info=True)
+            raise e # Re-raise the exception
 
     async def list_all(self) -> List[DashboardInstanceEntity]:
         """Retrieves all dashboard configurations."""
