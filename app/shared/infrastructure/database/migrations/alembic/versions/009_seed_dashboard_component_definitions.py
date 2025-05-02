@@ -83,14 +83,37 @@ dashboard_component_definitions_table = table(
 )
 
 def _prepare_data(seed_dict, dashboard_type, component_type):
-    """Helper function to format data for bulk insert."""
+    """Helper function to format data for bulk insert.
+    Ensures that the definition dictionary has a valid metadata field
+    with a display_name before converting to JSON.
+    """
     data = []
     for key, definition_dict in seed_dict.items():
+        # Ensure metadata exists and has display_name
+        if not isinstance(definition_dict, dict):
+            print(f"Warning: Skipping non-dict definition for key '{key}' in {dashboard_type}/{component_type}")
+            continue
+            
+        metadata = definition_dict.setdefault('metadata', {}) # Get or create metadata dict
+        if not isinstance(metadata, dict):
+             print(f"Warning: Replacing non-dict metadata for key '{key}' in {dashboard_type}/{component_type}")
+             metadata = {}
+             definition_dict['metadata'] = metadata
+             
+        if 'displayName' not in metadata or not metadata['displayName']:
+            # Generate a default display name if missing
+            default_display_name = key.replace('_', ' ').title()
+            print(f"Warning: Missing or empty 'displayName' for key '{key}' in {dashboard_type}/{component_type}. Using default: '{default_display_name}'")
+            metadata['displayName'] = default_display_name
+        
+        # Ensure other required sub-schemas exist as empty lists/dicts if needed (optional, based on schema)
+        # Example: definition_dict.setdefault('config_schema', [])
+
         data.append({
             'dashboard_type': dashboard_type,
             'component_type': component_type,
             'component_key': key,
-            'definition': json.dumps(definition_dict) # Convert dict to JSON string
+            'definition': json.dumps(definition_dict) # Convert the potentially modified dict to JSON
         })
     return data
 
