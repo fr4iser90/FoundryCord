@@ -84,39 +84,48 @@ dashboard_component_definitions_table = table(
 
 def _prepare_data(seed_dict, dashboard_type, component_type):
     """Helper function to format data for bulk insert.
-    Ensures that the definition dictionary has a valid metadata field
-    with a display_name (using snake_case key) before converting to JSON.
+    Ensures that the definition dictionary has valid metadata fields
+    (display_name, category) before converting to JSON.
     """
     data = []
     for key, definition_dict in seed_dict.items():
-        # Ensure metadata exists and has display_name (snake_case)
+        # Ensure definition_dict is a dictionary
         if not isinstance(definition_dict, dict):
             print(f"Warning: Skipping non-dict definition for key '{key}' in {dashboard_type}/{component_type}")
             continue
             
-        metadata = definition_dict.setdefault('metadata', {}) # Get or create metadata dict
+        # Ensure metadata exists and is a dictionary
+        metadata = definition_dict.setdefault('metadata', {}) 
         if not isinstance(metadata, dict):
              print(f"Warning: Replacing non-dict metadata for key '{key}' in {dashboard_type}/{component_type}")
              metadata = {}
              definition_dict['metadata'] = metadata
              
-        # Check for snake_case first, then potentially camelCase from old data?
+        # --- Ensure display_name exists (snake_case) --- 
         if 'display_name' not in metadata or not metadata.get('display_name'):
-            # If snake_case missing, check if camelCase exists and use it
             if 'displayName' in metadata and metadata.get('displayName'):
                  print(f"Warning: Found 'displayName' (camelCase) instead of 'display_name' for key '{key}'. Converting.")
-                 metadata['display_name'] = metadata.pop('displayName') # Use camelCase value and remove it
+                 metadata['display_name'] = metadata.pop('displayName') 
             else:
-                # Generate a default display name if both missing
                 default_display_name = key.replace('_', ' ').title()
                 print(f"Warning: Missing or empty 'display_name' for key '{key}' in {dashboard_type}/{component_type}. Using default: '{default_display_name}'")
                 metadata['display_name'] = default_display_name
-        elif 'displayName' in metadata: # Clean up if both somehow exist
+        elif 'displayName' in metadata: 
              print(f"Warning: Found both 'display_name' and 'displayName' for key '{key}'. Removing camelCase version.")
              metadata.pop('displayName')
+        # -------------------------------------------
+        
+        # --- Ensure category exists --- 
+        if 'category' not in metadata or not metadata.get('category') or not isinstance(metadata.get('category'), str):
+            # Use component_type as a default category if category is missing/invalid
+            default_category = component_type.replace('_', ' ').title() if component_type else 'General'
+            print(f"Warning: Missing or invalid 'category' for key '{key}' in {dashboard_type}/{component_type}. Using default: '{default_category}'")
+            metadata['category'] = default_category
+        # -----------------------------
         
         # Ensure other required sub-schemas exist as empty lists/dicts if needed (optional, based on schema)
-        # Example: definition_dict.setdefault('config_schema', [])
+        # definition_dict.setdefault('config_schema', [])
+        # definition_dict.setdefault('preview_hints', None) # Or {} if it's a required dict
 
         data.append({
             'dashboard_type': dashboard_type,

@@ -67,7 +67,7 @@ async function renderToolboxComponents() {
          return; // Nothing more to do
     }
 
-    // --- Group components by category --- 
+    // --- Group components by category (using dashboard_type) --- 
     const groupedComponents = combinedItems.reduce((groups, comp) => {
         // Validate component structure minimally before grouping
         if (!comp || !comp.component_key || !comp.metadata || !comp.metadata.display_name) {
@@ -75,31 +75,35 @@ async function renderToolboxComponents() {
              return groups; // Skip invalid items
         }
         
-        // Determine the category
-        let category = 'Other'; // Default category
-        if (comp.component_type === 'structure') { // Special category for hardcoded structure items
-             category = 'Structure Elements';
-        } else if (comp.metadata.category && typeof comp.metadata.category === 'string') {
-             category = comp.metadata.category.trim();
+        // Determine the category group key
+        let categoryKey = 'Other'; // Default group
+        if (comp.component_type === 'structure') {
+             categoryKey = 'Structure Elements'; // Keep structure items separate
+        } else if (comp.dashboard_type && typeof comp.dashboard_type === 'string') {
+            // Use dashboard_type as the primary grouping key
+             categoryKey = comp.dashboard_type.trim();
         } 
-        // Capitalize category name for display
-        category = category.charAt(0).toUpperCase() + category.slice(1);
+        // Capitalize category key for display
+        const displayCategory = categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1);
 
         // Initialize the category array if it doesn't exist
-        if (!groups[category]) {
-            groups[category] = [];
+        if (!groups[displayCategory]) { // Use displayCategory as key for the groups object
+            groups[displayCategory] = [];
         }
         // Add the component to its category group
-        groups[category].push(comp);
+        groups[displayCategory].push(comp);
         return groups;
     }, {});
     // ------------------------------------
 
     // --- Render grouped components --- 
     const sortedCategories = Object.keys(groupedComponents).sort((a, b) => {
-        // Ensure 'Structure Elements' comes first, then alphabetical
+        // Ensure 'Structure Elements' comes first, then alphabetical by dashboard type
         if (a === 'Structure Elements') return -1;
         if (b === 'Structure Elements') return 1;
+        // Add other special categories if needed, e.g., 'Common' might come next
+        if (a === 'Common') return -1;
+        if (b === 'Common') return 1;
         return a.localeCompare(b);
     });
 
