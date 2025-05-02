@@ -1,38 +1,40 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List, Dict, Any
 
-# Assuming the new entity model is correctly placed and importable
+# Assuming the entity model is correctly placed and importable
+# TODO: Rename Entity import?
 from app.shared.infrastructure.models.guild_templates import TemplateDashboardInstanceEntity
 
-class TemplateDashboardInstanceRepository(ABC):
-    """Interface for accessing and managing template dashboard instances in the database."""
+# TODO: Rename Interface
+class DashboardConfigurationRepository(ABC):
+    """Interface for accessing and managing dashboard configurations."""
 
     @abstractmethod
-    async def get_by_id(self, instance_id: int) -> Optional[TemplateDashboardInstanceEntity]:
-        """Retrieves a dashboard instance by its unique ID."""
+    async def get_by_id(self, config_id: int) -> Optional[TemplateDashboardInstanceEntity]:
+        """Retrieves a dashboard configuration by its unique ID."""
         pass
 
     @abstractmethod
-    async def get_by_template_channel_id(self, channel_template_id: int) -> List[TemplateDashboardInstanceEntity]:
-        """Retrieves all dashboard instances linked to a specific guild template channel ID."""
+    async def list_all(self) -> List[TemplateDashboardInstanceEntity]:
+        """Retrieves all dashboard configurations."""
         pass
 
     @abstractmethod
-    async def create_for_template(self, 
-                                  guild_template_channel_id: int,
-                                  name: str,
-                                  dashboard_type: str,
-                                  config: Optional[Dict[str, Any]] = None
-                                 ) -> TemplateDashboardInstanceEntity:
-        """Creates a new dashboard instance linked to a template channel."""
+    async def create(self, 
+                     name: str,
+                     dashboard_type: str,
+                     description: Optional[str] = None,
+                     config: Optional[Dict[str, Any]] = None
+                    ) -> TemplateDashboardInstanceEntity:
+        """Creates a new dashboard configuration."""
         pass
 
     @abstractmethod
-    async def update(self, instance_id: int, update_data: Dict[str, Any]) -> Optional[TemplateDashboardInstanceEntity]:
-        """Updates an existing dashboard instance with the provided data."""
+    async def update(self, config_id: int, update_data: Dict[str, Any]) -> Optional[TemplateDashboardInstanceEntity]:
+        """Updates an existing dashboard configuration."""
         pass
 
     @abstractmethod
-    async def delete(self, instance_id: int) -> bool:
-        """Deletes a dashboard instance by its ID. Returns True if deletion was successful, False otherwise."""
+    async def delete(self, config_id: int) -> bool:
+        """Deletes a dashboard configuration by ID. Returns True if successful."""
         pass 

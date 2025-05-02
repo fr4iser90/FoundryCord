@@ -3,7 +3,7 @@ from .query_service import TemplateQueryService
 from .structure_service import TemplateStructureService
 from .management_service import TemplateManagementService
 from .sharing_service import TemplateSharingService
-from .template_dashboard_instance_service import TemplateDashboardInstanceService
+from .dashboard_configuration_service import DashboardConfigurationService
 
 __all__ = [
     "GuildTemplateService",
@@ -11,5 +11,5 @@ __all__ = [
     "TemplateStructureService",
     "TemplateManagementService",
     "TemplateSharingService",
-    "TemplateDashboardInstanceService"
+    "DashboardConfigurationService"
 ]

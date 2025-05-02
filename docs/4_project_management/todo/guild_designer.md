@@ -91,64 +91,84 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [ ] **Events definieren:** Klare Events für Aktionen wie `propertyUpdated`, `nodeDeleted`, `nodeAdded` definieren.
     *   [ ] **Listener implementieren:** Alle relevanten Widgets müssen auf diese Events hören und ihre Anzeige entsprechend aktualisieren (nicht nur auf `loadTemplateData`).
 
-# --- Dashboard Instance Management (Designer) ---
-*   **Revised Goal:** Implement a **Dashboard Builder** allowing users to create and configure dashboard instances using predefined components. Provide a **live preview** approximating the Discord appearance. Manage instances linked to template channels.
+# --- Dashboard Configuration Builder (Designer) ---
+*   **Goal:** Allow users to create and configure Dashboard Configurations (the templates/instances identified by `dashboard_id`) using predefined components. Provide a live preview.
 *   [ ] **Database & Seeds:**
-    *   [x] `dashboard_instances` table exists for storing instances linked to `guild_template_channel_id` with `name`, `dashboard_type`, and `config` (JSON).
-    *   [x] `dashboard_component_definitions` table exists and is seeded (via Migration 009) with component definitions (embeds, buttons, etc.) for different `dashboard_type`s.
-    *   [ ] Clarify: Linking logic between `guild_template_channel_id` and potential live `channel_id`. (Defer for now).
+    *   [x] `dashboard_instances` table exists for storing configurations
+    *   [x] `dashboard_component_definitions` table exists and is seeded.
+    *   [ ] Clarify: Table/Schema for Dashboard Configurations (name, description, ID, the `config` JSON). Needs to be independent of channels.
 *   [x] **Backend - Component API:**
     *   **Files:** New controller/service/repository for dashboard components.
-    *   [x] **New Endpoint (`GET /api/v1/dashboards/components`):**
-        *   [x] Needs to query `dashboard_component_definitions` table.
-        *   [x] Return structured data of available components, potentially filterable by `dashboard_type` (e.g., 'common', 'welcome'). Include `component_type`, `component_key`, and `definition` (which describes configurable fields).
+    *   [x] **New Endpoint (`GET /api/v1/dashboards/components`):** Returns available components.
 *   [ ] **Backend - Variables API (Optional/Placeholder):**
     *   **Files:** New controller/service.
-    *   [ ] **New Endpoint (`GET /api/v1/dashboards/variables`):**
-        *   [ ] Return a list of available template variables (e.g., `{{user_name}}`, `{{server_name}}`) with descriptions. (Initially hardcoded, later dynamic?).
-*   [x] **Backend - Instance Management API:** (Existing endpoints are sufficient but handle complex `config`)
-    *   [x] `GET /api/v1/templates/channels/{channel_template_id}/dashboards`: Lists instances.
-    *   [x] `POST /api/v1/templates/channels/{channel_template_id}/dashboards`: Creates instance (expects complex `config` from Builder).
-    *   [x] `GET /api/v1/templates/dashboards/{instance_id}`: Gets instance details (including complex `config`).
-    *   [x] `PUT /api/v1/templates/dashboards/{instance_id}`: Updates instance (including complex `config`).
-    *   [x] `DELETE /api/v1/templates/dashboards/{instance_id}`: Deletes instance.
-    *   [x] **Files:** `template_dashboard_instances_controller.py`, `template_dashboard_instance_service.py`, `template_dashboard_instance_repository_impl.py`.
+    *   [ ] **New Endpoint (`GET /api/v1/dashboards/variables`):** Returns available template variables.
+*   [ ] **Backend - Dashboard Configuration Management API:**
+    *   **Files:** New Controller/Service/Repo.
+    *   [ ] **API Design:** Define CRUD endpoints for Dashboard Configurations:
+        *   [ ] `POST /api/v1/dashboards/configurations`: Creates a new, empty config, returns its ID and basic data.
+        *   [ ] `GET /api/v1/dashboards/configurations`: Lists available configs.
+        *   [ ] `GET /api/v1/dashboards/configurations/{config_id}`: Gets details (name, description, full `config` JSON).
+        *   [ ] `PUT /api/v1/dashboards/configurations/{config_id}`: Updates name, description, and the complex `config` JSON from the Editor.
+        *   [ ] `DELETE /api/v1/dashboards/configurations/{config_id}`: Deletes a configuration.
+    *   [ ] **Service/Repo:** Implement logic for these endpoints.
 
-*   [ ] **Frontend - Toolbox Integration (Components):**
+*   [ ] **Frontend - Toolbox Refactoring:**
     *   **Files:** `panel/toolbox.js`, `toolbox.html`.
-    *   [x] **Fetch Components:** Load component definitions via the new `GET /api/v1/dashboards/components` endpoint.
-    *   [x] **Display Components:** Show components (grouped by `component_type`?) as draggable items.
+    *   [ ] **Implement Tabs:** Update HTML and JS for tabs ("Structure", "Dashboard Components", "Dashboards").
+    *   [x] **Fetch Components:** Load component definitions (`GET /api/v1/dashboards/components`).
+    *   [x] **Display Components:** Show components in "Dashboard Components" tab as draggable items.
     *   [x] **Associate Data:** Link component details (`component_key`, `definition`) to draggable items.
+    *   [ ] **"Dashboards" Tab:**
+        *   [ ] Add "New Dashboard Template" item with a "+"-Button.
+        *   [ ] Add listener to "+": Calls `POST /api/v1/dashboards/configurations`, gets new ID, dispatches `dashboardConfigCreated` event with the new ID.
+        *   [ ] (Optional) List existing configurations here for loading into the editor? Needs `GET /api/v1/dashboards/configurations`.
 *   [ ] **Frontend - Dashboard Editor Widget (Builder):**
-    *   **Files:** New `widget/dashboardEditor.js`, `designerLayout.js`, `designerWidgets.js`.
-    *   [x] **Define Widget:** Add `dashboard-editor` widget definition to `designerLayout.js`. Widget should be part of the default grid layout (always visible).
-    *   [x] **Register Widget:** Add to `designerWidgets.js`.
+    *   **Files:** `widget/dashboardEditor.js`, `designerLayout.js`, `designerWidgets.js`.
+    *   [x] **Define Widget:** `dashboard-editor` defined in `designerLayout.js` and default layout.
+    *   [x] **Register Widget:** Registered in `designerWidgets.js`.
+    *   [ ] **Update Widget Logic:**
+        *   [ ] **Remove Drop Handler for 'dashboard':** No longer needed.
+        *   [x] **Add `currentEditingDashboardId` state.**
+        *   [ ] **Listen for `dashboardConfigSelected` / `dashboardConfigCreated` event:** Update `currentEditingDashboardId`, call `loadDashboardConfig(id)`.
     *   [ ] **UI Layout:**
-        *   [ ] Design the builder interface (e.g., drop area/canvas, component property editor panel within the widget).
-        *   [ ] Implement drag-and-drop receiving from Toolbox.
+        *   [ ] Design the builder interface (drop area/canvas).
+        *   [x] Implement drag-and-drop receiving for **Components** from Toolbox.
     *   [ ] **Component Handling:**
-        *   [ ] When a component is dropped/added: Render its configurable fields based on its `definition`.
+        *   [ ] When a component is dropped/added: Render its configurable fields based on its `definition`. Requires `currentEditingDashboardId` to be set.
         *   [ ] Allow reordering/removing components within the editor.
+        *   [ ] Persist component arrangement/data to the `config` JSON.
     *   [ ] **Variable Integration:**
-        *   [ ] Fetch available variables (from API or hardcoded).
-        *   [ ] Provide a way for the user to insert variables into component fields (e.g., button/dropdown).
-    *   [ ] **Config Generation:** On save, generate the complex `config` JSON representing the arranged and configured components.
+        *   [ ] Fetch available variables.
+        *   [ ] Provide UI to insert variables into component fields.
+    *   [ ] **Config Generation:** On save, generate the complex `config` JSON.
     *   [ ] **Save/Load Logic:**
-        *   [ ] Implement `loadInstance(instanceId)`: Fetch instance data (`GET .../{instance_id}`), parse `config`, and populate the editor.
-        *   [ ] Implement `saveInstance()`: Generate `config`, call `PUT .../{instance_id}`.
-        *   [ ] Implement `createInstance(channelTemplateId, dashboardType)`: Generate `config`, call `POST .../channels/{channel_id}/dashboards`.
-    *   [ ] **Widget Content Update:** Implement logic to dynamically update the widget's content based on events/actions (e.g., clear on channel deselection, load instance data on edit trigger), adhering to the 'always visible' pattern.
+        *   [ ] Implement `loadDashboardConfig(configId)`: Fetch config data (`GET .../configurations/{config_id}`), parse `config`, populate editor.
+        *   [ ] Implement `saveDashboardConfig()`: Generate `config`, call `PUT .../configurations/{currentEditingDashboardId}`.
+*   [ ] **Frontend - Dashboard Config Widget (NEW):**
+    *   **Files:** New `widget/dashboardConfig.js`, `designerLayout.js`, `designerWidgets.js`.
+    *   [ ] **Define Widget:** Add `dashboard-config` widget definition to `designerLayout.js` and default layout.
+    *   [ ] **Register Widget:** Add to `designerWidgets.js`.
+    *   [ ] **UI:** Create inputs for "Name", "Description", etc. Add a "Save Metadata" button.
+    *   [ ] **Logic:**
+        *   [ ] Listen for `dashboardConfigSelected` / `dashboardConfigCreated` event: Update internal ID, load/display metadata (`GET .../configurations/{id}`).
+        *   [ ] Implement Save: On button click, get values, call `PUT .../configurations/{id}` with name/description (potentially combine with Editor's save?).
 *   [ ] **Frontend - Dashboard Preview Widget:**
-    *   **Files:** New `widget/dashboardPreview.js`, `designerLayout.js`, `designerWidgets.js`.
-    *   [x] **Define Widget:** Add `dashboard-preview` widget definition to `designerLayout.js`. Widget should be part of the default grid layout (always visible).
-    *   [x] **Register Widget:** Add to `designerWidgets.js`.
+    *   **Files:** `widget/dashboardPreview.js`, `designerLayout.js`, `designerWidgets.js`.
+    *   [x] **Define Widget:** `dashboard-preview` defined in `designerLayout.js` and default layout.
+    *   [x] **Register Widget:** Registered in `designerWidgets.js`.
+    *   [ ] **Update Logic:**
+        *   [ ] Listen for `dashboardConfigSelected` / `dashboardConfigCreated` / `dashboardConfigUpdated` event: Update internal ID, call `loadPreview(id)`.
     *   [ ] **Rendering Logic:**
-        *   [ ] Implement `loadPreview(instanceId)`: Fetch instance data (`GET .../{instance_id}`), parse `config`.
-        *   [ ] **Render:** Create HTML elements to *approximate* the Discord look based on the `config` components and their properties. Replace variables with placeholders (e.g., `[user_name]`). (This is the complex part).
-    *   [ ] **Update Trigger:** Listen for events indicating an instance was selected or saved to reload the preview. Handle channel deselection to clear the preview.
+        *   [ ] Implement `loadPreview(configId)`: Fetch config data (`GET .../configurations/{config_id}`), parse `config`.
+        *   [ ] **Render:** Create HTML to *approximate* Discord look based on `config`. Replace variables with placeholders.
+*   [ ] **Frontend - Inter-Widget Communication:**
+    *   **Files:** `designerState.js` / `designerEvents.js`, all relevant widgets.
+    *   [ ] **Define State/Events:** Decide mechanism (state manager or custom events) to broadcast the `currentEditingDashboardId` and related events (`dashboardConfigSelected`, `dashboardConfigCreated`, `dashboardConfigUpdated`).
+    *   [ ] **Implement Listeners/Dispatchers:** Ensure Toolbox "+", Editor, Config, and Preview react appropriately.
 
-*   [ ] **Sharing / Copying (Future):**
-    *   [ ] Needs significant backend work for dashboard definitions separate from instances.
+*   [ ] **Channel Assignment (Separate Task):**
+    *   [ ] Design UI/UX for assigning a `dashboard_id` (from the configurations) to a channel (e.g., dropdown in Properties Panel when channel selected?). Requires listing available configurations.
 
 # --- Previous/Other Sections ---
 

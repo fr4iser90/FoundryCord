@@ -45,7 +45,7 @@ from .guild_templates import (
     GuildTemplateChannelRepositoryImpl,
     GuildTemplateCategoryPermissionRepositoryImpl,
     GuildTemplateChannelPermissionRepositoryImpl,
-    TemplateDashboardInstanceRepositoryImpl
+    DashboardConfigurationRepositoryImpl
 )
 
 # NEW: Dashboard Component Definition implementation
@@ -76,7 +76,7 @@ __all__ = [
     'GuildTemplateChannelRepositoryImpl',
     'GuildTemplateCategoryPermissionRepositoryImpl',
     'GuildTemplateChannelPermissionRepositoryImpl',
-    'TemplateDashboardInstanceRepositoryImpl',
+    'DashboardConfigurationRepositoryImpl',
     
     # Monitoring
     'MonitoringRepositoryImpl',

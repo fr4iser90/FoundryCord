@@ -33,8 +33,5 @@ class GuildTemplateChannelEntity(Base):
     # Relationship to permissions specific to this template channel
     permissions = relationship("GuildTemplateChannelPermissionEntity", back_populates="channel_template", cascade="all, delete-orphan")
 
-    # Relationship to the dashboard instances linked to this template channel
-    dashboard_instances = relationship("TemplateDashboardInstanceEntity", back_populates="channel_template", cascade="all, delete-orphan")
-
     def __repr__(self):
         return f"<GuildTemplateChannelEntity(id={self.id}, template_id={self.guild_template_id}, name='{self.channel_name}')>"
