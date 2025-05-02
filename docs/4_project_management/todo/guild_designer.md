@@ -67,7 +67,7 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [x] **Trigger Workflow:** The apply API endpoint calls the `guild_workflow.apply_template` function.
 *   [x] **Deletion Safety:**
     *   [x] **Prevent Initial Snapshot Deletion:** In `templateList.js`, disable the delete button for templates marked as `is_initial_snapshot`.
-    *   [x] **Add Delete Confirmation Modal:** 
+    *   [x] **Add Delete Confirmation Modal:**
         *   [x] Create a Bootstrap modal (`delete_confirmation_modal.html`).
         *   [x] Create associated JS (`modal/deleteModal.js`) with `initializeDeleteModal` and `openDeleteModal(id, name)` functions.
         *   [x] Modify `templateList.js` and `sharedTemplateList.js` delete handlers to use events triggering `openDeleteModal`.
@@ -76,33 +76,6 @@ _(This section covers applying templates to Discord, managing channel follows, d
 
 ### Phase 3: Full Designer Editing Capabilities
 
-*   [ ] **Properties Panel - Setup & Display:**
-    *   **Files:** `properties.js`, `properties.html`, `structureTree.js`, Listen-Widgets (`categoriesList.js`, `channelsList.js`).
-    *   [x] **UI Grundstruktur:** HTML für Properties-Panel erstellt.
-    *   [x] **Selektion:** Event (`nodeSelected`) wird bei Auswahl ausgelöst und verarbeitet.
-    *   [x] **Datenfindung:** Logik (`findNodeDataInState`) korrigiert, um korrekte IDs zu verwenden.
-    *   [x] **Anzeige (Basis):** `properties.js` implementiert, Panel wird mit Basisdaten gefüllt.
-    *   [x] **Dynamische Felder:** Felder werden je nach selektiertem Typ (Server, Kategorie, Kanal) korrekt ein-/ausgeblendet.
-    *   [x] **Initialer Zustand:** Felder werden initial deaktiviert/placeholder angezeigt und bei Auswahl aktiviert.
-*   [ ] **Properties Panel - Editing aktivieren:**
-    *   **Files:** `properties.js`, `designerState.js`, `designerEvents.js`.
-    *   [x] **Felder aktivieren:** Input-Felder sind bei Auswahl aktiv.
-    *   [x] **Änderungen verfolgen:** Listener in `properties.js` speichern Änderungen im `designerState` (`addPendingPropertyChange`).
-    *   [x] **State erweitert:** `designerState.js` speichert "pending property changes".
-*   [ ] **Save Button - Properties speichern:**
-    *   **Files:** `designerUtils.js`, `template_service.py`, `guild_template_controller.py`.
-    *   [x] **Daten formatieren (`formatStructureForApi`):** Funktion sendet geänderte Properties mit.
-    *   [x] **Backend erweitert (`update_template_structure`):** PUT `/templates/guilds/{template_id}/structure` Endpunkt/Service verarbeitet Property-Updates.
-    *   [x] **State aufräumen:** Nach erfolgreichem Speichern werden "pending property changes" gelöscht.
-*   [ ] **Elemente löschen implementieren:**
-    *   **Files:** `properties.js` / `structureTree.js`, `deleteModal.js`, `designerEvents.js`, `template_service.py`, `guild_template_controller.py`, Repos.
-    *   [x] **UI Trigger:** Löschen-Button im Properties Panel hinzugefügt.
-    *   [x] **Bestätigung:** Vorhandener `deleteModal` wird korrekt getriggert.
-    *   [x] **Backend API (DELETE):** Neue Endpunkte (`DELETE /.../categories/{id}`, `DELETE /.../channels/{id}`) erstellt.
-    *   [x] **Backend Logik:** Service/Repo-Methoden zum Löschen der DB-Entitäten implementiert.
-    *   [x] **Frontend Events:** Event-Listener (`designerElementDeleted`, `requestPanelReset`) implementiert.
-    *   [x] **Frontend Call:** API-Aufruf nach Modal-Bestätigung implementiert.
-    *   [x] **UI Update:** Knoten wird aus Baum/Listen nach Erfolg entfernt.
 *   [ ] **Elemente hinzufügen (Toolbox):**
     *   **Files:** `panel/toolbox.js`, `toolbox.html`, `structureTree.js`, `designerEvents.js`, `template_service.py`, `guild_template_controller.py`, Repos.
     *   [ ] **Toolbox UI:** Draggable Elemente für "Neue Kategorie", "Neuer Textkanal" etc. erstellen.
@@ -124,11 +97,11 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [x] `dashboard_instances` table exists for storing instances linked to `guild_template_channel_id` with `name`, `dashboard_type`, and `config` (JSON).
     *   [x] `dashboard_component_definitions` table exists and is seeded (via Migration 009) with component definitions (embeds, buttons, etc.) for different `dashboard_type`s.
     *   [ ] Clarify: Linking logic between `guild_template_channel_id` and potential live `channel_id`. (Defer for now).
-*   [ ] **Backend - Component API:**
+*   [x] **Backend - Component API:**
     *   **Files:** New controller/service/repository for dashboard components.
-    *   [ ] **New Endpoint (`GET /api/v1/dashboards/components`):**
-        *   [ ] Needs to query `dashboard_component_definitions` table.
-        *   [ ] Return structured data of available components, potentially filterable by `dashboard_type` (e.g., 'common', 'welcome'). Include `component_type`, `component_key`, and `definition` (which describes configurable fields).
+    *   [x] **New Endpoint (`GET /api/v1/dashboards/components`):**
+        *   [x] Needs to query `dashboard_component_definitions` table.
+        *   [x] Return structured data of available components, potentially filterable by `dashboard_type` (e.g., 'common', 'welcome'). Include `component_type`, `component_key`, and `definition` (which describes configurable fields).
 *   [ ] **Backend - Variables API (Optional/Placeholder):**
     *   **Files:** New controller/service.
     *   [ ] **New Endpoint (`GET /api/v1/dashboards/variables`):**
@@ -143,13 +116,13 @@ _(This section covers applying templates to Discord, managing channel follows, d
 
 *   [ ] **Frontend - Toolbox Integration (Components):**
     *   **Files:** `panel/toolbox.js`, `toolbox.html`.
-    *   [ ] **Fetch Components:** Load component definitions via the new `GET /api/v1/dashboards/components` endpoint.
-    *   [ ] **Display Components:** Show components (grouped by `component_type`?) as draggable items.
-    *   [ ] **Associate Data:** Link component details (`component_key`, `definition`) to draggable items.
+    *   [x] **Fetch Components:** Load component definitions via the new `GET /api/v1/dashboards/components` endpoint.
+    *   [x] **Display Components:** Show components (grouped by `component_type`?) as draggable items.
+    *   [x] **Associate Data:** Link component details (`component_key`, `definition`) to draggable items.
 *   [ ] **Frontend - Dashboard Editor Widget (Builder):**
     *   **Files:** New `widget/dashboardEditor.js`, `designerLayout.js`, `designerWidgets.js`.
-    *   [ ] **Define Widget:** Add `dashboard-editor` widget definition to `designerLayout.js` (likely hidden initially).
-    *   [ ] **Register Widget:** Add to `designerWidgets.js`.
+    *   [x] **Define Widget:** Add `dashboard-editor` widget definition to `designerLayout.js`. Widget should be part of the default grid layout (always visible).
+    *   [x] **Register Widget:** Add to `designerWidgets.js`.
     *   [ ] **UI Layout:**
         *   [ ] Design the builder interface (e.g., drop area/canvas, component property editor panel within the widget).
         *   [ ] Implement drag-and-drop receiving from Toolbox.
@@ -164,43 +137,20 @@ _(This section covers applying templates to Discord, managing channel follows, d
         *   [ ] Implement `loadInstance(instanceId)`: Fetch instance data (`GET .../{instance_id}`), parse `config`, and populate the editor.
         *   [ ] Implement `saveInstance()`: Generate `config`, call `PUT .../{instance_id}`.
         *   [ ] Implement `createInstance(channelTemplateId, dashboardType)`: Generate `config`, call `POST .../channels/{channel_id}/dashboards`.
-    *   [ ] **Show/Hide:** Implement logic to show/hide the widget when triggered (by Properties Panel or future drag-drop).
+    *   [ ] **Widget Content Update:** Implement logic to dynamically update the widget's content based on events/actions (e.g., clear on channel deselection, load instance data on edit trigger), adhering to the 'always visible' pattern.
 *   [ ] **Frontend - Dashboard Preview Widget:**
     *   **Files:** New `widget/dashboardPreview.js`, `designerLayout.js`, `designerWidgets.js`.
-    *   [ ] **Define Widget:** Add `dashboard-preview` widget definition.
-    *   [ ] **Register Widget:** Add to `designerWidgets.js`.
+    *   [x] **Define Widget:** Add `dashboard-preview` widget definition to `designerLayout.js`. Widget should be part of the default grid layout (always visible).
+    *   [x] **Register Widget:** Add to `designerWidgets.js`.
     *   [ ] **Rendering Logic:**
         *   [ ] Implement `loadPreview(instanceId)`: Fetch instance data (`GET .../{instance_id}`), parse `config`.
         *   [ ] **Render:** Create HTML elements to *approximate* the Discord look based on the `config` components and their properties. Replace variables with placeholders (e.g., `[user_name]`). (This is the complex part).
-    *   [ ] **Update Trigger:** Listen for events indicating an instance was selected or saved to reload the preview.
-*   [ ] **Frontend - Properties Panel Integration (Revised):**
-    *   **Files:** `properties.js`.
-    *   [ ] **Listen:** On `designerNodeSelected`, check if selected node is a channel.
-    *   [ ] **Fetch & Display Instances:** If channel selected, call `GET .../dashboards` and display the list (Name, Type).
-    *   [ ] **Add "New" Button:**
-        *   [ ] Button opens a selection (modal? dropdown?) for the `dashboard_type`.
-        *   [ ] Triggers the **Editor Widget** in 'create' mode, passing `channel_template_id` and selected `dashboard_type`.
-    *   [ ] **Add "Edit" Button:** Next to each instance, triggers the **Editor Widget** in 'edit' mode, passing `instance_id`.
-    *   [ ] **Add "Delete" Button:** Next to each instance, calls `DELETE .../{instance_id}` (with confirmation).
-    *   [ ] **Selection Handling:** Clicking an instance in the list should trigger the **Preview Widget** to load that instance's preview.
-*   [ ] **Event Handling / Widget Interaction:**
-    *   [ ] Define and implement events/callbacks for communication:
-        *   Properties Panel selection -> Preview Widget load.
-        *   Properties Panel "Edit" -> Editor Widget load.
-        *   Properties Panel "New" (Type selected) -> Editor Widget create.
-        *   Editor Widget save -> Properties Panel list refresh, Preview Widget refresh.
-        *   Properties Panel delete -> Properties Panel list refresh, Preview Widget clear/reset.
-        *   (Future: Toolbox drop -> Editor Widget create).
-*   [ ] **Code Cleanup:**
-    *   [ ] Remove OLD code parts in `properties.js` related to `is_dashboard_enabled` and `dashboard_types`.
-    *   [ ] Review/Remove `DashboardType` Enum if components API makes it redundant.
+    *   [ ] **Update Trigger:** Listen for events indicating an instance was selected or saved to reload the preview. Handle channel deselection to clear the preview.
+
 *   [ ] **Sharing / Copying (Future):**
     *   [ ] Needs significant backend work for dashboard definitions separate from instances.
 
 # --- Previous/Other Sections ---
-*   [ ] **Properties Panel - Channel Follows anzeigen:**
-    *   **Files:** `properties.js`, `properties.html`, `guild_template_controller.py` (API Anpassung).
-    *   [ ] **API:** Backend API anpassen, um Follow-Informationen (wer folgt wem) für den ausgewählten Kanal bereitzustellen (entweder im Haupt-Template-Payload oder separater Endpunkt).
 
 ### Phase 4: Template Synchronization Job (Future)
 
@@ -226,9 +176,6 @@ _(This section covers applying templates to Discord, managing channel follows, d
 *   [x] **Improve Visual Accuracy:**
     *   **Files:** `app/web/static/js/views/guild/designer/widget/structureTree.js`, `app/web/static/js/views/guild/designer/widget/channelsList.js`.
     *   **Task:** Adjust sorting/data generation to place uncategorized channels visually at the top.
-*   [ ] **Properties Panel:**
-    *   **Files:** `app/web/static/js/views/guild/designer/panel/properties.js`, `app/web/static/js/views/guild/designer/widget/structureTree.js`.
-    *   **Task:** Implement UI for viewing/editing selected node properties (name, topic etc.). Integrate saving changes with the "Save Structure" API call (Phase 1).
 *   [ ] **Toolbox Panel:**
     *   **Files:** `app/web/static/js/views/guild/designer/panel/toolbox.js`, `app/web/static/js/views/guild/designer/widget/structureTree.js`.
     *   **Task:** Implement UI for dragging new elements. Integrate adding new elements with the "Save Structure" API call (Phase 1).

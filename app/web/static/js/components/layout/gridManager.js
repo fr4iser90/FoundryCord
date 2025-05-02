@@ -366,7 +366,7 @@ export class GridManager {
         if (!this.grid) return;
 
         // Save Listener on grid changes
-        this.grid.on('change', this.debouncedSave);
+        this.grid.on('change resizestop dragstop', this.debouncedSave);
         console.log("Attached grid 'change' event listener.");
 
         // Reset Button Listener
@@ -381,8 +381,20 @@ export class GridManager {
 
         // Lock Button Listener
         if (this.lockButton) {
-            this.lockButton.addEventListener('click', this._toggleLayoutLockAndSave);
-            console.log(`Attached click listener to lock button #${this.options.lockButtonId}.`);
+            // Make sure to REMOVE any existing listener before adding a new one
+            // This prevents duplicate listeners if initialize is called multiple times
+            // A simple way is to replace the element with a clone
+            // const oldButton = this.lockButton;
+            // const newButton = oldButton.cloneNode(true);
+            // oldButton.parentNode.replaceChild(newButton, oldButton);
+            // this.lockButton = newButton; // Update the reference
+
+            // --- REMOVED --- GridManager should NOT handle the lock button click directly
+            // --- if the logic is handled externally (like in designerLayout.js) ---
+            // this.lockButton.addEventListener('click', this._toggleLayoutLockAndSave); 
+            // console.log("REMOVED click listener from lock button for GridManager.");
+        } else {
+             console.warn("[GridManager] Lock button not found, cannot add toggle listener.");
         }
     }
 

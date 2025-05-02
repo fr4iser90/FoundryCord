@@ -6,6 +6,8 @@ import { initializeCategoriesList as _initializeCategoriesList } from './widget/
 import { initializeChannelsList as _initializeChannelsList } from './widget/channelsList.js';
 import { initializeTemplateList } from './widget/templateList.js';
 import { initializeSharedTemplateList } from './widget/sharedTemplateList.js';
+// Import the new dashboard editor initializer (file will be created next)
+import { initializeDashboardEditor } from './widget/dashboardEditor.js';
 
 // Import necessary utils and state
 import { getGuildIdFromUrl } from './designerUtils.js';
@@ -31,6 +33,9 @@ export function populateGuildDesignerWidgets(templateData) {
     // --- 
 
     // Define widgets and their initialization functions
+    // NOTE: The functions here are called when the *default* layout is loaded
+    // or when data needs refreshing. Dynamic widgets like dashboard-editor
+    // might need separate initialization logic when they are added to the grid.
     const widgetInitializers = {
         'template-info': (el, data) => initializeTemplateInfo(data, el),
         'categories': (el, data) => _initializeCategoriesList(data, el, guildId),
@@ -55,22 +60,29 @@ export function populateGuildDesignerWidgets(templateData) {
             // Structure tree initializer doesn't need the element passed directly
             // It finds its container by ID internally. But we call it here.
             initializeStructureTree(data);
-        }
+        },
+        // Register the dashboard editor - its initializer will likely do nothing yet
+        'dashboard-editor': (el, data) => initializeDashboardEditor(el, guildId /* pass necessary context */) 
     };
 
-    // Iterate over known widget IDs and call their initializers
+    // Iterate over known widget IDs and call their initializers if the element exists
+    // This primarily populates the *default* widgets. 
     Object.keys(widgetInitializers).forEach(widgetId => {
+        // Check if the widget element currently exists in the DOM (it might not if it's dynamic)
         const contentElement = document.getElementById(`widget-content-${widgetId}`);
         if (contentElement) {
             try {
-                console.log(`[DesignerWidgets] Initializing widget: ${widgetId}`);
+                console.log(`[DesignerWidgets] Initializing/Populating widget: ${widgetId}`);
                 widgetInitializers[widgetId](contentElement, templateData);
             } catch (error) {
-                console.error(`[DesignerWidgets] Error initializing widget ${widgetId}:`, error);
+                console.error(`[DesignerWidgets] Error initializing/populating widget ${widgetId}:`, error);
                 contentElement.innerHTML = `<p class="text-danger p-3">Error loading content.</p>`;
             }
         } else {
-            console.warn(`[DesignerWidgets] Content container for widget ID '${widgetId}' not found.`);
+            // It's normal for dynamic widgets like dashboard-editor not to be found initially
+            if (widgetId !== 'dashboard-editor') { // Only warn for non-dynamic widgets
+                 console.warn(`[DesignerWidgets] Content container for widget ID '${widgetId}' not found.`);
+            }
         }
     });
 

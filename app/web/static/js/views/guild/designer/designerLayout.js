@@ -13,7 +13,17 @@ export async function saveLayout(grid, pageIdentifier) {
     }
     console.log(`[DesignerLayout] Saving layout for ${pageIdentifier}`);
     
-    const currentLayout = grid.save(false); 
+    // Manually collect layout data including height (h)
+    const currentLayout = grid.engine.nodes.map(node => ({
+        id: node.id, 
+        x: node.x,
+        y: node.y,
+        w: node.w,
+        h: node.h // Ensure height is included
+        // Include other necessary properties if backend expects them (minW, minH etc.)
+        // Example: minW: node.minW, minH: node.minH 
+    }));
+
     const isLocked = grid.opts.disableDrag; // Assuming disableDrag reflects the locked state
     
     const payload = {
@@ -248,43 +258,64 @@ export async function loadLayout(pageIdentifier) {
 }
 
 /**
- * Renders the default widgets based on provided definitions and layout.
- * @param {GridStack} grid - The initialized Gridstack instance.
- * @param {object} widgetDefinitions - Object mapping widget IDs to { title, content, headerControls? }.
- * @param {Array} defaultLayout - Array of Gridstack layout items { id, x, y, w, h, ... }.
+ * Contains the definitions (title, initial content) for all available widgets.
  */
-export function renderDefaultWidgets(grid, widgetDefinitions, defaultLayout) {
-    console.log("[DesignerLayout] Rendering default widgets...");
+export const widgetDefinitions = {
+    'structure-tree': { title: 'Guild Structure', content: '<div id="widget-content-structure-tree">Loading tree...</div>' },
+    'template-info': { title: 'Template Information', content: '<div id="widget-content-template-info">Loading...</div>' },
+    'categories': { title: 'Categories', content: '<div id="widget-content-categories">Loading...</div>', headerControls: [{ type: 'link', text: 'Manage', href: '', class: 'manage-link', id: 'manage-categories-link' }] }, // Placeholder href
+    'channels': { title: 'Channels', content: '<div id="widget-content-channels">Loading...</div>', headerControls: [{ type: 'link', text: 'Manage', href: '', class: 'manage-link', id: 'manage-channels-link' }] }, // Placeholder href
+    'template-list': { title: 'Saved Templates', content: '<div id="widget-content-template-list">Loading templates...</div>' },
+    'shared-template-list': { title: 'Shared Templates', content: '<div id="widget-content-shared-template-list">Loading shared templates...</div>' },
+    // --- Add the new Dashboard Editor widget definition ---
+    'dashboard-editor': { 
+        title: 'Dashboard Editor', 
+        content: '<div id="widget-content-dashboard-editor">Select or create a dashboard instance to edit.</div>',
+        // Initially no header controls, can be added later
+    },
+    // ----------------------------------------------------
+};
+
+/**
+ * Defines the default layout (positions and sizes) for the widgets.
+ */
+export const defaultLayout = [
+    { id: 'structure-tree', x: 0, y: 0, w: 4, h: 8, minW: 3, minH: 5 },
+    { id: 'template-info', x: 4, y: 0, w: 4, h: 2, minW: 3, minH: 2, maxH: 2 }, // Added maxH
+    { id: 'categories', x: 4, y: 2, w: 4, h: 3, minW: 3, minH: 3 },
+    { id: 'channels', x: 8, y: 0, w: 4, h: 5, minW: 3, minH: 4 },
+    { id: 'template-list', x: 4, y: 5, w: 4, h: 3, minW: 3, minH: 3 },
+    { id: 'shared-template-list', x: 8, y: 5, w: 4, h: 3, minW: 3, minH: 3 },
+    // Add dashboard editor and preview to default layout
+    { id: 'dashboard-editor', x: 0, y: 8, w: 6, h: 5, minW: 4, minH: 4 }, // Place below structure tree
+    { id: 'dashboard-preview', x: 6, y: 8, w: 6, h: 5, minW: 4, minH: 4 } // Place next to editor
+];
+
+/**
+ * Renders the default set of widgets into the grid based on the defaultLayout.
+ * @param {GridStack} grid - The GridStack instance.
+ * @param {object} widgetDefs - The definitions for all widgets.
+ * @param {Array} defaultLayoutConf - The default layout configuration.
+ */
+export function renderDefaultWidgets(grid, widgetDefs = widgetDefinitions, defaultLayoutConf = defaultLayout) {
     if (!grid) {
-        console.error("[DesignerLayout] Gridstack instance is not available for rendering defaults.");
+        console.error("[DesignerLayout] Cannot render default widgets: Grid instance is missing.");
         return;
     }
-    if (!widgetDefinitions || !defaultLayout) {
-        console.error("[DesignerLayout] Widget definitions or default layout missing.");
-        return;
-    }
-
-    grid.removeAll(); // Clear existing grid items
-
-    defaultLayout.forEach(item => {
-        const definition = widgetDefinitions[item.id];
-        if (definition) {
-            const widgetEl = createWidgetElement(
-                item.id,
-                definition.title,
-                definition.content, // Initial content placeholder
-                item, // Pass grid options (x, y, w, h, etc.)
-                definition.headerControls // Pass header controls
-            );
+    console.log("[DesignerLayout] Rendering default widgets...");
+    grid.removeAll(); // Clear existing widgets first
+    
+    defaultLayoutConf.forEach(item => {
+        const def = widgetDefs[item.id];
+        if (def) {
+            const widgetEl = createWidgetElement(item.id, def.title, def.content, item, def.headerControls);
             grid.addWidget(widgetEl);
         } else {
-            console.warn(`[DesignerLayout] Definition not found for default widget ID: ${item.id}`);
+            console.warn(`[DesignerLayout] Widget definition not found for default layout item ID: ${item.id}`);
         }
     });
-
-    console.log("[DesignerLayout] Default widgets added to grid.");
+    console.log("[DesignerLayout] Default widgets rendered.");
 }
-
 
 // Initial log to confirm loading
 console.log("[DesignerLayout] Layout module loaded.");

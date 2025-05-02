@@ -12,7 +12,9 @@ import {
     saveLayout, 
     resetLayout, 
     setLockButtonAppearance, 
-    toggleLayoutLockAndSave 
+    toggleLayoutLockAndSave,
+    widgetDefinitions,
+    defaultLayout
 } from './designerLayout.js';
 import { initializeDesignerEventListeners } from './designerEvents.js';
 import { populateGuildDesignerWidgets, initializeCategoriesList, initializeChannelsList } from './designerWidgets.js';
@@ -77,27 +79,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         // User ID is fetched within widget initializers that need it (like shared list)
 
-        // 3. Define Widgets and Default Layout (Constants for GridManager)
-        console.log("[Index] Defining widgets and default layout...");
+        // 3. Define Widgets and Default Layout (Constants for GridManager) - NOW IMPORTED
+        console.log("[Index] Defining widgets and default layout (imported)...");
         const pageIdentifier = `guild-designer-${guildId}`;
-        const widgetDefs = {
-            'structure-tree': { title: 'Guild Structure', content: '<div id="widget-content-structure-tree">Loading tree...</div>' },
-            'template-info': { title: 'Template Information', content: '<div id="widget-content-template-info">Loading...</div>' },
-            'categories': { title: 'Categories', content: '<div id="widget-content-categories">Loading...</div>', headerControls: [{ type: 'link', text: 'Manage', href: `/guild/${guildId}/designer/categories`, class: 'manage-link' }] },
-            'channels': { title: 'Channels', content: '<div id="widget-content-channels">Loading...</div>', headerControls: [{ type: 'link', text: 'Manage', href: `/guild/${guildId}/designer/channels`, class: 'manage-link' }] },
-            'template-list': { title: 'Saved Templates', content: '<div id="widget-content-template-list">Loading templates...</div>' },
-            'shared-template-list': { title: 'Shared Templates', content: '<div id="widget-content-shared-template-list">Loading shared templates...</div>' },
-        };
-        const defaultLayout = [
-            { id: 'structure-tree', x: 0, y: 0, w: 4, h: 8, minW: 3, minH: 5 },
-            { id: 'template-info', x: 4, y: 0, w: 4, h: 2, minW: 3, minH: 2, maxH: 2 }, // Added maxH
-            { id: 'categories', x: 4, y: 2, w: 4, h: 3, minW: 3, minH: 3 },
-            { id: 'channels', x: 8, y: 0, w: 4, h: 5, minW: 3, minH: 4 },
-            { id: 'template-list', x: 4, y: 5, w: 4, h: 3, minW: 3, minH: 3 },
-            { id: 'shared-template-list', x: 8, y: 5, w: 4, h: 3, minW: 3, minH: 3 },
-        ];
-        // console.log("[Index] Widget definitions:", widgetDefs);
-        // console.log("[Index] Default layout:", defaultLayout);
+        // REMOVED local const widgetDefs = { ... };
+        // REMOVED local const defaultLayout = [ ... ];
+        // console.log("[Index] Using imported widget definitions:", widgetDefinitions); // Use imported name
+        // console.log("[Index] Using imported default layout:", defaultLayout); // Use imported name
 
         // 4. Initialize GridManager
         console.log("[Index] Initializing GridManager...");
@@ -106,7 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const gridManager = new GridManager({
             gridElementId: 'designer-grid',
             pageIdentifier: pageIdentifier,
-            widgetDefinitions: widgetDefs,
+            widgetDefinitions: widgetDefinitions,
             defaultLayout: defaultLayout,
             populateContentCallback: (dataForWidgets) => {
                 // Use the widget orchestrator function
@@ -144,7 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         resetButton.addEventListener('click', async () => {
             if (confirm('Are you sure you want to reset the layout to default? Any unsaved layout changes will be lost.')) {
                 // The resetRequiresDataCallback in GridManager handles fetching fresh data
-                await gridManager.resetLayoutToDefault();
+                await gridManager._resetLayout();
             }
         });
         // Set initial lock button appearance based on loaded layout state
