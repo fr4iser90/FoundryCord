@@ -4,9 +4,9 @@ from fastapi import HTTPException, status
 
 from app.shared.interface.logging.api import get_web_logger
 # TODO: Rename Repository interface import
-from app.shared.domain.repositories.templates.template_dashboard_instance_repository import DashboardConfigurationRepository
+from app.shared.domain.repositories.dashboards.dashboard_configuration_repository import DashboardConfigurationRepository
 # TODO: Rename Repository implementation import
-from app.shared.infrastructure.repositories.guild_templates import DashboardConfigurationRepositoryImpl # Corrected import path
+from app.shared.infrastructure.repositories import DashboardConfigurationRepositoryImpl 
 # TODO: Rename Schemas import
 from app.web.interfaces.api.rest.v1.schemas.template_dashboard_schemas import (
     DashboardConfigCreatePayload,
@@ -27,11 +27,7 @@ class DashboardConfigurationService:
         # Instantiate the correct repository
         self.config_repo: DashboardConfigurationRepository = DashboardConfigurationRepositoryImpl(session) # Use updated repo interface/impl
 
-    # REMOVED: list_instances_for_channel method
-    # async def list_instances_for_channel(...):
 
-    # REMOVED: create_instance_for_channel method
-    # async def create_instance_for_channel(...):
     
     async def list_configurations(self) -> List[DashboardConfigResponseSchema]: # New Method
         """Lists all dashboard configurations."""

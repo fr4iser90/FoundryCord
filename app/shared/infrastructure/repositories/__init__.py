@@ -45,11 +45,13 @@ from .guild_templates import (
     GuildTemplateChannelRepositoryImpl,
     GuildTemplateCategoryPermissionRepositoryImpl,
     GuildTemplateChannelPermissionRepositoryImpl,
-    DashboardConfigurationRepositoryImpl
 )
 
-# NEW: Dashboard Component Definition implementation
-from .dashboards import DashboardComponentDefinitionRepositoryImpl
+# Dashboard Component Definitions
+from .dashboards import (
+    DashboardComponentDefinitionRepositoryImpl,
+    DashboardConfigurationRepositoryImpl
+)
 
 # Base implementation
 from .base_repository_impl import BaseRepositoryImpl
@@ -76,7 +78,7 @@ __all__ = [
     'GuildTemplateChannelRepositoryImpl',
     'GuildTemplateCategoryPermissionRepositoryImpl',
     'GuildTemplateChannelPermissionRepositoryImpl',
-    'DashboardConfigurationRepositoryImpl',
+    
     
     # Monitoring
     'MonitoringRepositoryImpl',
@@ -94,6 +96,7 @@ __all__ = [
     # Audit
     'AuditLogRepositoryImpl',
 
-    # NEW: Dashboard Component Definitions
+    # Dashboard Component Definitions
     'DashboardComponentDefinitionRepositoryImpl',
+    'DashboardConfigurationRepositoryImpl',
 ]
