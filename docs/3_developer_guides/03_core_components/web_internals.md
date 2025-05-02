@@ -1,365 +1,89 @@
-```tree
 
-web
-├── application
-│   ├── __init__.py
-│   ├── services
-│   │   ├── api
-│   │   │   ├── api_service.py
-│   │   │   └── __init__.py
-│   │   ├── auth
-│   │   │   └── __init__.py
-│   │   ├── guild
-│   │   │   ├── guild_service.py
-│   │   │   ├── __init__.py
-│   │   │   ├── template
-│   │   │   │   └── __init__.py
-│   │   │   └── template_service.py
-│   │   ├── __init__.py
-│   │   ├── monitoring
-│   │   │   └── __init__.py
-│   │   ├── security
-│   │   │   └── __init__.py
-│   │   └── ui
-│   │       └── layout_service.py
-│   └── tasks
-│       └── __init__.py
-├── core
-│   ├── exception_handlers.py
-│   ├── extensions
-│   │   ├── __init__.py
-│   │   ├── session.py
-│   │   ├── static.py
-│   │   ├── templates.py
-│   │   └── time.py
-│   ├── __init__.py
-│   ├── lifecycle_manager.py
-│   ├── main.py
-│   ├── middleware
-│   │   ├── authentication.py
-│   │   ├── __init__.py
-│   │   └── request_tracking.py
-│   ├── middleware_registry.py
-│   ├── router_registry.py
-│   ├── workflow_manager.py
-│   └── workflows
-│       ├── base_workflow.py
-│       ├── __init__.py
-│       └── service_workflow.py
-├── infrastructure
-│   ├── config
-│   │   ├── env_loader.py
-│   │   └── __init__.py
-│   ├── database
-│   │   └── __init__.py
-│   ├── factories
-│   │   ├── base
-│   │   │   └── base_factory.py
-│   │   ├── composite
-│   │   │   └── web_factory.py
-│   │   └── service
-│   │       └── web_service_factory.py
-│   ├── __init__.py
-│   ├── logging
-│   │   └── __init__.py
-│   ├── security
-│   │   ├── __init__.py
-│   │   └── oauth.py
-│   └── setup
-│       ├── bot_imports.py
-│       ├── __init__.py
-│       ├── init.py
-│       ├── init_web.py
-│       └── main_check.py
-├── __init__.py
-├── interfaces
-│   ├── api
-│   │   ├── __init__.py
-│   │   └── rest
-│   │       ├── dependencies
-│   │       │   ├── auth_dependencies.py
-│   │       │   └── ui_dependencies.py
-│   │       ├── README.md
-│   │       ├── routes.py
-│   │       └── v1
-│   │           ├── auth
-│   │           │   ├── auth_controller.py
-│   │           │   └── __init__.py
-│   │           ├── base_controller.py
-│   │           ├── debug
-│   │           │   ├── debug_controller.py
-│   │           │   └── __init__.py
-│   │           ├── guild
-│   │           │   ├── admin
-│   │           │   │   ├── guild_config_controller.py
-│   │           │   │   └── guild_user_management_controller.py
-│   │           │   ├── designer
-│   │           │   │   └── guild_template_controller.py
-│   │           │   ├── __init__.py
-│   │           │   └── selector
-│   │           │       └── guild_selector_controller.py
-│   │           ├── home
-│   │           │   ├── __init__.py
-│   │           │   └── overview_controller.py
-│   │           ├── __init__.py
-│   │           ├── owner
-│   │           │   ├── bot_control_controller.py
-│   │           │   ├── bot_logger_controller.py
-│   │           │   ├── guild_management_controller.py
-│   │           │   ├── __init__.py
-│   │           │   ├── owner_controller.py
-│   │           │   └── state_snapshot_controller.py
-│   │           ├── schemas
-│   │           │   ├── guild_schemas.py
-│   │           │   ├── guild_template_schemas.py
-│   │           │   ├── state_monitor_schemas.py
-│   │           │   └── ui_layout_schemas.py
-│   │           ├── system
-│   │           │   ├── health_controller.py
-│   │           │   └── __init__.py
-│   │           └── ui
-│   │               ├── __init__.py
-│   │               └── layout_controller.py
-│   ├── __init__.py
-│   └── web
-│       ├── __init__.py
-│       ├── routes.py
-│       └── views
-│           ├── auth
-│           │   ├── auth_view.py
-│           │   └── __init__.py
-│           ├── base_view.py
-│           ├── channel_designer
-│           ├── debug
-│           │   ├── debug_view.py
-│           │   └── __init__.py
-│           ├── guild
-│           │   ├── admin
-│           │   │   ├── index_view.py
-│           │   │   ├── __init__.py
-│           │   │   ├── logs_view.py
-│           │   │   ├── settings_view.py
-│           │   │   └── users_view.py
-│           │   ├── designer
-│           │   │   ├── categories_view.py
-│           │   │   ├── channels_view.py
-│           │   │   ├── commands_view.py
-│           │   │   ├── embeds_view.py
-│           │   │   ├── index_view.py
-│           │   │   └── __init__.py
-│           │   └── __init__.py
-│           ├── home
-│           │   ├── __init__.py
-│           │   └── overview.py
-│           ├── __init__.py
-│           ├── main
-│           │   ├── __init__.py
-│           │   └── main_view.py
-│           ├── navbar
-│           │   ├── guild_selector_view.py
-│           │   └── __init__.py
-│           ├── owner
-│           │   ├── bot_control_view.py
-│           │   ├── bot_logger_view.py
-│           │   ├── control_view.py
-│           │   ├── features_view.py
-│           │   ├── guild_management_view.py
-│           │   ├── __init__.py
-│           │   └── state_monitor_view.py
-│           └── structure_designer
-├── requirements.txt
-├── static
-│   ├── css
-│   │   ├── components
-│   │   │   ├── alerts.css
-│   │   │   ├── badges.css
-│   │   │   ├── buttons.css
-│   │   │   ├── cards.css
-│   │   │   ├── forms.css
-│   │   │   ├── guild-selector.css
-│   │   │   ├── index.css
-│   │   │   ├── json-viewer.css
-│   │   │   ├── modal.css
-│   │   │   ├── navbar.css
-│   │   │   ├── panels.css
-│   │   │   ├── stats.css
-│   │   │   ├── table.css
-│   │   │   └── widgets.css
-│   │   ├── core
-│   │   │   ├── base.css
-│   │   │   ├── layout.css
-│   │   │   ├── reset.css
-│   │   │   └── utilities.css
-│   │   ├── themes
-│   │   │   ├── dark.css
-│   │   │   ├── dark_green.css
-│   │   │   ├── light.css
-│   │   │   ├── light_green.css
-│   │   │   └── light_red.css
-│   │   └── views
-│   │       ├── admin
-│   │       │   └── system_status.css
-│   │       ├── auth
-│   │       │   └── login.css
-│   │       ├── dashboard
-│   │       │   └── overview.css
-│   │       ├── guild
-│   │       │   └── designer.css
-│   │       └── owner
-│   │           ├── bot_logger.css
-│   │           ├── control.css
-│   │           └── state-monitor.css
-│   └── js
-│       ├── components
-│       │   ├── cards
-│       │   ├── common
-│       │   │   ├── dateTimeUtils.js
-│       │   │   ├── index.js
-│       │   │   ├── navbar.js
-│       │   │   ├── notifications.js
-│       │   │   ├── serversWidget.js
-│       │   │   └── status_widget.js
-│       │   ├── forms
-│       │   ├── guildSelector.js
-│       │   ├── jsonViewer.js
-│       │   ├── layout
-│       │   │   └── gridManager.js
-│       │   └── modalComponent.js
-│       ├── core
-│       │   ├── main.js
-│       │   ├── state-bridge
-│       │   │   ├── bridgeApproval.js
-│       │   │   ├── bridgeCollectionLogic.js
-│       │   │   ├── bridgeCollectorsDefaults.js
-│       │   │   ├── bridgeCollectorsRegistry.js
-│       │   │   ├── bridgeConsoleWrapper.js
-│       │   │   ├── bridgeErrorHandler.js
-│       │   │   ├── bridgeMain.js
-│       │   │   ├── bridgeStorage.js
-│       │   │   └── bridgeUtils.js
-│       │   └── theme.js
-│       └── views
-│           ├── auth
-│           │   └── login.js
-│           ├── guild
-│           │   ├── admin
-│           │   │   └── userManagement.js
-│           │   └── designer
-│           │       ├── designerEvents.js
-│           │       ├── designerLayout.js
-│           │       ├── designerState.js
-│           │       ├── designerUtils.js
-│           │       ├── designerWidgets.js
-│           │       ├── index.js
-│           │       ├── modal
-│           │       │   ├── activateConfirmModal.js
-│           │       │   ├── deleteModal.js
-│           │       │   ├── newItemInputModal.js
-│           │       │   ├── saveAsNewModal.js
-│           │       │   └── shareModal.js
-│           │       ├── panel
-│           │       │   ├── properties.js
-│           │       │   ├── toolbox.js
-│           │       │   └── toolboxList.js
-│           │       └── widget
-│           │           ├── categoriesList.js
-│           │           ├── channelsList.js
-│           │           ├── sharedTemplateList.js
-│           │           ├── structureTree.js
-│           │           ├── templateInfo.js
-│           │           └── templateList.js
-│           ├── home
-│           │   └── index.js
-│           └── owner
-│               ├── control
-│               │   ├── botControls.js
-│               │   ├── botLogger.js
-│               │   ├── configManagement.js
-│               │   └── guildManagement.js
-│               └── state-monitor
-│                   ├── index.js
-│                   ├── panel
-│                   │   ├── collectorsList.js
-│                   │   └── recentSnapshotsList.js
-│                   └── widget
-│                       ├── snapshotResultsTabs.js
-│                       └── snapshotSummary.js
-└── templates
-    ├── components
-    │   ├── common
-    │   │   ├── footer.html
-    │   │   └── header.html
-    │   ├── footer
-    │   ├── guild
-    │   │   └── designer
-    │   │       └── panel
-    │   │           ├── properties.html
-    │   │           └── toolbox.html
-    │   ├── navbar
-    │   └── navigation
-    │       ├── guild_selector.html
-    │       ├── nav_links.html
-    │       └── user_menu.html
-    ├── debug
-    │   ├── add_test_guild.html
-    │   └── debug_home.html
-    ├── layouts
-    │   ├── base_layout.html
-    │   ├── error_layout.html
-    │   └── three_column_layout.html
-    ├── pages
-    │   └── guild
-    │       └── designer
-    └── views
-        ├── admin
-        │   ├── guild_config.html
-        │   ├── index.html
-        │   ├── logs.html
-        │   ├── settings.html
-        │   ├── system_status.html
-        │   └── users.html
-        ├── auth
-        │   └── login.html
-        ├── errors
-        │   ├── 400.html
-        │   ├── 401.html
-        │   ├── 403.html
-        │   ├── 404.html
-        │   ├── 500.html
-        │   └── 503.html
-        ├── guild
-        │   ├── admin
-        │   │   ├── index.html
-        │   │   ├── settings.html
-        │   │   └── users.html
-        │   └── designer
-        │       ├── activate_confirm_modal.html
-        │       ├── category.html
-        │       ├── channel.html
-        │       ├── command.html
-        │       ├── delete_modal.html
-        │       ├── index.html
-        │       ├── new_item_input_modal.html
-        │       ├── no_template.html
-        │       ├── save_as_new_modal.html
-        │       └── share_modal.html
-        ├── home
-        │   └── index.html
-        ├── main
-        │   └── index.html
-        └── owner
-            ├── control
-            │   ├── add-guild-modal.html
-            │   ├── bot-controls.html
-            │   ├── config-panel.html
-            │   ├── guild-actions.html
-            │   ├── guild-details.html
-            │   ├── guild-list.html
-            │   ├── index.html
-            │   └── logger
-            │       └── bot.html
-            ├── features
-            │   └── index.html
-            ├── index.html
-            └── state-monitor.html
-```
+
+## Guild Designer: Dashboard Builder & Preview
+
+This section details the technical architecture for the interactive dashboard builder feature within the Guild Structure Designer.
+
+### Overview
+
+The goal is to allow users to visually construct dashboards using predefined components, configure them with variables, and see a live preview. These dashboards are stored as instances linked to specific channels in a Guild Template.
+
+### Key Architectural Components
+
+1.  **Backend - Component Definition API (`GET /api/v1/dashboards/components`):**
+    *   **Purpose:** Provides the frontend (Toolbox, Editor) with the definitions of available building blocks.
+    *   **Source:** Reads from the `dashboard_component_definitions` database table (seeded via Migration 009).
+    *   **Response Structure (Conceptual):** Returns a list of component definitions. Each definition should include:
+        *   `component_key`: Unique identifier (e.g., `common_text_block`).
+        *   `dashboard_type`: The scope (e.g., `common`, `welcome`).
+        *   `component_type`: Category (e.g., `layout`, `text`, `button`, `embed`).
+        *   `metadata`: `{ displayName, description, icon, category }`.
+        *   `config_schema`: An array describing configurable fields for the editor widget:
+            *   `[{ key, label, fieldType, defaultValue?, options?, validation?, helpText?, supportsVariables? }]`.
+        *   `preview_hints (Optional)`: Information for the preview widget.
+    *   **Implementation:** Requires a new Controller, Service, and Repository specifically for reading and structuring these definitions. Pydantic schemas should be used for the response.
+    *   **Filtering:** Should support filtering by `dashboard_type` and `component_type` via query parameters.
+
+2.  **Backend - Variables API (`GET /api/v1/dashboards/variables` - Optional/Placeholder):**
+    *   **Purpose:** Provides the Editor Widget with a list of available template variables.
+    *   **Source:** Initially hardcoded, ideally later read from a dedicated database table (`dashboard_variables`).
+    *   **Response Structure:** `[{ variable_key, description, example_value, scope? }]`.
+    *   **Implementation:** New Controller/Service.
+
+3.  **Backend - Instance Management API (Existing):**
+    *   Endpoints `GET/POST /channels/.../dashboards` and `GET/PUT/DELETE /dashboards/{instance_id}` are used.
+    *   Crucially, the `config` field within the request/response payloads for these endpoints now contains the complex JSON structure generated by the Editor Widget, representing the arranged and configured components.
+    *   The `TemplateDashboardInstanceService` and `Repository` handle storing/retrieving this JSON in the `dashboard_instances` table.
+
+4.  **Frontend - Toolbox (`toolbox.js`, `toolboxList.js`):**
+    *   Fetches component definitions from `GET /api/v1/dashboards/components`.
+    *   Displays components, grouped by category/type, as draggable elements.
+    *   Attaches component definition data (especially `component_key` and `definition`) to the draggable elements for use by the Editor Widget.
+
+5.  **Frontend - Editor Widget (`widget/dashboardEditor.js`):**
+    *   A GridStack widget, likely hidden by default.
+    *   **Receives Components:** Implements drop handling for components dragged from the Toolbox.
+    *   **Dynamic Form Generation:** Reads the `config_schema` from the dropped component's definition and dynamically renders the appropriate input fields (text, textarea, select, color picker, etc.) for configuration.
+    *   **Variable Insertion:** Fetches variables from `GET /api/v1/dashboards/variables` and provides UI (e.g., a dropdown/button) to insert them into compatible fields.
+    *   **State Management:** Maintains the internal structure of the dashboard being built (list of components, their order, their configured values).
+    *   **Config Generation:** On save, serializes the internal structure into the complex `config` JSON format.
+    *   **API Interaction:** Handles loading instance data (`GET`), saving updates (`PUT`), and creating new instances (`POST`) via the instance management API.
+    *   **Activation:** Triggered via events from the Properties Panel (for 'New'/'Edit'). Hides itself after save/cancel.
+
+6.  **Frontend - Preview Widget (`widget/dashboardPreview.js`):**
+    *   A GridStack widget.
+    *   **Data Loading:** Fetches the full instance data (including `config` JSON) for a selected instance (`GET /api/v1/dashboards/{instance_id}`).
+    *   **Dynamic Rendering:** Parses the `config` JSON. For each component in the config, it fetches the corresponding component definition (potentially cached) from the `/dashboards/components` API (or uses data passed with the config).
+    *   **Approximation:** Renders HTML elements attempting to visually mimic the Discord appearance based on the component type, configured properties, and `preview_hints`. Variables are replaced with placeholders.
+    *   **Activation:** Triggered via events from the Properties Panel (when an instance is selected) or the Editor Widget (after save).
+
+7.  **Frontend - Properties Panel (`properties.js`):**
+    *   When a channel node is selected in the `structureTree`:
+        *   Fetches the list of associated dashboard instances (`GET /channels/.../dashboards`).
+        *   Displays the list (Name, Type).
+        *   Adds a "New" button: Triggers the display/activation of the Editor Widget in 'create' mode (potentially requires a `dashboard_type` selection first).
+        *   Adds "Edit" button per instance: Triggers the display/activation of the Editor Widget in 'edit' mode, passing the `instance_id`.
+        *   Adds "Delete" button per instance: Triggers `DELETE /dashboards/{instance_id}`.
+        *   Handles instance selection: Clicking an instance name triggers the Preview Widget to load and render the preview for that `instance_id`.
+
+8.  **Event Handling (`designerEvents.js` / Widget Communication):**
+    *   Crucial for coordinating actions between the Properties Panel, Editor Widget, and Preview Widget.
+    *   Events needed for: triggering editor load/create, triggering preview load, signaling completion of save/delete to refresh lists/previews.
+
+### Data Flow Example (Edit Instance)
+
+1.  User selects Channel Node in `structureTree`.
+2.  `properties.js` detects selection, calls `GET /api/v1/templates/channels/{channel_id}/dashboards`.
+3.  `properties.js` displays the list of instances.
+4.  User clicks "Edit" on instance `xyz`.
+5.  `properties.js` dispatches `requestDashboardEdit` event with `instance_id: xyz`.
+6.  `dashboardEditor.js` listens, receives event, calls `loadInstance('xyz')`.
+7.  `loadInstance` calls `GET /api/v1/templates/dashboards/xyz`.
+8.  Backend returns instance data (incl. `config` JSON).
+9.  `dashboardEditor.js` parses `config`, fetches component definitions if needed (`GET /components`), dynamically renders editor UI, shows widget.
+10. User edits, clicks "Save".
+11. `dashboardEditor.js` generates new `config` JSON, calls `PUT /api/v1/templates/dashboards/xyz`.
+12. Backend saves, returns success.
+13. `dashboardEditor.js` hides widget, dispatches `dashboardInstanceUpdated` event with `instance_id: xyz`.
+14. `properties.js` listens, refreshes its list.
+15. `dashboardPreview.js` listens, calls `loadPreview('xyz')` to update the preview.

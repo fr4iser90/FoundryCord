@@ -29,11 +29,27 @@ from .projects import (
     TaskRepositoryImpl
 )
 
+# UI implementations
+from .ui import UILayoutRepositoryImpl
+
 # Utility implementations
 from .utils import RateLimitRepositoryImpl
 
 # Audit implementations
 from .audit import AuditLogRepositoryImpl
+
+# Guild Template implementations
+from .guild_templates import (
+    GuildTemplateRepositoryImpl,
+    GuildTemplateCategoryRepositoryImpl,
+    GuildTemplateChannelRepositoryImpl,
+    GuildTemplateCategoryPermissionRepositoryImpl,
+    GuildTemplateChannelPermissionRepositoryImpl,
+    TemplateDashboardInstanceRepositoryImpl
+)
+
+# NEW: Dashboard Component Definition implementation
+from .dashboards import DashboardComponentDefinitionRepositoryImpl
 
 # Base implementation
 from .base_repository_impl import BaseRepositoryImpl
@@ -53,6 +69,14 @@ __all__ = [
     'GuildConfigRepositoryImpl',
     'DashboardRepositoryImpl',
     'GuildRepositoryImpl',
+
+    # Guild Templates
+    'GuildTemplateRepositoryImpl',
+    'GuildTemplateCategoryRepositoryImpl',
+    'GuildTemplateChannelRepositoryImpl',
+    'GuildTemplateCategoryPermissionRepositoryImpl',
+    'GuildTemplateChannelPermissionRepositoryImpl',
+    'TemplateDashboardInstanceRepositoryImpl',
     
     # Monitoring
     'MonitoringRepositoryImpl',
@@ -60,10 +84,16 @@ __all__ = [
     # Projects
     'ProjectRepositoryImpl',
     'TaskRepositoryImpl',
+
+    # UI
+    'UILayoutRepositoryImpl',
     
     # Utils
     'RateLimitRepositoryImpl',
     
     # Audit
-    'AuditLogRepositoryImpl'
+    'AuditLogRepositoryImpl',
+
+    # NEW: Dashboard Component Definitions
+    'DashboardComponentDefinitionRepositoryImpl',
 ]

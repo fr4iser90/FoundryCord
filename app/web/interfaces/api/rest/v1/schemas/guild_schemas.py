@@ -28,5 +28,7 @@ class GuildAccessUpdateResponse(BaseModel):
     message: str
     guild: GuildInfo # Embed the GuildInfo schema
 
+
+
 # You might want to add other guild-related schemas here in the future,
 # e.g., GuildDetails, GuildSettings, etc.

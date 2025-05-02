@@ -119,47 +119,85 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [ ] **Listener implementieren:** Alle relevanten Widgets müssen auf diese Events hören und ihre Anzeige entsprechend aktualisieren (nicht nur auf `loadTemplateData`).
 
 # --- Dashboard Instance Management (Designer) ---
-*   **Goal:** The designer should allow creating, naming, configuring (via `config` JSON?), and deleting `dashboard_instances` entries, linked via `guild_template_channel_id` to a `guild_template_channels`. This replaces the previous idea of just activating fixed `dashboard_types`.
-*   [ ] **Database:**
-    *   [x] The `dashboard_instances` table already exists and contains `name`, `dashboard_type`, `config`, `guild_template_channel_id`. It will be used as the base.
-    *   [ ] Clarify: How exactly should the link to the *Template* Channel (`guild_template_channel_id`) be handled compared to the live Discord Channel (`channel_id` in `DashboardEntity`)? Does the model need adjustment, or is the logic sufficient?
-*   [ ] **Clarify Terminology:** Adapt code and documentation to clearly distinguish between the *Function Type* (from `DASHBOARD_MAPPINGS`) and the *Instance Name* (from `dashboard_instances.name`).
-*   [ ] **Backend API (List Types):** The endpoint `GET /api/v1/dashboards/types` is still needed to provide the available *Function Types* (from `DASHBOARD_MAPPINGS`) for selection when creating a new instance.
-    *   [x] **Correct Implementation:** Ensure the endpoint returns the correct types from `DASHBOARD_MAPPINGS` (or a central source), not from the Enum.
-*   [ ] **Backend API (Instance Management):** Define and implement new endpoints:
-    *   [ ] `GET /api/v1/templates/channels/{channel_template_id}/dashboards`: Lists all dashboard instances linked to this template channel.
-    *   [ ] `POST /api/v1/templates/channels/{channel_template_id}/dashboards`: Creates a new dashboard instance (requires `name`, `dashboard_type`, optional `config`) and links it to the channel template.
-    *   [ ] `GET /api/v1/templates/dashboards/{instance_id}`: Gets details of a specific instance.
-    *   [ ] `PUT /api/v1/templates/dashboards/{instance_id}`: Updates the name and/or `config` of an instance.
-    *   [ ] `DELETE /api/v1/templates/dashboards/{instance_id}`: Deletes a dashboard instance (and the link).
-    *   **Files:** New Controller (e.g., `template_dashboard_instances_controller.py`), new Service, adjustments in Repository (`DashboardRepository`).
-*   [ ] **Frontend - New Widget: Dashboard Instances List:** Displays the dashboard instances linked to the selected channel template.
-    *   **Files:**
-        - **New:** `app/web/static/js/views/guild/designer/widget/dashboardInstancesList.js`
-        - **Edit:** `app/web/static/js/views/guild/designer/designerLayout.js` (Widget Definition)
-        - **Edit:** `app/web/static/js/views/guild/designer/designerWidgets.js` (Initializer Mapping)
-    *   [ ] **Define Widget:** In `designerLayout.js`.
-    *   [ ] **JS Logic (`dashboardInstancesList.js`):**
-        *   Listen for `designerNodeSelected`.
-        *   If channel selected: Call `GET .../dashboards`.
-        *   Display list of instances (Name, Type).
-        *   Add buttons for Create/Edit/Delete.
-    *   [ ] **Register Widget:** In `designerWidgets.js`.
-*   [ ] **Frontend - New Widget/Modal: Dashboard Instance Editor/Creator:** Allows creating/editing an instance.
-    *   **Files:**
-        - **New:** `app/web/static/js/views/guild/designer/widget/dashboardInstanceEditor.js` (or as Modal?)
-        - **Edit:** `designerLayout.js` / `designerWidgets.js` (if Widget) OR new Modal JS/HTML.
-    *   [ ] **Define UI:** Fields for Name, Type selection (dropdown populated by `GET /api/v1/dashboards/types`), Textarea/Editor for `config` JSON.
-    *   [ ] **JS Logic:**
-        *   On Create: Call `POST .../dashboards`.
-        *   On Edit: Call `GET .../{instance_id}` to load, `PUT .../{instance_id}` to save.
-        *   Implement `DELETE .../{instance_id}`.
-        *   After actions: Update `Dashboard Instances List` widget (e.g., via event).
-*   [ ] **Code Cleanup:**
-    *   [ ] Remove code parts in `properties.js` related to `is_dashboard_enabled` and `dashboard_types` (now obsolete).
-    *   [ ] Check if the `DashboardType` Enum in `app/shared/infrastructure/models/discord/enums/dashboard.py` is still needed or can be removed/corrected.
-*   [ ] **Sharing / Copying:** (Future Feature) Define how sharing and copying of dashboard instances (possibly with variable/config adjustment) should work.
+*   **Revised Goal:** Implement a **Dashboard Builder** allowing users to create and configure dashboard instances using predefined components. Provide a **live preview** approximating the Discord appearance. Manage instances linked to template channels.
+*   [ ] **Database & Seeds:**
+    *   [x] `dashboard_instances` table exists for storing instances linked to `guild_template_channel_id` with `name`, `dashboard_type`, and `config` (JSON).
+    *   [x] `dashboard_component_definitions` table exists and is seeded (via Migration 009) with component definitions (embeds, buttons, etc.) for different `dashboard_type`s.
+    *   [ ] Clarify: Linking logic between `guild_template_channel_id` and potential live `channel_id`. (Defer for now).
+*   [ ] **Backend - Component API:**
+    *   **Files:** New controller/service/repository for dashboard components.
+    *   [ ] **New Endpoint (`GET /api/v1/dashboards/components`):**
+        *   [ ] Needs to query `dashboard_component_definitions` table.
+        *   [ ] Return structured data of available components, potentially filterable by `dashboard_type` (e.g., 'common', 'welcome'). Include `component_type`, `component_key`, and `definition` (which describes configurable fields).
+*   [ ] **Backend - Variables API (Optional/Placeholder):**
+    *   **Files:** New controller/service.
+    *   [ ] **New Endpoint (`GET /api/v1/dashboards/variables`):**
+        *   [ ] Return a list of available template variables (e.g., `{{user_name}}`, `{{server_name}}`) with descriptions. (Initially hardcoded, later dynamic?).
+*   [x] **Backend - Instance Management API:** (Existing endpoints are sufficient but handle complex `config`)
+    *   [x] `GET /api/v1/templates/channels/{channel_template_id}/dashboards`: Lists instances.
+    *   [x] `POST /api/v1/templates/channels/{channel_template_id}/dashboards`: Creates instance (expects complex `config` from Builder).
+    *   [x] `GET /api/v1/templates/dashboards/{instance_id}`: Gets instance details (including complex `config`).
+    *   [x] `PUT /api/v1/templates/dashboards/{instance_id}`: Updates instance (including complex `config`).
+    *   [x] `DELETE /api/v1/templates/dashboards/{instance_id}`: Deletes instance.
+    *   [x] **Files:** `template_dashboard_instances_controller.py`, `template_dashboard_instance_service.py`, `template_dashboard_instance_repository_impl.py`.
 
+*   [ ] **Frontend - Toolbox Integration (Components):**
+    *   **Files:** `toolbox.js`, `toolboxList.js`, `toolbox.html`.
+    *   [ ] **Fetch Components:** Load component definitions via the new `GET /api/v1/dashboards/components` endpoint.
+    *   [ ] **Display Components:** Show components (grouped by `component_type`?) as draggable items.
+    *   [ ] **Associate Data:** Link component details (`component_key`, `definition`) to draggable items.
+*   [ ] **Frontend - Dashboard Editor Widget (Builder):**
+    *   **Files:** New `widget/dashboardEditor.js`, `designerLayout.js`, `designerWidgets.js`.
+    *   [ ] **Define Widget:** Add `dashboard-editor` widget definition to `designerLayout.js` (likely hidden initially).
+    *   [ ] **Register Widget:** Add to `designerWidgets.js`.
+    *   [ ] **UI Layout:**
+        *   [ ] Design the builder interface (e.g., drop area/canvas, component property editor panel within the widget).
+        *   [ ] Implement drag-and-drop receiving from Toolbox.
+    *   [ ] **Component Handling:**
+        *   [ ] When a component is dropped/added: Render its configurable fields based on its `definition`.
+        *   [ ] Allow reordering/removing components within the editor.
+    *   [ ] **Variable Integration:**
+        *   [ ] Fetch available variables (from API or hardcoded).
+        *   [ ] Provide a way for the user to insert variables into component fields (e.g., button/dropdown).
+    *   [ ] **Config Generation:** On save, generate the complex `config` JSON representing the arranged and configured components.
+    *   [ ] **Save/Load Logic:**
+        *   [ ] Implement `loadInstance(instanceId)`: Fetch instance data (`GET .../{instance_id}`), parse `config`, and populate the editor.
+        *   [ ] Implement `saveInstance()`: Generate `config`, call `PUT .../{instance_id}`.
+        *   [ ] Implement `createInstance(channelTemplateId, dashboardType)`: Generate `config`, call `POST .../channels/{channel_id}/dashboards`.
+    *   [ ] **Show/Hide:** Implement logic to show/hide the widget when triggered (by Properties Panel or future drag-drop).
+*   [ ] **Frontend - Dashboard Preview Widget:**
+    *   **Files:** New `widget/dashboardPreview.js`, `designerLayout.js`, `designerWidgets.js`.
+    *   [ ] **Define Widget:** Add `dashboard-preview` widget definition.
+    *   [ ] **Register Widget:** Add to `designerWidgets.js`.
+    *   [ ] **Rendering Logic:**
+        *   [ ] Implement `loadPreview(instanceId)`: Fetch instance data (`GET .../{instance_id}`), parse `config`.
+        *   [ ] **Render:** Create HTML elements to *approximate* the Discord look based on the `config` components and their properties. Replace variables with placeholders (e.g., `[user_name]`). (This is the complex part).
+    *   [ ] **Update Trigger:** Listen for events indicating an instance was selected or saved to reload the preview.
+*   [ ] **Frontend - Properties Panel Integration (Revised):**
+    *   **Files:** `properties.js`.
+    *   [ ] **Listen:** On `designerNodeSelected`, check if selected node is a channel.
+    *   [ ] **Fetch & Display Instances:** If channel selected, call `GET .../dashboards` and display the list (Name, Type).
+    *   [ ] **Add "New" Button:**
+        *   [ ] Button opens a selection (modal? dropdown?) for the `dashboard_type`.
+        *   [ ] Triggers the **Editor Widget** in 'create' mode, passing `channel_template_id` and selected `dashboard_type`.
+    *   [ ] **Add "Edit" Button:** Next to each instance, triggers the **Editor Widget** in 'edit' mode, passing `instance_id`.
+    *   [ ] **Add "Delete" Button:** Next to each instance, calls `DELETE .../{instance_id}` (with confirmation).
+    *   [ ] **Selection Handling:** Clicking an instance in the list should trigger the **Preview Widget** to load that instance's preview.
+*   [ ] **Event Handling / Widget Interaction:**
+    *   [ ] Define and implement events/callbacks for communication:
+        *   Properties Panel selection -> Preview Widget load.
+        *   Properties Panel "Edit" -> Editor Widget load.
+        *   Properties Panel "New" (Type selected) -> Editor Widget create.
+        *   Editor Widget save -> Properties Panel list refresh, Preview Widget refresh.
+        *   Properties Panel delete -> Properties Panel list refresh, Preview Widget clear/reset.
+        *   (Future: Toolbox drop -> Editor Widget create).
+*   [ ] **Code Cleanup:**
+    *   [ ] Remove OLD code parts in `properties.js` related to `is_dashboard_enabled` and `dashboard_types`.
+    *   [ ] Review/Remove `DashboardType` Enum if components API makes it redundant.
+*   [ ] **Sharing / Copying (Future):**
+    *   [ ] Needs significant backend work for dashboard definitions separate from instances.
+
+# --- Previous/Other Sections ---
 *   [ ] **Properties Panel - Channel Follows anzeigen:**
     *   **Files:** `properties.js`, `properties.html`, `guild_template_controller.py` (API Anpassung).
     *   [ ] **API:** Backend API anpassen, um Follow-Informationen (wer folgt wem) für den ausgewählten Kanal bereitzustellen (entweder im Haupt-Template-Payload oder separater Endpunkt).
