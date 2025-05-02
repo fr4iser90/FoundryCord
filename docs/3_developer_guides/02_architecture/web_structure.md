@@ -258,8 +258,8 @@ web
 │           │       │   └── shareModal.js
 │           │       ├── panel
 │           │       │   ├── properties.js
-│           │       │   ├── toolbox.js
-│           │       │   └── toolboxList.js
+│           │       │   └── toolbox.js
+│           │       │   
 │           │       └── widget
 │           │           ├── categoriesList.js
 │           │           ├── channelsList.js

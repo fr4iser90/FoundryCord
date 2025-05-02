@@ -104,7 +104,7 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [x] **Frontend Call:** API-Aufruf nach Modal-Bestätigung implementiert.
     *   [x] **UI Update:** Knoten wird aus Baum/Listen nach Erfolg entfernt.
 *   [ ] **Elemente hinzufügen (Toolbox):**
-    *   **Files:** `toolboxList.js`, `toolbox.html`, `structureTree.js`, `designerEvents.js`, `template_service.py`, `guild_template_controller.py`, Repos.
+    *   **Files:** `panel/toolbox.js`, `toolbox.html`, `structureTree.js`, `designerEvents.js`, `template_service.py`, `guild_template_controller.py`, Repos.
     *   [ ] **Toolbox UI:** Draggable Elemente für "Neue Kategorie", "Neuer Textkanal" etc. erstellen.
     *   [ ] **Tree Drag-and-Drop:** jsTree konfigurieren, um Drop aus Toolbox zu akzeptieren.
     *   [ ] **Input Modal:** Modal für Namenseingabe bei neuem Element erstellen/verwenden.
@@ -142,7 +142,7 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [x] **Files:** `template_dashboard_instances_controller.py`, `template_dashboard_instance_service.py`, `template_dashboard_instance_repository_impl.py`.
 
 *   [ ] **Frontend - Toolbox Integration (Components):**
-    *   **Files:** `toolbox.js`, `toolboxList.js`, `toolbox.html`.
+    *   **Files:** `panel/toolbox.js`, `toolbox.html`.
     *   [ ] **Fetch Components:** Load component definitions via the new `GET /api/v1/dashboards/components` endpoint.
     *   [ ] **Display Components:** Show components (grouped by `component_type`?) as draggable items.
     *   [ ] **Associate Data:** Link component details (`component_key`, `definition`) to draggable items.
@@ -230,7 +230,7 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   **Files:** `app/web/static/js/views/guild/designer/panel/properties.js`, `app/web/static/js/views/guild/designer/widget/structureTree.js`.
     *   **Task:** Implement UI for viewing/editing selected node properties (name, topic etc.). Integrate saving changes with the "Save Structure" API call (Phase 1).
 *   [ ] **Toolbox Panel:**
-    *   **Files:** `app/web/static/js/views/guild/designer/panel/toolboxList.js`, `app/web/static/js/views/guild/designer/widget/structureTree.js`.
+    *   **Files:** `app/web/static/js/views/guild/designer/panel/toolbox.js`, `app/web/static/js/views/guild/designer/widget/structureTree.js`.
     *   **Task:** Implement UI for dragging new elements. Integrate adding new elements with the "Save Structure" API call (Phase 1).
 *   [ ] **Refine Share Modal:**
     *   **Files:** `app/web/templates/views/guild/designer/index.html`, `

@@ -22,6 +22,7 @@ def upgrade() -> None:
         sa.Column('component_key', sa.String(length=100), nullable=False), 
         sa.Column('definition', sa.JSON(), nullable=False),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), onupdate=sa.text('now()'), nullable=False),
         sa.UniqueConstraint('dashboard_type', 'component_type', 'component_key', name='uq_component_definition')
     )
     op.create_index('idx_component_definition_lookup', 'dashboard_component_definitions', ['dashboard_type', 'component_type', 'component_key'])

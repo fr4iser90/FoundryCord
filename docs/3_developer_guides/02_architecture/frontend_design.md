@@ -23,7 +23,7 @@ Describe the purpose of important JS modules, especially within the Guild Design
 *   **`views/guild/designer/designerWidgets.js`:** Orchestrates the population and updating of content within the Gridstack widgets specific to the designer.
 *   **`views/guild/designer/widget/`:** Contains modules for individual Gridstack widgets within the designer (e.g., `templateList.js`, `structureTree.js`, `sharedTemplateList.js`).
 *   **`views/guild/designer/modal/`:** Contains modules for individual Bootstrap modals used in the designer (e.g., `shareModal.js`, `deleteModal.js`, `saveAsNewModal.js`).
-*   **`views/guild/designer/panel/`:** Contains modules responsible for the content of side panels within the designer (e.g., `properties.js`, `toolboxList.js`).
+*   **`views/guild/designer/panel/`:** Contains modules responsible for the content of side panels within the designer (e.g., `properties.js`, `toolbox.js`).
 *   **`components/common/notifications.js`:** Handles displaying toast notifications.
 *   **Utility Functions:** Utility functions tend to be scoped within specific views (like `designerUtils.js`) or components (`components/common/dateTimeUtils.js`) rather than a single top-level `utils/` directory. `apiRequest.js` seems missing or located elsewhere, potentially integrated into specific modules or needing creation.
 
