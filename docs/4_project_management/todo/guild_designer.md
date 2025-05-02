@@ -145,14 +145,14 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [ ] **Save/Load Logic:**
         *   [ ] Implement `loadDashboardConfig(configId)`: Fetch config data (`GET .../configurations/{config_id}`), parse `config`, populate editor.
         *   [ ] Implement `saveDashboardConfig()`: Generate `config`, call `PUT .../configurations/{currentEditingDashboardId}`.
-*   [ ] **Frontend - Dashboard Config Widget (NEW):**
-    *   **Files:** New `widget/dashboardConfig.js`, `designerLayout.js`, `designerWidgets.js`.
-    *   [ ] **Define Widget:** Add `dashboard-config` widget definition to `designerLayout.js` and default layout.
-    *   [ ] **Register Widget:** Add to `designerWidgets.js`.
-    *   [ ] **UI:** Create inputs for "Name", "Description", etc. Add a "Save Metadata" button.
+*   [ ] **Frontend - Dashboard Configuration Widget (Metadata Editor):**
+    *   **Files:** New `widget/dashboardConfiguration.js`, `designerLayout.js`, `designerWidgets.js`.
+    *   [x] **Define Widget:** Add `dashboard-configuration` widget definition to `designerLayout.js` and default layout.
+    *   [x] **Register Widget:** Add to `designerWidgets.js`.
+    *   [ ] **UI:** Create inputs for "Name", "Description", etc. of the *currently loaded* dashboard. Add a "Save Metadata" button.
     *   [ ] **Logic:**
         *   [ ] Listen for `dashboardConfigSelected` / `dashboardConfigCreated` event: Update internal ID, load/display metadata (`GET .../configurations/{id}`).
-        *   [ ] Implement Save: On button click, get values, call `PUT .../configurations/{id}` with name/description (potentially combine with Editor's save?).
+        *   [ ] Implement Save: On button click, get values, call `PUT .../configurations/{id}` with name/description.
 *   [ ] **Frontend - Dashboard Preview Widget:**
     *   **Files:** `widget/dashboardPreview.js`, `designerLayout.js`, `designerWidgets.js`.
     *   [x] **Define Widget:** `dashboard-preview` defined in `designerLayout.js` and default layout.

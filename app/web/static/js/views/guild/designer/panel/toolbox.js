@@ -248,12 +248,53 @@ export function initializeToolbox() {
     // Use event delegation on the container in case the button is re-rendered
     const dashboardsListContainer = document.querySelector('#tab-pane-dashboards .toolbox-list-group');
     if (dashboardsListContainer) {
-        dashboardsListContainer.addEventListener('click', (event) => {
+        dashboardsListContainer.addEventListener('click', async (event) => {
             const clickedButton = event.target.closest('#toolbox-add-dashboard-btn');
             if (clickedButton) {
-                console.log("[Toolbox] Add New Dashboard Configuration button clicked. Functionality TBD.");
-                // TODO: Implement logic for the add button (e.g., open modal, call API)
-                showToast('info', 'Add New Dashboard clicked (functionality pending).');
+                console.log("[Toolbox] Add New Dashboard Configuration button clicked. Triggering API call...");
+                // --- Direct API call to create new config --- 
+                const defaultName = `New Dashboard ${Date.now()}`;
+                // Use a default type or leave it to backend? Let's assume a default is needed.
+                const defaultType = 'custom'; 
+                const apiUrl = '/api/v1/dashboards/configurations';
+                const payload = { 
+                    name: defaultName,
+                    dashboard_type: defaultType 
+                    // description and config will be empty/null by default in backend
+                };
+
+                clickedButton.disabled = true; // Disable button during API call
+                showToast('info', 'Creating new dashboard configuration...');
+
+                try {
+                    const newConfig = await apiRequest(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (newConfig && newConfig.id) {
+                        console.log("[Toolbox] New dashboard config created successfully:", newConfig);
+                        showToast('success', `Created: ${newConfig.name}`);
+                        
+                        // Dispatch event to load the new config into editor/config widgets
+                        console.log("[Toolbox] Dispatching 'dashboardConfigLoaded' for new config.");
+                        document.dispatchEvent(new CustomEvent('dashboardConfigLoaded', { 
+                            detail: { configData: newConfig } 
+                        }));
+
+                    } else {
+                         throw new Error("Invalid response received after creating dashboard config.");
+                    }
+
+                } catch (error) {
+                    console.error("[Toolbox] Error creating dashboard configuration:", error);
+                    // showToast handled by apiRequest usually, but maybe add a specific one?
+                    showToast('error', 'Failed to create new dashboard configuration.');
+                } finally {
+                    clickedButton.disabled = false; // Re-enable button
+                }
+                // -------------------------------------------
             }
         });
         console.log("[Toolbox] Event listener added for #toolbox-add-dashboard-btn.");

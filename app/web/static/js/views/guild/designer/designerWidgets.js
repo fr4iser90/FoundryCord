@@ -1,13 +1,14 @@
-// Import specific widget initializers
 import { initializeStructureTree } from './widget/structureTree.js';
 import { initializeTemplateInfo } from './widget/templateInfo.js';
-// Import the list functions
+
 import { initializeCategoriesList as _initializeCategoriesList } from './widget/categoriesList.js';
 import { initializeChannelsList as _initializeChannelsList } from './widget/channelsList.js';
 import { initializeTemplateList } from './widget/templateList.js';
 import { initializeSharedTemplateList } from './widget/sharedTemplateList.js';
-// Import the new dashboard editor initializer (file will be created next)
+
 import { initializeDashboardEditor } from './widget/dashboardEditor.js';
+import { initializeDashboardConfiguration } from './widget/dashboardConfiguration.js';
+import { initializeDashboardPreview } from './widget/dashboardPreview.js';
 
 // Import necessary utils and state
 import { getGuildIdFromUrl } from './designerUtils.js';
@@ -61,8 +62,30 @@ export function populateGuildDesignerWidgets(templateData) {
             // It finds its container by ID internally. But we call it here.
             initializeStructureTree(data);
         },
-        // Register the dashboard editor - its initializer will likely do nothing yet
-        'dashboard-editor': (el, data) => initializeDashboardEditor(el, guildId /* pass necessary context */) 
+        // Register the dashboard editor - pass its *content container selector* ID
+        'dashboard-editor': (el, data) => {
+             const instance = initializeDashboardEditor(`#${el.id}`, guildId /* pass necessary context */);
+             if (instance) {
+                 instance.initUI(); // Call initUI immediately after creation
+                 console.log(`[DesignerWidgets] DashboardEditor instance created and initUI called for ${el.id}.`);
+             } else {
+                 console.error(`[DesignerWidgets] Failed to create DashboardEditor instance for ${el.id}.`);
+             }
+        },
+        // --- NEW: Register the dashboard configuration widget --- 
+        'dashboard-configuration': (el, data) => {
+            // Initially called with templateData, but we need specific dashboard config data.
+            // For now, just call it with null data. It will display "No dashboard loaded".
+            // The actual config data will be passed later via event or direct call.
+            initializeDashboardConfiguration(el, null);
+            console.log(`[DesignerWidgets] DashboardConfiguration widget initialized for ${el.id}.`);
+        },
+        // --- NEW: Register the dashboard preview widget --- 
+        'dashboard-preview': (el, data) => {
+            initializeDashboardPreview(el);
+            console.log(`[DesignerWidgets] DashboardPreview widget initialized for ${el.id}.`);
+        }
+        // ------------------------------------------------
     };
 
     // Iterate over known widget IDs and call their initializers if the element exists
@@ -80,7 +103,7 @@ export function populateGuildDesignerWidgets(templateData) {
             }
         } else {
             // It's normal for dynamic widgets like dashboard-editor not to be found initially
-            if (widgetId !== 'dashboard-editor') { // Only warn for non-dynamic widgets
+            if (widgetId !== 'dashboard-editor' && widgetId !== 'dashboard-configuration' && widgetId !== 'dashboard-preview') { // Only warn for non-dynamic widgets
                  console.warn(`[DesignerWidgets] Content container for widget ID '${widgetId}' not found.`);
             }
         }

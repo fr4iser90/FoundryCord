@@ -33,6 +33,7 @@ def upgrade() -> None:
         sa.Column('dashboard_type', sa.String(length=100), nullable=False),
         sa.Column('name', sa.String(length=100), nullable=False),
         sa.Column('config', sa.JSON(), nullable=True), 
+        sa.Column('description', sa.String(length=500), nullable=True), 
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
         sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), onupdate=sa.text('now()'), nullable=False)
     )

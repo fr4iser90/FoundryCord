@@ -268,12 +268,23 @@ export const widgetDefinitions = {
     'template-list': { title: 'Saved Templates', content: '<div id="widget-content-template-list">Loading templates...</div>' },
     'shared-template-list': { title: 'Shared Templates', content: '<div id="widget-content-shared-template-list">Loading shared templates...</div>' },
     // --- Add the new Dashboard Editor widget definition ---
-    'dashboard-editor': { 
-        title: 'Dashboard Editor', 
-        content: '<div id="widget-content-dashboard-editor">Select or create a dashboard instance to edit.</div>',
-        // Initially no header controls, can be added later
+    'dashboard-editor': {
+        title: 'Dashboard Editor',
+        content: '<div id="widget-content-dashboard-editor"><p class="text-muted p-2">Loading editor...</p></div>'
     },
     // ----------------------------------------------------
+    // --- Add the new Dashboard Preview widget definition ---
+    'dashboard-preview': {
+        title: 'Dashboard Preview',
+        content: '<div id="widget-content-dashboard-preview">Loading preview...</div>'
+        // Add initialization logic later
+    },
+    // --- Add the Dashboard Configuration List widget definition --- 
+    'dashboard-configuration': { 
+        title: 'Dashboard Configuration', 
+        content: '<div id="widget-content-dashboard-configuration">Loading configuration...</div>' 
+        // Add initialization logic later
+    },
 };
 
 /**
@@ -284,11 +295,12 @@ export const defaultLayout = [
     { id: 'template-info', x: 4, y: 0, w: 4, h: 2, minW: 3, minH: 2, maxH: 2 }, // Added maxH
     { id: 'categories', x: 4, y: 2, w: 4, h: 3, minW: 3, minH: 3 },
     { id: 'channels', x: 8, y: 0, w: 4, h: 5, minW: 3, minH: 4 },
-    { id: 'template-list', x: 4, y: 5, w: 4, h: 3, minW: 3, minH: 3 },
-    { id: 'shared-template-list', x: 8, y: 5, w: 4, h: 3, minW: 3, minH: 3 },
-    // Add dashboard editor and preview to default layout
+    { id: 'template-list', x: 4, y: 5, w: 4, h: 3, minW: 3, minH: 3 }, // Adjusted y to make space
+    { id: 'shared-template-list', x: 8, y: 5, w: 4, h: 3, minW: 3, minH: 3 }, // Adjusted y to make space
+    // Add dashboard widgets
     { id: 'dashboard-editor', x: 0, y: 8, w: 6, h: 5, minW: 4, minH: 4 }, // Place below structure tree
-    { id: 'dashboard-preview', x: 6, y: 8, w: 6, h: 5, minW: 4, minH: 4 } // Place next to editor
+    { id: 'dashboard-preview', x: 6, y: 8, w: 6, h: 5, minW: 4, minH: 4 }, // Place next to editor
+    { id: 'dashboard-configuration', x: 4, y: 8, w: 8, h: 3, minW: 4, minH: 3 }
 ];
 
 /**
