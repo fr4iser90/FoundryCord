@@ -177,4 +177,4 @@ class DashboardConfigurationsController(BaseController):
 
 # Instantiate the controller for registration
 # Rename variable to match class name
-dashboard_configurations_controller = DashboardConfigurationsController() 
+dashboard_configuration_controller = DashboardConfigurationsController() 

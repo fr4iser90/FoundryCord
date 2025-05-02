@@ -26,6 +26,8 @@ class DashboardEditor {
         this.initialContext = initialContext;
         this.element = null; // Will be set in initUI
         this.canvas = null;  // Will be set in initUI
+        this.components = []; // <-- NEW: Array to hold added components
+        this.dashboardType = null; // <-- NEW: To store the type
         
         // We don't store channelId here anymore
         dashboardEditorInstance = this; // Store instance for potential external access?
@@ -82,9 +84,13 @@ class DashboardEditor {
                 if (receivedConfigData && receivedConfigData.id) {
                     currentEditingDashboardId = receivedConfigData.id;
                     console.log(`[DashboardEditor] Set currentEditingDashboardId via event: ${currentEditingDashboardId}`);
+                    // --- Store type --- 
+                    this.dashboardType = receivedConfigData.dashboard_type || 'unknown';
+                    console.log(`[DashboardEditor] Stored dashboard type: ${this.dashboardType}`);
+                    // ----------------
                     // Update the editor display
                     if (this.canvas) {
-                        this.canvas.html(`<p class="text-success p-2">Loaded: ${receivedConfigData.name} (ID: ${receivedConfigData.id})</p>`);
+                        this.canvas.html(`<p class="text-success p-2">Loaded: ${receivedConfigData.name} (ID: ${receivedConfigData.id}) Type: ${this.dashboardType}</p>`);
                         // TODO: Add logic here later to parse receivedConfigData.config and render components
                     }
                 } else {
@@ -147,6 +153,59 @@ class DashboardEditor {
     }
     // --- End Placeholder ---
 
+    // --- NEW: Placeholder Save Function ---
+    async _saveCurrentDashboardConfig() {
+        console.log("[DashboardEditor] _saveCurrentDashboardConfig called.");
+        if (!currentEditingDashboardId) {
+            console.error("[DashboardEditor] Cannot save: No dashboard loaded.");
+            return;
+        }
+
+        // Get Name/Description from the DashboardConfiguration widget's input fields
+        const nameInput = document.getElementById('dashboard-config-name');
+        const descTextarea = document.getElementById('dashboard-config-description');
+        
+        const currentName = nameInput ? nameInput.value.trim() : `Loaded Dashboard ${currentEditingDashboardId}`; // Fallback needed?
+        const currentDescription = descTextarea ? descTextarea.value.trim() : "Description not found"; // Fallback needed?
+        const currentType = this.dashboardType || 'custom'; // Use stored type
+
+        // Build the config payload (containing components)
+        const configPayload = {
+             // TODO: Add other top-level config fields if needed (title, color etc.)
+             components: this.components // Use the internal components array
+         };
+
+        const fullPayload = {
+            name: currentName,
+            description: currentDescription,
+            dashboard_type: currentType, 
+            config: configPayload
+        };
+
+        console.log(`[DashboardEditor] Saving Full Payload for ID ${currentEditingDashboardId}:`, fullPayload);
+        // showToast('info', `Save triggered for ${currentEditingDashboardId}. API call not yet implemented.`); // Remove placeholder toast
+
+        // --- Implement actual API call --- 
+        const apiUrl = `/api/v1/dashboards/configurations/${currentEditingDashboardId}`;
+        showToast('info', 'Saving dashboard components...'); // More specific toast
+        try {
+            await apiRequest(apiUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(fullPayload)
+            });
+            console.log(`[DashboardEditor] Save successful for dashboard ID: ${currentEditingDashboardId}`);
+            showToast('success', 'Dashboard components saved!');
+            // Note: We don't disable the config widget's save button here, 
+            // as this save was triggered by the editor.
+        } catch (error) {
+            console.error("[DashboardEditor] Error saving dashboard configuration:", error);
+            // apiRequest should show error toast
+        }
+        // --- End API call implementation ---
+    }
+    // --- End Placeholder Save Function ---
+
     _setupDroppable() {
         if (!this.canvas || this.canvas.length === 0) {
             console.error("[DashboardEditor] Canvas element (#dashboard-editor-canvas) not found within this.element, cannot initialize droppable.");
@@ -176,37 +235,44 @@ class DashboardEditor {
             accept: ".toolbox-item", 
             drop: async (event, ui) => { // Make handler async
                 const droppedItem = ui.draggable;
-                const elementType = droppedItem.data('element-type'); // Keep for potential other uses, but less relevant now
                 const componentKey = droppedItem.data('component-key');
                 const componentType = droppedItem.data('component-type'); // Use this for checking the drop type
 
                 console.log(`[DashboardEditor] Drop detected on editor canvas. ComponentKey: ${componentKey}, ComponentType: ${componentType}`);
-                console.log(`[DashboardEditor] Current editing dashboard ID: ${currentEditingDashboardId}`);
+                
+                // --- Ensure a dashboard config is loaded --- 
+                if (!currentEditingDashboardId) {
+                    console.error("[DashboardEditor] Cannot add component: No dashboard loaded in editor.");
+                    showToast('error', 'Please load or create a dashboard first before adding components.');
+                    return;
+                }
+                // -------------------------------------------
 
-                // Remove the logic for handling 'dashboard-config-structure' drops here.
-                // This type of drop should be handled by the structure tree, not the editor itself.
-                /*
-                if (componentType === 'dashboard-config-structure') {
-                    console.log('[DashboardEditor] Handling drop of "New Dashboard Config" element. -> THIS LOGIC IS REMOVED/MOVED');
-                    // ... removed API call logic ...
-                    return; // Stop processing here if it was a new dashboard drop (shouldn't happen now)
-                } 
-                */
-
-                // Handle drops of actual dashboard components (widgets) onto the canvas
+                // --- Handle drops of actual dashboard components --- 
                 if (componentKey && componentType !== 'structure' && componentType !== 'dashboard-config-structure') { 
-                    console.log(`[DashboardEditor] Handling drop of component: ${componentKey} (${componentType})`);
+                    console.log(`[DashboardEditor] Handling drop of component: ${componentKey}`);
 
-                    if (!currentEditingDashboardId) {
-                         console.error("[DashboardEditor] Cannot add component: No dashboard loaded in editor.");
-                         showToast('error', 'Please load or create a dashboard first before adding components.');
-                         return;
-                    }
+                    // --- Add component to internal state (simple version) ---
+                    const newComponent = {
+                         // Generate a simple temporary ID for now
+                         id: `${componentKey}_${Date.now()}`,
+                         type: componentKey 
+                         // We'll add component-specific config later
+                     };
+                    this.components.push(newComponent);
+                    console.log("[DashboardEditor] Updated internal components:", this.components);
+                    // -------------------------------------------------------
 
-                    // TODO: Fetch component definition based on componentKey
-                    // TODO: Render the component onto the canvas for the currentEditingDashboardId
-                    // TODO: Save the updated dashboard layout/config (API call for currentEditingDashboardId)
-                    this.canvas.append(`<p class="text-info">Added component '${componentKey}' to dashboard ${currentEditingDashboardId} (Placeholder)</p>`);
+                    // --- Update UI (simple version) ---
+                    this.canvas.append(`<div class="alert alert-info alert-dismissible fade show p-1 m-1 small" role="alert">
+                                            Added: ${componentKey} (ID: ${newComponent.id})
+                                            <button type="button" class="btn-close p-1" data-bs-dismiss="alert" aria-label="Close"></button>
+                                        </div>`);
+                    // -----------------------------------
+
+                    // --- Trigger save ---
+                    await this._saveCurrentDashboardConfig(); // Call save function
+                    // -------------------
                 
                 } else {
                     // Log unexpected drops onto the editor canvas
@@ -230,32 +296,13 @@ class DashboardEditor {
  * @param {object} initialContext - Optional initial context data.
  */
 export function initializeDashboardEditor(containerSelector = '#widget-content-dashboard-editor', guildId, initialContext = {}) {
-    console.log(`[InitializeDashboardEditor] Initializing for container selector: ${containerSelector}`);
-    // The selector now directly points to the content area
-    const editorContentElement = document.querySelector(containerSelector); 
-
-    if (!editorContentElement) {
-        console.error(`[InitializeDashboardEditor] Content element "${containerSelector}" not found.`);
-        return null; // Return null to indicate failure
-    }
-
-    console.log("[InitializeDashboardEditor] Creating DashboardEditor instance ONLY...");
-    try {
-        // Create the instance
-        const editorInstance = new DashboardEditor(containerSelector, guildId, initialContext);
-        // --- DO NOT CALL initUI() here anymore --- 
-        // It will be called via Gridstack's 'added' event
-        
-        console.log("[InitializeDashboardEditor] Instance created. UI Initialization deferred.");
-        return editorInstance; // Return the instance 
-    } catch (error) {
-         console.error("[InitializeDashboardEditor] Error during DashboardEditor instantiation:", error);
-         if (editorContentElement) {
-             editorContentElement.innerHTML = '<p class="text-danger p-2">Error initializing editor logic.</p>';
-         }
-         return null; // Return null on error
+    console.log(`[DashboardEditor] Initializing with containerSelector: ${containerSelector}, guildId: ${guildId}, initialContext:`, initialContext);
+    const editor = new DashboardEditor(containerSelector, guildId, initialContext);
+    if (!editor.initUI()) {
+        console.error("[DashboardEditor] Failed to initialize UI.");
+        return null; // Return null on error
     }
 }
 
-// Make sure the module indicates it's loaded.
-console.log("dashboardEditor.js module loaded"); 
+
+console.log("dashboardEditor.js module loaded");
