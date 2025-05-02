@@ -118,36 +118,47 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [ ] **Events definieren:** Klare Events für Aktionen wie `propertyUpdated`, `nodeDeleted`, `nodeAdded` definieren.
     *   [ ] **Listener implementieren:** Alle relevanten Widgets müssen auf diese Events hören und ihre Anzeige entsprechend aktualisieren (nicht nur auf `loadTemplateData`).
 
-# --- Dashboard Widgets ---
-*   [ ] **Backend API (List Types):** Provide an endpoint to list all available `dashboard_type` strings the bot knows (e.g., `GET /api/v1/dashboards/types`). (This is needed for configuration UIs).
-    *   Files: New Controller (e.g., `dashboards_controller.py`), potentially new Service.
-*   [ ] **New Widget: Dashboard Preview:** Display a visual preview of dashboards associated with the selected channel.
+# --- Dashboard Instance Management (Designer) ---
+*   **Goal:** The designer should allow creating, naming, configuring (via `config` JSON?), and deleting `dashboard_instances` entries, linked via `guild_template_channel_id` to a `guild_template_channels`. This replaces the previous idea of just activating fixed `dashboard_types`.
+*   [ ] **Database:**
+    *   [x] The `dashboard_instances` table already exists and contains `name`, `dashboard_type`, `config`, `guild_template_channel_id`. It will be used as the base.
+    *   [ ] Clarify: How exactly should the link to the *Template* Channel (`guild_template_channel_id`) be handled compared to the live Discord Channel (`channel_id` in `DashboardEntity`)? Does the model need adjustment, or is the logic sufficient?
+*   [ ] **Clarify Terminology:** Adapt code and documentation to clearly distinguish between the *Function Type* (from `DASHBOARD_MAPPINGS`) and the *Instance Name* (from `dashboard_instances.name`).
+*   [ ] **Backend API (List Types):** The endpoint `GET /api/v1/dashboards/types` is still needed to provide the available *Function Types* (from `DASHBOARD_MAPPINGS`) for selection when creating a new instance.
+    *   [x] **Correct Implementation:** Ensure the endpoint returns the correct types from `DASHBOARD_MAPPINGS` (or a central source), not from the Enum.
+*   [ ] **Backend API (Instance Management):** Define and implement new endpoints:
+    *   [ ] `GET /api/v1/templates/channels/{channel_template_id}/dashboards`: Lists all dashboard instances linked to this template channel.
+    *   [ ] `POST /api/v1/templates/channels/{channel_template_id}/dashboards`: Creates a new dashboard instance (requires `name`, `dashboard_type`, optional `config`) and links it to the channel template.
+    *   [ ] `GET /api/v1/templates/dashboards/{instance_id}`: Gets details of a specific instance.
+    *   [ ] `PUT /api/v1/templates/dashboards/{instance_id}`: Updates the name and/or `config` of an instance.
+    *   [ ] `DELETE /api/v1/templates/dashboards/{instance_id}`: Deletes a dashboard instance (and the link).
+    *   **Files:** New Controller (e.g., `template_dashboard_instances_controller.py`), new Service, adjustments in Repository (`DashboardRepository`).
+*   [ ] **Frontend - New Widget: Dashboard Instances List:** Displays the dashboard instances linked to the selected channel template.
     *   **Files:**
-        - **New:** `app/web/static/js/views/guild/designer/widget/dashboardPreview.js`
-        - **Edit:** `app/web/static/js/views/guild/designer/designerLayout.js` (Add widget definition & default layout)
-        - **Edit:** `app/web/static/js/views/guild/designer/designerWidgets.js` (Add initializer mapping)
-        - **Edit:** `app/web/templates/components/guild/designer/index.html` (Ensure grid container exists)
-    *   [ ] **Define Widget:** Add `'dashboard-preview'` to `widgetDefs` and `defaultLayout` in `designerLayout.js`.
-    *   [ ] **JS Logic (`dashboardPreview.js`):** 
-        *   Listen for `designerNodeSelected` event.
-        *   If a channel is selected, fetch relevant dashboard data (using `is_dashboard_enabled` and `dashboard_types` from channel data in state).
-        *   Render a placeholder or basic preview based on the data.
-    *   [ ] **Register Widget:** Add `dashboardPreview.js` to `widgetInitializers` map in `designerWidgets.js`.
-*   [ ] **New Widget: Dashboard Configuration:** Allow configuring which dashboards are enabled for a channel.
+        - **New:** `app/web/static/js/views/guild/designer/widget/dashboardInstancesList.js`
+        - **Edit:** `app/web/static/js/views/guild/designer/designerLayout.js` (Widget Definition)
+        - **Edit:** `app/web/static/js/views/guild/designer/designerWidgets.js` (Initializer Mapping)
+    *   [ ] **Define Widget:** In `designerLayout.js`.
+    *   [ ] **JS Logic (`dashboardInstancesList.js`):**
+        *   Listen for `designerNodeSelected`.
+        *   If channel selected: Call `GET .../dashboards`.
+        *   Display list of instances (Name, Type).
+        *   Add buttons for Create/Edit/Delete.
+    *   [ ] **Register Widget:** In `designerWidgets.js`.
+*   [ ] **Frontend - New Widget/Modal: Dashboard Instance Editor/Creator:** Allows creating/editing an instance.
     *   **Files:**
-        - **New:** `app/web/static/js/views/guild/designer/widget/dashboardConfig.js`
-        - **Edit:** `app/web/static/js/views/guild/designer/designerLayout.js` (Add widget definition & default layout)
-        *   [ ] **Define Widget:** Add `'dashboard-config'` to `widgetDefs` and `defaultLayout` in `designerLayout.js`.
-        *   [ ] **JS Logic (`dashboardConfig.js`):**
-            *   Listen for `designerNodeSelected` event.
-            *   If a channel is selected:
-                *   Display the `is_dashboard_enabled` checkbox.
-                *   Fetch available dashboard types from the new API endpoint (`/api/v1/dashboards/types`).
-                *   Display assigned `dashboard_types`.
-                *   Provide UI to add/remove types.
-        *   [ ] **Register Widget:** Add `dashboardConfig.js` to `widgetInitializers` map in `designerWidgets.js`.
-        *   [ ] **Update State:** Ensure `designerState.js` correctly handles and clears pending changes for `is_dashboard_enabled` and `dashboard_types`.
-        *   [ ] **Update Save Logic:** Ensure `formatStructureForApi` in `designerUtils.js` includes these pending changes.
+        - **New:** `app/web/static/js/views/guild/designer/widget/dashboardInstanceEditor.js` (or as Modal?)
+        - **Edit:** `designerLayout.js` / `designerWidgets.js` (if Widget) OR new Modal JS/HTML.
+    *   [ ] **Define UI:** Fields for Name, Type selection (dropdown populated by `GET /api/v1/dashboards/types`), Textarea/Editor for `config` JSON.
+    *   [ ] **JS Logic:**
+        *   On Create: Call `POST .../dashboards`.
+        *   On Edit: Call `GET .../{instance_id}` to load, `PUT .../{instance_id}` to save.
+        *   Implement `DELETE .../{instance_id}`.
+        *   After actions: Update `Dashboard Instances List` widget (e.g., via event).
+*   [ ] **Code Cleanup:**
+    *   [ ] Remove code parts in `properties.js` related to `is_dashboard_enabled` and `dashboard_types` (now obsolete).
+    *   [ ] Check if the `DashboardType` Enum in `app/shared/infrastructure/models/discord/enums/dashboard.py` is still needed or can be removed/corrected.
+*   [ ] **Sharing / Copying:** (Future Feature) Define how sharing and copying of dashboard instances (possibly with variable/config adjustment) should work.
 
 *   [ ] **Properties Panel - Channel Follows anzeigen:**
     *   **Files:** `properties.js`, `properties.html`, `guild_template_controller.py` (API Anpassung).

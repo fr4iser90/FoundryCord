@@ -3,7 +3,7 @@ from typing import List
 
 from app.web.interfaces.api.rest.v1.base_controller import BaseController
 from app.shared.interface.logging.api import get_web_logger
-from app.shared.infrastructure.models.discord.enums.dashboard import DashboardType
+from app.shared.infrastructure.constants.dashboard_constants import DASHBOARD_MAPPINGS
 # from fastapi import Depends
 # from app.shared.infrastructure.models.auth import AppUserEntity
 # from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
@@ -32,7 +32,7 @@ class DashboardController(BaseController):
         """Returns a list of all known dashboard type identifiers (strings)."""
         logger.info("Request received to list available dashboard types.")
         try:
-            dashboard_types = [item.value for item in DashboardType]
+            dashboard_types = list(DASHBOARD_MAPPINGS.keys())
             return dashboard_types
         except Exception as e:
             logger.error(f"Error retrieving dashboard types: {e}", exc_info=True)
