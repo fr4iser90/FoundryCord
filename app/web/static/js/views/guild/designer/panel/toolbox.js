@@ -70,8 +70,9 @@ async function renderToolboxComponents() {
 
     // Render all components (hardcoded + API, if successful)
     combinedItems.forEach(comp => {
-        if (!comp || !comp.component_key || !comp.metadata || !comp.metadata.displayName) {
-            console.warn("[Toolbox] Skipping invalid component data:", comp);
+        // Validate presence of essential fields, using snake_case for display_name
+        if (!comp || !comp.component_key || !comp.metadata || !comp.metadata.display_name) { 
+            console.warn("[Toolbox] Skipping invalid component data (missing key fields or metadata.display_name):", comp);
             return; // Skip invalid items
         }
 
@@ -80,9 +81,9 @@ async function renderToolboxComponents() {
         li.setAttribute('data-component-key', comp.component_key);
         li.setAttribute('data-component-type', comp.component_type || 'unknown'); // Add type
 
-        // Use metadata for display name and icon
+        // Use metadata for display name (snake_case) and icon
         const iconClass = comp.metadata.icon || 'fas fa-puzzle-piece'; // Default icon
-        li.innerHTML = `<i class="${iconClass} me-2"></i> ${comp.metadata.displayName}`;
+        li.innerHTML = `<i class="${iconClass} me-2"></i> ${comp.metadata.display_name}`; // Use snake_case here too
         
         listElement.appendChild(li);
     });
