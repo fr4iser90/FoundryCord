@@ -12,9 +12,9 @@ import { apiRequest, showToast } from '/static/js/components/common/notification
 // Define hardcoded structure elements outside try/catch
 // TODO: Remove this section once API provides structure elements reliably
 const structureElements = [
-    { component_key: 'category', component_type: 'structure', metadata: { displayName: 'New Category', icon: 'fas fa-folder text-warning' } },
-    { component_key: 'text_channel', component_type: 'structure', metadata: { displayName: 'New Text Channel', icon: 'fas fa-hashtag text-info' } },
-    { component_key: 'voice_channel', component_type: 'structure', metadata: { displayName: 'New Voice Channel', icon: 'fas fa-volume-up text-info' } },
+    { component_key: 'category', component_type: 'structure', metadata: { display_name: 'New Category', icon: 'fas fa-folder text-warning' } },
+    { component_key: 'text_channel', component_type: 'structure', metadata: { display_name: 'New Text Channel', icon: 'fas fa-hashtag text-info' } },
+    { component_key: 'voice_channel', component_type: 'structure', metadata: { display_name: 'New Voice Channel', icon: 'fas fa-volume-up text-info' } },
 ];
 
 // Function to render components and make them draggable
@@ -53,7 +53,6 @@ async function renderToolboxComponents() {
     listElement.innerHTML = ''; 
 
     // Combine hardcoded structure elements and API components
-    // Ensure no duplicates if API starts providing structure elements later
     const combinedItems = [...structureElements];
     const structureKeys = new Set(structureElements.map(el => el.component_key));
     apiComponents.forEach(comp => {
@@ -68,28 +67,75 @@ async function renderToolboxComponents() {
          return; // Nothing more to do
     }
 
-    // Render all components (hardcoded + API, if successful)
-    combinedItems.forEach(comp => {
-        // Validate presence of essential fields, using snake_case for display_name
-        if (!comp || !comp.component_key || !comp.metadata || !comp.metadata.display_name) { 
-            console.warn("[Toolbox] Skipping invalid component data (missing key fields or metadata.display_name):", comp);
-            return; // Skip invalid items
+    // --- Group components by category --- 
+    const groupedComponents = combinedItems.reduce((groups, comp) => {
+        // Validate component structure minimally before grouping
+        if (!comp || !comp.component_key || !comp.metadata || !comp.metadata.display_name) {
+             console.warn("[Toolbox Grouping] Skipping invalid component data:", comp);
+             return groups; // Skip invalid items
         }
-
-        const li = document.createElement('li');
-        li.classList.add('list-group-item', 'toolbox-item');
-        li.setAttribute('data-component-key', comp.component_key);
-        li.setAttribute('data-component-type', comp.component_type || 'unknown'); // Add type
-
-        // Use metadata for display name (snake_case) and icon
-        const iconClass = comp.metadata.icon || 'fas fa-puzzle-piece'; // Default icon
-        li.innerHTML = `<i class="${iconClass} me-2"></i> ${comp.metadata.display_name}`; // Use snake_case here too
         
-        listElement.appendChild(li);
+        // Determine the category
+        let category = 'Other'; // Default category
+        if (comp.component_type === 'structure') { // Special category for hardcoded structure items
+             category = 'Structure Elements';
+        } else if (comp.metadata.category && typeof comp.metadata.category === 'string') {
+             category = comp.metadata.category.trim();
+        } 
+        // Capitalize category name for display
+        category = category.charAt(0).toUpperCase() + category.slice(1);
+
+        // Initialize the category array if it doesn't exist
+        if (!groups[category]) {
+            groups[category] = [];
+        }
+        // Add the component to its category group
+        groups[category].push(comp);
+        return groups;
+    }, {});
+    // ------------------------------------
+
+    // --- Render grouped components --- 
+    const sortedCategories = Object.keys(groupedComponents).sort((a, b) => {
+        // Ensure 'Structure Elements' comes first, then alphabetical
+        if (a === 'Structure Elements') return -1;
+        if (b === 'Structure Elements') return 1;
+        return a.localeCompare(b);
     });
 
-    makeItemsDraggable(); // Make items draggable
-    console.log(`[Toolbox] Rendered ${combinedItems.length} components.`);
+    let totalRendered = 0;
+    sortedCategories.forEach(category => {
+        // Add category header
+        const headerLi = document.createElement('li');
+        // Basic header styling, can be improved with CSS
+        headerLi.className = 'list-group-item list-group-item-secondary text-uppercase small fw-bold'; 
+        headerLi.textContent = category;
+        listElement.appendChild(headerLi);
+
+        // Render components within this category
+        groupedComponents[category].forEach(comp => {
+            // Validation already done in grouping stage, but double-check metadata again just in case
+             if (!comp.metadata || !comp.metadata.display_name) {
+                 console.warn("[Toolbox Rendering] Skipping component due to missing metadata/display_name after grouping:", comp);
+                 return;
+             }
+
+            const li = document.createElement('li');
+            li.classList.add('list-group-item', 'toolbox-item');
+            li.setAttribute('data-component-key', comp.component_key);
+            li.setAttribute('data-component-type', comp.component_type || 'unknown');
+
+            const iconClass = comp.metadata.icon || 'fas fa-puzzle-piece';
+            li.innerHTML = `<i class="${iconClass} me-2"></i> ${comp.metadata.display_name}`;
+            
+            listElement.appendChild(li);
+            totalRendered++;
+        });
+    });
+    // ------------------------------------
+
+    makeItemsDraggable(); // Make all newly added items draggable
+    console.log(`[Toolbox] Rendered ${totalRendered} components across ${sortedCategories.length} categories.`);
 }
 
 
