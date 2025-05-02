@@ -11,7 +11,7 @@ class DashboardConfigBase(BaseModel):
 
 # Schema for the payload when creating a new dashboard configuration
 class DashboardConfigCreatePayload(DashboardConfigBase):
-    pass # Inherits all fields from Base
+    pass # Inherits other fields from Base
 
 # Schema for the payload when updating an existing dashboard configuration
 class DashboardConfigUpdatePayload(DashboardConfigBase):

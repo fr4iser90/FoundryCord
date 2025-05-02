@@ -13,42 +13,101 @@ Organized in domain-specific subpackages:
 from .base import Base
 
 # Core models
-from .core import ConfigEntity, AuditLogEntity, LogEntryEntity
+from .core import (
+    ConfigEntity, 
+    AuditLogEntity, 
+    LogEntryEntity
+)
 
 # Auth models
-from .auth import AppUserEntity, SessionEntity, RateLimitEntity, AppRoleEntity
+from .auth import (
+    AppUserEntity, 
+    SessionEntity, 
+    RateLimitEntity, 
+    AppRoleEntity
+)
 
 # Discord models
-from .discord import ChannelMapping, CategoryMapping, AutoThreadChannelEntity, GuildConfigEntity, GuildEntity, MessageEntity, DiscordGuildUserEntity, ChannelEntity, ChannelPermissionEntity, CategoryEntity, CategoryPermissionEntity
-
+from .discord import (
+    ChannelMapping, 
+    CategoryMapping, 
+    AutoThreadChannelEntity, 
+    GuildConfigEntity, 
+    GuildEntity, 
+    MessageEntity, 
+    DiscordGuildUserEntity, 
+    ChannelEntity, 
+    ChannelPermissionEntity, 
+    CategoryEntity, 
+    CategoryPermissionEntity
+)
 # Dashboard models
-from .dashboards import DashboardEntity, DashboardComponentEntity, ComponentLayoutEntity, ContentTemplateEntity, DashboardMessageEntity
+from .dashboards import (
+    DashboardEntity, 
+    DashboardComponentEntity, 
+    ComponentLayoutEntity, 
+    ContentTemplateEntity, 
+    DashboardMessageEntity, 
+    DashboardInstanceEntity,
+)
 
 # Project models 
-from .project import Project, Task, ProjectMember
+from .project import (
+    Project, 
+    Task, 
+    ProjectMember
+)
 
 # Monitoring models
-from .monitoring import MetricModel, AlertModel
+from .monitoring import (
+    MetricModel, 
+    AlertModel
+)
 
 # UI Models
-from .ui import UILayoutEntity
+from .ui import (
+    UILayoutEntity
+)
 
 # Export all models for convenient imports elsewhere
 __all__ = [
     # Base class
     'Base',
     # Core models
-    'ConfigEntity', 'AuditLogEntity', 'LogEntryEntity',
+    'ConfigEntity', 
+    'AuditLogEntity', 
+    'LogEntryEntity',
     # Auth models
-    'AppUserEntity', 'SessionEntity', 'RateLimitEntity', 'AppRoleEntity',
+    'AppUserEntity', 
+    'SessionEntity', 
+    'RateLimitEntity', 
+    'AppRoleEntity',
     # Discord models
-    'ChannelMapping', 'CategoryMapping', 'AutoThreadChannelEntity', 'GuildConfigEntity', 'GuildEntity', 'MessageEntity', 'DiscordGuildUserEntity', 'ChannelEntity', 'ChannelPermissionEntity', 'CategoryEntity', 'CategoryPermissionEntity',
+    'ChannelMapping', 
+    'CategoryMapping', 
+    'AutoThreadChannelEntity', 
+    'GuildConfigEntity', 
+    'GuildEntity', 
+    'MessageEntity', 
+    'DiscordGuildUserEntity', 
+    'ChannelEntity', 
+    'ChannelPermissionEntity', 
+    'CategoryEntity', 
+    'CategoryPermissionEntity',
     # Dashboard models
-    'DashboardEntity', 'DashboardComponentEntity', 'ComponentLayoutEntity', 'ContentTemplateEntity', 'DashboardMessageEntity',
+    'DashboardEntity', 
+    'DashboardComponentEntity', 
+    'ComponentLayoutEntity', 
+    'ContentTemplateEntity', 
+    'DashboardMessageEntity', 
+    'DashboardInstanceEntity',
     # Project models
-    'Project', 'Task', 'ProjectMember',
+    'Project', 
+    'Task', 
+    'ProjectMember',
     # Monitoring models
-    'MetricModel', 'AlertModel',
+    'MetricModel', 
+    'AlertModel',
     # UI Models
     'UILayoutEntity',
 ]

@@ -7,6 +7,7 @@ from .component_layout_entity import ComponentLayoutEntity
 from .content_template_entity import ContentTemplateEntity
 from .dashboard_message_entity import DashboardMessageEntity
 from .dashboard_component_definition_entity import DashboardComponentDefinitionEntity
+from .dashboard_instance_entity import DashboardInstanceEntity
 
 __all__ = [
     'DashboardEntity',
@@ -14,5 +15,6 @@ __all__ = [
     'ComponentLayoutEntity',
     'ContentTemplateEntity',
     'DashboardMessageEntity',
-    'DashboardComponentDefinitionEntity'
+    'DashboardComponentDefinitionEntity',
+    'DashboardInstanceEntity'
 ]

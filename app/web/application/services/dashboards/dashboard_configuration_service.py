@@ -8,13 +8,13 @@ from app.shared.domain.repositories.dashboards.dashboard_configuration_repositor
 # TODO: Rename Repository implementation import
 from app.shared.infrastructure.repositories import DashboardConfigurationRepositoryImpl 
 # TODO: Rename Schemas import
-from app.web.interfaces.api.rest.v1.schemas.template_dashboard_schemas import (
+from app.web.interfaces.api.rest.v1.schemas.dashboard_schemas import (
     DashboardConfigCreatePayload,
     DashboardConfigUpdatePayload,
     DashboardConfigResponseSchema
 )
 # TODO: Rename Entity import
-from app.shared.infrastructure.models.guild_templates import TemplateDashboardInstanceEntity
+from app.shared.infrastructure.models import DashboardInstanceEntity
 
 logger = get_web_logger()
 

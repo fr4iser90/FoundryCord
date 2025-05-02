@@ -22,8 +22,12 @@ class DashboardEditor {
         // We don't store channelId here anymore
         dashboardEditorInstance = this; // Store instance for potential external access?
         console.log(`[DashboardEditor] Instantiated for Guild ID: ${guildId}.`);
-        this._setupDroppable();
         
+        // Delay droppable setup slightly to ensure canvas is ready
+        setTimeout(() => {
+            this._setupDroppable();
+        }, 100); // 100ms delay, adjust if needed
+
         // REMOVED event listener for node selection
         // document.addEventListener('designerNodeSelected', handleNodeSelection);
         
@@ -35,9 +39,20 @@ class DashboardEditor {
 
     _setupDroppable() {
         if (!this.canvas || this.canvas.length === 0) {
-            console.error("[DashboardEditor] Canvas element not found, cannot initialize droppable.");
+            console.error("[DashboardEditor] Canvas element (#dashboard-editor-canvas) not found within this.element, cannot initialize droppable.");
             return;
         }
+        // --- DEBUG LOGGING ---
+        const canvasElement = this.canvas[0]; // Get the raw DOM element
+        console.log(`[DashboardEditor Debug] Canvas check before droppable:
+           - Found: ${!!canvasElement}
+           - Visible: ${this.canvas.is(':visible')}
+           - Width: ${this.canvas.width()}px
+           - Height: ${this.canvas.height()}px
+           - OuterWidth: ${this.canvas.outerWidth()}px
+           - OuterHeight: ${this.canvas.outerHeight()}px`
+        );
+        // --- END DEBUG LOGGING ---
         if (typeof $.ui === 'undefined' || typeof $.ui.droppable === 'undefined') {
             console.error("[DashboardEditor] jQuery UI Droppable is not loaded.");
             return;
@@ -46,38 +61,31 @@ class DashboardEditor {
         console.log("[DashboardEditor] Setting up droppable on canvas:", this.canvas);
 
         // Use arrow function to ensure 'this' refers to the DashboardEditor instance
+        // Make the drop handler async to use await for apiRequest
         this.canvas.droppable({
             accept: ".toolbox-item", 
-            drop: (event, ui) => { 
-                const droppedItem = ui.draggable; 
-                const elementType = droppedItem.data('element-type');
-                const componentKey = droppedItem.data('component-key'); 
-                const componentType = droppedItem.data('component-type');
+            drop: async (event, ui) => { // Make handler async
+                const droppedItem = ui.draggable;
+                const elementType = droppedItem.data('element-type'); // Keep for potential other uses, but less relevant now
+                const componentKey = droppedItem.data('component-key');
+                const componentType = droppedItem.data('component-type'); // Use this for checking the drop type
 
-                console.log(`[DashboardEditor] Drop detected. ElementType: ${elementType}, ComponentKey: ${componentKey}, ComponentType: ${componentType}`);
+                console.log(`[DashboardEditor] Drop detected on editor canvas. ComponentKey: ${componentKey}, ComponentType: ${componentType}`);
                 console.log(`[DashboardEditor] Current editing dashboard ID: ${currentEditingDashboardId}`);
 
-                if (elementType === 'dashboard') {
-                    console.log('[DashboardEditor] Handling drop of "New Dashboard" element.');
-                    // --- REMOVED Channel check --- 
-                    
-                    // TODO: Call API to create a new dashboard configuration
-                    // const newDashboardData = await apiRequest('/api/v1/dashboards/configurations', { method: 'POST' });
-                    // if (newDashboardData && newDashboardData.dashboard_id) {
-                    //     currentEditingDashboardId = newDashboardData.dashboard_id;
-                    //     console.log(`[DashboardEditor] New dashboard configuration created with ID: ${currentEditingDashboardId}`);
-                    //     this.canvas.html("<div>New Dashboard Ready (ID: " + currentEditingDashboardId + ")</div>"); // Clear canvas and show new state
-                    //     // TODO: Potentially load initial structure or prompt user
-                    // } else {
-                    //     showToast('error', 'Failed to create new dashboard configuration.');
-                    // }
-                    this.canvas.html(`<p class="text-success">Initiated NEW dashboard configuration creation (Placeholder)</p>`);
-                    currentEditingDashboardId = Date.now(); // Placeholder ID for now
-                    console.log(`[DashboardEditor] Set placeholder editing ID: ${currentEditingDashboardId}`);
+                // Remove the logic for handling 'dashboard-config-structure' drops here.
+                // This type of drop should be handled by the structure tree, not the editor itself.
+                /*
+                if (componentType === 'dashboard-config-structure') {
+                    console.log('[DashboardEditor] Handling drop of "New Dashboard Config" element. -> THIS LOGIC IS REMOVED/MOVED');
+                    // ... removed API call logic ...
+                    return; // Stop processing here if it was a new dashboard drop (shouldn't happen now)
+                } 
+                */
 
-                } else if (componentKey) {
+                // Handle drops of actual dashboard components (widgets) onto the canvas
+                if (componentKey && componentType !== 'structure' && componentType !== 'dashboard-config-structure') { 
                     console.log(`[DashboardEditor] Handling drop of component: ${componentKey} (${componentType})`);
-                    // --- REMOVED Channel check --- 
 
                     if (!currentEditingDashboardId) {
                          console.error("[DashboardEditor] Cannot add component: No dashboard loaded in editor.");
@@ -91,7 +99,8 @@ class DashboardEditor {
                     this.canvas.append(`<p class="text-info">Added component '${componentKey}' to dashboard ${currentEditingDashboardId} (Placeholder)</p>`);
                 
                 } else {
-                    console.warn(`[DashboardEditor] Dropped item is not a dashboard or a known component. Type: ${elementType}, Key: ${componentKey}`);
+                    // Log unexpected drops onto the editor canvas
+                    console.warn(`[DashboardEditor] Dropped item on canvas is not a dashboard component. Type: ${componentType}, Key: ${componentKey}`);
                 }
             }
         });

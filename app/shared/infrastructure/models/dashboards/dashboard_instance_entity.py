@@ -8,7 +8,7 @@ from sqlalchemy.sql import func
 from app.shared.infrastructure.models import Base # Assuming Base is defined here
 
 # TODO: Rename class to DashboardConfigurationEntity?
-class TemplateDashboardInstanceEntity(Base):
+class DashboardInstanceEntity(Base):
     """Represents a dashboard configuration (formerly instance linked to channel)."""
     __tablename__ = "dashboard_instances"
 
@@ -23,4 +23,4 @@ class TemplateDashboardInstanceEntity(Base):
 
     def __repr__(self):
         # Removed channel_template_id from repr
-        return f"<TemplateDashboardInstanceEntity(id={self.id}, name='{self.name}', type='{self.dashboard_type}')>" 
+        return f"<DashboardInstanceEntity(id={self.id}, name='{self.name}', type='{self.dashboard_type}')>" 

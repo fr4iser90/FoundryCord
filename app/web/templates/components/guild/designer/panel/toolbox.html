@@ -2,12 +2,31 @@
     <h5 class="mt-0 mb-3 border-bottom pb-2"><i class="bi bi-tools me-2"></i>Toolbox</h5>
 
     <p class="text-muted small mb-3">
-        Drag elements onto the structure tree to add them.
+        Drag elements onto the structure tree or dashboard editor to add them.
     </p>
 
-    <ul class="list-group list-group-flush" id="toolbox-list">
-        <!-- Draggable elements will be added here by JS -->
+    <!-- Tab Navigation: Use nav-pills and nav-fill -->
+    <ul class="nav nav-pills nav-fill mb-3" id="toolbox-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tab-btn-structure" data-bs-toggle="tab" data-bs-target="#tab-pane-structure" type="button" role="tab" aria-controls="tab-pane-structure" aria-selected="true">Structure</button>
+        </li>
+        <li class="nav-item" role="presentation">
+             <button class="nav-link" id="tab-btn-dashboards" data-bs-toggle="tab" data-bs-target="#tab-pane-dashboards" type="button" role="tab" aria-controls="tab-pane-dashboards" aria-selected="false">Dashboards</button>
+        </li>
     </ul>
 
-    {# JS now handles loading and making items draggable #}
+    <!-- Tab Content: Add padding-top -->
+    <div class="tab-content pt-3" id="toolbox-tab-content">
+        <div class="tab-pane fade show active" id="tab-pane-structure" role="tabpanel" aria-labelledby="tab-btn-structure">
+            <ul class="list-group list-group-flush toolbox-list-group">
+                <li class="list-group-item text-muted small">Loading structure...</li>
+            </ul>
+        </div>
+        <div class="tab-pane fade" id="tab-pane-dashboards" role="tabpanel" aria-labelledby="tab-btn-dashboards">
+             <ul class="list-group list-group-flush toolbox-list-group">
+                 <li class="list-group-item text-muted small">Loading dashboards...</li>
+             </ul>
+        </div>
+    </div>
+
 </div> 

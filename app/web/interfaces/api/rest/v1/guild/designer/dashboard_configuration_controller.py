@@ -5,9 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.web.interfaces.api.rest.v1.base_controller import BaseController
 from app.shared.interface.logging.api import get_web_logger
 # Correct the service import
-from app.web.application.services.template import DashboardConfigurationService
+from app.web.application.services.dashboards import DashboardConfigurationService
 # Import the correct schema names directly
-from app.web.interfaces.api.rest.v1.schemas.template_dashboard_schemas import (
+from app.web.interfaces.api.rest.v1.schemas.dashboard_schemas import (
     DashboardConfigCreatePayload,
     DashboardConfigUpdatePayload,
     DashboardConfigResponseSchema
