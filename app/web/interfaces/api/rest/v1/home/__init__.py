@@ -1,10 +1,8 @@
-# Import the router instance directly from the module
-from .overview_controller import router
+# Import the router instance directly from the overview controller module
+from .overview_controller import router as overview_router
 
-overview_controller_router = router # Use a name reflecting the source
+# Assign the imported router to the module-level 'router' variable
+router = overview_router
 
-
-__all__ = [
-    'overview_controller_router', 
-    'router' 
-] 
+# Define the public interface for this module
+__all__ = ['router'] 

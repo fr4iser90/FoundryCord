@@ -1,10 +1,7 @@
 from .layout_controller import layout_controller
 
-# Get the router from the controller instance
+# Assign the controller's router to the module-level router variable
 router = layout_controller.router
 
-# Export both the controller instance and the generic router name
-__all__ = [
-    'layout_controller',
-    'router'
-] 
+# Define the public interface for this module
+__all__ = ['router'] 

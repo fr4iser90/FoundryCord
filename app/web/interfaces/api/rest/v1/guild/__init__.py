@@ -1,25 +1,20 @@
 from fastapi import APIRouter
-from .admin.guild_config_controller import GuildConfigController, guild_config_controller
-from .selector.guild_selector_controller import GuildSelectorController, guild_selector_controller
-# Import the new template controller
-from .designer.guild_template_controller import GuildTemplateController, guild_template_controller
+from .admin.guild_config_controller import guild_config_controller
+from .selector.guild_selector_controller import guild_selector_controller
+# Import the aggregated router from the designer subdirectory
+from .designer import router as designer_router
 # Import the user management router
 from .admin.guild_user_management_controller import guild_user_management_router
 
 # Create a router for the guild module
 router = APIRouter()
 
-# Include routes from all guild-related controllers
+# Include routes from all guild-related controllers/submodules
 router.include_router(guild_config_controller.router)
 router.include_router(guild_selector_controller.router)
-router.include_router(guild_user_management_router) # Use the router instance directly
-router.include_router(guild_template_controller.router) # Add the guild-specific template router
+router.include_router(guild_user_management_router)
+# Include the aggregated designer router
+router.include_router(designer_router)
 
-
-__all__ = [
-    'GuildConfigController', 
-    'GuildSelectorController', 
-    'GuildTemplateController', # Add the new controller name
-    'guild_user_management_router', # Export the router instance
-    'router', # Export the combined guild router
-] 
+# Define the public interface for this module
+__all__ = ['router'] 
