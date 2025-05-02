@@ -103,15 +103,15 @@ _(This section covers applying templates to Discord, managing channel follows, d
 *   [ ] **Backend - Variables API (Optional/Placeholder):**
     *   **Files:** New controller/service.
     *   [ ] **New Endpoint (`GET /api/v1/dashboards/variables`):** Returns available template variables.
-*   [ ] **Backend - Dashboard Configuration Management API:**
+*   [x] **Backend - Dashboard Configuration Management API:**
     *   **Files:** New Controller/Service/Repo.
-    *   [ ] **API Design:** Define CRUD endpoints for Dashboard Configurations:
-        *   [ ] `POST /api/v1/dashboards/configurations`: Creates a new, empty config, returns its ID and basic data.
-        *   [ ] `GET /api/v1/dashboards/configurations`: Lists available configs.
-        *   [ ] `GET /api/v1/dashboards/configurations/{config_id}`: Gets details (name, description, full `config` JSON).
-        *   [ ] `PUT /api/v1/dashboards/configurations/{config_id}`: Updates name, description, and the complex `config` JSON from the Editor.
-        *   [ ] `DELETE /api/v1/dashboards/configurations/{config_id}`: Deletes a configuration.
-    *   [ ] **Service/Repo:** Implement logic for these endpoints.
+    *   [x] **API Design:** Define CRUD endpoints for Dashboard Configurations:
+        *   [x] `POST /api/v1/dashboards/configurations`: Creates a new, empty config, returns its ID and basic data. (Fixed transaction issue)
+        *   [x] `GET /api/v1/dashboards/configurations`: Lists available configs.
+        *   [x] `GET /api/v1/dashboards/configurations/{config_id}`: Gets details (name, description, full `config` JSON).
+        *   [x] `PUT /api/v1/dashboards/configurations/{config_id}`: Updates name, description, and the complex `config` JSON from the Editor. (Fixed transaction issue)
+        *   [x] `DELETE /api/v1/dashboards/configurations/{config_id}`: Deletes a configuration.
+    *   [x] **Service/Repo:** Implement logic for these endpoints.
 
 *   [ ] **Frontend - Toolbox Refactoring:**
     *   **Files:** `panel/toolbox.js`, `toolbox.html`.
@@ -120,8 +120,8 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [x] **Display Components:** Show components in "Dashboard Components" tab as draggable items.
     *   [x] **Associate Data:** Link component details (`component_key`, `definition`) to draggable items.
     *   [ ] **"Dashboards" Tab:**
-        *   [ ] Add "New Dashboard Template" item with a "+"-Button.
-        *   [ ] Add listener to "+": Calls `POST /api/v1/dashboards/configurations`, gets new ID, dispatches `dashboardConfigCreated` event with the new ID.
+        *   [x] Add "New Dashboard Template" item with a "+"-Button.
+        *   [x] Add listener to "+": Calls `POST /api/v1/dashboards/configurations`, gets new ID, dispatches `dashboardConfigCreated` event with the new ID.
         *   [ ] (Optional) List existing configurations here for loading into the editor? Needs `GET /api/v1/dashboards/configurations`.
 *   [ ] **Frontend - Dashboard Editor Widget (Builder):**
     *   **Files:** `widget/dashboardEditor.js`, `designerLayout.js`, `designerWidgets.js`.
@@ -130,7 +130,8 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [ ] **Update Widget Logic:**
         *   [ ] **Remove Drop Handler for 'dashboard':** No longer needed.
         *   [x] **Add `currentEditingDashboardId` state.**
-        *   [ ] **Listen for `dashboardConfigSelected` / `dashboardConfigCreated` event:** Update `currentEditingDashboardId`, call `loadDashboardConfig(id)`.
+        *   [x] **Listen for `dashboardConfigLoaded` event:** Update `currentEditingDashboardId`.
+        *   [x] **Handle Drop:** Always save configuration after a component is dropped.
     *   [ ] **UI Layout:**
         *   [ ] Design the builder interface (drop area/canvas).
         *   [x] Implement drag-and-drop receiving for **Components** from Toolbox.
@@ -150,22 +151,22 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [x] **Define Widget:** Add `dashboard-configuration` widget definition to `designerLayout.js` and default layout.
     *   [x] **Register Widget:** Add to `designerWidgets.js`.
     *   [ ] **UI:** Create inputs for "Name", "Description", etc. of the *currently loaded* dashboard. Add a "Save Metadata" button.
-    *   [ ] **Logic:**
-        *   [ ] Listen for `dashboardConfigSelected` / `dashboardConfigCreated` event: Update internal ID, load/display metadata (`GET .../configurations/{id}`).
-        *   [ ] Implement Save: On button click, get values, call `PUT .../configurations/{id}` with name/description.
+    *   [x] **Logic:**
+        *   [x] Listen for `dashboardConfigLoaded` event: Update internal ID, load/display metadata (`GET .../configurations/{id}`).
+        *   [x] Implement Save: On button click, get values, call `PUT .../configurations/{id}` with name/description.
 *   [ ] **Frontend - Dashboard Preview Widget:**
     *   **Files:** `widget/dashboardPreview.js`, `designerLayout.js`, `designerWidgets.js`.
     *   [x] **Define Widget:** `dashboard-preview` defined in `designerLayout.js` and default layout.
     *   [x] **Register Widget:** Registered in `designerWidgets.js`.
-    *   [ ] **Update Logic:**
-        *   [ ] Listen for `dashboardConfigSelected` / `dashboardConfigCreated` / `dashboardConfigUpdated` event: Update internal ID, call `loadPreview(id)`.
+    *   [x] **Update Logic:**
+        *   [x] Listen for `dashboardConfigLoaded` event: Update internal ID, call `loadPreview(id)`.
     *   [ ] **Rendering Logic:**
         *   [ ] Implement `loadPreview(configId)`: Fetch config data (`GET .../configurations/{config_id}`), parse `config`.
         *   [ ] **Render:** Create HTML to *approximate* Discord look based on `config`. Replace variables with placeholders.
 *   [ ] **Frontend - Inter-Widget Communication:**
     *   **Files:** `designerState.js` / `designerEvents.js`, all relevant widgets.
-    *   [ ] **Define State/Events:** Decide mechanism (state manager or custom events) to broadcast the `currentEditingDashboardId` and related events (`dashboardConfigSelected`, `dashboardConfigCreated`, `dashboardConfigUpdated`).
-    *   [ ] **Implement Listeners/Dispatchers:** Ensure Toolbox "+", Editor, Config, and Preview react appropriately.
+    *   [x] **Define State/Events:** Decide mechanism (state manager or custom events) to broadcast the `currentEditingDashboardId` and related events (`dashboardConfigLoaded`, `dashboardConfigUpdated`).
+    *   [x] **Implement Listeners/Dispatchers:** Ensure Toolbox "+", Editor, Config, and Preview react appropriately.
 
 *   [ ] **Channel Assignment (Separate Task):**
     *   [ ] Design UI/UX for assigning a `dashboard_id` (from the configurations) to a channel (e.g., dropdown in Properties Panel when channel selected?). Requires listing available configurations.

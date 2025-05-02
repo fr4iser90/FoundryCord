@@ -281,8 +281,7 @@ export function initializeToolbox() {
                         console.log("[Toolbox] Dispatching 'dashboardConfigLoaded' for new config.");
                         document.dispatchEvent(new CustomEvent('dashboardConfigLoaded', { 
                             detail: { 
-                                configData: newConfig, 
-                                isNew: true
+                                configData: newConfig
                             } 
                         }));
 

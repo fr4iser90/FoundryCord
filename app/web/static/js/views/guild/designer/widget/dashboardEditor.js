@@ -270,9 +270,10 @@ class DashboardEditor {
                                         </div>`);
                     // -----------------------------------
 
-                    // --- Trigger save ---
-                    await this._saveCurrentDashboardConfig(); // Call save function
-                    // -------------------
+                    // --- Trigger save (Always) ---
+                    console.log("[DashboardEditor] Saving after drop.");
+                    await this._saveCurrentDashboardConfig(); 
+                    // --------------------------------------
                 
                 } else {
                     // Log unexpected drops onto the editor canvas
