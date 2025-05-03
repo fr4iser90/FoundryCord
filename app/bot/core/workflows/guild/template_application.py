@@ -19,10 +19,7 @@ from app.shared.infrastructure.repositories.guild_templates.guild_template_categ
 from app.shared.infrastructure.repositories.guild_templates.guild_template_channel_repository_impl import GuildTemplateChannelRepositoryImpl
 from app.shared.infrastructure.repositories.guild_templates.guild_template_category_permission_repository_impl import GuildTemplateCategoryPermissionRepositoryImpl
 from app.shared.infrastructure.repositories.guild_templates.guild_template_channel_permission_repository_impl import GuildTemplateChannelPermissionRepositoryImpl
-# --- NEW: Import DiscordQueryService ---
 from app.bot.application.services.discord.discord_query_service import DiscordQueryService
-# --- ADDED: Import DashboardService ---
-from app.bot.application.services.dashboard.dashboard_service import DashboardService
 
 logger = get_bot_logger()
 
@@ -44,13 +41,14 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
         chan_perm_repo = GuildTemplateChannelPermissionRepositoryImpl(session)
         discord_query_service = DiscordQueryService(self.bot)
 
-        dashboard_service: Optional[DashboardService] = None
-        if hasattr(self.bot, 'dashboard_workflow') and self.bot.dashboard_workflow:
-            dashboard_service = await self.bot.dashboard_workflow.get_dashboard_service()
-        
-        if not dashboard_service:
-             logger.error("[apply_template] CRITICAL: DashboardService could not be retrieved from DashboardWorkflow.")
-
+        # --- Removed attempt to get DashboardService via DashboardWorkflow --- 
+        # dashboard_service: Optional[DashboardService] = None
+        # if hasattr(self.bot, 'dashboard_workflow') and self.bot.dashboard_workflow:
+        #     dashboard_service = await self.bot.dashboard_workflow.get_dashboard_service()
+        # 
+        # if not dashboard_service:
+        #      logger.error("[apply_template] CRITICAL: DashboardService could not be retrieved from DashboardWorkflow.")
+        # ---------------------------------------------------------------------
 
         # 1. Load Template Data (using active_template_id from passed config)
         logger.debug(f"[apply_template] Using active_template_id from passed GuildConfig.")
