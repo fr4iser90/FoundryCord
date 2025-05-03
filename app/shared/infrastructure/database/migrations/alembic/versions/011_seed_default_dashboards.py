@@ -8,22 +8,20 @@ Create Date: YYYY-MM-DD HH:MM:SS.micros # Will be auto-filled by Alembic later
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.sql import table, column
-# No need to import json if we are not using json.dumps()
 
-# revision identifiers, used by Alembic.
+
 revision = '011'
-down_revision = '010' # Depends on the state_snapshots table creation
+down_revision = '010' 
 branch_labels = None
 depends_on = None
 
-# Define the table structure for dashboard_templates bulk insert
-# Note: When inserting raw dicts, SQLAlchemy handles JSON conversion
+
 dashboard_templates_table = table(
     'dashboard_templates',
     column('name', sa.String),
     column('dashboard_type', sa.String),
     column('description', sa.String),
-    column('config', sa.JSON) # The column type handles JSON conversion
+    column('config', sa.JSON) 
 )
 
 def upgrade() -> None:
@@ -111,7 +109,6 @@ def upgrade() -> None:
 
     if default_dashboards:
         print(f"Inserting {len(default_dashboards)} default dashboard instances...")
-        # Perform the bulk insert - SQLAlchemy handles JSON conversion
         op.bulk_insert(dashboard_templates_table, default_dashboards)
     else:
         print("No default dashboard instances defined to seed.")

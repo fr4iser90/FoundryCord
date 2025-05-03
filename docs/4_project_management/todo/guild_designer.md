@@ -175,8 +175,31 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [x] **Implement Listeners/Dispatchers:** Ensure Toolbox "+", Editor, Config, and Preview react appropriately.
     *   [ ] **Toolbox Dispatcher:** Ensure Toolbox correctly dispatches `dashboardConfigLoaded` when a saved configuration is clicked.
 
-*   [ ] **Channel Assignment (Separate Task):**
-    *   [ ] Design UI/UX for assigning a `dashboard_id` (from the configurations) to a channel (e.g., dropdown in Properties Panel when channel selected?). Requires listing available configurations.
+# --- Guild Structure Template - Channel Dashboard Association ---
+*   **Workflow:** Snapshotting Dashboard Configs into Channel Templates.
+*   **Goal:** When associating a dashboard with a channel in the Guild Structure Designer, copy the selected master Dashboard Template's `config` JSON and store it directly within the `guild_template_channels` record for that channel. The live bot will use this copied config.
+*   **Files:** `003_create_guild_template_tables.py` (for downgrade reference), new migration file, `guild_template_channels.py` (model), `template_service.py`, `guild_template_controller.py`, `properties.js`, `designerState.js`, `designerEvents.js`, `guild_workflow.py` (or relevant bot apply logic).
+*   **Steps:**
+    1.  **Database Schema Change:**
+        *   [ ] Create a new Alembic migration file.
+        *   [ ] In the migration: Remove the `dashboard_types` column from `guild_template_channels`.
+        *   [ ] In the migration: Add a new column `dashboard_config_snapshot` (JSON, nullable) to `guild_template_channels`.
+        *   [ ] Update the SQLAlchemy model `GuildTemplateChannelEntity` to reflect the column change.
+    2.  **Backend API (Structure Save):**
+        *   [ ] Update `GuildStructureUpdatePayload` schema (if necessary) to handle the new `dashboard_config_snapshot` JSON field.
+        *   [ ] Modify the template service (`template_service.py`, `update_template_structure`) to correctly save the `dashboard_config_snapshot` JSON for channels.
+    3.  **Frontend (Properties Panel - `properties.js`):**
+        *   [ ] Remove the existing input field/UI for adding dashboard types as strings.
+        *   [ ] Add a button/mechanism like "Select Dashboard Config to Copy".
+        *   [ ] On click, fetch the list of available master dashboard templates (`GET /api/v1/dashboards/configurations`).
+        *   [ ] Display these templates in a modal or dropdown for selection (showing `name`, maybe `description`).
+        *   [ ] **On Selection:** Fetch the full selected template's data (`GET /api/v1/dashboards/configurations/{id}`), extract its `config` JSON.
+        *   [ ] Store this **copied `config` JSON** in the frontend state (`designerState.js`, using `addPendingPropertyChange`) under the `dashboard_config_snapshot` property for the selected channel ID. Ensure `state.setDirty(true)` is called.
+        *   [ ] Display an indicator in the Properties Panel showing that a dashboard config snapshot *is* associated (e.g., show the name of the template it was copied from, or a preview snippet), and provide a way to clear/remove the snapshot.
+    4.  **Bot Logic (Apply Template):**
+        *   [ ] Modify the bot workflow (`guild_workflow.py` or relevant apply logic).
+        *   [ ] When applying the structure template, read the `dashboard_config_snapshot` JSON directly from the `guild_template_channels` record.
+        *   [ ] Use *this copied/stored JSON* to create the dashboard message in the live Discord channel.
 
 # --- Previous/Other Sections ---
 
