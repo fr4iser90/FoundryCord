@@ -43,15 +43,14 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
         cat_perm_repo = GuildTemplateCategoryPermissionRepositoryImpl(session)
         chan_perm_repo = GuildTemplateChannelPermissionRepositoryImpl(session)
         discord_query_service = DiscordQueryService(self.bot)
-        # --- ADDED: Instantiate DashboardService (assuming service factory exists on self.bot) ---
+
         dashboard_service: Optional[DashboardService] = None
-        if hasattr(self.bot, 'service_factory'):
-            dashboard_service = self.bot.service_factory.get_service('dashboard_service') # Use service name
+        if hasattr(self.bot, 'dashboard_workflow') and self.bot.dashboard_workflow:
+            dashboard_service = await self.bot.dashboard_workflow.get_dashboard_service()
+        
         if not dashboard_service:
-             logger.error("[apply_template] CRITICAL: DashboardService is not available via service factory.")
-             # Decide if this should halt the entire process or just skip dashboards
-             # return False 
-        # -------------------------------------------------------------------------------------
+             logger.error("[apply_template] CRITICAL: DashboardService could not be retrieved from DashboardWorkflow.")
+
 
         # 1. Load Template Data (using active_template_id from passed config)
         logger.debug(f"[apply_template] Using active_template_id from passed GuildConfig.")
