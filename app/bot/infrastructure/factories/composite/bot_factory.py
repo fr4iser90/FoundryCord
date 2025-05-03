@@ -1,6 +1,6 @@
 import logging
 from typing import Any, Callable, Dict, List, Optional
-from ..service.service_factory import ServiceFactory
+from app.bot.infrastructure.factories.service_factory import ServiceFactory
 from ..service.task_factory import TaskFactory
 from ..discord.channel_factory import ChannelFactory
 from ..discord.thread_factory import ThreadFactory
@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 from app.bot.infrastructure.factories.component_registry_factory import ComponentRegistryFactory
 from app.bot.infrastructure.factories.data_source_registry_factory import DataSourceRegistryFactory
-from app.bot.infrastructure.factories.service_factory import ServiceFactory
 from app.bot.infrastructure.factories.task_factory import TaskFactory
 
 # Import specific factories (not BaseFactory)
@@ -27,6 +26,10 @@ class BotComponentFactory:
         self.initialized = False
         self.settings = {}
         self._load_settings()
+        self.component_registry = None
+        self.data_source_registry = None
+        self.service_factory = None
+        self.task_factory = None
         
     def _load_settings(self):
         """Load factory settings."""
@@ -43,10 +46,15 @@ class BotComponentFactory:
             logger.error(f"Error loading factory settings: {e}")
             self.initialized = False
             
-    async def create_service_factory(self):
-        """Create a service factory."""
-        from app.bot.infrastructure.factories.composite.service_factory import ServiceFactory
-        return ServiceFactory(self.bot)
+    async def create_service_factory(self) -> Optional[ServiceFactory]:
+        """Returns the existing service factory instance attached to the bot."""
+        logger.debug("[BotComponentFactory] Attempting to retrieve existing service factory from bot.")
+        if hasattr(self.bot, 'service_factory') and self.bot.service_factory is not None:
+            logger.debug(f"[BotComponentFactory] Returning existing ServiceFactory instance: {type(self.bot.service_factory).__name__}")
+            return self.bot.service_factory
+        else:
+            logger.error("[BotComponentFactory] Bot instance does not have a valid service_factory attribute.")
+            return None
         
     async def create_workflow_factory(self):
         """Create a workflow factory."""
@@ -65,10 +73,14 @@ class BotComponentFactory:
 
     def initialize_registries(self):
         """Initialize component and data source registries."""
-        # These will be initialized properly during the bot lifecycle
         self.component_registry = ComponentRegistryFactory(self.bot)
         self.data_source_registry = DataSourceRegistryFactory(self.bot)
-        self.service_factory = ServiceFactory(self.bot)
+        if hasattr(self.bot, 'service_factory') and self.bot.service_factory is not None:
+             self.service_factory = self.bot.service_factory
+             logger.debug(f"[BotComponentFactory] Assigned existing service factory to self.service_factory: {type(self.service_factory).__name__}")
+        else:
+             logger.error("[BotComponentFactory] Could not assign service factory in initialize_registries: Bot has no valid service_factory.")
+             self.service_factory = None
         self.task_factory = TaskFactory(self.bot)
     
     def _initialize_interface_factories(self) -> Dict[str, Any]:

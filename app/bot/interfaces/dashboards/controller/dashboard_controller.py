@@ -293,26 +293,39 @@ class DashboardController:
     
     async def display_dashboard(self):
         """Display or update the dashboard in the channel"""
+        # --- ADD DEBUG LOG ---
+        logger.debug(f"[{self.dashboard_id}] display_dashboard: Method started.")
+        # --- END DEBUG LOG ---
         try:
-            if not self.initialized: # Simplified check
-                logger.error(f"Attempted to display uninitialized dashboard: {self.dashboard_id}")
+            if not self.initialized:
+                logger.error(f"[{self.dashboard_id}] display_dashboard: Attempted to display uninitialized dashboard.")
                 # Try to send an error message to the channel?
                 channel = await self.get_channel()
                 if channel:
                      await channel.send(embed=self.create_error_embed("Dashboard controller not initialized.", title="Display Error"))
                 return None
 
+            # --- ADD DEBUG LOG ---
+            logger.debug(f"[{self.dashboard_id}] display_dashboard: Checking data_service...")
+            # --- END DEBUG LOG ---
             if not self.data_service:
-                logger.error(f"DataService not available for dashboard {self.dashboard_id}")
+                logger.error(f"[{self.dashboard_id}] display_dashboard: DataService not available.")
                 channel = await self.get_channel()
                 if channel:
                      await channel.send(embed=self.create_error_embed("Data service unavailable.", title="Display Error"))
                 return None
+            logger.debug(f"[{self.dashboard_id}] display_dashboard: DataService check passed.")
 
-            # Fetch data before creating embed/view
+            # --- ADD DEBUG LOG ---
+            logger.debug(f"[{self.dashboard_id}] display_dashboard: Calling fetch_dashboard_data...")
+            # --- END DEBUG LOG ---
             data = await self.fetch_dashboard_data()
+            # --- ADD DEBUG LOG ---
+            logger.debug(f"[{self.dashboard_id}] display_dashboard: fetch_dashboard_data returned: {data is not None}")
+            # --- END DEBUG LOG ---
+
             if data is None: # Check if fetch failed critically
-                 logger.error(f"Failed to fetch data for dashboard {self.dashboard_id}. Aborting display.")
+                 logger.error(f"[{self.dashboard_id}] display_dashboard: Failed to fetch data. Aborting display.")
                  # Display an error state on the dashboard
                  channel = await self.get_channel()
                  if channel:
@@ -320,36 +333,55 @@ class DashboardController:
                      # Try to update existing message or send new one
                      await self._send_or_edit(channel, error_embed, None) # Send error embed, no view
                  return None
-            logger.debug(f"Fetched data for {self.dashboard_id}")
+            logger.debug(f"[{self.dashboard_id}] display_dashboard: Data fetched successfully.")
             # --- END Data Fetch ---
 
             # Get channel
             channel = await self.get_channel()
             if not channel:
-                logger.error(f"Channel {self.channel_id} not found for {self.dashboard_id}")
+                logger.error(f"[{self.dashboard_id}] display_dashboard: Channel {self.channel_id} not found.")
                 return None
 
-            # Create embed and view
-            # Build methods now directly use self.config and data
+            # --- ADD DEBUG LOG ---
+            logger.debug(f"[{self.dashboard_id}] display_dashboard: Calling build_embed...")
+            # --- END DEBUG LOG ---
             embed = await self.build_embed(data)
+            # --- ADD DEBUG LOG ---
+            embed_type = type(embed).__name__ if embed else 'None'
+            logger.debug(f"[{self.dashboard_id}] display_dashboard: build_embed returned type: {embed_type}")
+            # --- END DEBUG LOG ---
+
+            # --- ADD DEBUG LOG ---
+            logger.debug(f"[{self.dashboard_id}] display_dashboard: Calling build_view...")
+            # --- END DEBUG LOG ---
             view = await self.build_view(data) # Returns None if no interactive components
+            # --- ADD DEBUG LOG ---
+            view_type = type(view).__name__ if view else 'None'
+            logger.debug(f"[{self.dashboard_id}] display_dashboard: build_view returned type: {view_type}")
+            # --- END DEBUG LOG ---
 
             # Update existing message or send new one
-            # Extracted send/edit logic into a helper
+            # --- ADD DEBUG LOG ---
+            logger.debug(f"[{self.dashboard_id}] display_dashboard: Calling _send_or_edit...")
+            # --- END DEBUG LOG ---
             self.message = await self._send_or_edit(channel, embed, view)
+            # --- ADD DEBUG LOG ---
+            msg_id = self.message.id if self.message else 'None'
+            logger.debug(f"[{self.dashboard_id}] display_dashboard: _send_or_edit returned message with ID: {msg_id}")
+            # --- END DEBUG LOG ---
 
             if self.message:
                  self.message_id = str(self.message.id)
-                 logger.info(f"Dashboard {self.dashboard_id} displayed/updated. Message ID: {self.message_id}")
+                 logger.info(f"[{self.dashboard_id}] Dashboard displayed/updated. Message ID: {self.message_id}")
             else:
-                 logger.error(f"Failed to send or edit dashboard message for {self.dashboard_id}.")
+                 logger.error(f"[{self.dashboard_id}] Failed to send or edit dashboard message.")
                  self.message_id = None # Ensure message_id is None if sending failed
 
             # Return the message object (or None if failed)
             return self.message
 
         except Exception as e:
-            logger.error(f"Error displaying dashboard {self.dashboard_id}: {e}", exc_info=True)
+            logger.error(f"[{self.dashboard_id}] Error in display_dashboard: {e}", exc_info=True)
             # Try to display error embed
             try:
                 channel = await self.get_channel()
@@ -357,46 +389,89 @@ class DashboardController:
                     error_embed = self.create_error_embed(f"An unexpected error occurred: {e}", title="Display Error")
                     await self._send_or_edit(channel, error_embed, None)
             except Exception as inner_e:
-                 logger.error(f"Failed to display error embed after another error: {inner_e}")
+                 logger.error(f"[{self.dashboard_id}] Failed to display error embed after another error: {inner_e}")
             return None
 
     # Helper for sending/editing message
     async def _send_or_edit(self, channel: nextcord.TextChannel, embed: Optional[nextcord.Embed], view: Optional[nextcord.ui.View]) -> Optional[nextcord.Message]:
         """Handles sending a new message or editing an existing one."""
+        # --- ADD DEBUG LOG ---
+        current_msg_id = self.message.id if self.message else self.message_id
+        logger.debug(f"[{self.dashboard_id}] _send_or_edit: Started. Channel: {channel.id}, Current Msg Obj: {self.message is not None}, Current Msg ID: {current_msg_id}, Has Embed: {embed is not None}, Has View: {view is not None}")
+        # --- END DEBUG LOG ---
         message_to_return = None
         if self.message:
             try:
+                # --- ADD DEBUG LOG ---
+                logger.debug(f"[{self.dashboard_id}] _send_or_edit: Attempting to edit existing message object {self.message.id}...")
+                # --- END DEBUG LOG ---
                 await self.message.edit(embed=embed, view=view)
                 message_to_return = self.message
-                logger.debug(f"Edited existing message {self.message.id}")
+                logger.debug(f"[{self.dashboard_id}] _send_or_edit: Edited existing message object {self.message.id} successfully.")
             except (nextcord.NotFound, nextcord.HTTPException) as e:
-                logger.warning(f"Failed to edit message {self.message_id} (likely deleted): {e}. Sending new message.")
+                logger.warning(f"[{self.dashboard_id}] _send_or_edit: Failed to edit message object {self.message_id}: {e}. Sending new message.")
                 self.message = None # Reset message object
                 self.message_id = None # Reset message id
-                message_to_return = await channel.send(embed=embed, view=view)
+                try:
+                     # --- ADD DEBUG LOG ---
+                     logger.debug(f"[{self.dashboard_id}] _send_or_edit: Attempting to send new message after edit failure...")
+                     # --- END DEBUG LOG ---
+                     message_to_return = await channel.send(embed=embed, view=view)
+                     logger.debug(f"[{self.dashboard_id}] _send_or_edit: Sent new message (ID: {message_to_return.id}) after edit failure.")
+                except Exception as send_err:
+                     logger.error(f"[{self.dashboard_id}] _send_or_edit: Failed to send new message after edit failure: {send_err}", exc_info=True)
         elif self.message_id:
             try:
-                # Attempt to fetch the message first before editing
+                # --- ADD DEBUG LOG ---
+                logger.debug(f"[{self.dashboard_id}] _send_or_edit: Attempting to fetch message {self.message_id}...")
+                # --- END DEBUG LOG ---
                 msg = await channel.fetch_message(int(self.message_id))
+                # --- ADD DEBUG LOG ---
+                logger.debug(f"[{self.dashboard_id}] _send_or_edit: Fetched message {self.message_id}. Attempting to edit...")
+                # --- END DEBUG LOG ---
                 await msg.edit(embed=embed, view=view)
                 self.message = msg # Store fetched message object
                 message_to_return = msg
-                logger.debug(f"Fetched and edited message {self.message_id}")
+                logger.debug(f"[{self.dashboard_id}] _send_or_edit: Fetched and edited message {self.message_id} successfully.")
             except (nextcord.NotFound, nextcord.HTTPException) as e:
-                logger.warning(f"Failed to fetch/edit message {self.message_id} (likely deleted): {e}. Sending new message.")
+                logger.warning(f"[{self.dashboard_id}] _send_or_edit: Failed to fetch/edit message {self.message_id}: {e}. Sending new message.")
                 self.message = None # Reset message object
                 self.message_id = None # Reset message id
-                message_to_return = await channel.send(embed=embed, view=view)
+                try:
+                    # --- ADD DEBUG LOG ---
+                    logger.debug(f"[{self.dashboard_id}] _send_or_edit: Attempting to send new message after fetch/edit failure...")
+                    # --- END DEBUG LOG ---
+                    message_to_return = await channel.send(embed=embed, view=view)
+                    logger.debug(f"[{self.dashboard_id}] _send_or_edit: Sent new message (ID: {message_to_return.id}) after fetch/edit failure.")
+                except Exception as send_err:
+                    logger.error(f"[{self.dashboard_id}] _send_or_edit: Failed to send new message after fetch/edit failure: {send_err}", exc_info=True)
             except ValueError:
-                 logger.error(f"Invalid message_id format stored: {self.message_id}. Sending new message.")
+                 logger.error(f"[{self.dashboard_id}] _send_or_edit: Invalid message_id format stored: {self.message_id}. Sending new message.")
                  self.message = None
                  self.message_id = None
-                 message_to_return = await channel.send(embed=embed, view=view)
+                 try:
+                    # --- ADD DEBUG LOG ---
+                    logger.debug(f"[{self.dashboard_id}] _send_or_edit: Attempting to send new message after invalid ID format...")
+                    # --- END DEBUG LOG ---
+                    message_to_return = await channel.send(embed=embed, view=view)
+                    logger.debug(f"[{self.dashboard_id}] _send_or_edit: Sent new message (ID: {message_to_return.id}) after invalid ID format.")
+                 except Exception as send_err:
+                     logger.error(f"[{self.dashboard_id}] _send_or_edit: Failed to send new message after invalid ID format: {send_err}", exc_info=True)
         else:
             # No existing message, create new one
-            logger.debug("Sending new dashboard message.")
-            message_to_return = await channel.send(embed=embed, view=view)
+            try:
+                # --- ADD DEBUG LOG ---
+                logger.debug(f"[{self.dashboard_id}] _send_or_edit: No message ID found. Attempting to send new message...")
+                # --- END DEBUG LOG ---
+                message_to_return = await channel.send(embed=embed, view=view)
+                logger.debug(f"[{self.dashboard_id}] _send_or_edit: Sent new message (ID: {message_to_return.id}) successfully.")
+            except Exception as send_err:
+                logger.error(f"[{self.dashboard_id}] _send_or_edit: Failed to send initial message: {send_err}", exc_info=True)
 
+        # --- ADD DEBUG LOG ---
+        return_msg_id = message_to_return.id if message_to_return else 'None'
+        logger.debug(f"[{self.dashboard_id}] _send_or_edit: Finished. Returning message object with ID: {return_msg_id}")
+        # --- END DEBUG LOG ---
         return message_to_return
 
     async def cleanup(self):
@@ -582,20 +657,32 @@ class DashboardController:
 
     async def fetch_dashboard_data(self) -> Optional[Dict[str, Any]]:
         """Fetches data required for this dashboard using the DashboardDataService."""
+        # --- ADD DEBUG LOG ---
+        logger.debug(f"[{self.dashboard_id}] fetch_dashboard_data: Method started.")
+        # --- END DEBUG LOG ---
         if not self.data_service:
-            logger.error(f"DashboardDataService not available for dashboard {self.dashboard_id}")
+            logger.error(f"[{self.dashboard_id}] fetch_dashboard_data: DashboardDataService not available.")
             return None # Indicate critical failure
             
         data_sources = self.config.get('data_sources', {})
+        # --- ADD DEBUG LOG ---
+        logger.debug(f"[{self.dashboard_id}] fetch_dashboard_data: Configured data sources: {data_sources}")
+        # --- END DEBUG LOG ---
         if not data_sources:
-            logger.debug(f"No data sources defined for dashboard {self.dashboard_id}")
+            logger.debug(f"[{self.dashboard_id}] fetch_dashboard_data: No data sources defined.")
             return {} # Return empty dict if no sources defined
             
         try:
+            # --- ADD DEBUG LOG ---
+            logger.debug(f"[{self.dashboard_id}] fetch_dashboard_data: Calling data_service.fetch_data...")
+            # --- END DEBUG LOG ---
             fetched_data = await self.data_service.fetch_data(data_sources)
+            # --- ADD DEBUG LOG ---
+            logger.debug(f"[{self.dashboard_id}] fetch_dashboard_data: Data fetched successfully. Keys: {list(fetched_data.keys()) if fetched_data else 'None'}")
+            # --- END DEBUG LOG ---
             return fetched_data
         except Exception as e:
-            logger.error(f"Error fetching dashboard data via service for {self.dashboard_id}: {e}", exc_info=True)
+            logger.error(f"[{self.dashboard_id}] fetch_dashboard_data: Error fetching data via service: {e}", exc_info=True)
             return None # Indicate critical failure
 
     async def get_channel(self) -> Optional[nextcord.TextChannel]:

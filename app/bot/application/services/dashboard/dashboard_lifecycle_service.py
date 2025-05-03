@@ -30,16 +30,18 @@ class DashboardLifecycleService:
         self.registry = None # Registry will handle the actual controllers/views
     
     async def initialize(self):
-        """Initialize the lifecycle service and activate DB-configured dashboards."""
+        """Initialize the lifecycle service WITHOUT activating DB dashboards yet."""
         # Import registry here to avoid circular dependencies if registry uses this service
         from app.bot.infrastructure.dashboards.dashboard_registry import DashboardRegistry
         self.registry = DashboardRegistry(self.bot)
         # Registry initialization might load component definitions, etc.
         await self.registry.initialize()
-        
-        # Activate dashboards based on database configuration
-        await self.activate_db_configured_dashboards()
-        
+
+        # --- REMOVE Activation from here ---
+        # await self.activate_db_configured_dashboards() 
+        # --- END REMOVE ---
+
+        logger.info("DashboardLifecycleService initialized (DB activation deferred to on_ready).")
         return True
     
     async def activate_db_configured_dashboards(self):

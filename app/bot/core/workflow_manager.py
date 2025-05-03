@@ -71,6 +71,13 @@ class BotWorkflowManager:
         # Now initialize the workflow itself
         logger.info(f"Initializing workflow: {name}")
         try:
+            # --- ADD DIAGNOSTIC LOG HERE ---
+            bot_id_before = getattr(bot.user, 'id', 'N/A') if bot and hasattr(bot, 'user') else 'Bot Invalid'
+            has_factory_before = hasattr(bot, 'service_factory')
+            factory_type_before = type(getattr(bot, 'service_factory', None)).__name__
+            logger.info(f"[DIAGNOSTIC WorkflowManager] BEFORE calling {name}.initialize: Bot ID={bot_id_before}, HasFactory={has_factory_before}, FactoryType={factory_type_before}")
+            # --- END DIAGNOSTIC LOG ---
+            
             # --- Check signature before calling initialize ---
             initialize_method = workflow_instance.initialize
             sig = inspect.signature(initialize_method)
@@ -97,6 +104,11 @@ class BotWorkflowManager:
     
     async def initialize_all(self, bot) -> bool:
         """Initialize all workflows globally, passing the bot instance."""
+        # --- ADD DIAGNOSTIC LOG ---
+        factory_type_at_start = type(getattr(bot, 'service_factory', None)).__name__
+        logger.info(f"[DIAGNOSTIC WorkflowManager.initialize_all] START: Received bot.service_factory type is {factory_type_at_start}")
+        # --- END DIAGNOSTIC LOG ---
+
         logger.info("Initializing all bot workflows")
         
         all_initialized = True

@@ -16,19 +16,13 @@ class ServiceFactory:
         """Initialize the ServiceFactory."""
         # --- ADD DEBUG LOG ---
         bot_id = getattr(bot.user, 'id', 'N/A') if bot and hasattr(bot, 'user') else 'Bot Invalid'
-        logger.info(f"[DEBUG ServiceFactory.__init__] Initializing with bot ID: {bot_id}")
+        logger.info(f"[DEBUG ServiceFactory.__init__ SIMPLIFIED] Initializing with bot ID: {bot_id}")
         # --- END DEBUG LOG ---
         self.bot = bot
-        self._services: Dict[str, Any] = {} # Cache for created services
-        self._creators: Dict[str, Callable] = {} # For lazy loading/creation functions
-
-        # --- ADD DEBUG LOG AT END ---
-        try:
-            num_services = len(self._services)
-            logger.info(f"[DEBUG ServiceFactory.__init__] Initialization complete. Bot ID: {bot_id}. Initial services registered: {num_services}")
-        except Exception as e:
-             logger.error(f"[DEBUG ServiceFactory.__init__] Error during final log: {e}")
-        # --- END DEBUG LOG ---
+        # --- Use simple dictionary for storage ---
+        self._services: Dict[str, Any] = {} 
+        self._creators: Dict[str, Callable] = {} 
+        logger.info(f"[DEBUG ServiceFactory.__init__ SIMPLIFIED] Initialization complete. Bot ID: {bot_id}")
 
     def register_service_creator(self, name: str, creator: Callable, overwrite: bool = False):
         """Registers a function that creates a service instance (lazy loading)."""
