@@ -156,8 +156,9 @@ class TemplateStructureService:
                                  # Add other category field mappings if needed
                              elif item_type == 'channel':
                                  if prop_name == 'name': entity_attr_name = 'channel_name'
-                                 # elif prop_name == 'is_dashboard_enabled': entity_attr_name = 'is_dashboard_enabled' # Direct mapping
-                                 # elif prop_name == 'dashboard_types': entity_attr_name = 'dashboard_types' # Direct mapping
+                                 # Direct mappings (example)
+                                 # elif prop_name == 'is_dashboard_enabled': entity_attr_name = 'is_dashboard_enabled'
+                                 # elif prop_name == 'dashboard_config_snapshot': entity_attr_name = 'dashboard_config_snapshot' # Added
                              # --------------------------
                              
                              if hasattr(target_entity, entity_attr_name):
@@ -167,44 +168,52 @@ class TemplateStructureService:
                                      expected_type = type(current_value) if current_value is not None else None 
                                      # If expected_type is still None, try to infer from attr name
                                      if expected_type is None:
-                                         # --- REMOVE mirror field from inference --- 
-                                         # if entity_attr_name in ['is_nsfw', 'mirror_dashboard_in_followers']:
-                                         if entity_attr_name in ['is_nsfw']: 
-                                         # ----------------------------------------
+                                         if entity_attr_name in ['is_nsfw', 'is_dashboard_enabled']: # Added is_dashboard_enabled
                                              expected_type = bool
                                          elif entity_attr_name in ['slowmode_delay']: 
                                              expected_type = int
-                                         # --- ADD: Expected type for dashboard_types ---
-                                         elif entity_attr_name == 'dashboard_types':
-                                             expected_type = list
+                                         # --- REMOVE: Expected type for dashboard_types --- 
+                                         # elif entity_attr_name == 'dashboard_types':
+                                         #     expected_type = list
+                                         # --- ADD: Expected type for snapshot (dict) --- 
+                                         elif entity_attr_name == 'dashboard_config_snapshot':
+                                              expected_type = dict # Expecting a dictionary now
+                                         # ----------------------------------------------
                                          else:
                                              expected_type = str # Default guess
                                              
-                                     # --- Type Casting Logic --- 
+                                     # --- Type Casting/Handling Logic --- 
                                      casted_value = None
-                                     # Special handling for bool from JS strings or bools
-                                     if expected_type is bool and isinstance(new_value, (str, bool)):
+                                     if entity_attr_name == 'dashboard_config_snapshot':
+                                         # Assume the schema validation already ensured it's a dict or None
+                                         if new_value is None or isinstance(new_value, dict):
+                                             casted_value = new_value
+                                         else:
+                                             logger.warning(f"  Invalid type for dashboard_config_snapshot: {type(new_value)}. Expected dict or None. Skipping.")
+                                             continue # Skip this property
+                                     # --- (Existing casting logic for bool, int, float) ---
+                                     elif expected_type is bool and isinstance(new_value, (str, bool)):
                                          if isinstance(new_value, bool):
                                              casted_value = new_value
                                          else:
                                              casted_value = new_value.lower() == 'true'
-                                     # Special handling for int/float that might come as strings
                                      elif expected_type is int and isinstance(new_value, (str, bool, int)):
                                          casted_value = int(new_value) if str(new_value).strip() else None
                                      elif expected_type is float and isinstance(new_value, (str, bool, int)):
                                          casted_value = float(new_value)
-                                     # Generic cast for other types, handling potential None
                                      elif new_value is None:
                                          casted_value = None
-                                     # --- ADD: Handle list type directly ---
-                                     elif expected_type is list and isinstance(new_value, list):
-                                         casted_value = new_value # Assume it's already a list of strings from JSON
+                                     # --- REMOVE: Handle list type directly ---
+                                     # elif expected_type is list and isinstance(new_value, list):
+                                     #     casted_value = new_value
                                      # -------------------------------------
                                      else:
+                                         # Generic cast (may fail for complex types like dict if not handled above)
                                          casted_value = expected_type(new_value)
-                                     # --- End Type Casting ---
+                                     # --- End Type Casting/Handling --- 
                                      
-                                     if current_value != casted_value:
+                                     # Compare and set attribute
+                                     if current_value != casted_value: # This comparison works for dicts too
                                           logger.debug(f"  Updating {entity_attr_name} from '{current_value}' ({type(current_value).__name__}) to '{casted_value}' ({type(casted_value).__name__})")
                                           setattr(target_entity, entity_attr_name, casted_value)
                                           update_applied = True

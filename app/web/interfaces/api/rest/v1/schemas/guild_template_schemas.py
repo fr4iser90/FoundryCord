@@ -179,13 +179,12 @@ class NodeSchema(BaseModel):
 
 # Schema for Pending Property Changes
 class PropertyChangeValue(BaseModel):
-    # Define fields based on what properties can change, e.g.:
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     topic: Optional[str] = Field(None, max_length=1024) # Example length
     is_nsfw: Optional[bool] = None
     slowmode_delay: Optional[int] = Field(None, ge=0, le=21600) # Discord limits (0-6h)
     is_dashboard_enabled: Optional[bool] = None
-    dashboard_types: Optional[List[str]] = None # List of dashboard type strings
+    dashboard_config_snapshot: Optional[Dict[str, Any]] = None 
 
 
 # Schema for the payload of the structure update endpoint
@@ -262,7 +261,7 @@ class ChannelResponseSchema(BaseModel):
     permissions: List[PermissionResponseSchema] = [] # Use the clear permission schema
     # Assigned dashboard types
     is_dashboard_enabled: bool = False # Add new field, default to False
-    dashboard_types: List[str] = Field(default_factory=list, description="List of dashboard type strings assigned.") # Add new field
+    dashboard_config_snapshot: Optional[Dict[str, Any]] = Field(None, description="Snapshot of the assigned dashboard configuration JSON.") # ADDED
 
     class Config:
         from_attributes = True

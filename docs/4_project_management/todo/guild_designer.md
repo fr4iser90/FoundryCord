@@ -181,21 +181,33 @@ _(This section covers applying templates to Discord, managing channel follows, d
 *   **Files:** `003_create_guild_template_tables.py` (for downgrade reference), new migration file, `guild_template_channels.py` (model), `template_service.py`, `guild_template_controller.py`, `properties.js`, `designerState.js`, `designerEvents.js`, `guild_workflow.py` (or relevant bot apply logic).
 *   **Steps:**
     1.  **Database Schema Change:**
-        *   [ ] Create a new Alembic migration file.
-        *   [ ] In the migration: Remove the `dashboard_types` column from `guild_template_channels`.
-        *   [ ] In the migration: Add a new column `dashboard_config_snapshot` (JSON, nullable) to `guild_template_channels`.
-        *   [ ] Update the SQLAlchemy model `GuildTemplateChannelEntity` to reflect the column change.
-    2.  **Backend API (Structure Save):**
-        *   [ ] Update `GuildStructureUpdatePayload` schema (if necessary) to handle the new `dashboard_config_snapshot` JSON field.
-        *   [ ] Modify the template service (`template_service.py`, `update_template_structure`) to correctly save the `dashboard_config_snapshot` JSON for channels.
+        *   [x] Modify migration `003` to replace `dashboard_types` with `dashboard_config_snapshot` (JSON, nullable) in `guild_template_channels`.
+        *   [x] Update the SQLAlchemy model `GuildTemplateChannelEntity`.
+    2.  **Backend API & Services:**
+        *   [x] Update `PropertyChangeValue` and `ChannelResponseSchema` in `guild_template_schemas.py`.
+        *   [x] Update `structure_service.py` to save the `dashboard_config_snapshot` JSON.
+        *   [x] Update `query_service.py` to return the `dashboard_config_snapshot` JSON.
+        *   [x] Update `structure_controller.py` to correctly handle the snapshot field in request/response.
     3.  **Frontend (Properties Panel - `properties.js`):**
-        *   [ ] Remove the existing input field/UI for adding dashboard types as strings.
-        *   [ ] Add a button/mechanism like "Select Dashboard Config to Copy".
-        *   [ ] On click, fetch the list of available master dashboard templates (`GET /api/v1/dashboards/configurations`).
-        *   [ ] Display these templates in a modal or dropdown for selection (showing `name`, maybe `description`).
-        *   [ ] **On Selection:** Fetch the full selected template's data (`GET /api/v1/dashboards/configurations/{id}`), extract its `config` JSON.
-        *   [ ] Store this **copied `config` JSON** in the frontend state (`designerState.js`, using `addPendingPropertyChange`) under the `dashboard_config_snapshot` property for the selected channel ID. Ensure `state.setDirty(true)` is called.
-        *   [ ] Display an indicator in the Properties Panel showing that a dashboard config snapshot *is* associated (e.g., show the name of the template it was copied from, or a preview snippet), and provide a way to clear/remove the snapshot.
+        *   **Goal:** Keep existing input field (`propDashboardAddInput`) and display area (`propDashboardSelectedDisplay`). Modify functionality to find template by name, copy its config as a snapshot, and display/manage that single snapshot.
+        *   [ ] **Modify `handleDashboardAddInputKeydown`:**
+            *   On Enter, get the template `name` entered by the user.
+            *   Fetch list of all available master templates (`GET /api/v1/dashboards/configurations`). (TODO: Consider backend filtering by name later).
+            *   Search the fetched list for a template matching the entered `name`.
+            *   If found, extract its `config` JSON (the snapshot).
+            *   If not found, show error toast and return.
+            *   Store the **copied `config` JSON** in state using `state.addPendingPropertyChange(..., 'dashboard_config_snapshot', copiedConfig)`.
+            *   Update the display area (call modified `renderDashboardBadges` or a new function) to show the assigned snapshot (e.g., the name of the template copied from).
+            *   Clear the input field. Set state dirty.
+        *   [ ] **Modify Display Logic (e.g., `renderDashboardBadges`):**
+            *   Change the function to accept the `dashboard_config_snapshot` (object or null) from the state, instead of an array of types.
+            *   If a snapshot exists, display its origin template name (passed as argument or extracted if possible) as a single badge/item with a remove ('x') button.
+            *   If snapshot is null, display "None".
+        *   [ ] **Modify Remove Logic (e.g., `handleRemoveDashboardType`):**
+            *   Rename function (e.g., `handleRemoveDashboardSnapshot`).
+            *   On clicking the 'x' button for the displayed snapshot, update the state using `state.addPendingPropertyChange(..., 'dashboard_config_snapshot', null)`.
+            *   Update the display area. Set state dirty.
+        *   [ ] **Update `populatePanel` / `resetPanel`:** Ensure these functions correctly read the `dashboard_config_snapshot` from the channel data and update/clear the display area accordingly.
     4.  **Bot Logic (Apply Template):**
         *   [ ] Modify the bot workflow (`guild_workflow.py` or relevant apply logic).
         *   [ ] When applying the structure template, read the `dashboard_config_snapshot` JSON directly from the `guild_template_channels` record.

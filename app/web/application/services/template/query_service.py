@@ -122,7 +122,7 @@ class TemplateQueryService:
                         "slowmode_delay": chan.slowmode_delay,
                         "permissions": [], # Add permissions if ChannelResponseSchema requires them
                         "is_dashboard_enabled": chan.is_dashboard_enabled,
-                        "dashboard_types": chan.dashboard_types if chan.dashboard_types else []
+                        "dashboard_config_snapshot": chan.dashboard_config_snapshot
                     }
                     # TODO: Add manual permission construction if schema requires it and ORM mode doesn't handle it
                     structured_template["channels"].append(channel_data)
@@ -220,7 +220,7 @@ class TemplateQueryService:
                         "slowmode_delay": chan.slowmode_delay,
                         "permissions": [], # Add permissions if ChannelResponseSchema requires them
                         "is_dashboard_enabled": chan.is_dashboard_enabled,
-                        "dashboard_types": chan.dashboard_types if chan.dashboard_types else []
+                        "dashboard_config_snapshot": chan.dashboard_config_snapshot
                     }
                     # TODO: Add manual permission construction if schema requires it and ORM mode doesn't handle it
                     structured_template["channels"].append(channel_data)

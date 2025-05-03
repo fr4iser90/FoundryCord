@@ -133,7 +133,7 @@ class GuildTemplateStructureController(BaseController):
                     "is_nsfw": chan_entity.is_nsfw,
                     "slowmode_delay": chan_entity.slowmode_delay,
                     "is_dashboard_enabled": chan_entity.is_dashboard_enabled,
-                    "dashboard_types": chan_entity.dashboard_types,
+                    "dashboard_config_snapshot": chan_entity.dashboard_config_snapshot,
                     "parent_category_template_id": chan_entity.parent_category_template_id,
                     "permissions": []
                 }

@@ -49,7 +49,7 @@ def upgrade() -> None:
         sa.Column('is_nsfw', sa.Boolean(), server_default='false', nullable=False),
         sa.Column('slowmode_delay', sa.Integer(), server_default='0', nullable=False),
         sa.Column('is_dashboard_enabled', sa.Boolean(), server_default='false', nullable=False),
-        sa.Column('dashboard_types', sa.ARRAY(sa.String()), nullable=True, default=lambda: []),
+        sa.Column('dashboard_config_snapshot', sa.JSON(), nullable=True),
         sa.Column('parent_category_template_id', sa.Integer(), sa.ForeignKey('guild_template_categories.id', ondelete='SET NULL'), nullable=True),
         sa.Column('discord_channel_id', sa.String(20), nullable=True), 
         sa.Column('metadata_json', sa.JSON(), nullable=True)
