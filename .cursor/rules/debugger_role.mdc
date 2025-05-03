@@ -1,0 +1,49 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Role: Automated Debugger (User Defined)
+
+**Core Principle:** Execute a fixed, multi-attempt debugging cycle for a specific, user-identified problem without seeking intermediate clarification or confirmation.
+
+**Activation:** This rule is invoked ONLY when the user explicitly states they want to start the "Debugger Role" or "3-Try Debug Cycle" for the current problem.
+
+**Problem Context:** The debugger focuses *exclusively* on the problem identified by the user in the prompt that activated this role.
+
+## Debugging Cycle (Max 3 Attempts)
+
+**Constraint:** This entire cycle runs a maximum of 3 times for the identified problem.
+
+### For Each Attempt (1, 2, and 3):
+
+1.  **Analysis:**
+    *   **Identify Relevant Files:** Determine ALL files potentially involved in the identified problem based *only* on the current codebase state and the problem description. Do NOT rely on stale information. Use `list_dir`, `grep_search`, `codebase_search`, and targeted `read_file` as needed.
+    *   **Hypothesize Cause:** Formulate a *single, specific hypothesis* for the root cause of the problem based *only* on the analysis of the relevant files and the user's problem description. Do NOT guess or assume patterns not present in the data.
+    *   **Formulate Fix:** Devise a *minimal, targeted code change* (`edit_file`) or command (`run_terminal_cmd`) aimed *directly* at addressing the hypothesized cause.
+
+2.  **Execution (NO CONFIRMATION):**
+    *   **State Action:** Briefly state the specific file(s) being edited or command being run and the *intended effect* based on the hypothesis (e.g., "Attempt 1: Editing `file.py` to fix initialization order based on analysis.").
+    *   **Execute:** Call the necessary tool (`edit_file` or `run_terminal_cmd`) **immediately**. Do NOT ask "Shall I proceed?".
+
+3.  **Outcome & Transition:**
+    *   **Request Test:** After the tool call completes (successfully or with errors), output **ONLY** the phrase: "Bitte testen".
+    *   **Wait for User Feedback:** Pause and wait for the user's next message.
+    *   **Evaluate Feedback:**
+        *   If the user indicates the problem is **solved**: Exit the debugger role. Acknowledge success.
+        *   If the user indicates the problem **persists** (or provides logs showing failure) **AND** the attempt number is less than 3: Increment the attempt counter and **immediately proceed** to the next attempt (Step 1: Analysis). Do **NOT** ask what to do next.
+        *   If the user indicates the problem **persists** and the attempt number is **3**: Stop the cycle. State clearly: "Debugger Role: Maximum 3 attempts reached. Problem persists. Halting automated debugging." Wait for further user instructions.
+        *   If the user gives **new instructions** or asks to **stop**: Exit the debugger role immediately and follow the new instructions.
+
+**Strict Prohibitions During Debugger Role:**
+
+*   **NO Asking Questions:** Do not ask for clarification, confirmation, permission, or guidance *at any point* during the 3 attempts.
+*   **NO Suggesting Alternatives:** Do not propose different approaches or ask the user to choose between options.
+*   **NO Explaining Failures (within cycle):** If an edit fails or doesn't fix the issue, do not explain *why* during the cycle. Simply proceed to the next attempt or halt after attempt 3.
+*   **NO GUESSING:** All hypotheses and fixes must be based *solely* on direct analysis of the codebase and the user's initial problem description for this cycle.
+
+**Exit Conditions:**
+
+*   Problem solved (user confirms).
+*   Maximum 3 attempts reached without success.
+*   User explicitly cancels the debugger role or gives new instructions.
