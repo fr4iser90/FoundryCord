@@ -17,6 +17,7 @@ from app.bot.infrastructure.factories.component_factory import ComponentFactory
 from app.bot.infrastructure.internal_api.server import InternalAPIServer
 from app.bot.interfaces.dashboards.components.common.embeds.dashboard_embed import DashboardEmbed
 from app.bot.interfaces.dashboards.components.common.embeds.error_embed import ErrorEmbed
+from app.bot.infrastructure.factories.service_factory import ServiceFactory
 
 logger = get_bot_logger()
 
@@ -31,13 +32,11 @@ def setup_core_components(bot):
         bot.shutdown_handler = ShutdownHandler(bot)
         bot.control_service = BotControlService(bot)
         bot.internal_api_server = InternalAPIServer(bot)
-        # Initialize service_factory to None here, it will be set in setup_hook
-        bot.service_factory = None
         bot._default_components_registered = False
         logger.info("Core components setup complete.")
     except Exception as e:
         logger.critical(f"Failed to setup core components: {e}", exc_info=True)
-        # Optionally raise exception to halt bot startup
+        raise
 
 def register_workflows(bot):
     """Instantiates and registers all workflows with the WorkflowManager."""
@@ -126,52 +125,47 @@ def register_default_components(bot):
     except Exception as e:
         logger.error(f"Error registering default components: {e}", exc_info=True)
 
-async def register_core_services(bot):
-    """Registers essential services with the ServiceFactory after it's created."""
-    # --- ADD DIAGNOSTIC LOG AT START ---
-    factory_type_start = type(getattr(bot, 'service_factory', None)).__name__
-    logger.info(f"[DIAGNOSTIC setup_hooks.register_core_services] START: bot.service_factory type is {factory_type_start}")
-    # --- END DIAGNOSTIC LOG ---
-
-    if not bot.service_factory:
-        logger.error("Service Factory is None or not available at start of register_core_services. Cannot register.")
+def register_core_services(service_factory: ServiceFactory, bot):
+    """Registers essential services with the ServiceFactory SYNCHRONOUSLY."""
+    if not service_factory:
+        logger.error("Service Factory is None. Cannot register core services.")
         return
 
-    logger.info("Registering core services with Service Factory...")
+    logger.info("Registering core services with Service Factory (synchronous)...")
     try:
         # 1. Register ComponentRegistry
-        if bot.component_registry:
-            if hasattr(bot.service_factory, 'register_service'):
-                bot.service_factory.register_service(
+        if hasattr(bot, 'component_registry') and bot.component_registry:
+            if hasattr(service_factory, 'register_service'):
+                service_factory.register_service(
                     'component_registry',
                     bot.component_registry,
                     overwrite=True
                 )
                 logger.info("Registered service: component_registry")
             else:
-                logger.error("bot.service_factory is missing register_service method (ComponentRegistry).")
+                logger.error("service_factory is missing register_service method (ComponentRegistry).")
         else:
             logger.error("bot.component_registry not found. Cannot register.")
 
         # 2. Instantiate and Register DashboardDataService
         logger.debug("Instantiating DashboardDataService...")
         dashboard_data_service_instance = DashboardDataService(bot)
-        if hasattr(bot.service_factory, 'register_service'):
-            bot.service_factory.register_service(
+        if hasattr(service_factory, 'register_service'):
+            service_factory.register_service(
                 'dashboard_data_service',
                 dashboard_data_service_instance,
                 overwrite=True
             )
             logger.info("Registered service: dashboard_data_service")
         else:
-            logger.error("bot.service_factory is missing register_service method (DashboardDataService).")
+            logger.error("service_factory is missing register_service method (DashboardDataService).")
 
         # 3. Instantiate and Register ComponentLoaderService
         logger.debug("Instantiating ComponentLoaderService...")
         component_loader_instance = ComponentLoaderService(bot)
-        if hasattr(bot.service_factory, 'register_service') and hasattr(bot.service_factory, 'has_service'):
-            if not bot.service_factory.has_service('component_loader'):
-                bot.service_factory.register_service(
+        if hasattr(service_factory, 'register_service') and hasattr(service_factory, 'has_service'):
+            if not service_factory.has_service('component_loader'):
+                service_factory.register_service(
                     'component_loader',
                     component_loader_instance,
                     overwrite=True
@@ -183,9 +177,28 @@ async def register_core_services(bot):
             logger.error("Service Factory instance is missing expected registration methods.")
 
     except Exception as e:
-        logger.error(f"Error registering core services in ServiceFactory: {e}", exc_info=True)
+        logger.error(f"Error registering core services SYNCHRONOUSLY in ServiceFactory: {e}", exc_info=True)
+        raise
 
-    # --- ADD DIAGNOSTIC LOG AT END ---
-    factory_type_end = type(getattr(bot, 'service_factory', None)).__name__
-    logger.info(f"[DIAGNOSTIC setup_hooks.register_core_services] END: bot.service_factory type is {factory_type_end}")
-    # --- END DIAGNOSTIC LOG ---
+def setup_service_factory_and_register_core_services(bot):
+    """Initializes the ServiceFactory and registers core services SYNCHRONOUSLY."""
+    logger.info("Setting up Service Factory and registering core services in __init__...")
+    try:
+        # Create factory first
+        bot.service_factory = ServiceFactory(bot)
+        logger.info(f"ServiceFactory instantiated in __init__: {type(bot.service_factory).__name__}")
+        # Then register services using the created factory
+        register_core_services(bot.service_factory, bot)
+        logger.info("Service Factory setup and core service registration complete.")
+    except Exception as e:
+        logger.critical(f"CRITICAL FAILURE during Service Factory setup in __init__: {e}", exc_info=True)
+        raise RuntimeError("Failed to initialize core Service Factory") from e
+
+async def setup_hook(bot):
+    """
+    Asynchronous setup hook called by nextcord after __init__ but before on_ready.
+    KEEP THIS EMPTY regarding ServiceFactory.
+    Use this for other async setup tasks if needed later (like loading cogs/extensions).
+    """
+    logger.info("Executing setup_hook (ServiceFactory initialization moved to __init__)...")
+    pass

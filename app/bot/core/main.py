@@ -12,7 +12,8 @@ from app.bot.core.setup_hooks import (
     setup_core_components,
     register_workflows,
     register_default_components,
-    register_core_services
+    setup_service_factory_and_register_core_services,
+    setup_hook
 )
 from app.bot.infrastructure.factories.service_factory import ServiceFactory
 from app.bot.core.checks import check_guild_approval
@@ -37,36 +38,69 @@ class FoundryCord(commands.Bot):
 
         super().__init__(command_prefix=command_prefix, intents=intents)
 
+        # Initialize service_factory as None *before* setup calls
+        self.service_factory: Optional[ServiceFactory] = None
+
+        # Setup components that DON'T depend on service factory first
         setup_core_components(self)
         register_workflows(self)
 
-        self.add_check(check_guild_approval)
+        # --- MOVED FROM setup_hook / Placed after core components ---
+        # Create Factory, Register Core Services, and Register Default Components SYNCHRONOUSLY
+        try:
+            setup_service_factory_and_register_core_services(self)
+            # Register default components AFTER factory and core services exist
+            register_default_components(self)
+        except Exception as e:
+             # If setup fails critically, log and potentially exit or prevent startup
+             logger.critical(f"FATAL: Failed essential setup in __init__: {e}. Bot may not function.", exc_info=True)
+             # Depending on severity, you might want sys.exit(1) here
+             # For now, let it continue but log the critical failure.
+
+        # Now that service factory likely exists, setup things depending on it
+        # Example: Setup global check (if it needs services)
+        self.add_check(check_guild_approval) # Assuming this check might use services later
         logger.info("Registered global check for guild approval on all commands.")
+
+        # Example: Initialize Internal API Server (if it needs services)
+        if self.internal_api_server and self.service_factory:
+             # Re-initialize or pass factory if needed.
+             # Assuming InternalAPIServer's constructor takes bot, and can access bot.service_factory
+             logger.info("Internal API Server setup linked with Service Factory.")
+        elif not self.internal_api_server:
+             logger.warning("Internal API Server component not setup.")
+        else: # Service factory failed
+             logger.error("Cannot finish Internal API Server setup - Service Factory failed to initialize.")
+
+
+        logger.info("FoundryCord __init__ complete.")
+
 
     async def on_ready(self):
         """Called when the bot is ready"""
         logger.info(f"Logged in as {self.user.name} (ID: {self.user.id})")
 
-        # Start workflow initialization
-        if await self.start_initialization(self):
+        # --- Start workflow initialization ---
+        # It now receives a bot instance where service_factory *should* be valid
+        if await self.start_initialization(self): # Pass self
             # --- Activate DB Dashboards AFTER workflows are initialized ---
-            if self.dashboard_workflow and self.dashboard_workflow.lifecycle_service:
+            if hasattr(self, 'dashboard_workflow') and self.dashboard_workflow and hasattr(self.dashboard_workflow, 'lifecycle_service') and self.dashboard_workflow.lifecycle_service:
                  logger.info("on_ready: Triggering activation of DB-configured dashboards...")
                  try:
                      await self.dashboard_workflow.lifecycle_service.activate_db_configured_dashboards()
                  except Exception as e:
                       logger.error(f"Error during deferred activation of DB dashboards: {e}", exc_info=True)
             else:
-                 logger.warning("on_ready: Cannot activate DB dashboards - DashboardWorkflow or LifecycleService not available.")
+                 logger.warning("on_ready: Cannot activate DB dashboards - DashboardWorkflow or LifecycleService not available/initialized.")
             # --- End Activation ---
 
             # Start the internal API server only if initialization was successful
             if self.internal_api_server:
                 await self.internal_api_server.start()
             else:
-                 logger.error("Internal API Server not initialized, cannot start.")
+                 logger.error("Internal API Server not initialized or failed to start.")
         else:
-             logger.error("Bot initialization failed, skipping deferred actions.")
+             logger.error("Bot initialization failed, skipping deferred actions and API start.")
 
 
     async def start_initialization(self, bot_instance):
@@ -76,8 +110,14 @@ class FoundryCord(commands.Bot):
              logger.error("Workflow manager not initialized. Cannot start initialization.")
              return False
 
-        factory_type_before_init = type(getattr(bot_instance, 'service_factory', None)).__name__
-        logger.info(f"[DIAGNOSTIC main.start_initialization] BEFORE calling initialize_all: bot_instance.service_factory type is {factory_type_before_init}")
+        # REMOVED DIAGNOSTIC FACTORY CHECK - It should be set by __init__ now
+        # factory_type_before_init = type(getattr(bot_instance, 'service_factory', None)).__name__
+        # logger.info(f"[DIAGNOSTIC main.start_initialization] BEFORE calling initialize_all: bot_instance.service_factory type is {factory_type_before_init}")
+
+        # Add a check here just in case __init__ failed silently
+        if not bot_instance.service_factory:
+             logger.critical("CRITICAL ERROR in start_initialization: bot_instance.service_factory is None! __init__ setup likely failed.")
+             return False
 
         success = await self.workflow_manager.initialize_all(bot_instance)
 
@@ -101,28 +141,10 @@ class FoundryCord(commands.Bot):
         logger.info("Bot resources cleaned up successfully")
 
     async def setup_hook(self):
-        """Setup hook called when bot is starting up"""
-        logger.info("Starting bot setup_hook...")
-
-        logger.info("Initializing Service Factory...")
-        factory_instance = None
-        try:
-            logger.debug("[DEBUG bot.py setup_hook] Attempting to instantiate ServiceFactory(self)...")
-            factory_instance = ServiceFactory(self)
-            instance_type = type(factory_instance).__name__ if factory_instance else 'None'
-            logger.debug(f"[DEBUG bot.py setup_hook] ServiceFactory(self) returned instance of type: {instance_type}")
-            self.service_factory = factory_instance
-            factory_type = type(self.service_factory).__name__ if self.service_factory else 'None'
-            bot_id = self.user.id if self.user else 'N/A'
-            logger.info(f"[DEBUG bot.py setup_hook] Service Factory assigned. Bot ID: {bot_id}, self.service_factory Type: {factory_type}")
-        except Exception as e:
-             logger.critical(f"CRITICAL: Failed during Service Factory instantiation or assignment: {e}", exc_info=True)
-             self.service_factory = None
-
-        register_default_components(self)
-        await register_core_services(self)
-
-        logger.info("Bot setup_hook finished.")
+        """Setup hook called when bot is starting up. ServiceFactory moved to __init__."""
+        # Call the (now mostly empty regarding factory) setup_hook from setup_hooks.py
+        await setup_hook(self)
+        logger.info("Bot setup_hook finished (Factory init moved).")
 
 
 async def main():
