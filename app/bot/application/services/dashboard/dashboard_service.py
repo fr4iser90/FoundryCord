@@ -104,6 +104,131 @@ class DashboardService:
                 
         return data
     
+    async def sync_dashboard_from_snapshot(self, channel: nextcord.TextChannel, config_json: Dict[str, Any]) -> bool:
+        """Creates or updates a dashboard entity and its config from a snapshot, then activates/updates the controller."""
+        logger.info(f"Syncing dashboard from snapshot for channel {channel.id} ({channel.name})")
+        
+        entity_id = None
+        message_id = None
+        config_id = None
+        
+        try:
+            # 1. Save/Update the configuration blob
+            # Assume config_json contains an 'id' if it was previously saved, otherwise save_dashboard_config generates one
+            config_id = await self.repository.save_dashboard_config(config_json)
+            if not config_id:
+                logger.error(f"Failed to save dashboard config snapshot for channel {channel.id}")
+                return False
+            logger.debug(f"Saved/updated config blob with ID: {config_id}")
+
+            # 2. Find or Create the DashboardEntity
+            existing_entity = await self.repository.get_by_channel_id(channel.id)
+            
+            dashboard_type = config_json.get('dashboard_type', 'dynamic') # Default type?
+            
+            if existing_entity:
+                logger.debug(f"Found existing DashboardEntity {existing_entity.id} for channel {channel.id}")
+                entity_id = existing_entity.id
+                message_id = existing_entity.message_id # Store existing message ID
+                
+                # Check if updates are needed
+                update_data = {}
+                if existing_entity.config_id != config_id:
+                    update_data['config_id'] = config_id
+                if existing_entity.dashboard_type != dashboard_type:
+                     update_data['dashboard_type'] = dashboard_type
+                # Add other fields to check/update if necessary (e.g., from config)
+                
+                if update_data:
+                    update_data['updated_at'] = datetime.now() # Always update timestamp
+                    logger.info(f"Updating DashboardEntity {entity_id} with data: {update_data}")
+                    # TODO: Need to adapt repository update method or use session directly 
+                    # success = await self.repository.update_dashboard(entity_id, update_data)
+                    # For now, assume direct update will work if repo method handles it
+                    async with self.repository.session_factory() as session:
+                       stmt = update(DashboardEntity).where(DashboardEntity.id == entity_id).values(**update_data)
+                       await session.execute(stmt)
+                       await session.commit()
+                       logger.debug(f"Successfully updated DashboardEntity {entity_id}")
+                else:
+                    logger.debug(f"No updates needed for DashboardEntity {entity_id}")
+
+            else:
+                logger.info(f"No existing DashboardEntity found for channel {channel.id}. Creating new one.")
+                new_entity = await self.repository.create_dashboard_entity(
+                    channel_id=channel.id,
+                    guild_id=channel.guild.id,
+                    config_id=config_id,
+                    dashboard_type=dashboard_type,
+                    # Extract other fields from config? Example:
+                    name=config_json.get('name', 'Templated Dashboard'),
+                    description=config_json.get('description', ''),
+                    is_active=True # Assume active when created from template
+                )
+                if not new_entity:
+                    logger.error(f"Failed to create DashboardEntity for channel {channel.id}")
+                    return False
+                entity_id = new_entity.id
+                message_id = None # New entity won't have a message ID yet
+                
+            # 3. Activate or Update the Controller via Registry
+            try:
+                # Assuming self.bot has a reference to the registry
+                if not hasattr(self.bot, 'dashboard_registry') or not self.bot.dashboard_registry:
+                    logger.error("DashboardRegistry not found on bot object!")
+                    return False 
+                    
+                registry = self.bot.dashboard_registry
+                success = await registry.activate_or_update_dashboard(
+                    channel_id=channel.id, 
+                    config_id=config_id, 
+                    message_id=message_id # Pass the message_id we found/know
+                )
+                if not success:
+                    logger.error(f"Failed to activate/update dashboard controller for channel {channel.id}")
+                    # Don't necessarily fail the whole sync? Maybe just log error.
+                    # return False 
+                else:
+                     logger.info(f"Successfully activated/updated dashboard controller for channel {channel.id}")
+            except Exception as reg_err:
+                 logger.error(f"Error during dashboard registry activation/update for channel {channel.id}: {reg_err}", exc_info=True)
+                 # return False
+
+            # 4. Persist the message_id back to the DB Entity
+            # This needs to happen *after* activate_or_update potentially creates/updates the message
+            try:
+                # Get the potentially updated controller instance
+                registry = self.bot.dashboard_registry # Get registry again just in case
+                controller = registry.get_dashboard(channel.id)
+                
+                if controller and controller.message_id:
+                    new_message_id = controller.message_id
+                    # Check if message_id actually changed or needs storing
+                    if message_id != new_message_id: 
+                        logger.info(f"Persisting new/updated message_id {new_message_id} for DashboardEntity {entity_id}")
+                        # Use the repository's update method or session directly
+                        async with self.repository.session_factory() as session:
+                            stmt = update(DashboardEntity).where(DashboardEntity.id == entity_id).values(message_id=str(new_message_id)) # Store as string?
+                            await session.execute(stmt)
+                            await session.commit()
+                            logger.debug(f"Successfully persisted message_id {new_message_id} for entity {entity_id}")
+                        message_id = new_message_id # Update local variable too
+                    else:
+                         logger.debug(f"Message ID {message_id} is already persisted for entity {entity_id}. No update needed.")
+                elif controller:
+                     logger.warning(f"Controller for channel {channel.id} exists, but has no message_id set after activation/update.")
+                else:
+                     logger.warning(f"Could not retrieve controller for channel {channel.id} after activation/update to persist message_id.")
+            except Exception as persist_err:
+                 logger.error(f"Error persisting message_id for entity {entity_id} / channel {channel.id}: {persist_err}", exc_info=True)
+            # --------------------------------------------------------------------------
+
+            return True # Return True assuming the main parts worked
+
+        except Exception as e:
+            logger.error(f"Error in sync_dashboard_from_snapshot for channel {channel.id}: {e}", exc_info=True)
+            return False
+
     def _create_dashboard_entity(self, data: Dict[str, Any]) -> DashboardEntity:
         """Convert dictionary data to a DashboardEntity."""
         from app.shared.infrastructure.models.dashboards.dashboard_entity import DashboardEntity

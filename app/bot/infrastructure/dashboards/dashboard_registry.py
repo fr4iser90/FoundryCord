@@ -117,6 +117,53 @@ class DashboardRegistry:
         """Get dashboard controller for a channel."""
         return self.active_dashboards.get(channel_id)
         
+    async def activate_or_update_dashboard(self, channel_id: int, config_id: str, message_id: Optional[int]) -> bool:
+        """Ensures a dashboard controller is active for the channel, updating it or creating it as needed."""
+        logger.info(f"Activating or updating dashboard for channel {channel_id} with config {config_id}")
+        
+        # Check if channel exists on Discord
+        channel = self.bot.get_channel(channel_id)
+        if not channel:
+            self.logger.warning(f"Channel {channel_id} not found for dashboard activation/update")
+            return False
+
+        # Check if controller already exists in registry
+        existing_controller = self.active_dashboards.get(channel_id)
+        
+        if existing_controller:
+            logger.debug(f"Controller already exists for channel {channel_id}. Updating...")
+            try:
+                # Update existing controller's state if needed
+                existing_controller.config_id = config_id # Assuming DynamicDashboardController uses this
+                existing_controller.message_id = message_id
+                # Potentially trigger a config reload and data refresh?
+                await existing_controller.load_config() # Reload config based on new config_id
+                await existing_controller.refresh_data() # Refresh data sources
+                await existing_controller.display_dashboard() # Update the message
+                logger.info(f"Successfully updated and redisplayed dashboard for channel {channel_id}")
+                return True
+            except Exception as e:
+                logger.error(f"Error updating existing controller for channel {channel_id}: {e}", exc_info=True)
+                return False
+        else:
+            logger.debug(f"No existing controller for channel {channel_id}. Activating new one...")
+            # If controller doesn't exist, use the standard activation logic
+            # We need to pass the necessary kwargs that activate_dashboard expects, 
+            # potentially loading the minimal required info from the config blob or entity?
+            # For now, assume config_id and message_id are sufficient, but this might need refinement.
+            # It also assumes DynamicDashboardController is always used.
+            # TODO: Refine kwargs passed here based on controller needs.
+            dashboard_kwargs = {
+                'config_id': config_id, 
+                'message_id': message_id 
+                # Fetch type, name etc from config blob? 
+                # config_data = await self.bot.service_factory.get_service('dashboard_repository').get_dashboard_config(config_id)
+                # dashboard_type = config_data.get('dashboard_type', 'dynamic') 
+                # ... add other needed kwargs
+            }
+            # Assuming 'dynamic' type for now
+            return await self.activate_dashboard(dashboard_type='dynamic', channel_id=channel_id, **dashboard_kwargs)
+
     async def get_dashboard_by_type(self, dashboard_type: str):
         """Get first dashboard controller of given type."""
         for controller in self.active_dashboards.values():

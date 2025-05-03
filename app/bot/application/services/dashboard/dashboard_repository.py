@@ -54,6 +54,61 @@ class DashboardRepository:
             result = await session.execute(stmt)
             return result.scalars().all()
             
+    async def get_by_channel_id(self, channel_id: int) -> Optional[DashboardEntity]:
+        """Get a dashboard entity by channel ID."""
+        # Assuming channel_id in the DB is stored as string
+        channel_id_str = str(channel_id) 
+        async with self.session_factory() as session:
+            try:
+                stmt = select(DashboardEntity).where(DashboardEntity.channel_id == channel_id_str)
+                result = await session.execute(stmt)
+                entity = result.scalars().first()
+                if entity:
+                    logger.debug(f"Found DashboardEntity {entity.id} for channel_id {channel_id_str}")
+                else:
+                    logger.debug(f"No DashboardEntity found for channel_id {channel_id_str}")
+                return entity
+            except Exception as e:
+                logger.error(f"Error fetching DashboardEntity for channel_id {channel_id_str}: {e}", exc_info=True)
+                return None
+
+    async def get_dashboard_by_channel_and_type(self, channel_id: int, dashboard_type: str) -> Optional[DashboardEntity]:
+        """Get a dashboard by channel ID and type."""
+        async with self.session_factory() as session:
+            stmt = select(DashboardEntity).where(
+                DashboardEntity.channel_id == channel_id,
+                DashboardEntity.dashboard_type == dashboard_type
+            )
+            result = await session.execute(stmt)
+            return result.scalars().first()
+            
+    async def create_dashboard_entity(self, **kwargs) -> Optional[DashboardEntity]:
+        """Create a new DashboardEntity record."""
+        # Ensure essential fields are present? Or rely on DB defaults/nulls?
+        # Example: Ensure channel_id, guild_id, config_id are likely needed.
+        required_fields = ['channel_id', 'guild_id', 'config_id', 'dashboard_type']
+        if not all(field in kwargs for field in required_fields):
+            logger.error(f"Missing required fields for create_dashboard_entity: Provided {list(kwargs.keys())}, Required {required_fields}")
+            return None
+            
+        async with self.session_factory() as session:
+            try:
+                # Ensure IDs are strings if the model expects strings
+                kwargs['channel_id'] = str(kwargs['channel_id'])
+                kwargs['guild_id'] = str(kwargs['guild_id'])
+                
+                new_entity = DashboardEntity(**kwargs)
+                session.add(new_entity)
+                await session.flush() # Flush to get the ID potentially
+                await session.refresh(new_entity)
+                logger.info(f"Created DashboardEntity record ID: {new_entity.id} for channel {kwargs['channel_id']}, config {kwargs['config_id']}")
+                await session.commit() # Commit the new entity
+                return new_entity
+            except Exception as e:
+                logger.error(f"Error creating DashboardEntity: {e}", exc_info=True)
+                await session.rollback()
+                return None
+
     async def update_dashboard(self, dashboard_id: str, data: Dict[str, Any]) -> bool:
         """Update a dashboard."""
         async with self.session_factory() as session:

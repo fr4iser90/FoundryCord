@@ -190,7 +190,7 @@ _(This section covers applying templates to Discord, managing channel follows, d
         *   [x] Update `structure_controller.py` to correctly handle the snapshot field in request/response.
     3.  **Frontend (Properties Panel - `properties.js`):**
         *   **Goal:** Keep existing input field (`propDashboardAddInput`) and display area (`propDashboardSelectedDisplay`). Modify functionality to find template by name, copy its config as a snapshot, and display/manage that single snapshot.
-        *   [ ] **Modify `handleDashboardAddInputKeydown`:**
+        *   [x] **Modify `handleDashboardAddInputKeydown`:**
             *   On Enter, get the template `name` entered by the user.
             *   Fetch list of all available master templates (`GET /api/v1/dashboards/configurations`). (TODO: Consider backend filtering by name later).
             *   Search the fetched list for a template matching the entered `name`.
@@ -199,19 +199,19 @@ _(This section covers applying templates to Discord, managing channel follows, d
             *   Store the **copied `config` JSON** in state using `state.addPendingPropertyChange(..., 'dashboard_config_snapshot', copiedConfig)`.
             *   Update the display area (call modified `renderDashboardBadges` or a new function) to show the assigned snapshot (e.g., the name of the template copied from).
             *   Clear the input field. Set state dirty.
-        *   [ ] **Modify Display Logic (e.g., `renderDashboardBadges`):**
+        *   [x] **Modify Display Logic (e.g., `renderDashboardBadges`):**
             *   Change the function to accept the `dashboard_config_snapshot` (object or null) from the state, instead of an array of types.
             *   If a snapshot exists, display its origin template name (passed as argument or extracted if possible) as a single badge/item with a remove ('x') button.
             *   If snapshot is null, display "None".
-        *   [ ] **Modify Remove Logic (e.g., `handleRemoveDashboardType`):**
+        *   [x] **Modify Remove Logic (e.g., `handleRemoveDashboardType`):**
             *   Rename function (e.g., `handleRemoveDashboardSnapshot`).
             *   On clicking the 'x' button for the displayed snapshot, update the state using `state.addPendingPropertyChange(..., 'dashboard_config_snapshot', null)`.
             *   Update the display area. Set state dirty.
-        *   [ ] **Update `populatePanel` / `resetPanel`:** Ensure these functions correctly read the `dashboard_config_snapshot` from the channel data and update/clear the display area accordingly.
+        *   [x] **Update `populatePanel` / `resetPanel`:** Ensure these functions correctly read the `dashboard_config_snapshot` from the channel data and update/clear the display area accordingly.
     4.  **Bot Logic (Apply Template):**
-        *   [ ] Modify the bot workflow (`guild_workflow.py` or relevant apply logic).
-        *   [ ] When applying the structure template, read the `dashboard_config_snapshot` JSON directly from the `guild_template_channels` record.
-        *   [ ] Use *this copied/stored JSON* to create the dashboard message in the live Discord channel.
+        *   [x] Modify the bot workflow (`guild_workflow.py` or relevant apply logic).
+        *   [x] When applying the structure template, read the `dashboard_config_snapshot` JSON directly from the `guild_template_channels` record.
+        *   [x] Use *this copied/stored JSON* to create the dashboard message in the live Discord channel.
 
 # --- Previous/Other Sections ---
 

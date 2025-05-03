@@ -232,21 +232,24 @@ function handleInputChange(event) {
         
         state.addPendingPropertyChange(currentNodeType, currentNodeDbId, statePropertyName, newValue);
 
-        // --- NEW: Handle dashboard config container visibility and content ---
-        if (propDashboardConfigContainer && propDashboardSelectedDisplay && propDashboardAddInput) {
-            const isEnabled = propDashboardEnabledSwitch.checked; // Check current state
-            if (isEnabled) {
-                propDashboardConfigContainer.classList.remove('d-none');
-                propDashboardAddInput.disabled = false;
-                // Populate selected dashboards display 
-                const selectedTypes = findNodeDataInState(currentNodeType, currentNodeDbId)?.dashboard_types || [];
-                renderDashboardBadges(selectedTypes); // Use helper to render badges
-            } else {
-                propDashboardConfigContainer.classList.add('d-none');
-                propDashboardAddInput.disabled = true;
+        // Handle dashboard config container visibility and content when switch is toggled
+        if (propertyName === 'prop-dashboard-enabled-switch') { // Only run this logic if the dashboard switch itself changed
+            if (propDashboardConfigContainer && propDashboardSelectedDisplay && propDashboardAddInput) {
+                const isEnabled = newValue; // Use the new value from the event
+                if (isEnabled) {
+                    propDashboardConfigContainer.classList.remove('d-none');
+                    propDashboardAddInput.disabled = false;
+                    // Check if a snapshot already exists in the state for this node
+                    const currentData = findNodeDataInState(currentNodeType, currentNodeDbId);
+                    const snapshotExists = !!currentData?.dashboard_config_snapshot;
+                    renderDashboardBadges(snapshotExists ? "Assigned Snapshot" : null);
+                } else {
+                    propDashboardConfigContainer.classList.add('d-none');
+                    propDashboardAddInput.disabled = true;
+                    renderDashboardBadges(null); // Ensure display is cleared when disabling
+                }
             }
         }
-        // ----------------------------------------------------------------
         
     } else {
         console.warn("[PropertiesPanel] Cannot store pending change: Current node type or ID is not set.");
@@ -305,107 +308,119 @@ function handleInlineSaveClick() {
 // --- NEW: Dashboard Input Handler (Placeholder) ---
 
 /**
- * Handles keydown events on the 'Add Dashboard' input field.
- * TODO: Implement Enter key press to add type, and potentially autocomplete.
- * @param {KeyboardEvent} event
+ * Handles keydown events on the dashboard type add input.
+ * Specifically looks for the Enter key to add the entered type.
  */
-function handleDashboardAddInputKeydown(event) {
+async function handleDashboardAddInputKeydown(event) { // Make the function async
     if (event.key === 'Enter') {
-        event.preventDefault(); // Prevent form submission
-        const inputElement = event.target;
-        const newDashboardType = inputElement.value.trim().toLowerCase(); // Trim and normalize
-        console.log(`[PropertiesPanel] Enter pressed in dashboard input. Value: ${newDashboardType}`);
+        event.preventDefault(); // Prevent default form submission/newline
+        const templateName = propDashboardAddInput.value.trim();
+        console.log(`[PropertiesPanel] Enter pressed in dashboard input. Name: '${templateName}'`);
 
-        if (newDashboardType && currentNodeType === 'channel' && currentNodeDbId !== null) {
-            // Get current types from state or fallback to empty array
-            const currentData = findNodeDataInState(currentNodeType, currentNodeDbId);
-            let currentTypes = currentData?.dashboard_types || [];
+        if (!templateName) {
+            showToast('warning', 'Please enter a dashboard template name.');
+            return;
+        }
 
-            // Prevent duplicates
-            if (currentTypes.includes(newDashboardType)) {
-                showToast('warning', `Dashboard type '${newDashboardType}' is already added.`);
-                return;
-            }
+        if (!currentNodeType || currentNodeDbId === null) {
+            console.error("[PropertiesPanel] Cannot add dashboard: Current node context is missing.");
+            showToast('error', 'Cannot add dashboard: No item selected.');
+            return;
+        }
 
-            // Add the new type and update state
-            const newList = [...currentTypes, newDashboardType];
-            state.addPendingPropertyChange(currentNodeType, currentNodeDbId, 'dashboard_types', newList);
-            
-            // Update UI
-            renderDashboardBadges(newList);
-            inputElement.value = ''; // Clear input
-            state.setDirty(true);
-            updateToolbarButtonStates();
-            if (propSaveInlineBtn) propSaveInlineBtn.disabled = false;
+        // Fetch all available master templates
+        const response = await fetch('/api/v1/dashboards/configurations'); // Assuming this endpoint exists and returns templates
+        if (!response.ok) {
+            console.error('[PropertiesPanel] Error fetching dashboard templates:', response.statusText);
+            showToast('error', 'Failed to fetch dashboard templates. See console for details.');
+            return;
+        }
+        const templates = await response.json();
 
-        } else if (!newDashboardType) {
-            console.log("[PropertiesPanel] Dashboard input empty on Enter press.");
+        // Search for the template by name (case-insensitive comparison)
+        const foundTemplate = templates.find(t => t.name.toLowerCase() === templateName.toLowerCase());
+
+        if (foundTemplate && foundTemplate.config) {
+            // Extract the config (snapshot)
+            const copiedConfig = JSON.parse(JSON.stringify(foundTemplate.config)); // Deep copy
+
+            // Store the snapshot in state
+            // IMPORTANT: Using 'dashboard_config_snapshot' as the key, matching the backend/plan
+            state.addPendingPropertyChange(currentNodeType, currentNodeDbId, 'dashboard_config_snapshot', copiedConfig);
+            state.setDirty(true); // Mark state as dirty
+            updateToolbarButtonStates(); // Update save button etc.
+
+            // Update the display area (Needs updated render function)
+            renderDashboardBadges(foundTemplate.name); // Pass name for display
+
+            // Clear the input field
+            propDashboardAddInput.value = '';
+
+            showToast('success', `Dashboard snapshot '${foundTemplate.name}' added.`);
+            console.log(`[PropertiesPanel] Stored snapshot for template '${foundTemplate.name}':`, copiedConfig);
+
         } else {
-             console.warn("[PropertiesPanel] Cannot add dashboard type: No channel selected.");
+            // Template not found or missing config
+            showToast('error', `Dashboard template '${templateName}' not found or has no configuration.`);
+            console.warn(`[PropertiesPanel] Template '${templateName}' not found in fetched list or missing config:`, templates);
         }
     }
-    // No autocomplete for now
 }
 
-// --- NEW: Helper to render dashboard badges ---
+
 /**
- * Clears and renders the dashboard type badges in the display area.
- * @param {string[]} types - Array of dashboard type strings.
+ * Clears and renders the dashboard snapshot display area.
+ * Now handles a single snapshot (represented by its template name) instead of multiple types.
+ * @param {string|null} snapshotTemplateName - The name of the template whose config was snapshotted, or null if none.
  */
-function renderDashboardBadges(types) {
+function renderDashboardBadges(snapshotTemplateName) {
     if (!propDashboardSelectedDisplay) return;
 
     propDashboardSelectedDisplay.innerHTML = ''; // Clear existing badges
     propDashboardSelectedDisplay.classList.remove('text-muted', 'fst-italic'); // Remove default style
 
-    if (!types || types.length === 0) {
+    // Check if a snapshot is assigned (name is provided)
+    if (!snapshotTemplateName) {
         propDashboardSelectedDisplay.textContent = 'None';
         propDashboardSelectedDisplay.classList.add('text-muted', 'fst-italic');
         return;
     }
 
-    types.forEach(type => {
-        const badge = document.createElement('span');
-        badge.className = 'badge bg-secondary me-1 mb-1'; // Style as a badge
-        badge.textContent = type;
+    // Render a single badge for the assigned snapshot
+    const badge = document.createElement('span');
+    badge.className = 'badge bg-primary me-1 mb-1'; // Use primary color for the single active snapshot
+    badge.textContent = snapshotTemplateName; // Display the template name
 
-        const removeBtn = document.createElement('span');
-        removeBtn.className = 'badge-remove-btn ms-1'; // Style for the remove button
-        removeBtn.innerHTML = '&times;'; // Simple 'x' character
-        removeBtn.style.cursor = 'pointer';
-        removeBtn.style.fontWeight = 'bold';
-        removeBtn.title = `Remove ${type}`;
-        removeBtn.addEventListener('click', () => handleRemoveDashboardType(type));
+    const removeBtn = document.createElement('span');
+    removeBtn.className = 'badge-remove-btn ms-1'; // Style for the remove button
+    removeBtn.innerHTML = '&times;'; // Simple 'x' character
+    removeBtn.style.cursor = 'pointer';
+    removeBtn.style.fontWeight = 'bold';
+    removeBtn.title = `Remove Snapshot (from ${snapshotTemplateName})`;
+    removeBtn.addEventListener('click', handleRemoveDashboardSnapshot);
 
-        badge.appendChild(removeBtn);
-        propDashboardSelectedDisplay.appendChild(badge);
-    });
+    badge.appendChild(removeBtn);
+    propDashboardSelectedDisplay.appendChild(badge);
 }
 
-// --- NEW: Handler to remove a dashboard type ---
+// --- MODIFIED: Handler to remove the dashboard snapshot ---
 /**
- * Handles the click on a remove button of a dashboard badge.
- * @param {string} typeToRemove - The dashboard type string to remove.
+ * Handles the click on the remove button of the displayed dashboard snapshot badge.
+ * Sets the snapshot to null in the state.
  */
-function handleRemoveDashboardType(typeToRemove) {
-    console.log(`[PropertiesPanel] Requesting removal of dashboard type: ${typeToRemove}`);
-    if (currentNodeType === 'channel' && currentNodeDbId !== null) {
-        const currentData = findNodeDataInState(currentNodeType, currentNodeDbId);
-        let currentTypes = currentData?.dashboard_types || [];
-
-        const newList = currentTypes.filter(t => t !== typeToRemove);
-
-        // Update state
-        state.addPendingPropertyChange(currentNodeType, currentNodeDbId, 'dashboard_types', newList);
+function handleRemoveDashboardSnapshot() {
+    console.log(`[PropertiesPanel] Requesting removal of dashboard snapshot.`);
+    if (currentNodeType && currentNodeDbId !== null) {
+        state.addPendingPropertyChange(currentNodeType, currentNodeDbId, 'dashboard_config_snapshot', null);
         
-        // Update UI
-        renderDashboardBadges(newList);
+        renderDashboardBadges(null); 
         state.setDirty(true);
         updateToolbarButtonStates();
         if (propSaveInlineBtn) propSaveInlineBtn.disabled = false;
-
+ 
     } else {
-        console.warn("[PropertiesPanel] Cannot remove dashboard type: No channel selected.");
+        console.warn("[PropertiesPanel] Cannot remove dashboard snapshot: Current node context is missing.");
+        showToast('error', 'Cannot remove snapshot: No item selected.');
     }
 }
 
@@ -490,11 +505,25 @@ function populatePanel(data, nodeType) {
              formContainer.querySelectorAll('.forum-channel-property').forEach(el => el.classList.remove('d-none'));
         } // Add more types (stage?) if needed
         
-        // --- NEW: Set dashboard enabled switch state ---
+        // Set dashboard enabled switch state
         propDashboardEnabledSwitch.checked = data.is_dashboard_enabled || false; 
-        // Ensure the activation group itself is visible (it has channel-property class, so should be covered)
-        // document.getElementById('properties-dashboard-activation')?.classList.remove('d-none'); 
-        // -----------------------------------------------
+        
+        // Handle dashboard config section visibility and initial population
+        if (propDashboardConfigContainer && propDashboardSelectedDisplay && propDashboardAddInput) {
+            const isEnabled = propDashboardEnabledSwitch.checked;
+            if (isEnabled) {
+                propDashboardConfigContainer.classList.remove('d-none');
+                propDashboardAddInput.disabled = false; // Enable input field
+                // Render the snapshot display based on the loaded data
+                // For now, display a generic name if a snapshot exists, as the name isn't stored with the snapshot itself.
+                const snapshotExists = !!data.dashboard_config_snapshot;
+                renderDashboardBadges(snapshotExists ? "Assigned Snapshot" : null);
+            } else {
+                propDashboardConfigContainer.classList.add('d-none');
+                propDashboardAddInput.disabled = true; // Ensure input is disabled
+                renderDashboardBadges(null); // Ensure display is cleared
+            }
+        }
         
     } else {
         // Unknown type, reset the panel
@@ -563,15 +592,15 @@ function resetPanel() {
     currentNodeDbId = null;
     currentNodeName = null;
 
-    // --- NEW: Reset dashboard enabled switch ---
+    // Reset dashboard enabled switch
     if (propDashboardEnabledSwitch) {
         propDashboardEnabledSwitch.checked = false;
         propDashboardEnabledSwitch.disabled = true;
     }
-    // --- NEW: Reset dashboard config section ---
+    // Reset dashboard config section
     if (propDashboardConfigContainer && propDashboardSelectedDisplay && propDashboardAddInput) {
         propDashboardConfigContainer.classList.add('d-none');
-        renderDashboardBadges([]); // Clear display by rendering empty list
+        renderDashboardBadges(null); // Clear display by rendering empty list
         propDashboardAddInput.value = ''; // Clear input
         propDashboardAddInput.disabled = true; // Disable input
     }

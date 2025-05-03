@@ -21,6 +21,8 @@ from app.shared.infrastructure.repositories.guild_templates.guild_template_categ
 from app.shared.infrastructure.repositories.guild_templates.guild_template_channel_permission_repository_impl import GuildTemplateChannelPermissionRepositoryImpl
 # --- NEW: Import DiscordQueryService ---
 from app.bot.application.services.discord.discord_query_service import DiscordQueryService
+# --- ADDED: Import DashboardService ---
+from app.bot.application.services.dashboard.dashboard_service import DashboardService
 
 logger = get_bot_logger()
 
@@ -41,6 +43,15 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
         cat_perm_repo = GuildTemplateCategoryPermissionRepositoryImpl(session)
         chan_perm_repo = GuildTemplateChannelPermissionRepositoryImpl(session)
         discord_query_service = DiscordQueryService(self.bot)
+        # --- ADDED: Instantiate DashboardService (assuming service factory exists on self.bot) ---
+        dashboard_service: Optional[DashboardService] = None
+        if hasattr(self.bot, 'service_factory'):
+            dashboard_service = self.bot.service_factory.get_service('dashboard_service') # Use service name
+        if not dashboard_service:
+             logger.error("[apply_template] CRITICAL: DashboardService is not available via service factory.")
+             # Decide if this should halt the entire process or just skip dashboards
+             # return False 
+        # -------------------------------------------------------------------------------------
 
         # 1. Load Template Data (using active_template_id from passed config)
         logger.debug(f"[apply_template] Using active_template_id from passed GuildConfig.")
@@ -223,6 +234,8 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
                                 if template_chan.discord_channel_id != str(existing_discord_chan_object.id):
                                     logger.info(f"      Updating DB discord_id for template channel {template_chan.id} from {template_chan.discord_channel_id} to {existing_discord_chan_object.id}")
                                     template_chan.discord_channel_id = str(existing_discord_chan_object.id)
+                                    # Mark session dirty? Changes to template_chan might need commit?
+                                    # Or rely on the main session commit at the end?
                                     # Session commit will handle saving this change later
                                 # -------------------------------------
                             else:
@@ -236,6 +249,10 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
             if existing_discord_chan_object:
                 processed_live_channel_ids.add(existing_discord_chan_object.id)
                 logger.info(f"    Channel '{template_chan.channel_name}' already exists (ID: {existing_discord_chan_object.id}). Checking for updates...")
+                
+                # --- Store the channel object for dashboard logic ---
+                discord_channel_object_to_use = existing_discord_chan_object
+                # -------------------------------------------------
                 
                 # --- Check for updates ---
                 updates_needed = {}
@@ -272,7 +289,7 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
                         logger.debug("      No attribute updates needed.")
 
                 # Always apply permissions (overwrite mode)
-                await self._apply_channel_permissions(existing_discord_chan_object, template_chan.id, chan_perm_repo)
+                await self._apply_channel_permissions(discord_channel_object_to_use, template_chan.id, chan_perm_repo)
 
             else:
                 # --- Create Channel using Helper ---
@@ -298,15 +315,36 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
 
                 # If helper returned a new channel, update DB and track ID
                 if new_discord_chan:
-                    # --- Update DB discord_channel_id --- 
-                    logger.info(f"      Updating DB discord_id for template channel {template_chan.id} to {new_discord_chan.id}")
-                    template_chan.discord_channel_id = str(new_discord_chan.id)
-                    # Session commit will handle saving this change later if session is managed outside
-                    # If session is passed and used inside helper, commit might happen there or be handled by context manager
-                    # -------------------------------------
+                    # --- Store the channel object for dashboard logic ---
+                    discord_channel_object_to_use = new_discord_chan
+                    # -------------------------------------------------
+                    logger.info(f"      Successfully created channel '{new_discord_chan.name}' (ID: {new_discord_chan.id})")
                     processed_live_channel_ids.add(new_discord_chan.id) # Track newly created channel ID
-                # else: # Helper function already logged the reason for not creating (duplicate or error)
-                #    pass 
+                else:
+                    logger.warning(f"      Failed to create channel '{template_chan.channel_name}'")
+                    discord_channel_object_to_use = None # Ensure it's None if creation failed
+
+                # --- >> ADDED: Dashboard Snapshot Logic << ---
+                if discord_channel_object_to_use and isinstance(discord_channel_object_to_use, nextcord.TextChannel): # Only text channels can have dashboards?
+                    if template_chan.is_dashboard_enabled and template_chan.dashboard_config_snapshot:
+                        if dashboard_service:
+                            logger.info(f"    Dashboard enabled for '{discord_channel_object_to_use.name}'. Syncing from snapshot...")
+                            await dashboard_service.sync_dashboard_from_snapshot(
+                                channel=discord_channel_object_to_use, 
+                                config_json=template_chan.dashboard_config_snapshot
+                            )
+                        else:
+                             logger.warning(f"    Dashboard enabled for '{discord_channel_object_to_use.name}' but DashboardService is unavailable. Skipping snapshot sync.")
+                    elif template_chan.is_dashboard_enabled:
+                         logger.warning(f"    Dashboard is enabled for '{discord_channel_object_to_use.name}' but dashboard_config_snapshot is NULL in the template. Skipping.")
+                    else:
+                        logger.debug(f"    Dashboard is not enabled for '{discord_channel_object_to_use.name}' in template.")
+                        # Optional TODO: Add logic here to deactivate/delete dashboard if needed
+                        # if dashboard_service:
+                        #    await dashboard_service.deactivate_channel_dashboard(discord_channel_object_to_use.id)
+                elif discord_channel_object_to_use:
+                     logger.debug(f"    Skipping dashboard sync for non-text channel '{discord_channel_object_to_use.name}' (Type: {discord_channel_object_to_use.type})")
+                # --- >> END Dashboard Snapshot Logic << ---
 
         # ----------------------------------------------------------
         # 6. Process Channels (Delete from Discord if not in Template - Optional)
