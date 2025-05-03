@@ -46,6 +46,7 @@ class DiscordQueryService:
                 continue # Skip categories themselves
             
             channel_data = {
+                'id': channel.id,
                 'name': channel.name,
                 'type': str(channel.type), # Store type as string
                 'position': channel.position,
