@@ -9,6 +9,12 @@ from app.shared.infrastructure.database.session.context import session_context
 # Use the correct, new repository and entity
 from app.shared.infrastructure.repositories.dashboards.active_dashboard_repository_impl import ActiveDashboardRepositoryImpl
 from app.shared.infrastructure.models.dashboards import ActiveDashboardEntity # Import the correct entity
+# Add import for the configuration repository
+from app.shared.infrastructure.repositories.dashboards.dashboard_configuration_repository_impl import DashboardConfigurationRepositoryImpl
+# Add import for the configuration entity
+from app.shared.infrastructure.models.dashboards import ActiveDashboardEntity, DashboardConfigurationEntity
+# Add json import for parsing
+import json
 
 class DashboardLifecycleService:
     """Manages the lifecycle of all dashboards"""
@@ -101,26 +107,168 @@ class DashboardLifecycleService:
             
         logger.info(f"Finished DB dashboard activation. Activated/Updated: {count}, Failed: {failed_count}")
 
-    async def sync_dashboard_from_snapshot(self, channel: nextcord.TextChannel, config_json: Dict[str, Any]) -> bool:
+    async def sync_dashboard_from_snapshot(self, channel: nextcord.TextChannel, config_json_str: str) -> bool:
         """
         Processes a dashboard configuration snapshot from a guild template
         and ensures the corresponding dashboard is active and up-to-date.
-
-        TODO: [IMPLEMENTATION] Implement the logic:
-        1. Parse config_json to get dashboard_type and configuration details.
-        2. Find the corresponding DashboardConfigurationEntity (by type/name?).
-        3. Find or Create ActiveDashboardEntity for the channel_id.
-           - Use ActiveDashboardRepositoryImpl.
-           - Link to the DashboardConfigurationEntity ID.
-           - Store guild_id, channel_id.
-        4. Call self.registry.activate_or_update_dashboard(...) with the necessary info.
-        5. Get the message_id from the registry/controller after activation.
-        6. Update the ActiveDashboardEntity with the message_id using the repository.
         """
-        logger.info(f"LifecycleService: Received sync_dashboard_from_snapshot for channel {channel.id}. Config: {config_json}")
-        logger.warning("sync_dashboard_from_snapshot logic is not yet implemented. Returning False.")
-        # Placeholder - needs full implementation
-        return False
+        logger.info(f"LifecycleService: Received sync_dashboard_from_snapshot for channel {channel.id}.")
+        
+        if not config_json_str:
+            logger.error(f"LifecycleService: Received empty config_json_str for channel {channel.id}. Cannot sync.")
+            return False
+            
+        try:
+            # 1. Parse the JSON string snapshot
+            config_snapshot = json.loads(config_json_str)
+            # --- Extract key information ---
+            # IMPORTANT ASSUMPTION: Snapshot contains 'name' matching a DashboardConfigurationEntity.name
+            #                     and 'dashboard_type' and the actual 'config' blob.
+            config_name = config_snapshot.get('name')
+            dashboard_type = config_snapshot.get('dashboard_type')
+            # The actual config blob needed by the registry/controller
+            config_data = config_snapshot.get('config', {}) 
+            
+            if not config_name or not dashboard_type:
+                logger.error(f"LifecycleService: Snapshot for channel {channel.id} is missing 'name' or 'dashboard_type'. Snapshot: {config_snapshot}")
+                return False
+                
+            logger.debug(f"LifecycleService: Parsed snapshot for channel {channel.id}. Config Name: '{config_name}', Type: '{dashboard_type}'")
+
+        except json.JSONDecodeError as e:
+            logger.error(f"LifecycleService: Failed to parse config_json_str for channel {channel.id}: {e}. JSON String: '{config_json_str}'")
+            return False
+        except Exception as e:
+            logger.error(f"LifecycleService: Unexpected error parsing snapshot for channel {channel.id}: {e}", exc_info=True)
+            return False
+
+        active_dashboard_entity = None
+        active_dashboard_id = None
+        current_message_id = None
+        configuration_entity = None
+
+        try:
+            async with session_context() as session:
+                # Instantiate repositories within the session
+                config_repo = DashboardConfigurationRepositoryImpl(session)
+                active_repo = ActiveDashboardRepositoryImpl(session)
+
+                # 2. Find the corresponding DashboardConfigurationEntity by name
+                configuration_entity = await config_repo.find_by_name(config_name)
+                if not configuration_entity:
+                    logger.error(f"LifecycleService: Could not find DashboardConfiguration named '{config_name}' referenced by snapshot for channel {channel.id}.")
+                    # Decide: Should we fail here? Or try to create one? For now, fail.
+                    return False
+                
+                logger.debug(f"LifecycleService: Found DashboardConfiguration ID: {configuration_entity.id} for name '{config_name}'.")
+                
+                # 3. Find or Create ActiveDashboardEntity for the channel_id
+                active_dashboard_entity = await active_repo.get_by_channel_id(str(channel.id))
+                
+                if active_dashboard_entity:
+                    # --- Instance Exists: Check for updates ---
+                    logger.debug(f"LifecycleService: Found existing ActiveDashboard ID: {active_dashboard_entity.id} for channel {channel.id}.")
+                    active_dashboard_id = active_dashboard_entity.id
+                    current_message_id = active_dashboard_entity.message_id # Store current message ID
+
+                    update_data = {}
+                    # Check if linked configuration changed
+                    if active_dashboard_entity.dashboard_configuration_id != configuration_entity.id:
+                        update_data['dashboard_configuration_id'] = configuration_entity.id
+                        logger.info(f"LifecycleService: ActiveDashboard {active_dashboard_id} needs config ID update ({active_dashboard_entity.dashboard_configuration_id} -> {configuration_entity.id})")
+                    
+                    # Check if it needs to be reactivated (if somehow deactivated)
+                    if not active_dashboard_entity.is_active:
+                         update_data['is_active'] = True
+                         logger.info(f"LifecycleService: ActiveDashboard {active_dashboard_id} needs reactivation.")
+                         
+                    # TODO: Add check for config_override changes if implemented
+
+                    if update_data:
+                        logger.info(f"LifecycleService: Updating ActiveDashboard {active_dashboard_id}...")
+                        updated_entity = await active_repo.update(active_dashboard_id, update_data)
+                        if not updated_entity:
+                             logger.error(f"LifecycleService: Failed to update ActiveDashboard {active_dashboard_id}.")
+                             # Continue? Or fail? Continue for now, registry might fix it.
+                        else:
+                             logger.debug(f"LifecycleService: Successfully updated ActiveDashboard {active_dashboard_id}.")
+                             active_dashboard_entity = updated_entity # Use updated entity going forward
+                    else:
+                        logger.debug(f"LifecycleService: No DB updates needed for ActiveDashboard {active_dashboard_id}.")
+
+                else:
+                    # --- Instance Does Not Exist: Create ---
+                    logger.info(f"LifecycleService: No existing ActiveDashboard found for channel {channel.id}. Creating...")
+                    new_entity = await active_repo.create(
+                        config_id=configuration_entity.id,
+                        guild_id=str(channel.guild.id),
+                        channel_id=str(channel.id),
+                        is_active=True # Activate by default when syncing from template
+                        # message_id starts as None
+                        # config_override starts as None
+                    )
+                    if not new_entity:
+                        logger.error(f"LifecycleService: Failed to create ActiveDashboard for channel {channel.id}.")
+                        return False
+                    
+                    active_dashboard_entity = new_entity
+                    active_dashboard_id = new_entity.id
+                    current_message_id = None # It's new, no message ID yet
+                    logger.info(f"LifecycleService: Created new ActiveDashboard ID: {active_dashboard_id} for channel {channel.id}.")
+
+            # --- Outside the session block ---
+            # Ensure we have the necessary IDs
+            if not active_dashboard_id or not configuration_entity:
+                 logger.error(f"LifecycleService: Missing active_dashboard_id or configuration_entity after DB operations for channel {channel.id}. Aborting.")
+                 return False
+                 
+            # 4. Call the registry to activate/update the controller and display
+            logger.debug(f"LifecycleService: Calling registry.activate_or_update_dashboard for channel {channel.id} (ActiveDashboard ID: {active_dashboard_id})")
+            if not self.registry:
+                 logger.error("LifecycleService: DashboardRegistry not initialized!")
+                 return False
+                 
+            registry_success = await self.registry.activate_or_update_dashboard(
+                channel_id=channel.id,
+                dashboard_type=configuration_entity.dashboard_type, # Get type from the found config entity
+                config_data=configuration_entity.config or {}, # Get config JSON from the found config entity
+                active_dashboard_id=active_dashboard_id,
+                message_id=current_message_id # Pass the message_id we found/know
+            )
+
+            if not registry_success:
+                logger.error(f"LifecycleService: Registry failed to activate/update dashboard for channel {channel.id}.")
+                # Should we return False here? If activation fails, we can't get message_id.
+                return False
+            else:
+                logger.info(f"LifecycleService: Registry successfully activated/updated dashboard controller for channel {channel.id}.")
+
+            # 5. Get the updated message_id from the controller (if it was created/updated)
+            controller = self.registry.get_dashboard(channel.id)
+            updated_message_id = None
+            if controller and controller.message_id:
+                updated_message_id = str(controller.message_id)
+
+            # 6. Persist the updated message_id back to the DB if it changed
+            if updated_message_id and updated_message_id != current_message_id:
+                logger.info(f"LifecycleService: Persisting new/updated message_id '{updated_message_id}' for ActiveDashboard {active_dashboard_id}.")
+                async with session_context() as session: # Need a new session for this update
+                    active_repo = ActiveDashboardRepositoryImpl(session)
+                    persist_success = await active_repo.set_message_id(active_dashboard_id, updated_message_id)
+                    if not persist_success:
+                        logger.warning(f"LifecycleService: Failed to persist updated message_id for ActiveDashboard {active_dashboard_id}.")
+                    else:
+                         logger.debug(f"LifecycleService: Successfully persisted message_id for ActiveDashboard {active_dashboard_id}.")
+            elif not updated_message_id:
+                 logger.warning(f"LifecycleService: Controller for channel {channel.id} has no message_id after activation. Cannot persist.")
+            else: # updated_message_id == current_message_id
+                 logger.debug(f"LifecycleService: Message ID '{current_message_id}' is already correct for ActiveDashboard {active_dashboard_id}.")
+
+            return True # If we got this far, consider it successful
+
+        except Exception as e:
+            logger.error(f"LifecycleService: Unexpected error during sync_dashboard_from_snapshot for channel {channel.id}: {e}", exc_info=True)
+            return False
 
     async def deactivate_dashboard(self, dashboard_type=None, channel_id=None):
         """

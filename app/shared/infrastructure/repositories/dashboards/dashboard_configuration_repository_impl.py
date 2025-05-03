@@ -42,6 +42,18 @@ class DashboardConfigurationRepositoryImpl(BaseRepositoryImpl[DashboardConfigura
         logger.debug(f"Repository: Found {len(configs)} dashboard configurations.")
         return configs
 
+    async def find_by_name(self, name: str) -> Optional[DashboardConfigurationEntity]:
+        """Retrieves a dashboard configuration by its unique name."""
+        logger.debug(f"Repository: Getting dashboard configuration by name: '{name}'")
+        stmt = select(self.model).where(self.model.name == name)
+        result = await self.session.execute(stmt)
+        config = result.scalar_one_or_none()
+        if config:
+            logger.debug(f"Repository: Found configuration ID: {config.id} for name '{name}'")
+        else:
+            logger.warning(f"Repository: Could not find configuration with name '{name}'")
+        return config
+
     async def create(
         self,
         name: str,

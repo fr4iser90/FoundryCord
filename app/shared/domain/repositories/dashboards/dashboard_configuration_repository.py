@@ -19,6 +19,11 @@ class DashboardConfigurationRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def find_by_name(self, name: str) -> Optional['DashboardConfigurationEntity']:
+        """Retrieves a dashboard configuration by its unique name."""
+        raise NotImplementedError
+
+    @abstractmethod
     async def create(
         self,
         name: str,
