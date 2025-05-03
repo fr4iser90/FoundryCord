@@ -5,7 +5,7 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from app.shared.infrastructure.models import Base # Assuming Base is defined here
+from app.shared.infrastructure.models.base import Base
 
 
 class DashboardConfigurationEntity(Base):
@@ -20,6 +20,13 @@ class DashboardConfigurationEntity(Base):
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
+    # Add relationship to ActiveDashboardEntity
+    # One configuration can have many active instances
+    active_instances = relationship(
+        "ActiveDashboardEntity", 
+        back_populates="configuration", 
+        cascade="all, delete-orphan" # If a config is deleted, delete its active instances too
+    )
 
     def __repr__(self):
         return f"<DashboardConfigurationEntity(id={self.id}, name='{self.name}', type='{self.dashboard_type}')>" 

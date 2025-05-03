@@ -17,7 +17,6 @@ from .discord import (
     ChannelRepository,
     CategoryRepository,
     GuildConfigRepository,
-    DashboardRepository,
     GuildRepository
 )
 
@@ -36,6 +35,13 @@ from .utils import RateLimitRepository
 # Audit repositories
 from .audit import AuditLogRepository
 
+# Import the new dashboard repository interfaces
+from .dashboards import (
+    ActiveDashboardRepository,
+    DashboardConfigurationRepository,
+    DashboardComponentDefinitionRepository,
+)
+
 __all__ = [
     # Base
     'BaseRepository',
@@ -49,7 +55,6 @@ __all__ = [
     'ChannelRepository',
     'CategoryRepository',
     'GuildConfigRepository',
-    'DashboardRepository',
     'GuildRepository',
     
     # Monitoring
@@ -63,5 +68,10 @@ __all__ = [
     'RateLimitRepository',
     
     # Audit
-    'AuditLogRepository'
+    'AuditLogRepository',
+
+    # Dashboards (New)
+    'ActiveDashboardRepository',
+    'DashboardConfigurationRepository',
+    'DashboardComponentDefinitionRepository',
 ]

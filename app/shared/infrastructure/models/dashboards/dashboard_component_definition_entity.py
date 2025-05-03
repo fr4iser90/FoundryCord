@@ -3,7 +3,7 @@ Model for storing definitions of reusable dashboard components.
 """
 from sqlalchemy import Column, Integer, String, DateTime, JSON, UniqueConstraint
 from sqlalchemy.sql import func
-from app.shared.infrastructure.models import Base
+from app.shared.infrastructure.models.base import Base
 
 class DashboardComponentDefinitionEntity(Base):
     """Dashboard Component Definition model"""

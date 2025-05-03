@@ -1,32 +1,30 @@
 # app/bot/application/services/dashboard/dashboard_lifecycle_service.py
-from typing import Dict, Any, Optional # Added Optional
+from typing import Dict, Any, Optional, List # Added Optional, List
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
 # Imports needed for activation logic
 from app.shared.infrastructure.database.session.context import session_context
-from app.shared.infrastructure.repositories.discord.dashboard_repository_impl import DashboardRepositoryImpl
-from app.shared.infrastructure.models.dashboards.dashboard_entity import DashboardEntity # Import the entity
+# Use the correct, new repository and entity
+from app.shared.infrastructure.repositories.dashboards.active_dashboard_repository_impl import ActiveDashboardRepositoryImpl
+from app.shared.infrastructure.models.dashboards import ActiveDashboardEntity # Import the correct entity
 
 class DashboardLifecycleService:
     """Manages the lifecycle of all dashboards"""
     
     def __init__(self, bot):
         self.bot = bot
-        self.registry = None
+        self.registry = None # Registry will handle the actual controllers/views
     
     async def initialize(self):
-        """Initialize all dashboards"""
+        """Initialize the lifecycle service and activate DB-configured dashboards."""
+        # Import registry here to avoid circular dependencies if registry uses this service
         from app.bot.infrastructure.dashboards.dashboard_registry import DashboardRegistry
         self.registry = DashboardRegistry(self.bot)
+        # Registry initialization might load component definitions, etc.
         await self.registry.initialize()
         
         # Activate dashboards based on database configuration
-        # TODO: [REFACTORING] Implement dashboard activation based on loading active 
-        #       DashboardEntity records from the database for relevant guilds/channels.
-        #       This replaces the old logic based on static constants.
-        # logger.warning("Dashboard activation logic needs rework based on DB entities.")
-        # Example call (implementation TBD):
         await self.activate_db_configured_dashboards()
         
         return True
@@ -38,40 +36,67 @@ class DashboardLifecycleService:
         failed_count = 0
         try:
             async with session_context() as session:
-                repo = DashboardRepositoryImpl(session)
-                active_dashboards: List[DashboardEntity] = await repo.get_active_dashboards()
-                logger.info(f"Found {len(active_dashboards)} active dashboard configurations in the database.")
+                # Use the new repository
+                repo = ActiveDashboardRepositoryImpl(session)
+                # Call the method that loads active dashboards with their configurations
+                active_dashboards: List[ActiveDashboardEntity] = await repo.list_all_active()
+                logger.info(f"Found {len(active_dashboards)} active dashboard instances in the database.")
                 
-                for dashboard_entity in active_dashboards:
+                # Iterate through the correct entities
+                for active_dashboard in active_dashboards:
                     try:
-                        logger.debug(f"Processing activation for Dashboard DB ID: {dashboard_entity.id}, Channel: {dashboard_entity.channel_id}")
-                        # Ensure required fields are present
-                        if not all([dashboard_entity.id, dashboard_entity.channel_id, dashboard_entity.dashboard_type]):
-                             logger.warning(f"Skipping activation for dashboard entity {dashboard_entity.id} due to missing required fields (channel_id, dashboard_type).")
+                        logger.debug(f"Processing activation for ActiveDashboard ID: {active_dashboard.id}, Channel: {active_dashboard.channel_id}")
+                        
+                        # Check if configuration was loaded correctly
+                        if not active_dashboard.configuration:
+                            logger.warning(f"Skipping activation for ActiveDashboard {active_dashboard.id}: Configuration relationship not loaded.")
+                            failed_count += 1
+                            continue
+                            
+                        # --- Get required data from entities --- 
+                        channel_id_str = active_dashboard.channel_id
+                        dashboard_config = active_dashboard.configuration # The related DashboardConfigurationEntity
+                        config_data = dashboard_config.config or {} # The JSON config from the configuration
+                        dashboard_type = dashboard_config.dashboard_type # Type from configuration
+                        # TODO: Implement logic for config_override from active_dashboard if needed
+                        # if active_dashboard.config_override:
+                        #     config_data = merge_configs(config_data, active_dashboard.config_override)
+
+                        # Ensure channel_id is valid
+                        if not channel_id_str:
+                             logger.warning(f"Skipping activation for ActiveDashboard {active_dashboard.id}: Missing channel_id.")
                              failed_count += 1
                              continue
                              
-                        # Config data is stored directly on the entity
-                        config_data = dashboard_entity.config or {}
-                             
-                        # Call the registry to handle activation/update
+                        # --- Call the registry to handle activation/update --- 
+                        # The registry needs channel_id and the config JSON (from the configuration entity)
+                        # It might also need the active_dashboard.id or message_id later.
+                        # Adapt the signature of activate_or_update_dashboard if necessary.
                         success = await self.registry.activate_or_update_dashboard(
-                            channel_id=int(dashboard_entity.channel_id), # Ensure channel_id is int
-                            dashboard_entity=dashboard_entity, # Pass the whole entity
-                            config_data=config_data # Pass the config dict
+                            channel_id=int(channel_id_str), # Pass channel ID
+                            dashboard_type=dashboard_type, # Pass the type from config
+                            config_data=config_data, # Pass the config JSON from config
+                            active_dashboard_id=active_dashboard.id, # Pass the ID of the active instance
+                            message_id=active_dashboard.message_id # Pass the current message ID
                         )
                         if success:
                              count += 1
                         else:
                              failed_count += 1
-                             logger.warning(f"Activation/update failed for dashboard {dashboard_entity.id} in channel {dashboard_entity.channel_id}.")
+                             logger.warning(f"Activation/update failed for ActiveDashboard {active_dashboard.id} in channel {channel_id_str}.")
                              
                     except Exception as activation_err:
                          failed_count += 1
-                         logger.error(f"Error during activation loop for dashboard {dashboard_entity.id}: {activation_err}", exc_info=True)
+                         logger.error(f"Error during activation loop for ActiveDashboard {active_dashboard.id}: {activation_err}", exc_info=True)
 
         except Exception as e:
-            logger.error(f"Failed to activate DB configured dashboards: {e}", exc_info=True)
+            # Check for the specific UndefinedTableError vs other errors
+            if isinstance(e, (ImportError, AttributeError)):
+                 logger.error(f"Failed to activate DB dashboards due to code error (likely missing import/method): {e}", exc_info=True)
+            elif "does not exist" in str(e).lower(): # Catch DB errors more specifically
+                 logger.error(f"Failed to activate DB dashboards due to DATABASE TABLE error: {e}. Ensure migrations are run.", exc_info=False) # Don't need full trace for known DB issue
+            else:
+                logger.error(f"Failed to activate DB configured dashboards: {e}", exc_info=True)
             
         logger.info(f"Finished DB dashboard activation. Activated/Updated: {count}, Failed: {failed_count}")
 

@@ -20,6 +20,7 @@ from app.shared.infrastructure.repositories.guild_templates.guild_template_chann
 from app.shared.infrastructure.repositories.guild_templates.guild_template_category_permission_repository_impl import GuildTemplateCategoryPermissionRepositoryImpl
 from app.shared.infrastructure.repositories.guild_templates.guild_template_channel_permission_repository_impl import GuildTemplateChannelPermissionRepositoryImpl
 from app.bot.application.services.discord.discord_query_service import DiscordQueryService
+from app.bot.application.services.dashboard.dashboard_lifecycle_service import DashboardLifecycleService # Import Lifecycle Service
 
 logger = get_bot_logger()
 
@@ -41,14 +42,20 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
         chan_perm_repo = GuildTemplateChannelPermissionRepositoryImpl(session)
         discord_query_service = DiscordQueryService(self.bot)
 
-        # --- Removed attempt to get DashboardService via DashboardWorkflow --- 
-        # dashboard_service: Optional[DashboardService] = None
-        # if hasattr(self.bot, 'dashboard_workflow') and self.bot.dashboard_workflow:
-        #     dashboard_service = await self.bot.dashboard_workflow.get_dashboard_service()
-        # 
-        # if not dashboard_service:
-        #      logger.error("[apply_template] CRITICAL: DashboardService could not be retrieved from DashboardWorkflow.")
-        # ---------------------------------------------------------------------
+        # --- Retrieve DashboardLifecycleService via DashboardWorkflow attribute ---
+        lifecycle_service: Optional[DashboardLifecycleService] = None
+        if hasattr(self.bot, 'dashboard_workflow') and self.bot.dashboard_workflow:
+            if hasattr(self.bot.dashboard_workflow, 'lifecycle_service'):
+                lifecycle_service = self.bot.dashboard_workflow.lifecycle_service
+                if lifecycle_service:
+                    logger.info("[apply_template] Successfully retrieved DashboardLifecycleService.")
+                else:
+                    logger.warning("[apply_template] DashboardWorkflow has lifecycle_service attribute, but it's None.")
+            else:
+                logger.error("[apply_template] DashboardWorkflow exists, but does not have a 'lifecycle_service' attribute.")
+        else:
+            logger.warning("[apply_template] DashboardWorkflow not found on bot instance. Cannot process dashboards.")
+        # -------------------------------------------------------------------------
 
         # 1. Load Template Data (using active_template_id from passed config)
         logger.debug(f"[apply_template] Using active_template_id from passed GuildConfig.")
@@ -324,21 +331,28 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
                 # --- >> ADDED: Dashboard Snapshot Logic << ---
                 if discord_channel_object_to_use and isinstance(discord_channel_object_to_use, nextcord.TextChannel): # Only text channels can have dashboards?
                     if template_chan.is_dashboard_enabled and template_chan.dashboard_config_snapshot:
-                        if dashboard_service:
+                        if lifecycle_service: # Check for lifecycle_service now
                             logger.info(f"    Dashboard enabled for '{discord_channel_object_to_use.name}'. Syncing from snapshot...")
-                            await dashboard_service.sync_dashboard_from_snapshot(
-                                channel=discord_channel_object_to_use, 
-                                config_json=template_chan.dashboard_config_snapshot
-                            )
+                            try:
+                                # Assuming sync_dashboard_from_snapshot exists on lifecycle_service
+                                await lifecycle_service.sync_dashboard_from_snapshot(
+                                    channel=discord_channel_object_to_use, 
+                                    config_json=template_chan.dashboard_config_snapshot
+                                )
+                                logger.info(f"      Successfully synced dashboard for '{discord_channel_object_to_use.name}' using snapshot.")
+                            except AttributeError:
+                                 logger.error(f"    LifecycleService does not have method 'sync_dashboard_from_snapshot'. Cannot sync dashboard for '{discord_channel_object_to_use.name}'.")
+                            except Exception as sync_err:
+                                 logger.error(f"    Error syncing dashboard from snapshot for '{discord_channel_object_to_use.name}': {sync_err}", exc_info=True)
                         else:
-                             logger.warning(f"    Dashboard enabled for '{discord_channel_object_to_use.name}' but DashboardService is unavailable. Skipping snapshot sync.")
+                             logger.warning(f"    Dashboard enabled for '{discord_channel_object_to_use.name}' but DashboardLifecycleService is unavailable. Skipping snapshot sync.")
                     elif template_chan.is_dashboard_enabled:
                          logger.warning(f"    Dashboard is enabled for '{discord_channel_object_to_use.name}' but dashboard_config_snapshot is NULL in the template. Skipping.")
                     else:
                         logger.debug(f"    Dashboard is not enabled for '{discord_channel_object_to_use.name}' in template.")
                         # Optional TODO: Add logic here to deactivate/delete dashboard if needed
-                        # if dashboard_service:
-                        #    await dashboard_service.deactivate_channel_dashboard(discord_channel_object_to_use.id)
+                        # if lifecycle_service:
+                        #    await lifecycle_service.deactivate_channel_dashboard(discord_channel_object_to_use.id)
                 elif discord_channel_object_to_use:
                      logger.debug(f"    Skipping dashboard sync for non-text channel '{discord_channel_object_to_use.name}' (Type: {discord_channel_object_to_use.type})")
                 # --- >> END Dashboard Snapshot Logic << ---

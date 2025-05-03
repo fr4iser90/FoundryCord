@@ -32,12 +32,9 @@ from app.shared.infrastructure.models import (
     Base,
     AppUserEntity, SessionEntity, RateLimitEntity, AuditLogEntity,
     ChannelMapping, CategoryMapping,
-    DashboardMessageEntity,
     Project, Task,
     MetricModel, AlertModel,
     ConfigEntity,
-    DashboardEntity,
-    DashboardComponentEntity
 )
 
 # Import API functions
@@ -60,12 +57,9 @@ __all__ = [
     'Base',
     'AppUserEntity', 'SessionEntity', 'RateLimitEntity', 'AuditLogEntity',
     'ChannelMapping', 'CategoryMapping',
-    'DashboardMessageEntity',
     'Project', 'Task',
     'MetricModel', 'AlertModel',
     'ConfigEntity',
-    'DashboardEntity',
-    'DashboardComponentEntity',
 
     # Database management
     'DatabaseConnection',

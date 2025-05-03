@@ -16,7 +16,6 @@ from .discord import (
     ChannelRepositoryImpl,
     CategoryRepositoryImpl,
     GuildConfigRepositoryImpl,
-    DashboardRepositoryImpl,
     GuildRepositoryImpl
 )
 
@@ -47,8 +46,9 @@ from .guild_templates import (
     GuildTemplateChannelPermissionRepositoryImpl,
 )
 
-# Dashboard Component Definitions
+# Dashboard Implementations (Corrected)
 from .dashboards import (
+    ActiveDashboardRepositoryImpl,
     DashboardComponentDefinitionRepositoryImpl,
     DashboardConfigurationRepositoryImpl
 )
@@ -69,7 +69,6 @@ __all__ = [
     'ChannelRepositoryImpl',
     'CategoryRepositoryImpl',
     'GuildConfigRepositoryImpl',
-    'DashboardRepositoryImpl',
     'GuildRepositoryImpl',
 
     # Guild Templates
@@ -96,7 +95,8 @@ __all__ = [
     # Audit
     'AuditLogRepositoryImpl',
 
-    # Dashboard Component Definitions
+    # Dashboard Implementations (Corrected)
+    'ActiveDashboardRepositoryImpl',
     'DashboardComponentDefinitionRepositoryImpl',
     'DashboardConfigurationRepositoryImpl',
 ]

@@ -7,10 +7,10 @@ import nextcord
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 from .base_workflow import BaseWorkflow, WorkflowStatus
-from app.shared.domain.repositories import DashboardRepository
+from app.shared.domain.repositories import ActiveDashboardRepository
 from app.shared.infrastructure.database.session.context import session_context
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
-from app.shared.infrastructure.repositories.discord.dashboard_repository_impl import DashboardRepositoryImpl
+from app.shared.infrastructure.repositories import ActiveDashboardRepositoryImpl
 from app.bot.application.services.dashboard.dashboard_lifecycle_service import DashboardLifecycleService
 
 class DashboardWorkflow(BaseWorkflow):
@@ -100,7 +100,7 @@ class DashboardWorkflow(BaseWorkflow):
         await super().cleanup()
         logger.info("Dashboard workflow cleanup complete.")
     
-    async def load_dashboards(self, repo: Optional[DashboardRepositoryImpl] = None) -> List: # Accept optional repo
+    async def load_dashboards(self, repo: Optional[ActiveDashboardRepositoryImpl] = None) -> List: # Accept optional repo
         """Load all dashboards from the repository."""
         dashboards = []
         try:
@@ -108,7 +108,7 @@ class DashboardWorkflow(BaseWorkflow):
                  dashboards = await repo.get_all_dashboards()
             else: # Otherwise, create a new session and repo
                 async with session_context() as session:
-                    repo_instance = DashboardRepositoryImpl(session)
+                    repo_instance = ActiveDashboardRepositoryImpl(session)
                     dashboards = await repo_instance.get_all_dashboards()
                     
             logger.info(f"Loaded {len(dashboards)} dashboards from repository")
@@ -134,7 +134,7 @@ class DashboardWorkflow(BaseWorkflow):
         # Remove any dashboards for this guild using session context
         try:
             async with session_context() as session:
-                repo = DashboardRepositoryImpl(session)
+                repo = ActiveDashboardRepositoryImpl(session)
                 dashboards = await repo.get_dashboards_by_guild(guild_id)
                 if dashboards:
                      logger.info(f"Deleting {len(dashboards)} dashboards for guild {guild_id}")

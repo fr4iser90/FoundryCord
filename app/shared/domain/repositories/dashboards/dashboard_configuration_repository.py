@@ -1,40 +1,40 @@
+"""Domain Interface for accessing Dashboard Configurations."""
 from abc import ABC, abstractmethod
-from typing import Optional, List, Dict, Any
+from typing import List, Optional, Dict, Any
 
-# Assuming the entity model is correctly placed and importable
-# TODO: Rename Entity import?
-from app.shared.infrastructure.models.dashboards import DashboardConfigurationEntity
+# Use forward reference for the entity type
+# from app.shared.infrastructure.models.dashboards import DashboardConfigurationEntity
 
-# TODO: Rename Interface
 class DashboardConfigurationRepository(ABC):
-    """Interface for accessing and managing dashboard configurations."""
+    """Interface for repository handling dashboard configurations/templates."""
 
     @abstractmethod
-    async def get_by_id(self, config_id: int) -> Optional[DashboardConfigurationEntity]:
+    async def get_by_id(self, config_id: int) -> Optional['DashboardConfigurationEntity']:
         """Retrieves a dashboard configuration by its unique ID."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
-    async def list_all(self) -> List[DashboardConfigurationEntity]:
+    async def list_all(self) -> List['DashboardConfigurationEntity']:
         """Retrieves all dashboard configurations."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
-    async def create(self, 
-                     name: str,
-                     dashboard_type: str,
-                     description: Optional[str] = None,
-                     config: Optional[Dict[str, Any]] = None
-                    ) -> DashboardConfigurationEntity:
+    async def create(
+        self,
+        name: str,
+        dashboard_type: str,
+        description: Optional[str] = None,
+        config: Optional[Dict[str, Any]] = None
+    ) -> 'DashboardConfigurationEntity':
         """Creates a new dashboard configuration."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
-    async def update(self, config_id: int, update_data: Dict[str, Any]) -> Optional[DashboardConfigurationEntity]:
+    async def update(self, config_id: int, update_data: Dict[str, Any]) -> Optional['DashboardConfigurationEntity']:
         """Updates an existing dashboard configuration."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     async def delete(self, config_id: int) -> bool:
-        """Deletes a dashboard configuration by ID. Returns True if successful."""
-        pass 
+        """Deletes a dashboard configuration by its ID."""
+        raise NotImplementedError 

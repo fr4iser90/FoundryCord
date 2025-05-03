@@ -6,7 +6,7 @@ logger = get_bot_logger()
 
 # Import domain models
 from app.shared.infrastructure.models.dashboards.dashboard_entity import DashboardEntity
-from app.shared.domain.repositories import DashboardRepository
+from app.shared.domain.repositories import ActiveDashboardRepository
 
 # Import debug components
 from app.bot import debug_component_registry, debug_component_factory
