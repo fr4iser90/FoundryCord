@@ -1,5 +1,6 @@
 # app/bot/application/services/dashboard/dashboard_lifecycle_service.py
 from typing import Dict, Any, Optional, List # Added Optional, List
+import nextcord # Add import for nextcord types
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
@@ -99,6 +100,27 @@ class DashboardLifecycleService:
                 logger.error(f"Failed to activate DB configured dashboards: {e}", exc_info=True)
             
         logger.info(f"Finished DB dashboard activation. Activated/Updated: {count}, Failed: {failed_count}")
+
+    async def sync_dashboard_from_snapshot(self, channel: nextcord.TextChannel, config_json: Dict[str, Any]) -> bool:
+        """
+        Processes a dashboard configuration snapshot from a guild template
+        and ensures the corresponding dashboard is active and up-to-date.
+
+        TODO: [IMPLEMENTATION] Implement the logic:
+        1. Parse config_json to get dashboard_type and configuration details.
+        2. Find the corresponding DashboardConfigurationEntity (by type/name?).
+        3. Find or Create ActiveDashboardEntity for the channel_id.
+           - Use ActiveDashboardRepositoryImpl.
+           - Link to the DashboardConfigurationEntity ID.
+           - Store guild_id, channel_id.
+        4. Call self.registry.activate_or_update_dashboard(...) with the necessary info.
+        5. Get the message_id from the registry/controller after activation.
+        6. Update the ActiveDashboardEntity with the message_id using the repository.
+        """
+        logger.info(f"LifecycleService: Received sync_dashboard_from_snapshot for channel {channel.id}. Config: {config_json}")
+        logger.warning("sync_dashboard_from_snapshot logic is not yet implemented. Returning False.")
+        # Placeholder - needs full implementation
+        return False
 
     async def deactivate_dashboard(self, dashboard_type=None, channel_id=None):
         """
