@@ -3,7 +3,6 @@ import nextcord
 from datetime import datetime
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
-from app.bot.infrastructure.config.channel_config import ChannelConfig
 from app.bot.interfaces.dashboards.components.common.buttons.refresh_button import RefreshButton
 from app.bot.interfaces.dashboards.components.common.embeds import ErrorEmbed, DashboardEmbed  # Add this import
 import asyncio

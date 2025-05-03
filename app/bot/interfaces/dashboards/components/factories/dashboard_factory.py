@@ -119,29 +119,10 @@ class DashboardFactory:
             
             # Lazy import the dashboard service
             try:
-                # Import DASHBOARD_SERVICES constant at runtime
-                from app.bot.infrastructure.config.constants.dashboard_constants import DASHBOARD_SERVICES
-                
-                service_name = DASHBOARD_SERVICES.get(dashboard_type)
-                if not service_name:
-                    logger.warning(f"Unknown dashboard type: {dashboard_type}")
-                    return None
-                
-                # Dynamically import the service class
-                module_name = f"app.bot.application.services.dashboard.{dashboard_type}_dashboard_service"
-                service_module = __import__(module_name, fromlist=[service_name])
-                service_class = getattr(service_module, service_name)
-                
-                # Create and register new dashboard
-                dashboard = service_class(self.bot)
-                await dashboard.initialize()
-                self.bot.dashboard_manager.register_dashboard(dashboard_type, dashboard)
-                
-                return {
-                    'name': dashboard_type,
-                    'dashboard': dashboard,
-                    'type': 'dashboard'
-                }
+                logger.error("DashboardFactory.create is broken - Static constants removed.")
+                # TODO: Rework service loading logic. Need a dynamic way to map dashboard_type to service class.
+                return None # Return None as logic is broken
+
             except ImportError as e:
                 logger.error(f"Failed to import dashboard service: {e}")
                 return None

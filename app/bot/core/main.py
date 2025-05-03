@@ -35,7 +35,7 @@ logging.getLogger("nextcord.gateway").setLevel(logging.WARNING)
 logging.getLogger("nextcord.client").setLevel(logging.WARNING)
 logging.getLogger("nextcord.http").setLevel(logging.WARNING)
 
-class HomelabBot(commands.Bot):
+class FoundryCord(commands.Bot):
     """Main bot class for the Homelab Discord Bot"""
     
     def __init__(self, command_prefix="!", intents=None):
@@ -142,12 +142,6 @@ class HomelabBot(commands.Bot):
         """Setup hook that runs before the bot starts"""
         # Now initialize BotControlService properly here or in __init__
         # self.control_service = BotControlService(self) # Already done in __init__
-        
-        # REMOVED: BotConnector registration is no longer needed here
-        # from app.shared.infrastructure.integration.OLD import BotConnector
-        # bot_connector = BotConnector()
-        # bot_connector.register_bot(self)
-        # logger.info("Bot instance registered with BotConnector in setup_hook.")
 
 async def main():
     """Main entry point for the bot"""
@@ -158,7 +152,7 @@ async def main():
         intents.message_content = True
         
         # Create the bot
-        bot = HomelabBot(command_prefix="!", intents=intents)
+        bot = FoundryCord(command_prefix="!", intents=intents)
         
         # Run the bot
         logger.info("Starting the bot...")

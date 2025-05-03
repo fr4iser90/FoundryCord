@@ -33,7 +33,7 @@ class ComponentFactory:
         """Create a dashboard controller using the universal controller"""
         try:
             # Import the universal dashboard controller
-            from app.bot.interfaces.dashboards.controller.universal_dashboard import UniversalDashboardController
+            from app.bot.interfaces.dashboards.controller.dashboard_controller import UniversalDashboardController
             
             # Create the controller with the appropriate type
             logger.info(f"Creating {dashboard_type} dashboard controller for dashboard {dashboard_id}")

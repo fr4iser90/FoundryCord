@@ -12,17 +12,7 @@ from .user_constants import (
     GUESTS
 )
 
-from .category_constants import (
-    CATEGORIES,
-    CATEGORY_CHANNEL_MAPPINGS
-)
 
-from .channel_constants import CHANNELS
-
-from .dashboard_constants import (
-    DASHBOARD_MAPPINGS,
-    DASHBOARD_SERVICES
-)
 
 from .role_constants import (
     SERVER_ROLES,
@@ -39,16 +29,6 @@ __all__ = [
     'USERS',
     'GUESTS',
     
-    # Category constants
-    'CATEGORIES',
-    'CATEGORY_CHANNEL_MAPPINGS',
-    
-    # Channel constants
-    'CHANNELS',
-    
-    # Dashboard constants
-    'DASHBOARD_MAPPINGS',
-    'DASHBOARD_SERVICES',
     
     # Role constants
     'SERVER_ROLES',

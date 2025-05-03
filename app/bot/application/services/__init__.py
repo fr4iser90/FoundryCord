@@ -15,7 +15,7 @@ from .config.config_service import ConfigService
 
 # Dashboard services
 from .dashboard.dashboard_builder import DashboardBuilder
-from .dashboard.dashboard_builder_service import DashboardBuilderService
+from .dashboard.dashboard_data_service import DashboardDataService
 from .dashboard.dashboard_lifecycle_service import DashboardLifecycleService
 from .dashboard.dashboard_repository import DashboardRepository
 from .dashboard.dashboard_service import DashboardService
@@ -53,7 +53,7 @@ __all__ = [
     
     # Dashboard services
     'DashboardBuilder',
-    'DashboardBuilderService',
+    'DashboardDataService',
     'DashboardLifecycleService', 
     'DashboardRepository',
     'DashboardService',

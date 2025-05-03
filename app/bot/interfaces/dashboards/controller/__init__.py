@@ -1,8 +1,8 @@
-from .universal_dashboard import UniversalDashboardController
+from .dashboard_controller import DashboardController
 from .base_dashboard import BaseDashboardController
 
 
 __all__ = [
-    'UniversalDashboardController',
+    'DashboardController',
     'BaseDashboardController',
 ]

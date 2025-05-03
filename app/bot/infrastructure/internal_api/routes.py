@@ -6,7 +6,7 @@ from aiohttp import web
 from app.shared.interface.logging.api import get_bot_logger
 from typing import Optional, List # Added
 # Assuming the main bot class is accessible or passed in
-# from app.bot.core.main import HomelabBot 
+# from app.bot.core.main import FoundryCord 
 
 logger = get_bot_logger()
 

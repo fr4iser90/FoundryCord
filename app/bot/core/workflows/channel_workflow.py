@@ -14,7 +14,6 @@ from app.shared.infrastructure.database.session.context import session_context
 from app.shared.domain.repositories.discord import ChannelRepository
 from app.shared.domain.repositories.discord import GuildConfigRepository
 from app.shared.infrastructure.repositories.discord import ChannelRepositoryImpl
-from app.bot.application.services.channel.channel_setup_service import ChannelSetupService
 from app.shared.infrastructure.repositories.discord.guild_config_repository_impl import GuildConfigRepositoryImpl
 from app.shared.infrastructure.repositories.discord.category_repository_impl import CategoryRepositoryImpl
 from app.bot.application.services.channel.channel_builder import ChannelBuilder
@@ -22,7 +21,12 @@ from app.bot.application.services.channel.channel_builder import ChannelBuilder
 logger = get_bot_logger()
 
 class ChannelWorkflow(BaseWorkflow):
-    """Workflow for channel setup and management"""
+    """Workflow for channel setup and management
+    
+    Manages the *state* of channel operations for a guild, but the actual 
+    creation/sync logic based on Guild Templates is handled elsewhere 
+    (e.g., during template application or a dedicated GuildSyncWorkflow).
+    """
     
     def __init__(self, database_workflow: DatabaseWorkflow, category_workflow: CategoryWorkflow, bot):
         super().__init__("channel")
@@ -82,14 +86,12 @@ class ChannelWorkflow(BaseWorkflow):
                  self.guild_status[guild_id] = WorkflowStatus.FAILED
                  return False
             
-            # --- Temporarily Disable Old Logic (Already disabled) ---
-            logger.warning(f"ChannelWorkflow.initialize_for_guild: Old setup/sync logic for guild {guild_id} is disabled. Structure now comes from templates.")
-            # # Set up channels (OLD LOGIC - accesses discord_channels)
-            # channels = await self.setup_channels(guild)
-            # ...
-            # # Sync with Discord (OLD LOGIC)
-            # await self.sync_with_discord(guild)
-            # --- End Disable ---
+            # --- Guild Template Application is Handled Elsewhere ---
+            # The old logic for setup_channels and sync_with_discord within this workflow 
+            # has been removed as it's obsolete. The source of truth is now the Guild Template,
+            # applied via a different process (e.g., GuildSyncWorkflow or template application command).
+            logger.warning(f"ChannelWorkflow.initialize_for_guild: Guild {guild_id} channel structure comes from applied template. Workflow only manages state.")
+            # --- End --- 
             
             # Mark as active (conceptually, it's ready if guild is approved)
             self.guild_status[guild_id] = WorkflowStatus.ACTIVE
@@ -104,33 +106,6 @@ class ChannelWorkflow(BaseWorkflow):
         """Cleanup all resources"""
         logger.info("Cleaning up channel workflow")
         await super().cleanup()
-        
-    async def setup_channels(self, guild: nextcord.Guild) -> Dict[str, nextcord.TextChannel]:
-        """Set up all channels for the guild (Now likely obsolete - Template handles this)"""
-        logger.warning("ChannelWorkflow.setup_channels called, but this logic is likely obsolete due to template application.")
-        try:
-             async with session_context() as session:
-                  channel_repo = ChannelRepositoryImpl(session)
-                  category_repo = CategoryRepositoryImpl(session)
-                  builder = ChannelBuilder(channel_repo, category_repo)
-                  setup_service = ChannelSetupService(builder)
-                  return await setup_service.setup_channels(guild, session)
-        except Exception as e:
-            logger.error(f"Error in setup_channels: {e}", exc_info=True)
-            return {}
-    
-    async def sync_with_discord(self, guild: nextcord.Guild) -> None:
-        """Sync channels with existing Discord channels (Now likely obsolete)"""
-        logger.warning("ChannelWorkflow.sync_with_discord called, but this logic is likely obsolete due to template application.")
-        try:
-             async with session_context() as session:
-                  channel_repo = ChannelRepositoryImpl(session)
-                  category_repo = CategoryRepositoryImpl(session)
-                  builder = ChannelBuilder(channel_repo, category_repo)
-                  setup_service = ChannelSetupService(builder)
-                  await setup_service.sync_with_discord(guild, session)
-        except Exception as e:
-            logger.error(f"Error in sync_with_discord: {e}", exc_info=True)
         
     async def cleanup_guild(self, guild_id: str) -> None:
         """Cleanup resources for a specific guild"""

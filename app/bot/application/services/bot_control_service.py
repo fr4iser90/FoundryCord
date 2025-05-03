@@ -14,7 +14,7 @@ class BotControlService:
         """Initialize the BotControlService.
         
         Args:
-            bot: The instance of the main bot application (e.g., HomelabBot).
+            bot: The instance of the main bot application (e.g., FoundryCord).
         """
         self.bot = bot
         logger.info("BotControlService initialized.")
@@ -22,7 +22,7 @@ class BotControlService:
     async def trigger_approve_guild(self, guild_id: str) -> bool:
         """
         Triggers the GuildWorkflow's approve_guild method for the specified guild.
-        This acts as a bridge between external requests (like from the web UI via BotConnector)
+        This acts as a bridge between external requests (like from the web UI)
         and the bot's internal workflow logic.
 
         Args:

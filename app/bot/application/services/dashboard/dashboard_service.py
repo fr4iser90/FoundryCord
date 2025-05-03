@@ -81,28 +81,8 @@ class DashboardService:
             logger.error(f"Error getting all dashboards: {e}")
             return []
     
-    async def refresh_dashboard_data(self, dashboard_id: str) -> Dict[str, Any]:
-        """Refresh data for a dashboard."""
-        dashboard = await self.repository.get_by_id(dashboard_id)
-        if not dashboard:
-            logger.warning(f"Attempted to refresh non-existent dashboard: {dashboard_id}")
-            return {}
-            
-        # Collect data from all data sources
-        data = {}
-        for component in dashboard.components:
-            if component.config and 'data_source_id' in component.config:
-                try:
-                    data_source = self.data_source_registry.get_data_source(component.config['data_source_id'])
-                    if data_source:
-                        result = await data_source.fetch_data(component.config.get('params', {}))
-                        data[component.config['data_source_id']] = result
-                    else:
-                        logger.warning(f"Data source not found: {component.config['data_source_id']}")
-                except Exception as e:
-                    logger.error(f"Error fetching data from source {component.config['data_source_id']}: {e}")
-                
-        return data
+    # Removed redundant refresh_dashboard_data method
+    # Data fetching is handled by DashboardDataService triggered by DashboardController
     
     async def sync_dashboard_from_snapshot(self, channel: nextcord.TextChannel, config_json: Dict[str, Any]) -> bool:
         """Creates or updates a dashboard entity and its config from a snapshot, then activates/updates the controller."""

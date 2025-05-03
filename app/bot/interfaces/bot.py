@@ -11,7 +11,7 @@ from app.bot.interfaces.dashboards.components.common.embeds.dashboard_embed impo
 from app.bot.interfaces.dashboards.components.common.embeds.error_embed import ErrorEmbed
 from app.bot.application.services.dashboard.component_loader_service import ComponentLoaderService
 
-class HomelabBot(commands.Bot):
+class FoundryCord(commands.Bot):
     """Main HomeLab Discord Bot class"""
     
     def __init__(self, *args, **kwargs):

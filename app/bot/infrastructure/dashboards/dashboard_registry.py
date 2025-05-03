@@ -5,8 +5,11 @@ import nextcord
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
+# Import the correct, unified controller
+from app.bot.interfaces.dashboards.controller.dashboard_controller import DashboardController
+
 class DashboardRegistry:
-    """Registry for managing active dashboard instances."""
+    """Registry for managing active dashboard controller instances."""
     
     def __init__(self, bot):
         self.bot = bot
@@ -14,68 +17,16 @@ class DashboardRegistry:
         self.logger = logger
         
     async def initialize(self):
-        """Initialize the dashboard registry."""
+        """Initialize the dashboard registry (simple initialization)."""
         try:
-            # Load dashboards from database
-            if hasattr(self.bot, 'service_factory'):
-                dashboard_repo = self.bot.service_factory.get_service('dashboard_repository')
-                if dashboard_repo:
-                    dashboards = await dashboard_repo.get_all_dashboards()
-                    for dashboard in dashboards:
-                        if dashboard.get('auto_activate', False):
-                            await self.activate_dashboard(
-                                dashboard_type=dashboard.get('dashboard_type'),
-                                channel_id=dashboard.get('channel_id'),
-                                **dashboard
-                            )
-                            
-            self.logger.info(f"Dashboard registry initialized with {len(self.active_dashboards)} active dashboards")
+            # Activation logic moved to DashboardLifecycleService
+            self.active_dashboards = {}
+            self.logger.info(f"Dashboard registry initialized (Activation handled externally). ")
             return True
         except Exception as e:
             self.logger.error(f"Error initializing dashboard registry: {e}")
             return False
         
-    async def activate_dashboard(self, dashboard_type: str, channel_id: int, **kwargs) -> bool:
-        """Activate a dashboard in a channel."""
-        try:
-            # Check if channel exists
-            channel = self.bot.get_channel(channel_id)
-            if not channel:
-                self.logger.warning(f"Channel {channel_id} not found for dashboard activation")
-                return False
-                
-            # Check if dashboard already exists for this channel
-            if channel_id in self.active_dashboards:
-                self.logger.info(f"Dashboard already active in channel {channel_id}")
-                return True
-                
-            # Create dashboard controller
-            from app.bot.interfaces.dashboards.controller import UniversalDashboardController
-            
-            dashboard_id = f"{dashboard_type}_{channel_id}"
-            controller = UniversalDashboardController(
-                dashboard_id=dashboard_id,
-                channel_id=channel_id,
-                dashboard_type=dashboard_type,
-                **kwargs
-            )
-            
-            # Initialize controller
-            await controller.initialize(self.bot)
-            
-            # Display dashboard
-            await controller.display_dashboard()
-            
-            # Register in active dashboards
-            self.active_dashboards[channel_id] = controller
-            self.logger.info(f"Activated {dashboard_type} dashboard in channel {channel_id}")
-            
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Error activating dashboard: {e}")
-            return False
-            
     async def deactivate_dashboard(self, dashboard_type=None, channel_id=None) -> bool:
         """Deactivate a dashboard."""
         try:
@@ -113,58 +64,92 @@ class DashboardRegistry:
             self.logger.error(f"Error deactivating dashboard: {e}")
             return False
             
-    async def get_dashboard(self, channel_id: int):
+    async def get_dashboard(self, channel_id: int) -> Optional[DashboardController]:
         """Get dashboard controller for a channel."""
         return self.active_dashboards.get(channel_id)
         
-    async def activate_or_update_dashboard(self, channel_id: int, config_id: str, message_id: Optional[int]) -> bool:
-        """Ensures a dashboard controller is active for the channel, updating it or creating it as needed."""
-        logger.info(f"Activating or updating dashboard for channel {channel_id} with config {config_id}")
+    async def activate_or_update_dashboard(self, 
+                                           channel_id: int, 
+                                           dashboard_entity: Any, # Use Any temporarily, should be DashboardEntity 
+                                           config_data: Dict[str, Any] # Pass parsed config data
+                                           ) -> bool:
+        """Ensures a dashboard controller is active for the channel, using data from DashboardEntity."""
+        # TODO: Replace Any with proper DashboardEntity type hint after checking import/availability
+        
+        dashboard_id = dashboard_entity.id
+        dashboard_type = dashboard_entity.dashboard_type
+        guild_id = dashboard_entity.guild_id
+        message_id = dashboard_entity.message_id
+        
+        log_prefix = f"[Activate/Update DB:{dashboard_id} Ch:{channel_id}]"
+        logger.info(f"{log_prefix} Ensuring controller is active.")
         
         # Check if channel exists on Discord
         channel = self.bot.get_channel(channel_id)
         if not channel:
-            self.logger.warning(f"Channel {channel_id} not found for dashboard activation/update")
+            self.logger.warning(f"{log_prefix} Channel {channel_id} not found.")
             return False
 
         # Check if controller already exists in registry
-        existing_controller = self.active_dashboards.get(channel_id)
+        existing_controller: Optional[DashboardController] = self.active_dashboards.get(channel_id)
         
         if existing_controller:
-            logger.debug(f"Controller already exists for channel {channel_id}. Updating...")
+            logger.debug(f"{log_prefix} Controller already exists. Updating...")
             try:
-                # Update existing controller's state if needed
-                existing_controller.config_id = config_id # Assuming DynamicDashboardController uses this
-                existing_controller.message_id = message_id
-                # Potentially trigger a config reload and data refresh?
-                await existing_controller.load_config() # Reload config based on new config_id
-                await existing_controller.refresh_data() # Refresh data sources
-                await existing_controller.display_dashboard() # Update the message
-                logger.info(f"Successfully updated and redisplayed dashboard for channel {channel_id}")
+                # Update existing controller's state
+                # Minimal update: ensure message_id is current
+                existing_controller.message_id = message_id 
+                existing_controller.config = config_data # Update config
+                # Potentially update other entity fields if needed
+                existing_controller.title = dashboard_entity.title or existing_controller.title
+                existing_controller.description = dashboard_entity.description or existing_controller.description
+                
+                # Trigger a redisplay which should use the latest config/data
+                await existing_controller.display_dashboard()
+                logger.info(f"{log_prefix} Successfully updated and redisplayed dashboard.")
                 return True
             except Exception as e:
-                logger.error(f"Error updating existing controller for channel {channel_id}: {e}", exc_info=True)
+                logger.error(f"{log_prefix} Error updating existing controller: {e}", exc_info=True)
                 return False
         else:
-            logger.debug(f"No existing controller for channel {channel_id}. Activating new one...")
-            # If controller doesn't exist, use the standard activation logic
-            # We need to pass the necessary kwargs that activate_dashboard expects, 
-            # potentially loading the minimal required info from the config blob or entity?
-            # For now, assume config_id and message_id are sufficient, but this might need refinement.
-            # It also assumes DynamicDashboardController is always used.
-            # TODO: Refine kwargs passed here based on controller needs.
-            dashboard_kwargs = {
-                'config_id': config_id, 
-                'message_id': message_id 
-                # Fetch type, name etc from config blob? 
-                # config_data = await self.bot.service_factory.get_service('dashboard_repository').get_dashboard_config(config_id)
-                # dashboard_type = config_data.get('dashboard_type', 'dynamic') 
-                # ... add other needed kwargs
-            }
-            # Assuming 'dynamic' type for now
-            return await self.activate_dashboard(dashboard_type='dynamic', channel_id=channel_id, **dashboard_kwargs)
+            logger.debug(f"{log_prefix} No existing controller. Activating new one...")
+            try:
+                # Create dashboard controller using data from entity
+                controller = DashboardController(
+                    dashboard_id=dashboard_id,
+                    channel_id=channel_id,
+                    dashboard_type=dashboard_type,
+                    guild_id=guild_id,
+                    message_id=message_id,
+                    config=config_data, # Pass loaded config
+                    title=dashboard_entity.title, # Pass title from entity
+                    description=dashboard_entity.description # Pass description from entity
+                    # Add other kwargs from entity if needed by controller __init__
+                )
+                
+                # Initialize controller
+                init_success = await controller.initialize(self.bot)
+                if not init_success:
+                     logger.error(f"{log_prefix} Failed to initialize new controller.")
+                     return False
+                
+                # Display dashboard (initial display)
+                msg = await controller.display_dashboard()
+                if not msg:
+                    logger.error(f"{log_prefix} Failed to display new dashboard.")
+                    # Decide if we should still register it? Probably not.
+                    return False
+                    
+                # Register in active dashboards
+                self.active_dashboards[channel_id] = controller
+                logger.info(f"{log_prefix} Activated {dashboard_type} dashboard.")
+                return True
+                
+            except Exception as e:
+                 logger.error(f"{log_prefix} Error activating new dashboard controller: {e}", exc_info=True)
+                 return False
 
-    async def get_dashboard_by_type(self, dashboard_type: str):
+    async def get_dashboard_by_type(self, dashboard_type: str) -> Optional[DashboardController]:
         """Get first dashboard controller of given type."""
         for controller in self.active_dashboards.values():
             if controller.dashboard_type == dashboard_type:

@@ -29,10 +29,6 @@ class OwnerControlView(BaseView):
             #       instead of using the old BotConnector here. 
             #       The template will need JavaScript to fetch this data dynamically.
 
-            # REMOVED: Old BotConnector usage
-            # bot_connector = await get_bot_connector()
-            # bot = await bot_connector.get_bot()
-            
             # Default/Placeholder values - these should be fetched via API
             bot_status = "unknown" # Placeholder
             bot_stats = None       # Placeholder
@@ -83,13 +79,10 @@ class OwnerControlView(BaseView):
     async def get_config(self, request: Request):
         """Get bot configuration - TODO: This endpoint might be redundant if page fetches from controller API"""
         try:
-            # TODO: This should likely call the BotControlController API endpoint instead of using BotConnector.
+            # TODO: This should likely call the BotControlController API endpoint.
             #       Or, this endpoint might be removed if the main page fetches data dynamically.
             # current_user = await self.get_current_user(request)
             # await self.require_permission(current_user, "MANAGE_BOT")
-            # bot_connector = await get_bot_connector()
-            # config = await bot_connector.get_bot_config(current_user)
-            # return JSONResponse({"status": "success", "config": config})
             self.logger.warning("get_config view endpoint is currently disabled.")
             return JSONResponse(
                 {"status": "error", "detail": "Not Implemented Yet"},
