@@ -1,5 +1,6 @@
 """SQLAlchemy model for active dashboard instances."""
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, JSON
+from sqlalchemy.dialects.postgresql import BIGINT, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.shared.infrastructure.models.base import Base
@@ -9,13 +10,16 @@ class ActiveDashboardEntity(Base):
     __tablename__ = 'active_dashboards'
 
     id = Column(Integer, primary_key=True)
-    dashboard_configuration_id = Column(Integer, ForeignKey('dashboard_configurations.id'), nullable=False, index=True) # Foreign key to the config/template
-    guild_id = Column(String, nullable=False, index=True)
-    channel_id = Column(String, nullable=False, unique=True, index=True) # Assuming one active dashboard per channel
-    message_id = Column(String, nullable=True) # The ID of the Discord message displaying the dashboard
+    dashboard_configuration_id = Column(Integer, ForeignKey('dashboard_configurations.id', ondelete='CASCADE'), nullable=False, index=True) # Foreign key to the config/template
+    guild_id = Column(String(length=30), nullable=False, index=True) # Match migration length
+    channel_id = Column(String(length=30), nullable=False, unique=True, index=True) # Match migration length, assuming one active dashboard per channel
+    message_id = Column(BIGINT, nullable=True, index=True) # The ID of the Discord message displaying the dashboard
     is_active = Column(Boolean, default=True, nullable=False, index=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    error_state = Column(Boolean, default=False, nullable=False, index=True)
+    error_message = Column(String, nullable=True) # Use String or Text based on expected length
+    config_override = Column(JSONB, nullable=True) # Added to match migration
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relationship to the configuration it's based on
     configuration = relationship("DashboardConfigurationEntity", back_populates="active_instances")

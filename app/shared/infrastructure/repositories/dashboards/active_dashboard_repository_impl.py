@@ -5,6 +5,7 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.sql import null
 
 # Assuming domain repository interface exists (adapt if needed)
 # from app.shared.domain.repositories.dashboards.active_dashboard_repository import ActiveDashboardRepository
@@ -23,7 +24,7 @@ class ActiveDashboardRepository:
     async def create(self, **kwargs) -> ActiveDashboardEntity: raise NotImplementedError
     async def update(self, instance_id: int, update_data: Dict[str, Any]) -> Optional[ActiveDashboardEntity]: raise NotImplementedError
     async def delete(self, instance_id: int) -> bool: raise NotImplementedError
-    async def set_message_id(self, instance_id: int, message_id: str) -> bool: raise NotImplementedError
+    async def set_message_id(self, instance_id: int, message_id: Optional[str]) -> bool: raise NotImplementedError
     async def set_active_status(self, instance_id: int, is_active: bool) -> bool: raise NotImplementedError
 
 class ActiveDashboardRepositoryImpl(BaseRepositoryImpl[ActiveDashboardEntity], ActiveDashboardRepository):
@@ -67,17 +68,34 @@ class ActiveDashboardRepositoryImpl(BaseRepositoryImpl[ActiveDashboardEntity], A
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def create(self, config_id: int, guild_id: str, channel_id: str, message_id: Optional[str] = None, is_active: bool = True, config_override: Optional[Dict[str, Any]] = None) -> ActiveDashboardEntity:
+    async def create(self, dashboard_configuration_id: int, guild_id: str, channel_id: str, message_id: Optional[str] = None, is_active: bool = True) -> ActiveDashboardEntity:
         """Creates a new active dashboard instance."""
         logger.debug(f"Repository: Creating ActiveDashboardEntity for channel_id: {channel_id}")
-        new_instance = ActiveDashboardEntity(
-            dashboard_configuration_id=config_id,
-            guild_id=guild_id,
-            channel_id=channel_id,
-            message_id=message_id,
-            is_active=is_active,
-            config_override=config_override
-        )
+
+        # Prepare data dictionary for the entity constructor
+        entity_data = {
+            "dashboard_configuration_id": dashboard_configuration_id,
+            "guild_id": guild_id,
+            "channel_id": channel_id,
+            "is_active": is_active
+            # message_id is added conditionally below
+        }
+
+        # Convert message_id to int if provided
+        if message_id is not None:
+            try:
+                message_id_int = int(message_id)
+                # Add message_id to the dictionary ONLY if it's not None and conversion is successful
+                entity_data["message_id"] = message_id_int
+            except (ValueError, TypeError):
+                logger.warning(f"Repository: Invalid message_id '{message_id}' provided during create for channel {channel_id}. Setting message_id to NULL in DB.")
+                # Do NOT add the key 'message_id' to entity_data if it's invalid or None
+        
+        # Create instance using dictionary unpacking.
+        # If message_id was None or invalid, the key 'message_id' won't be in entity_data.
+        # SQLAlchemy should then rely on the database column's default (NULL).
+        new_instance = ActiveDashboardEntity(**entity_data)
+
         self.session.add(new_instance)
         await self.session.flush()
         await self.session.refresh(new_instance)
@@ -94,7 +112,24 @@ class ActiveDashboardRepositoryImpl(BaseRepositoryImpl[ActiveDashboardEntity], A
 
         for key, value in update_data.items():
             if hasattr(instance, key):
-                setattr(instance, key, value)
+                # Special handling for message_id: Convert to int or None
+                if key == 'message_id':
+                    if value is None:
+                        setattr(instance, key, None)
+                    else:
+                        try:
+                            setattr(instance, key, int(value))
+                        except (ValueError, TypeError):
+                            logger.warning(f"Repository Update: Invalid message_id '{value}' for instance {instance_id}. Skipping update for this field.")
+                # Add handling for config_override if needed in update later
+                # elif key == 'config_override':
+                #     # Ensure value is a dict or None
+                #     if isinstance(value, dict) or value is None:
+                #         setattr(instance, key, value)
+                #     else:
+                #          logger.warning(f"Repository Update: Invalid config_override type for instance {instance_id}. Skipping update.")
+                else:
+                    setattr(instance, key, value)
             else:
                 logger.warning(f"Repository: Attempted to update non-existent attribute '{key}' on instance {instance_id}")
 
@@ -122,10 +157,22 @@ class ActiveDashboardRepositoryImpl(BaseRepositoryImpl[ActiveDashboardEntity], A
     async def set_message_id(self, instance_id: int, message_id: Optional[str]) -> bool:
         """Sets or updates the message_id for an active dashboard instance."""
         logger.debug(f"Repository: Setting message_id={message_id} for ActiveDashboardEntity ID: {instance_id}")
+
+        # Convert to int or use null()
+        message_id_value = None
+        if message_id is not None:
+            try:
+                message_id_value = int(message_id)
+            except (ValueError, TypeError):
+                logger.warning(f"Repository SetMessageID: Invalid message_id '{message_id}' for instance {instance_id}. Setting to NULL.")
+                message_id_value = null() # Use null() if invalid
+        else:
+            message_id_value = null() # Use null() if None
+
         result = await self.session.execute(
             update(self.model)
             .where(self.model.id == instance_id)
-            .values(message_id=message_id)
+            .values(message_id=message_id_value) # Pass the converted int or null()
         )
         await self.session.flush()
         if result.rowcount > 0:

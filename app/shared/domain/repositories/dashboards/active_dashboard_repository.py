@@ -29,7 +29,7 @@ class ActiveDashboardRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def create(self, config_id: int, guild_id: str, channel_id: str, message_id: Optional[str] = None, is_active: bool = True, config_override: Optional[Dict[str, Any]] = None) -> 'ActiveDashboardEntity':
+    async def create(self, dashboard_configuration_id: int, guild_id: str, channel_id: str, message_id: Optional[str] = None, is_active: bool = True) -> 'ActiveDashboardEntity':
         """Creates a new active dashboard instance."""
         raise NotImplementedError
 

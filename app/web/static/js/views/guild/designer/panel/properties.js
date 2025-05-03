@@ -328,41 +328,62 @@ async function handleDashboardAddInputKeydown(event) { // Make the function asyn
             return;
         }
 
-        // Fetch all available master templates
-        const response = await fetch('/api/v1/dashboards/configurations'); // Assuming this endpoint exists and returns templates
-        if (!response.ok) {
-            console.error('[PropertiesPanel] Error fetching dashboard templates:', response.statusText);
-            showToast('error', 'Failed to fetch dashboard templates. See console for details.');
-            return;
-        }
-        const templates = await response.json();
+        try { // Added try...catch for the fetch operation
+            // Fetch all available master templates
+            const response = await fetch('/api/v1/dashboards/configurations'); // Assuming this endpoint exists and returns templates
+            if (!response.ok) {
+                console.error('[PropertiesPanel] Error fetching dashboard templates:', response.statusText);
+                throw new ApiError(`Failed to fetch dashboard templates (Status: ${response.status}).`, response.status);
+            }
+            const templates = await response.json();
 
-        // Search for the template by name (case-insensitive comparison)
-        const foundTemplate = templates.find(t => t.name.toLowerCase() === templateName.toLowerCase());
+            // Search for the template by name (case-insensitive comparison)
+            const foundTemplate = templates.find(t => t.name.toLowerCase() === templateName.toLowerCase());
 
-        if (foundTemplate && foundTemplate.config) {
-            // Extract the config (snapshot)
-            const copiedConfig = JSON.parse(JSON.stringify(foundTemplate.config)); // Deep copy
+            if (foundTemplate) { // Check if template was found
+                // --- MODIFICATION START ---
+                // Ensure foundTemplate has the necessary fields
+                if (!foundTemplate.name || !foundTemplate.dashboard_type) {
+                    console.error("[PropertiesPanel] Found dashboard template is missing 'name' or 'dashboard_type'. Cannot create snapshot.", foundTemplate);
+                    showToast('error', `Template '${templateName}' is incomplete on the server.`);
+                    return;
+                }
+                
+                // Create the snapshot object to be stored
+                const snapshotToStore = {
+                    name: foundTemplate.name,                 // Add the name from the found template
+                    dashboard_type: foundTemplate.dashboard_type, // Add the type from the found template
+                    // Copy relevant config fields (e.g., components) from the 'config' field of the found template
+                    components: foundTemplate.config?.components || [] 
+                    // Add other fields from foundTemplate.config if needed, e.g.:
+                    // title: foundTemplate.config?.title, 
+                    // color: foundTemplate.config?.color 
+                };
 
-            // Store the snapshot in state
-            // IMPORTANT: Using 'dashboard_config_snapshot' as the key, matching the backend/plan
-            state.addPendingPropertyChange(currentNodeType, currentNodeDbId, 'dashboard_config_snapshot', copiedConfig);
-            state.setDirty(true); // Mark state as dirty
-            updateToolbarButtonStates(); // Update save button etc.
+                // Store the COMPLETE snapshot object in the state
+                state.addPendingPropertyChange(currentNodeType, currentNodeDbId, 'dashboard_config_snapshot', snapshotToStore);
+                // --- MODIFICATION END ---
 
-            // Update the display area (Needs updated render function)
-            renderDashboardBadges(foundTemplate.name); // Pass name for display
+                state.setDirty(true); 
+                updateToolbarButtonStates(); 
+                renderDashboardBadges(foundTemplate.name); 
+                propDashboardAddInput.value = '';
+                showToast('success', `Dashboard configuration '${foundTemplate.name}' assigned.`);
+                console.log(`[PropertiesPanel] Stored COMPLETE snapshot for template '${foundTemplate.name}':`, snapshotToStore); // Log the complete object
 
-            // Clear the input field
-            propDashboardAddInput.value = '';
-
-            showToast('success', `Dashboard snapshot '${foundTemplate.name}' added.`);
-            console.log(`[PropertiesPanel] Stored snapshot for template '${foundTemplate.name}':`, copiedConfig);
-
-        } else {
-            // Template not found or missing config
-            showToast('error', `Dashboard template '${templateName}' not found or has no configuration.`);
-            console.warn(`[PropertiesPanel] Template '${templateName}' not found in fetched list or missing config:`, templates);
+            } else {
+                showToast('error', `Dashboard configuration '${templateName}' not found.`);
+                console.warn(`[PropertiesPanel] Configuration '${templateName}' not found in fetched list:`, templates);
+            }
+        } catch (error) {
+             console.error("[PropertiesPanel] Error fetching or processing dashboard configurations:", error);
+             // Show toast if it's an ApiError, otherwise generic
+             if (error instanceof ApiError) {
+                 // apiRequest helper usually shows the toast, but since we used fetch directly:
+                 showToast(error.message || 'Failed to load configurations.', 'error');
+             } else {
+                 showToast('An unexpected error occurred while assigning the dashboard.', 'error');
+             }
         }
     }
 }

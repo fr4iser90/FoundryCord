@@ -341,35 +341,46 @@ export function initializeToolbox() {
                 console.log("[Toolbox] 'Add new dashboard' button clicked.");
                 event.preventDefault();
                 event.stopPropagation(); // Prevent other listeners if needed
-                
+
+                // Prompt user for a name
+                const newDashboardName = prompt("Enter a name for the new dashboard configuration:");
+
+                // Validate the input
+                if (!newDashboardName || newDashboardName.trim() === "") {
+                    showToast("Dashboard name cannot be empty.", "warning");
+                    console.log("[Toolbox] New dashboard creation cancelled: Empty name provided.");
+                    return; // Stop execution if name is invalid
+                }
+                const trimmedName = newDashboardName.trim();
+
                 // Disable button temporarily
                 const addButton = event.target.closest('#toolbox-add-dashboard-btn');
                 if (addButton) addButton.disabled = true;
 
                 showToast("Creating new dashboard configuration...", "info");
                 try {
-                    const response = await apiRequest('/api/v1/dashboards/configurations', { 
+                    const response = await apiRequest('/api/v1/dashboards/configurations', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         // Send minimal required data for creation
                         body: JSON.stringify({
-                            name: "New Dashboard", 
-                            dashboard_type: "custom", // Default type? Or make selectable?
-                            description: "A newly created dashboard." 
-                        }) 
+                            name: trimmedName,
+                            dashboard_type: "custom", // Default type remains custom
+                            description: "A newly created dashboard."
+                        })
                     });
 
                     if (response && response.id) {
-                        console.log(`[Toolbox] New dashboard created successfully. ID: ${response.id}. Dispatching event.`);
-                        showToast(`New dashboard created (ID: ${response.id}).`, 'success');
-                        
+                        console.log(`[Toolbox] New dashboard created successfully. ID: ${response.id}, Name: ${trimmedName}. Dispatching event.`);
+                        showToast(`New dashboard '${trimmedName}' created.`, 'success');
+
                         // Dispatch event for other widgets to know a new config was made
                         document.dispatchEvent(new CustomEvent('dashboardConfigCreated', {
                             detail: { newConfigData: response } // Send the full response
                         }));
-                        
+
                         // Optionally, re-render the toolbox to show the new item in the list
-                        await renderToolboxComponents(); 
+                        await renderToolboxComponents();
 
                     } else {
                         console.error("[Toolbox] Failed to create new dashboard configuration. Invalid response:", response);
@@ -377,7 +388,8 @@ export function initializeToolbox() {
                     }
                 } catch (error) {
                     console.error("[Toolbox] Error creating new dashboard configuration:", error);
-                    // apiRequest should show an error toast
+                    // apiRequest should show an error toast, possibly add detail?
+                    // Example: showToast(`Error creating dashboard: ${error.message || 'Unknown error'}`, 'error');
                 } finally {
                      // Re-enable button
                      if (addButton) addButton.disabled = false;

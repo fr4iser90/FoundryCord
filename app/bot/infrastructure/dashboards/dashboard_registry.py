@@ -134,8 +134,7 @@ class DashboardRegistry:
                 )
 
                 # Initialize controller
-                # Pass bot only if initialize expects it - check DashboardController.initialize signature
-                init_success = await controller.initialize() # Removed bot if not needed by init
+                init_success = await controller.initialize(bot=self.bot)
                 if not init_success:
                      logger.error(f"{log_prefix} Failed to initialize new controller.")
                      return False

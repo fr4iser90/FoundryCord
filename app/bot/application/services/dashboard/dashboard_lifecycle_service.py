@@ -13,6 +13,7 @@ from app.shared.infrastructure.models.dashboards import ActiveDashboardEntity # 
 from app.shared.infrastructure.repositories.dashboards.dashboard_configuration_repository_impl import DashboardConfigurationRepositoryImpl
 # Add import for the configuration entity
 from app.shared.infrastructure.models.dashboards import ActiveDashboardEntity, DashboardConfigurationEntity
+from datetime import datetime
 
 
 class DashboardLifecycleService:
@@ -190,18 +191,23 @@ class DashboardLifecycleService:
                 else:
                     # --- Instance Does Not Exist: Create ---
                     logger.info(f"LifecycleService: No existing ActiveDashboard found for channel {channel.id}. Creating...")
+                    # Ensure correct keyword arguments are passed matching ActiveDashboardEntity columns
                     new_entity = await active_repo.create(
-                        config_id=configuration_entity.id,
+                        # Use the correct foreign key name defined in the entity/repository
+                        dashboard_configuration_id=configuration_entity.id, 
                         guild_id=str(channel.guild.id),
                         channel_id=str(channel.id),
                         is_active=True # Activate by default when syncing from template
-                        # message_id starts as None
-                        # config_override starts as None
+                        # message_id will be null initially
                     )
+                    # No commit needed here if create handles it or if session manages it
                     if not new_entity:
                         logger.error(f"LifecycleService: Failed to create ActiveDashboard for channel {channel.id}.")
                         return False
                     
+                    # Refresh might be needed depending on session configuration
+                    # await session.refresh(new_entity) 
+
                     active_dashboard_entity = new_entity
                     active_dashboard_id = new_entity.id
                     current_message_id = None # It's new, no message ID yet
@@ -260,7 +266,7 @@ class DashboardLifecycleService:
         except Exception as e:
             logger.error(f"LifecycleService: Unexpected error during sync_dashboard_from_snapshot for channel {channel.id}: {e}", exc_info=True)
             return False
-
+    
     async def deactivate_dashboard(self, dashboard_type=None, channel_id=None):
         """
         Deactivate dashboard by type or channel ID
@@ -305,9 +311,9 @@ class DashboardLifecycleService:
         dashboard_controller = self.registry.active_dashboards[channel_id]
         if dashboard_controller and hasattr(dashboard_controller, 'display_dashboard'):
              await dashboard_controller.display_dashboard()
-             return True
+             return True 
         else:
-            logger.warning(f"Could not refresh dashboard for channel {channel_id}: Controller invalid or missing display_dashboard method.")
+            logger.error(f"Could not refresh dashboard for channel {channel_id}: Controller invalid or missing display_dashboard method.")
             return False
     
     async def shutdown(self):

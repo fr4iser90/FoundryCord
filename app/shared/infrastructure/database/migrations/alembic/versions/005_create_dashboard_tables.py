@@ -35,10 +35,15 @@ def upgrade() -> None:
         sa.Column('config', sa.JSON(), nullable=True), 
         sa.Column('description', sa.String(length=500), nullable=True), 
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), onupdate=sa.text('now()'), nullable=False)
+        sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), onupdate=sa.text('now()'), nullable=False),
+        sa.UniqueConstraint('name', name='uq_dashboard_configurations_name')
     )
+    op.create_index(op.f('ix_dashboard_configurations_name'), 'dashboard_configurations', ['name'], unique=True)
 
 def downgrade() -> None:
+    op.drop_index(op.f('ix_dashboard_configurations_name'), table_name='dashboard_configurations')
+    op.drop_constraint('uq_dashboard_configurations_name', 'dashboard_configurations', type_='unique')
     op.drop_table('dashboard_configurations')
+
     op.drop_index('idx_component_definition_lookup', table_name='dashboard_component_definitions')
     op.drop_table('dashboard_component_definitions')
