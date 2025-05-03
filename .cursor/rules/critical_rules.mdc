@@ -8,13 +8,8 @@ alwaysApply: true
 ## Rule: Strict Instruction Adherence & Error Avoidance (CRITICAL)
 
 - **PRIORITY 1:** Follow user instructions **EXACTLY** as given in each prompt. No deviations, no assumptions. NEVER GUESS!!!! Analyze first, make a plan, go through the plan! (See also: `analyze_planning_role.mdc`)
+- **NEW RULE:** NEVER change variable names, function names, or class names unless explicitly asked to do so.
 - **No Unrequested Implementation:** Do **NOT** implement code unless explicitly asked to "implement now" or if it's the next specified step in the relevant TODO file (see `current_task.mdc`).
-- **Mandatory Plan Confirmation:** Before executing ANY code edit (`edit_file`) or running ANY potentially state-changing command (like `alembic upgrade`, `git` commands, file deletions), you MUST first:
-    1.  State the specific goal of the action, linking it directly to the user's last request or the relevant TODO item.
-    2.  List the EXACT files to be modified.
-    3.  List the EXACT commands to be run (if applicable).
-    4.  Explicitly ask for user confirmation to proceed (e.g., "Shall I proceed with this plan?").
-    5.  **DO NOT proceed until the user gives explicit confirmation (e.g., "Yes", "OK", "Proceed").**
 - **Acknowledge Reverts:** If the user rejects an edit or mentions reverting changes, **explicitly acknowledge** this reset and **wait for confirmation** on the next step.
 - **Clarify Ambiguity:** If instructions are unclear, conflicting, or seem incorrect (e.g., based on file context or previous steps), **STOP immediately** and ask for clarification. Do **NOT** proceed with assumptions.
 - **Avoid Sidetracking:** Focus solely on the user's current request. Do not suggest unrelated changes or get stuck on previous incorrect paths.

@@ -26,7 +26,13 @@ alwaysApply: true
     *   For code changes (`edit_file`): List the **exact** file path(s) to be modified.
     *   For commands (`run_terminal_cmd`): List the **exact** command(s) to be executed.
 4.  **Anticipate Outcomes/Risks (Optional but Recommended):** Briefly consider potential side effects or dependencies.
-5.  **Structure for Confirmation:** Format the plan clearly so it can be presented for the mandatory user confirmation step defined in `critical_rules.mdc`.
+5.  **Structure for Presentation:** Format the plan clearly for presentation.
+6.  **Mandatory Plan Confirmation:** Before executing ANY code edit (`edit_file`) or running ANY potentially state-changing command (like `alembic upgrade`, `git` commands, file deletions), you MUST first:
+    1.  State the specific goal of the action, linking it directly to the user's last request or the relevant TODO item.
+    2.  List the EXACT files to be modified.
+    3.  List the EXACT commands to be run (if applicable).
+    4.  Explicitly ask for user confirmation to proceed (e.g., "Shall I proceed with this plan?").
+    5.  **DO NOT proceed until the user gives explicit confirmation (e.g., "Yes", "OK", "Proceed").**
 
 ## Phase 3: Pre-computation/Pre-analysis (If Applicable)
 
