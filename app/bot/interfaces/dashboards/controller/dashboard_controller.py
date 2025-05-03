@@ -46,35 +46,58 @@ class DashboardController:
         self.component_registry = None 
         self.data_service = None # Renamed from builder service
         
-        logger.info(f"Initialized universal dashboard controller for {dashboard_type} dashboard {self.dashboard_id}")
+        logger.info(f"Initialized dashboard controller for {dashboard_type} dashboard {self.dashboard_id}")
     
     async def initialize(self, bot):
         """Initialize the dashboard controller"""
         self.bot = bot
         
+        bot_id = getattr(bot.user, 'id', 'N/A')
+        has_factory = hasattr(bot, 'service_factory')
+        factory_obj = getattr(bot, 'service_factory', None)
+        factory_type = type(factory_obj).__name__
+        logger.info(f"[DEBUG controller.initialize] Received bot. Bot ID: {bot_id}, Has service_factory attr: {has_factory}, Factory Object Type: {factory_type}")
+        
+
         # Get Component Registry & Data Service
         try:
-            # TODO: Determine the correct way to get registry/service instances
-            # Using service factory as the likely approach
-            if hasattr(bot, 'service_factory'):
-                 self.component_registry = bot.service_factory.get_service('component_registry')
-                 self.data_service = bot.service_factory.get_service('dashboard_data_service') # Use new name
-            else:
-                 logger.error("Service factory not available on bot instance.")
-                 # Decide handling
-                 return False
-            
+            # Use more specific check and logging
+            if has_factory and factory_obj is not None:
+                 logger.debug(f"[DEBUG controller.initialize] Trying to get services from factory: {factory_obj}")
+                 self.component_registry = factory_obj.get_service('component_registry')
+                 self.data_service = factory_obj.get_service('dashboard_data_service') 
+
+                 if not self.component_registry:
+                     logger.error("[DEBUG controller.initialize] Component Registry service IS NONE within Service Factory.")
+                 else:
+                     logger.debug(f"[DEBUG controller.initialize] Component Registry obtained: {type(self.component_registry).__name__}")
+
+                 if not self.data_service:
+                     logger.error("[DEBUG controller.initialize] DashboardDataService service IS NONE within Service Factory.")
+                 else:
+                     logger.debug(f"[DEBUG controller.initialize] Data Service obtained: {type(self.data_service).__name__}")
+
+            elif has_factory and factory_obj is None:
+                 logger.error("[DEBUG controller.initialize] Service factory attribute EXISTS but IS NONE on bot instance.")
+                 return False # Explicitly return False
+            else: # Attribute doesn't exist
+                 logger.error("[DEBUG controller.initialize] Service factory attribute DOES NOT EXIST on bot instance.")
+                 return False # Explicitly return False
+
+            # Check if services were actually retrieved
             if not self.component_registry:
-                logger.error("Component Registry not available for DashboardController")
-                # Decide handling
-                # return False 
+                logger.error("Component Registry not available for DashboardController after factory check.")
+                # return False # Decide handling - maybe allow init but log error? For now, let it proceed with error logs.
             if not self.data_service:
-                 logger.error("DashboardDataService not available for DashboardController")
-                 # Decide handling
-                 # return False
-                
+                 logger.error("DashboardDataService not available for DashboardController after factory check.")
+                 # return False # Decide handling
+
+        except AttributeError as ae:
+             # Catch if factory_obj doesn't have get_service
+             logger.error(f"[DEBUG controller.initialize] Service Factory ({factory_type}) missing 'get_service' method? Error: {ae}", exc_info=True)
+             return False
         except Exception as e:
-            logger.error(f"Error getting services/registries: {e}")
+            logger.error(f"[DEBUG controller.initialize] Error getting services/registries: {e}", exc_info=True)
             return False
             
         # Load dashboard definition from database
@@ -84,7 +107,7 @@ class DashboardController:
         self.register_standard_handlers()
         
         self.initialized = True
-        logger.info(f"Dashboard {self.dashboard_id} initialization complete")
+        logger.info(f"Dashboard {self.dashboard_id} initialization complete (Services might be missing).") # Adjusted log
         return True
     
     # async def load_dashboard_definition(self): # <-- COMMENT OUT METHOD

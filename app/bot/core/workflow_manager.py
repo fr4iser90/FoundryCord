@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import inspect
 from typing import Dict, List, Type, Optional
 from app.bot.core.workflows.base_workflow import BaseWorkflow, WorkflowStatus
 from app.shared.interface.logging.api import get_bot_logger
@@ -43,33 +44,46 @@ class BotWorkflowManager:
         self.initialization_order = [name for name in order if name in self.workflows]
         logger.info(f"Set initialization order: {self.initialization_order}")
     
-    async def initialize_workflow(self, name: str) -> bool:
-        """Initialize a single workflow globally"""
+    async def initialize_workflow(self, name: str, bot) -> bool:
+        """Initialize a single workflow globally, passing the bot instance if needed."""
         if name not in self.workflows:
             logger.error(f"Workflow {name} not found")
             return False
             
         workflow_data = self.workflows[name]
+        workflow_instance = workflow_data['instance']
         
         # Skip if already initialized
         if workflow_data['initialized']:
             return True
             
-        # Initialize dependencies first
+        # Initialize dependencies first (pass bot down)
         for dep_name in workflow_data['dependencies']:
             if dep_name not in self.workflows:
                 logger.error(f"Dependency {dep_name} for workflow {name} not found")
                 return False
                 
-            # Initialize the dependency
-            if not await self.initialize_workflow(dep_name):
+            # Initialize the dependency, passing bot
+            if not await self.initialize_workflow(dep_name, bot):
                 logger.error(f"Failed to initialize dependency {dep_name} for workflow {name}")
                 return False
         
         # Now initialize the workflow itself
         logger.info(f"Initializing workflow: {name}")
         try:
-            success = await workflow_data['instance'].initialize()
+            # --- Check signature before calling initialize ---
+            initialize_method = workflow_instance.initialize
+            sig = inspect.signature(initialize_method)
+            
+            # Check if 'bot' parameter exists or if there are more than 1 parameters (self + bot)
+            if 'bot' in sig.parameters or len(sig.parameters) > 1:
+                 logger.debug(f"Calling {name}.initialize(bot)")
+                 success = await initialize_method(bot) 
+            else:
+                 logger.debug(f"Calling {name}.initialize()")
+                 success = await initialize_method()
+            # --- End signature check ---
+                 
             if success:
                 workflow_data['initialized'] = True
                 logger.info(f"Workflow {name} initialized successfully")
@@ -78,19 +92,19 @@ class BotWorkflowManager:
                 logger.error(f"Workflow {name} initialization returned False")
                 return False
         except Exception as e:
-            logger.error(f"Error initializing workflow {name}: {e}")
+            logger.error(f"Error initializing workflow {name}: {e}", exc_info=True)
             return False
     
-    async def initialize_all(self) -> bool:
-        """Initialize all workflows globally"""
+    async def initialize_all(self, bot) -> bool:
+        """Initialize all workflows globally, passing the bot instance."""
         logger.info("Initializing all bot workflows")
         
         all_initialized = True
         failed = []
         
-        # Initialize in the specified order
+        # Initialize in the specified order, passing bot
         for name in self.initialization_order:
-            if not await self.initialize_workflow(name):
+            if not await self.initialize_workflow(name, bot):
                 all_initialized = False
                 failed.append(name)
                 logger.error(f"Failed to initialize workflow: {name}")
@@ -102,7 +116,7 @@ class BotWorkflowManager:
             
         return all_initialized
 
-    async def initialize_guild(self, guild_id: str, workflow_names: Optional[List[str]] = None) -> Dict[str, bool]:
+    async def initialize_guild(self, guild_id: str, bot, workflow_names: Optional[List[str]] = None) -> Dict[str, bool]:
         """Initialize specific or all workflows for a guild"""
         results = {}
         
@@ -118,19 +132,25 @@ class BotWorkflowManager:
                 
             workflow = self.workflows[name]['instance']
             
-            # Skip if workflow doesn't require guild initialization
-            if not workflow.requires_guild_approval:
-                results[name] = True
-                continue
-                
-            # Initialize workflow for guild
+            # Pass bot to initialize_for_guild
             try:
-                success = await workflow.initialize_for_guild(guild_id)
-                results[name] = success
-                if not success:
-                    logger.error(f"Failed to initialize workflow {name} for guild {guild_id}")
+                # Check if the workflow instance has the initialize_for_guild method
+                if hasattr(workflow, 'initialize_for_guild') and callable(workflow.initialize_for_guild):
+                     # Check if it expects bot as an argument
+                     sig_guild = inspect.signature(workflow.initialize_for_guild)
+                     if 'bot' in sig_guild.parameters:
+                         success = await workflow.initialize_for_guild(guild_id, bot) # Pass bot here
+                     else:
+                         success = await workflow.initialize_for_guild(guild_id) # Call without bot if not needed
+
+                     results[name] = success
+                     if not success and workflow.requires_guild_approval: # Only log error if guild init was required and failed
+                         logger.error(f"Failed to initialize workflow {name} for guild {guild_id}")
+                else:
+                     # Workflow doesn't have per-guild init or doesn't need it
+                     results[name] = True
             except Exception as e:
-                logger.error(f"Error initializing workflow {name} for guild {guild_id}: {e}")
+                logger.error(f"Error initializing workflow {name} for guild {guild_id}: {e}", exc_info=True)
                 results[name] = False
                 
         return results

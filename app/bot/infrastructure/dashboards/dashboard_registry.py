@@ -1,5 +1,5 @@
 # app/bot/infrastructure/dashboards/dashboard_registry.py
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Type
 import nextcord
 
 from app.shared.interface.logging.api import get_bot_logger
@@ -13,7 +13,16 @@ class DashboardRegistry:
     
     def __init__(self, bot):
         self.bot = bot
-        self.active_dashboards = {}  # channel_id -> dashboard controller
+        # --- ADD DEBUG LOG ---
+        bot_id = getattr(bot.user, 'id', 'N/A')
+        has_factory = hasattr(bot, 'service_factory')
+        factory_type = type(getattr(bot, 'service_factory', None)).__name__
+        logger.info(f"[DEBUG registry.__init__] Received bot. Bot ID: {bot_id}, Has service_factory: {has_factory}, Factory Type: {factory_type}")
+        # ---------------------
+        self.active_dashboards: Dict[int, DashboardController] = {}  # channel_id -> dashboard controller
+        self.dashboard_types: Dict[str, Type[DashboardController]] = {}  # Maps type string to controller class (adjust if needed)
+        self.component_registry = None  # Will be fetched
+        self.initialized = False
         self.logger = logger
         
     async def initialize(self):
@@ -78,13 +87,18 @@ class DashboardRegistry:
                                            ) -> bool:
         """Ensures a dashboard controller is active for the channel, using the provided configuration."""
 
-        log_prefix = f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}]"
-        logger.info(f"{log_prefix} Ensuring controller is active for type '{dashboard_type}'.")
+        logger.info(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Ensuring controller is active for type '{dashboard_type}'.")
+        # --- ADD DEBUG LOG ---
+        bot_id = getattr(self.bot.user, 'id', 'N/A')
+        has_factory = hasattr(self.bot, 'service_factory')
+        factory_type = type(getattr(self.bot, 'service_factory', None)).__name__
+        logger.info(f"[DEBUG registry.activate] Using self.bot. Bot ID: {bot_id}, Has service_factory: {has_factory}, Factory Type: {factory_type}")
+        # ---------------------
 
         # Check if channel exists on Discord
         channel = self.bot.get_channel(channel_id)
         if not channel or not isinstance(channel, nextcord.TextChannel):
-            self.logger.warning(f"{log_prefix} Channel {channel_id} not found or is not a text channel.")
+            self.logger.warning(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Channel {channel_id} not found or is not a text channel.")
             # TODO: Optionally deactivate the ActiveDashboardEntity in DB if channel deleted?
             return False
 
@@ -94,7 +108,7 @@ class DashboardRegistry:
         existing_controller: Optional[DashboardController] = self.active_dashboards.get(channel_id)
 
         if existing_controller:
-            logger.debug(f"{log_prefix} Controller already exists. Updating...")
+            logger.debug(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Controller already exists. Updating...")
             try:
                 # Update existing controller's state
                 existing_controller.dashboard_id = active_dashboard_id # Update with ActiveDashboardEntity ID
@@ -107,14 +121,14 @@ class DashboardRegistry:
 
                 # Trigger a redisplay which should use the latest config/data
                 await existing_controller.display_dashboard()
-                logger.info(f"{log_prefix} Successfully updated and redisplayed dashboard.")
+                logger.info(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Successfully updated and redisplayed dashboard.")
                 return True
             except Exception as e:
-                logger.error(f"{log_prefix} Error updating existing controller: {e}", exc_info=True)
+                logger.error(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Error updating existing controller: {e}", exc_info=True)
                 # TODO: Potentially set error state in ActiveDashboardEntity?
                 return False
         else:
-            logger.debug(f"{log_prefix} No existing controller. Activating new one...")
+            logger.debug(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] No existing controller. Activating new one...")
             try:
                 # Create dashboard controller using the new parameters
                 # Get title/description from config_data or use defaults
@@ -136,28 +150,29 @@ class DashboardRegistry:
                 # Initialize controller
                 init_success = await controller.initialize(bot=self.bot)
                 if not init_success:
-                     logger.error(f"{log_prefix} Failed to initialize new controller.")
+                     logger.error(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Failed to initialize new controller.")
+                     # Decide if we should still register it? Probably not.
                      return False
 
                 # Display dashboard (initial display)
                 # display_dashboard should now return the discord.Message object or None
                 msg_object = await controller.display_dashboard()
                 if not msg_object:
-                    logger.error(f"{log_prefix} Failed to display new dashboard (display_dashboard returned None).")
+                    logger.error(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Failed to display new dashboard (display_dashboard returned None).")
                     # Decide if we should still register it? Probably not.
                     return False
                 else:
                     # Update the controller's message_id with the actual ID from the newly created message
                     controller.message_id = str(msg_object.id)
-                    logger.debug(f"{log_prefix} Dashboard displayed successfully. Message ID: {controller.message_id}")
+                    logger.debug(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Dashboard displayed successfully. Message ID: {controller.message_id}")
 
                 # Register in active dashboards
                 self.active_dashboards[channel_id] = controller
-                logger.info(f"{log_prefix} Activated '{dashboard_type}' dashboard.")
+                logger.info(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Activated '{dashboard_type}' dashboard.")
                 return True
 
             except Exception as e:
-                 logger.error(f"{log_prefix} Error activating new dashboard controller: {e}", exc_info=True)
+                 logger.error(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Error activating new dashboard controller: {e}", exc_info=True)
                  # TODO: Potentially create ActiveDashboardEntity with error state?
                  return False
 

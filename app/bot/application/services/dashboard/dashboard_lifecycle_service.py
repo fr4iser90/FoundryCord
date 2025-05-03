@@ -21,6 +21,12 @@ class DashboardLifecycleService:
     
     def __init__(self, bot):
         self.bot = bot
+        # --- ADD DEBUG LOG ---
+        bot_id = getattr(bot.user, 'id', 'N/A')
+        has_factory = hasattr(bot, 'service_factory')
+        factory_type = type(getattr(bot, 'service_factory', None)).__name__
+        logger.info(f"[DEBUG lifecycle_service.__init__] Received bot. Bot ID: {bot_id}, Has service_factory: {has_factory}, Factory Type: {factory_type}")
+        # ---------------------
         self.registry = None # Registry will handle the actual controllers/views
     
     async def initialize(self):

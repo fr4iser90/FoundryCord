@@ -21,10 +21,10 @@ class DashboardWorkflow(BaseWorkflow):
     by DashboardLifecycleService, DashboardRegistry, and DashboardController.
     """
     
-    def __init__(self, database_workflow: DatabaseWorkflow, bot=None):
+    def __init__(self, database_workflow: DatabaseWorkflow):
         super().__init__("dashboard")
         self.database_workflow = database_workflow
-        self.bot = bot
+        self.bot = None
         self.lifecycle_service: Optional[DashboardLifecycleService] = None
         
         # Add dependencies
@@ -33,17 +33,21 @@ class DashboardWorkflow(BaseWorkflow):
         # Dashboards require guild approval
         self.requires_guild_approval = True
         
-    async def initialize(self) -> bool:
+    async def initialize(self, bot) -> bool:
         """Initialize dashboard workflow globally and trigger lifecycle service."""
         try:
+            self.bot = bot
             logger.info("Initializing dashboard workflow (state management).")
-            # No complex service/registry initialization needed here directly.
             
-            # Instantiate and initialize the Lifecycle Service here
             if not self.bot:
-                 logger.error("Bot instance not available in DashboardWorkflow initialize. Cannot start LifecycleService.")
+                 logger.error("Bot instance not provided to DashboardWorkflow initialize. Cannot start LifecycleService.")
                  return False
                  
+            bot_id = getattr(self.bot.user, 'id', 'N/A')
+            has_factory = hasattr(self.bot, 'service_factory')
+            factory_type = type(getattr(self.bot, 'service_factory', None)).__name__
+            logger.info(f"[DEBUG dashboard_workflow.initialize] Received bot. Bot ID: {bot_id}, Has service_factory: {has_factory}, Factory Type: {factory_type}")
+            
             logger.info("Instantiating DashboardLifecycleService...")
             self.lifecycle_service = DashboardLifecycleService(self.bot)
             init_success = await self.lifecycle_service.initialize() # This calls activate_db_configured_dashboards
@@ -56,22 +60,22 @@ class DashboardWorkflow(BaseWorkflow):
             return True
             
         except Exception as e:
-            logger.error(f"Dashboard workflow initialization failed: {e}")
+            logger.error(f"Dashboard workflow initialization failed: {e}", exc_info=True)
             return False
             
-    async def initialize_for_guild(self, guild_id: str) -> bool:
+    async def initialize_for_guild(self, guild_id: str, bot) -> bool:
         """Initialize workflow state for a specific guild"""
         try:
             # Update status to initializing
             self.guild_status[guild_id] = WorkflowStatus.INITIALIZING
             
             # Get the guild (basic check)
-            if not self.bot:
+            if not bot:
                 logger.error("Bot instance not available for DashboardWorkflow")
                 self.guild_status[guild_id] = WorkflowStatus.FAILED
                 return False
                 
-            guild = self.bot.get_guild(int(guild_id))
+            guild = bot.get_guild(int(guild_id))
             if not guild:
                 logger.error(f"Could not find guild {guild_id} in DashboardWorkflow")
                 self.guild_status[guild_id] = WorkflowStatus.FAILED

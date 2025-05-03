@@ -10,6 +10,7 @@ from app.bot.infrastructure.factories.component_factory import ComponentFactory
 from app.bot.interfaces.dashboards.components.common.embeds.dashboard_embed import DashboardEmbed
 from app.bot.interfaces.dashboards.components.common.embeds.error_embed import ErrorEmbed
 from app.bot.application.services.dashboard.component_loader_service import ComponentLoaderService
+from app.bot.infrastructure.factories.service_factory import ServiceFactory
 
 class FoundryCord(commands.Bot):
     """Main HomeLab Discord Bot class"""
@@ -20,6 +21,8 @@ class FoundryCord(commands.Bot):
         logger.info("Initializing component registry and factory in constructor")
         self.component_registry = ComponentRegistry()
         self.component_factory = ComponentFactory(self.component_registry)
+        # Initialize service_factory attribute to None initially
+        self.service_factory = None 
         self._default_components_registered = False
         
     async def setup_hook(self):
@@ -27,6 +30,20 @@ class FoundryCord(commands.Bot):
         await super().setup_hook()
         
         logger.info("Starting bot initialization...")
+        
+        # --- ADD SERVICE FACTORY INITIALIZATION HERE ---
+        logger.info("Initializing Service Factory...")
+        try:
+            self.service_factory = ServiceFactory(self)
+            # --- ADD DEBUG LOG ---
+            factory_type = type(self.service_factory).__name__ if self.service_factory else 'None'
+            logger.info(f"[DEBUG bot.py] Service Factory assigned in setup_hook. Bot ID: {self.user.id}, Factory Type: {factory_type}")
+            # ---------------------
+        except Exception as e:
+             logger.critical(f"CRITICAL: Failed to initialize Service Factory: {e}", exc_info=True)
+             # Depending on severity, you might want to prevent the bot from fully starting
+             # For now, we log critically and continue, but dependent services might fail.
+        # ---------------------------------------------
         
         # Make sure we register components if not done in constructor
         if not self._default_components_registered:
@@ -36,13 +53,20 @@ class FoundryCord(commands.Bot):
         
         await self.setup_dashboards()
         
-        # In setup_hook method or another initialization method:
-        self.component_loader = ComponentLoaderService(self)
-        if not self.service_factory.has_service('component_loader'):
-            self.service_factory.register_service(
-                'component_loader', 
-                self.component_loader
-            )
+        # Check if service_factory exists before using it to register ComponentLoaderService
+        if self.service_factory:
+            self.component_loader = ComponentLoaderService(self)
+            # Ensure service_factory has the registration method before calling
+            if hasattr(self.service_factory, 'register_service') and hasattr(self.service_factory, 'has_service'):
+                if not self.service_factory.has_service('component_loader'):
+                    self.service_factory.register_service(
+                        'component_loader', 
+                        self.component_loader
+                    )
+            else:
+                 logger.error("Service Factory instance does not have expected registration methods.")
+        else:
+            logger.error("Service Factory not available when trying to register ComponentLoaderService.")
     
     def register_default_components(self):
         """Register the default UI components"""

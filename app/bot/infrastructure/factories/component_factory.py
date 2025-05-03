@@ -32,14 +32,14 @@ class ComponentFactory:
                                          channel_id: int, **kwargs):
         """Create a dashboard controller using the universal controller"""
         try:
-            # Import the universal dashboard controller
-            from app.bot.interfaces.dashboards.controller.dashboard_controller import UniversalDashboardController
+            
+            from app.bot.interfaces.dashboards.controller.dashboard_controller import DashboardController
             
             # Create the controller with the appropriate type
             logger.info(f"Creating {dashboard_type} dashboard controller for dashboard {dashboard_id}")
             
             # Create and return the controller
-            controller = UniversalDashboardController(
+            controller = DashboardController(
                 dashboard_id=dashboard_id,
                 channel_id=channel_id,
                 dashboard_type=dashboard_type,
