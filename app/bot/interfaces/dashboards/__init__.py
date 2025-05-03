@@ -1,8 +1,8 @@
-from .controller import BaseDashboardController
+from .controller import DashboardController
 from .components import factories, common
 
 __all__ = [
-    'BaseDashboardController',
+    'DashboardController',
     'factories',
     'common',
 ]

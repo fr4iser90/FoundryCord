@@ -13,8 +13,7 @@ from app.shared.infrastructure.models.dashboards import ActiveDashboardEntity # 
 from app.shared.infrastructure.repositories.dashboards.dashboard_configuration_repository_impl import DashboardConfigurationRepositoryImpl
 # Add import for the configuration entity
 from app.shared.infrastructure.models.dashboards import ActiveDashboardEntity, DashboardConfigurationEntity
-# Add json import for parsing
-import json
+
 
 class DashboardLifecycleService:
     """Manages the lifecycle of all dashboards"""
@@ -107,39 +106,31 @@ class DashboardLifecycleService:
             
         logger.info(f"Finished DB dashboard activation. Activated/Updated: {count}, Failed: {failed_count}")
 
-    async def sync_dashboard_from_snapshot(self, channel: nextcord.TextChannel, config_json_str: str) -> bool:
+    async def sync_dashboard_from_snapshot(self, channel: nextcord.TextChannel, config_json: Dict[str, Any]) -> bool:
         """
         Processes a dashboard configuration snapshot from a guild template
         and ensures the corresponding dashboard is active and up-to-date.
+        The snapshot is expected to be a dictionary already parsed from JSON.
         """
         logger.info(f"LifecycleService: Received sync_dashboard_from_snapshot for channel {channel.id}.")
-        
-        if not config_json_str:
-            logger.error(f"LifecycleService: Received empty config_json_str for channel {channel.id}. Cannot sync.")
+
+        if not config_json:
+            logger.error(f"LifecycleService: Received empty config_json dict for channel {channel.id}. Cannot sync.")
             return False
-            
+
         try:
-            # 1. Parse the JSON string snapshot
-            config_snapshot = json.loads(config_json_str)
-            # --- Extract key information ---
-            # IMPORTANT ASSUMPTION: Snapshot contains 'name' matching a DashboardConfigurationEntity.name
-            #                     and 'dashboard_type' and the actual 'config' blob.
-            config_name = config_snapshot.get('name')
-            dashboard_type = config_snapshot.get('dashboard_type')
-            # The actual config blob needed by the registry/controller
-            config_data = config_snapshot.get('config', {}) 
-            
+            config_name = config_json.get('name')
+            dashboard_type = config_json.get('dashboard_type')
+            config_data = config_json.get('config', {})
+
             if not config_name or not dashboard_type:
-                logger.error(f"LifecycleService: Snapshot for channel {channel.id} is missing 'name' or 'dashboard_type'. Snapshot: {config_snapshot}")
+                logger.error(f"LifecycleService: Snapshot for channel {channel.id} is missing 'name' or 'dashboard_type'. Snapshot: {config_json}")
                 return False
-                
+
             logger.debug(f"LifecycleService: Parsed snapshot for channel {channel.id}. Config Name: '{config_name}', Type: '{dashboard_type}'")
 
-        except json.JSONDecodeError as e:
-            logger.error(f"LifecycleService: Failed to parse config_json_str for channel {channel.id}: {e}. JSON String: '{config_json_str}'")
-            return False
         except Exception as e:
-            logger.error(f"LifecycleService: Unexpected error parsing snapshot for channel {channel.id}: {e}", exc_info=True)
+            logger.error(f"LifecycleService: Unexpected error processing snapshot dict for channel {channel.id}: {e}", exc_info=True)
             return False
 
         active_dashboard_entity = None

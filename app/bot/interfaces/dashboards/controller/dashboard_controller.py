@@ -7,14 +7,10 @@ from datetime import datetime
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
-from .base_dashboard import BaseDashboardController
-# Assuming DashboardDataService will be accessible, e.g., via service factory
-# from app.bot.application.services.dashboard.dashboard_data_service import DashboardDataService
-
 # TODO: Need access to ComponentRegistry, potentially passed during initialization or via bot
 # from app.bot.core.registries.component_registry import ComponentRegistry 
 
-class DashboardController(BaseDashboardController):
+class DashboardController:
     """
     Dashboard controller that handles all dashboard types
     through configuration rather than inheritance
@@ -40,10 +36,9 @@ class DashboardController(BaseDashboardController):
         self.registered_handlers = {}
         
         # State tracking
-        self.bot = None
+        self.bot = kwargs.get('bot')
         self.message_id = kwargs.get('message_id', None)
-        self.message = None
-        self.components = {}
+        self.message: Optional[nextcord.Message] = None
         self.initialized = False
         self.rate_limits = {}
         
@@ -51,7 +46,7 @@ class DashboardController(BaseDashboardController):
         self.component_registry = None 
         self.data_service = None # Renamed from builder service
         
-        logger.info(f"Initialized universal dashboard controller for {dashboard_type} dashboard {dashboard_id}")
+        logger.info(f"Initialized universal dashboard controller for {dashboard_type} dashboard {self.dashboard_id}")
     
     async def initialize(self, bot):
         """Initialize the dashboard controller"""
@@ -83,7 +78,7 @@ class DashboardController(BaseDashboardController):
             return False
             
         # Load dashboard definition from database
-        await self.load_dashboard_definition() # This loads self.config, self.title etc.
+        # await self.load_dashboard_definition() # This loads self.config, self.title etc.
         
         # Register standard handlers
         self.register_standard_handlers()
@@ -92,107 +87,110 @@ class DashboardController(BaseDashboardController):
         logger.info(f"Dashboard {self.dashboard_id} initialization complete")
         return True
     
-    async def load_dashboard_definition(self):
-        """
-        Load dashboard definition from database
-        This is the key method that makes the controller flexible
-        """
-        logger.info(f"Loading definition for {self.dashboard_type} dashboard {self.dashboard_id}")
-        
-        try:
-            # Get dashboard repository from service factory
-            dashboard_repo = self.bot.service_factory.get_service('dashboard_repository')
-            if not dashboard_repo:
-                raise ValueError("Dashboard repository service not available")
-            
-            # Load dashboard configuration from database
-            dashboard = await dashboard_repo.get_dashboard_by_id(self.dashboard_id)
-            if not dashboard:
-                # Try to find by channel ID + type
-                dashboard = await dashboard_repo.get_dashboard_by_channel_and_type(
-                    self.channel_id, self.dashboard_type
-                )
-            
-            if not dashboard:
-                logger.warning(f"No dashboard found for ID {self.dashboard_id}, creating default")
-                # Create a default dashboard if not found
-                await self.create_default_dashboard()
-                return
-            
-            # Load components from the database
-            await self.load_components_from_database(dashboard)
-            
-            # Update properties from database
-            self.title = dashboard.title or self.title
-            self.description = dashboard.description or self.description
-            self.config = dashboard.config or self.config
-            self.message_id = dashboard.message_id or self.message_id
-            
-            logger.info(f"Loaded dashboard definition for {self.dashboard_id} from database")
-            
-        except Exception as e:
-            logger.error(f"Error loading dashboard definition from database: {e}")
-            # Create a default dashboard if loading fails
-            await self.create_default_dashboard()
+    # async def load_dashboard_definition(self): # <-- COMMENT OUT METHOD
+    #     """
+    #     Load dashboard definition from database
+    #     This is the key method that makes the controller flexible
+    #     [OBSOLETE] Config is now passed via __init__
+    #     """
+    #     logger.info(f"Loading definition for {self.dashboard_type} dashboard {self.dashboard_id}")
+    #     
+    #     try:
+    #         # Get dashboard repository from service factory
+    #         dashboard_repo = self.bot.service_factory.get_service('dashboard_repository')
+    #         if not dashboard_repo:
+    #             raise ValueError("Dashboard repository service not available")
+    #         
+    #         # Load dashboard configuration from database
+    #         dashboard = await dashboard_repo.get_dashboard_by_id(self.dashboard_id)
+    #         if not dashboard:
+    #             # Try to find by channel ID + type
+    #             dashboard = await dashboard_repo.get_dashboard_by_channel_and_type(
+    #                 self.channel_id, self.dashboard_type
+    #             )
+    #         
+    #         if not dashboard:
+    #             logger.warning(f"No dashboard found for ID {self.dashboard_id}, creating default")
+    #             # Create a default dashboard if not found
+    #             await self.create_default_dashboard()
+    #             return
+    #         
+    #         # Load components from the database
+    #         await self.load_components_from_database(dashboard)
+    #         
+    #         # Update properties from database
+    #         self.title = dashboard.title or self.title
+    #         self.description = dashboard.description or self.description
+    #         self.config = dashboard.config or self.config
+    #         self.message_id = dashboard.message_id or self.message_id
+    #         
+    #         logger.info(f"Loaded dashboard definition for {self.dashboard_id} from database")
+    #         
+    #     except Exception as e:
+    #         logger.error(f"Error loading dashboard definition from database: {e}")
+    #         # Create a default dashboard if loading fails
+    #         await self.create_default_dashboard()
     
-    async def load_components_from_database(self, dashboard):
-        """Load components for a dashboard from the database"""
-        try:
-            # Load components through the repository
-            components = await self.bot.service_factory.get_service('dashboard_repository').get_components_for_dashboard(dashboard.id)
-            
-            for component in components:
-                # Process each component based on its type
-                if component.component_type == 'button':
-                    self.register_button(
-                        component.custom_id,
-                        component.config.get('label', 'Button'),
-                        component.config.get('style', 'primary'),
-                        component.config.get('emoji'),
-                        component.config.get('row', 0),
-                        component.config.get('disabled', False)
-                    )
-                elif component.component_type == 'embed':
-                    self.register_embed(
-                        component.custom_id,
-                        component.config.get('title'),
-                        component.config.get('description'),
-                        component.config.get('color'),
-                        component.config.get('fields', []),
-                        component.config.get('footer')
-                    )
-                # Add more component types as needed
-                
-            logger.info(f"Loaded {len(components)} components for dashboard {dashboard.id}")
-            
-        except Exception as e:
-            logger.error(f"Error loading components from database: {e}")
+    # async def load_components_from_database(self, dashboard): # <-- COMMENT OUT METHOD
+    #     """Load components for a dashboard from the database
+    #     [OBSOLETE] Components are now defined within the config JSON
+    #     """
+    #     try:
+    #         # Load components through the repository
+    #         components = await self.bot.service_factory.get_service('dashboard_repository').get_components_for_dashboard(dashboard.id)
+    #         
+    #         for component in components:
+    #             # Process each component based on its type
+    #             if component.component_type == 'button':
+    #                 self.register_button(
+    #                     component.custom_id,
+    #                     component.config.get('label', 'Button'),
+    #                     component.config.get('style', 'primary'),
+    #                     component.config.get('emoji'),
+    #                     component.config.get('row', 0),
+    #                     component.config.get('disabled', False)
+    #                 )
+    #             elif component.component_type == 'embed':
+    #                 self.register_embed(
+    #                     component.custom_id,
+    #                     component.config.get('title'),
+    #                     component.config.get('description'),
+    #                     component.config.get('color'),
+    #                     component.config.get('fields', []),
+    #                     component.config.get('footer')
+    #                 )
+    #             # Add more component types as needed
+    #             
+    #         logger.info(f"Loaded {len(components)} components for dashboard {dashboard.id}")
+    #         
+    #     except Exception as e:
+    #         logger.error(f"Error loading components from database: {e}")
     
-    async def create_default_dashboard(self):
-        """Create a default dashboard configuration"""
-        logger.info(f"Creating default dashboard for {self.dashboard_type}")
-        
-        # Create a basic embed
-        self.register_embed(
-            "main_embed",
-            f"{self.dashboard_type.capitalize()} Dashboard",
-            "This dashboard was created with default settings",
-            0x3498db,  # Blue color
-            []  # No fields
-        )
-        
-        # Create a refresh button
-        self.register_button(
-            "refresh_button",
-            "Refresh",
-            "secondary",
-            "🔄",
-            0,  # Row 0
-            False  # Not disabled
-        )
-        
-        # Register the refresh handler
-        self.register_handler("refresh_button", self.on_refresh)
+    # async def create_default_dashboard(self): # <-- KEEP FOR NOW? Could be useful fallback if config is empty.
+    #     """Create a default dashboard configuration"""
+    #     logger.info(f"Creating default dashboard for {self.dashboard_type}")
+    #     
+    #     # Create a basic embed
+    #     self.register_embed(
+    #         "main_embed",
+    #         f"{self.dashboard_type.capitalize()} Dashboard",
+    #         "This dashboard was created with default settings",
+    #         0x3498db,  # Blue color
+    #         []  # No fields
+    #     )
+    #     
+    #     # Create a refresh button
+    #     self.register_button(
+    #         "refresh_button",
+    #         "Refresh",
+    #         "secondary",
+    #         "🔄",
+    #         0,  # Row 0
+    #         False  # Not disabled
+    #     )
+    #     
+    #     # Register the refresh handler
+    #     self.register_handler("refresh_button", self.on_refresh)
     
     def register_embed(self, embed_id, title=None, description=None, color=None, fields=None, footer=None):
         """Register an embed configuration"""
@@ -229,7 +227,6 @@ class DashboardController(BaseDashboardController):
     
     async def on_refresh(self, interaction: nextcord.Interaction):
         """Standard refresh button handler"""
-        # Check rate limiting (inherited from BaseDashboardController)
         if not await self.check_rate_limit(interaction, "refresh", 5):
             return
             
@@ -274,76 +271,122 @@ class DashboardController(BaseDashboardController):
     async def display_dashboard(self):
         """Display or update the dashboard in the channel"""
         try:
-            if not self.initialized or not self.data_service: # Ensure data service is available
-                logger.error(f"Attempted to display uninitialized or misconfigured dashboard: {self.dashboard_id}")
+            if not self.initialized: # Simplified check
+                logger.error(f"Attempted to display uninitialized dashboard: {self.dashboard_id}")
+                # Try to send an error message to the channel?
+                channel = await self.get_channel()
+                if channel:
+                     await channel.send(embed=self.create_error_embed("Dashboard controller not initialized.", title="Display Error"))
                 return None
-                
+
+            if not self.data_service:
+                logger.error(f"DataService not available for dashboard {self.dashboard_id}")
+                channel = await self.get_channel()
+                if channel:
+                     await channel.send(embed=self.create_error_embed("Data service unavailable.", title="Display Error"))
+                return None
+
             # Fetch data before creating embed/view
             data = await self.fetch_dashboard_data()
             if data is None: # Check if fetch failed critically
                  logger.error(f"Failed to fetch data for dashboard {self.dashboard_id}. Aborting display.")
-                 # Optionally display an error state on the dashboard
+                 # Display an error state on the dashboard
+                 channel = await self.get_channel()
+                 if channel:
+                     error_embed = self.create_error_embed("Failed to fetch required data.", title="Data Error")
+                     # Try to update existing message or send new one
+                     await self._send_or_edit(channel, error_embed, None) # Send error embed, no view
                  return None
             logger.debug(f"Fetched data for {self.dashboard_id}")
             # --- END Data Fetch ---
-            
+
             # Get channel
-            channel = await self.get_channel() # Inherited from Base
+            channel = await self.get_channel()
             if not channel:
                 logger.error(f"Channel {self.channel_id} not found for {self.dashboard_id}")
                 return None
-                
-            # Create embed and view (using the new methods that call build_embed/build_view with fetched data)
-            # Note: build_embed/build_view now receive data directly
-            embed = await self.build_embed(data) 
-            view = await self.build_view(data)
-            
+
+            # Create embed and view
+            # Build methods now directly use self.config and data
+            embed = await self.build_embed(data)
+            view = await self.build_view(data) # Returns None if no interactive components
+
             # Update existing message or send new one
+            # Extracted send/edit logic into a helper
+            self.message = await self._send_or_edit(channel, embed, view)
+
             if self.message:
-                try:
-                    await self.message.edit(embed=embed, view=view)
-                except (nextcord.NotFound, nextcord.HTTPException) as e:
-                    logger.warning(f"Failed to edit message {self.message_id} (likely deleted): {e}. Sending new message.")
-                    self.message = await channel.send(embed=embed, view=view)
-                    self.message_id = self.message.id
-            elif self.message_id:
-                try:
-                    self.message = await channel.fetch_message(self.message_id)
-                    await self.message.edit(embed=embed, view=view)
-                except (nextcord.NotFound, nextcord.HTTPException) as e:
-                    logger.warning(f"Failed to fetch/edit message {self.message_id} (likely deleted): {e}. Sending new message.")
-                    self.message = await channel.send(embed=embed, view=view)
-                    self.message_id = self.message.id
+                 self.message_id = str(self.message.id)
+                 logger.info(f"Dashboard {self.dashboard_id} displayed/updated. Message ID: {self.message_id}")
             else:
-                # No existing message, create new one
-                self.message = await channel.send(embed=embed, view=view)
-                self.message_id = self.message.id
-                
-            # Update message_id in database
-            if self.message_id:
-                try:
-                    # TODO: Ensure service_factory exists and is the right way to get repo
-                    if hasattr(self.bot, 'service_factory'):
-                         dashboard_repo = self.bot.service_factory.get_service('dashboard_repository')
-                         if dashboard_repo:
-                             await dashboard_repo.update_dashboard(self.dashboard_id, {'message_id': self.message_id})
-                         else:
-                             logger.warning("Dashboard repository service not found via service_factory.")
-                    else:
-                         logger.warning("Bot has no service_factory attribute.")
-                except Exception as e:
-                    logger.error(f"Error updating message_id in database: {e}")
-                
+                 logger.error(f"Failed to send or edit dashboard message for {self.dashboard_id}.")
+                 self.message_id = None # Ensure message_id is None if sending failed
+
+            # Return the message object (or None if failed)
             return self.message
-            
+
         except Exception as e:
             logger.error(f"Error displaying dashboard {self.dashboard_id}: {e}", exc_info=True)
+            # Try to display error embed
+            try:
+                channel = await self.get_channel()
+                if channel:
+                    error_embed = self.create_error_embed(f"An unexpected error occurred: {e}", title="Display Error")
+                    await self._send_or_edit(channel, error_embed, None)
+            except Exception as inner_e:
+                 logger.error(f"Failed to display error embed after another error: {inner_e}")
             return None
-    
+
+    # Helper for sending/editing message
+    async def _send_or_edit(self, channel: nextcord.TextChannel, embed: Optional[nextcord.Embed], view: Optional[nextcord.ui.View]) -> Optional[nextcord.Message]:
+        """Handles sending a new message or editing an existing one."""
+        message_to_return = None
+        if self.message:
+            try:
+                await self.message.edit(embed=embed, view=view)
+                message_to_return = self.message
+                logger.debug(f"Edited existing message {self.message.id}")
+            except (nextcord.NotFound, nextcord.HTTPException) as e:
+                logger.warning(f"Failed to edit message {self.message_id} (likely deleted): {e}. Sending new message.")
+                self.message = None # Reset message object
+                self.message_id = None # Reset message id
+                message_to_return = await channel.send(embed=embed, view=view)
+        elif self.message_id:
+            try:
+                # Attempt to fetch the message first before editing
+                msg = await channel.fetch_message(int(self.message_id))
+                await msg.edit(embed=embed, view=view)
+                self.message = msg # Store fetched message object
+                message_to_return = msg
+                logger.debug(f"Fetched and edited message {self.message_id}")
+            except (nextcord.NotFound, nextcord.HTTPException) as e:
+                logger.warning(f"Failed to fetch/edit message {self.message_id} (likely deleted): {e}. Sending new message.")
+                self.message = None # Reset message object
+                self.message_id = None # Reset message id
+                message_to_return = await channel.send(embed=embed, view=view)
+            except ValueError:
+                 logger.error(f"Invalid message_id format stored: {self.message_id}. Sending new message.")
+                 self.message = None
+                 self.message_id = None
+                 message_to_return = await channel.send(embed=embed, view=view)
+        else:
+            # No existing message, create new one
+            logger.debug("Sending new dashboard message.")
+            message_to_return = await channel.send(embed=embed, view=view)
+
+        return message_to_return
+
     async def cleanup(self):
         """Clean up resources"""
         logger.info(f"Cleaning up dashboard {self.dashboard_id}")
-    
+        # Clear view items if applicable (view might be None)
+        # view = getattr(self, '_last_view', None) # Assuming view is stored if needed
+        # if view:
+        #      view.stop()
+        #      view.clear_items()
+        self.initialized = False
+        self.message = None # Remove reference
+
     # --- Methods moved/adapted from DashboardBuilderService --- 
 
     async def build_embed(self, data: Dict[str, Any]) -> nextcord.Embed:
@@ -531,3 +574,79 @@ class DashboardController(BaseDashboardController):
         except Exception as e:
             logger.error(f"Error fetching dashboard data via service for {self.dashboard_id}: {e}", exc_info=True)
             return None # Indicate critical failure
+
+    async def get_channel(self) -> Optional[nextcord.TextChannel]:
+        """Get the channel for this dashboard"""
+        if not self.bot:
+            logger.error(f"Dashboard {self.dashboard_id} has no bot reference")
+            return None
+
+        try:
+            # Ensure channel_id is int
+            channel = self.bot.get_channel(int(self.channel_id))
+            if isinstance(channel, nextcord.TextChannel):
+                return channel
+            elif channel:
+                logger.warning(f"Channel {self.channel_id} found but is not a TextChannel (Type: {type(channel)}).")
+                return None
+            else:
+                logger.warning(f"Channel {self.channel_id} not found for dashboard {self.dashboard_id}")
+                return None
+        except Exception as e:
+            logger.error(f"Error getting channel for dashboard {self.dashboard_id}: {str(e)}")
+            return None
+
+    def apply_standard_footer(self, embed):
+        """Apply standard footer to embed."""
+        embed.set_footer(text=f"HomeLab Discord Bot • Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        return embed
+
+    async def check_rate_limit(self, interaction: nextcord.Interaction, action_type, cooldown_seconds=10):
+        """Check if an action is rate limited."""
+        user_id = interaction.user.id
+        current_time = datetime.now().timestamp()
+
+        # Initialize user's rate limits if not exists
+        if user_id not in self.rate_limits:
+            self.rate_limits[user_id] = {}
+
+        # Check if action is on cooldown
+        last_use = self.rate_limits[user_id].get(action_type, 0)
+        time_diff = current_time - last_use
+
+        if time_diff < cooldown_seconds:
+            # Action is rate limited
+            remaining = int(cooldown_seconds - time_diff)
+            await interaction.response.send_message(
+                f"Please wait {remaining} seconds before using this action again.",
+                ephemeral=True
+            )
+            return False
+
+        # Update last use time
+        self.rate_limits[user_id][action_type] = current_time
+        return True
+
+    def create_error_embed(self, error_message, title="Error", error_code=None):
+        """Create a standardized error embed."""
+        embed = nextcord.Embed(
+            title=f"❌ {title}",
+            description=error_message,
+            color=0xe74c3c # Red
+        )
+
+        if error_code:
+            embed.set_footer(text=f"Error Code: {error_code}")
+        else:
+            # Apply standard footer even to error embeds
+            self.apply_standard_footer(embed)
+
+        return embed
+
+    async def refresh(self, interaction: Optional[nextcord.Interaction] = None):
+        """Refresh the dashboard display"""
+        # Modified to directly call fetch/display as refresh_data is gone
+        logger.info(f"Refreshing dashboard {self.dashboard_id}")
+        # No separate refresh_data needed if display_dashboard fetches fresh data
+        # await self.refresh_data() # Removed call to non-existent method
+        return await self.display_dashboard()
