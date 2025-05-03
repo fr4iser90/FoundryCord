@@ -48,7 +48,7 @@ from .dashboards import (
     ComponentLayoutEntity, 
     ContentTemplateEntity, 
     DashboardMessageEntity, 
-    DashboardInstanceEntity,
+    DashboardConfigurationEntity,
 )
 
 # Project models 
@@ -100,7 +100,7 @@ __all__ = [
     'ComponentLayoutEntity', 
     'ContentTemplateEntity', 
     'DashboardMessageEntity', 
-    'DashboardInstanceEntity',
+    'DashboardConfigurationEntity',
     # Project models
     'Project', 
     'Task', 

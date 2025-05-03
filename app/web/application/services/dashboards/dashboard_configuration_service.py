@@ -14,7 +14,7 @@ from app.web.interfaces.api.rest.v1.schemas.dashboard_schemas import (
     DashboardConfigResponseSchema
 )
 # TODO: Rename Entity import
-from app.shared.infrastructure.models import DashboardInstanceEntity
+from app.shared.infrastructure.models import DashboardConfigurationEntity
 
 logger = get_web_logger()
 

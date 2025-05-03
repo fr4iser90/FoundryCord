@@ -15,17 +15,17 @@
 ## 2. Dashboard Management (Focus: Decoupling)
 
 *   `[x]` **Remove Old Constants:** Logic using `DASHBOARD_MAPPINGS` and `DASHBOARD_SERVICES` must be removed or replaced.
-*   `[ ]` **Source of Truth:** Available dashboard *types/components* defined by `dashboard_component_definitions`. Layouts stored in `dashboard_templates`. Active instance (`DashboardEntity`) stored in DB.
+*   `[ ]` **Source of Truth:** Available dashboard *types/components* defined by `dashboard_component_definitions`. **Saved Configurations** (independent blueprints) stored in `dashboard_templates`. Active instances tracked in `active_dashboards` (referencing a specific Saved Configuration ID).
 *   `[ ]` **Role of `DashboardCategory`:** Enum is solely for categorization/filtering.
 *   **Refactoring Targets:**
-    *   `[ ]` **`DashboardFactory` / Controller Creation:** Needs mechanism for generic `DashboardController` using templates/definitions. (Instantiation now via Lifecycle/Registry based on DB entities).
-    *   `[x]` **Consolidate Controller Logic:** Migrate logic to `DashboardController`, remove old ones.
-    *   `[x]` **Review Service Responsibilities:** Clarify `DashboardBuilderService` role. (UI logic moved to Controller, service renamed to `DashboardDataService`).
-    *   `[x]` **Data/Config-Driven Services:** Ensure `DashboardService` / `DashboardDataService` are config-driven.
-    *   `[ ]` **`DashboardLifecycleService` / `DashboardSetupService`:** Activation must use `DashboardEntity`. (`Setup` deleted. `Lifecycle` implements DB activation. **Verification needed**).
-    *   `[x]` **`DashboardWorkflow`:** Simplify to manage state only.
-    *   `[ ]` **API (Web):** Frontend/API interaction with templates not part of this phase.
-    *   `[ ]` **`DashboardService.sync_dashboard_from_snapshot`:** Verify mechanism for applying DB config changes from Web UI. (**Review needed**).
+    *   `[ ]` **`DashboardFactory` / Controller Creation:** No explicit factory needed. Instantiation via Lifecycle/Registry based on DB entities (`active_dashboards`).
+    *   `[x]` **Consolidate Controller Logic:** Logic to manage **Saved Configurations** exists in `DashboardConfigurationController`.
+    *   `[x]` **Review Service Responsibilities:** Service `DashboardConfigurationService` manages **Saved Configurations**.
+    *   `[x]` **Data/Config-Driven Services:** `DashboardConfigurationService` uses DB.
+    *   `[ ]` **`DashboardLifecycleService` / `DashboardSetupService`:** Activation must use `active_dashboards` table, referencing the specific **Saved Configuration ID** from `dashboard_templates`. (`Setup` deleted. `Lifecycle` currently uses old repo - **NEEDS REWORK** to use `active_dashboards`).
+    *   `[x]` **`DashboardWorkflow`:** Manages state.
+    *   `[ ]` **API (Web):** CRUD for **Saved Configurations** exists. Live instance management TBD.
+    *   `[ ]` **`DashboardService.sync_dashboard_from_snapshot`:** This concept is likely obsolete. Sync/Update of live instances needs a new mechanism based on `active_dashboards`. (**Review/Remove needed**).
 
 ## 3. Specific Checklist (Actions Taken in Phase 1)
 

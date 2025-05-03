@@ -16,8 +16,8 @@ branch_labels = None
 depends_on = None
 
 
-dashboard_templates_table = table(
-    'dashboard_templates',
+dashboard_configurations_table = table(
+    'dashboard_configurations',
     column('name', sa.String),
     column('dashboard_type', sa.String),
     column('description', sa.String),
@@ -108,8 +108,8 @@ def upgrade() -> None:
     ]
 
     if default_dashboards:
-        print(f"Inserting {len(default_dashboards)} default dashboard instances...")
-        op.bulk_insert(dashboard_templates_table, default_dashboards)
+        print(f"Inserting {len(default_dashboards)} default dashboard configurations...")
+        op.bulk_insert(dashboard_configurations_table, default_dashboards)
     else:
         print("No default dashboard instances defined to seed.")
 
@@ -126,7 +126,7 @@ def downgrade() -> None:
     default_names_sql_string = ", ".join([f"'{name}'" for name in default_names])
 
     if default_names_sql_string:
-        print(f"Deleting default dashboard instances: {', '.join(default_names)}")
-        op.execute(f"DELETE FROM dashboard_templates WHERE name IN ({default_names_sql_string})")
+        print(f"Deleting default dashboard configurations: {', '.join(default_names)}")
+        op.execute(f"DELETE FROM dashboard_configurations WHERE name IN ({default_names_sql_string})")
     else:
         print("No default dashboard names specified for deletion.")

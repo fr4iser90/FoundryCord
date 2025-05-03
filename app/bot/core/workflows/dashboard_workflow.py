@@ -11,6 +11,7 @@ from app.shared.domain.repositories import DashboardRepository
 from app.shared.infrastructure.database.session.context import session_context
 from app.bot.core.workflows.database_workflow import DatabaseWorkflow
 from app.shared.infrastructure.repositories.discord.dashboard_repository_impl import DashboardRepositoryImpl
+from app.bot.application.services.dashboard.dashboard_lifecycle_service import DashboardLifecycleService
 
 class DashboardWorkflow(BaseWorkflow):
     """Workflow for managing dashboard state.
@@ -24,6 +25,7 @@ class DashboardWorkflow(BaseWorkflow):
         super().__init__("dashboard")
         self.database_workflow = database_workflow
         self.bot = bot
+        self.lifecycle_service: Optional[DashboardLifecycleService] = None
         
         # Add dependencies
         self.add_dependency("database")
@@ -32,11 +34,25 @@ class DashboardWorkflow(BaseWorkflow):
         self.requires_guild_approval = True
         
     async def initialize(self) -> bool:
-        """Initialize dashboard workflow globally"""
+        """Initialize dashboard workflow globally and trigger lifecycle service."""
         try:
-            logger.info("Initializing dashboard workflow (state management only)")
-            # No complex service/registry initialization needed here.
-            # LifecycleService handles the actual dashboard setup.
+            logger.info("Initializing dashboard workflow (state management).")
+            # No complex service/registry initialization needed here directly.
+            
+            # Instantiate and initialize the Lifecycle Service here
+            if not self.bot:
+                 logger.error("Bot instance not available in DashboardWorkflow initialize. Cannot start LifecycleService.")
+                 return False
+                 
+            logger.info("Instantiating DashboardLifecycleService...")
+            self.lifecycle_service = DashboardLifecycleService(self.bot)
+            init_success = await self.lifecycle_service.initialize() # This calls activate_db_configured_dashboards
+            
+            if not init_success:
+                 logger.error("DashboardLifecycleService initialization failed.")
+                 return False
+                 
+            logger.info("Dashboard workflow and LifecycleService initialized successfully.")
             return True
             
         except Exception as e:
@@ -72,15 +88,17 @@ class DashboardWorkflow(BaseWorkflow):
             return False
     
     async def cleanup(self) -> None:
-        """Cleanup resources used by the dashboard workflow"""
-        logger.info("Cleaning up dashboard workflow resources")
+        """Cleanup workflow resources, including the lifecycle service."""
+        logger.info("Cleaning up dashboard workflow resources.")
+        if self.lifecycle_service and hasattr(self.lifecycle_service, 'shutdown'):
+            logger.info("Shutting down DashboardLifecycleService...")
+            try:
+                await self.lifecycle_service.shutdown()
+            except Exception as e:
+                logger.error(f"Error shutting down DashboardLifecycleService: {e}", exc_info=True)
         
-        try:
-            await super().cleanup()
-            logger.info("Dashboard workflow resources cleaned up")
-            
-        except Exception as e:
-            logger.error(f"Error cleaning up dashboard workflow: {e}")
+        await super().cleanup()
+        logger.info("Dashboard workflow cleanup complete.")
     
     async def load_dashboards(self, repo: Optional[DashboardRepositoryImpl] = None) -> List: # Accept optional repo
         """Load all dashboards from the repository."""

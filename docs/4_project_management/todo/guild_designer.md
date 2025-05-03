@@ -92,38 +92,41 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [ ] **Listener implementieren:** Alle relevanten Widgets müssen auf diese Events hören und ihre Anzeige entsprechend aktualisieren (nicht nur auf `loadTemplateData`).
 
 # --- Dashboard Configuration Builder (Designer) ---
-*   **Goal:** Allow users to create and configure Dashboard Configurations (the templates/instances identified by `dashboard_id`) using predefined components. Provide a live preview.
+*   **Goal:** Allow users to create and configure **Saved Dashboard Configurations** using predefined components. Provide a live preview. These configurations are independent saved states.
+*   **Core Principle (Save/Share/Copy):** Analogous to Guild Structure Templates. When a user wants to use a saved/shared configuration (theirs or another user's), a **complete, independent copy** is created in the `dashboard_templates` table and associated with the current user. There is **no persistent link or inheritance** between the original and the copy. Each entry in `dashboard_templates` is a self-contained configuration.
+*   **Editing Scope:** The Builder UI currently edits these **Saved Configurations** directly. Editing of *live, running instances* in Discord channels (which will be tracked in `active_dashboards` and reference a specific Saved Configuration ID) is a **separate, future functionality** requiring its own UI/API.
 *   [ ] **Database & Seeds:**
-    *   [x] `dashboard_templates` table exists for storing configurations
+    *   [x] `dashboard_templates` table exists for storing Saved Configurations.
     *   [x] `dashboard_component_definitions` table exists and is seeded.
-    *   [ ] Clarify: Table/Schema for Dashboard Configurations (name, description, ID, the `config` JSON). Needs to be independent of channels.
+    *   [ ] Clarify: Table/Schema for Saved Dashboard Configurations (name, description, ID, the `config` JSON) exists as `dashboard_templates`.
 *   [x] **Backend - Component API:**
-    *   **Files:** New controller/service/repository for dashboard components.
+    *   **Files:** `DashboardComponentController`, `DashboardComponentService`.
     *   [x] **New Endpoint (`GET /api/v1/dashboards/components`):** Returns available components.
 *   [ ] **Backend - Variables API (Optional/Placeholder):**
     *   **Files:** New controller/service.
     *   [ ] **New Endpoint (`GET /api/v1/dashboards/variables`):** Returns available template variables.
-*   [x] **Backend - Dashboard Configuration Management API:**
-    *   **Files:** New Controller/Service/Repo.
-    *   [x] **API Design:** Define CRUD endpoints for Dashboard Configurations:
-        *   [x] `POST /api/v1/dashboards/configurations`: Creates a new, empty config, returns its ID and basic data. (Fixed transaction issue)
-        *   [x] `GET /api/v1/dashboards/configurations`: Lists available configs.
-        *   [x] `GET /api/v1/dashboards/configurations/{config_id}`: Gets details (name, description, full `config` JSON).
-        *   [x] `PUT /api/v1/dashboards/configurations/{config_id}`: Updates name, description, and the complex `config` JSON from the Editor. (Fixed transaction issue)
-        *   [x] `DELETE /api/v1/dashboards/configurations/{config_id}`: Deletes a configuration.
-    *   [x] **Service/Repo:** Implement logic for these endpoints.
-
+*   [x] **Backend - Saved Dashboard Configuration Management API:**
+    *   **Files:** `DashboardConfigurationController`, `DashboardConfigurationService`, `DashboardConfigurationRepositoryImpl`.
+    *   **API Naming:** Endpoint prefix is `/configurations`. This manages the **Saved Configurations** stored in `dashboard_templates`.
+    *   [x] **API Design:** Define CRUD endpoints for Saved Dashboard Configurations:
+        *   [x] `POST /api/v1/dashboards/configurations`: Creates a new Saved Configuration.
+        *   [x] `GET /api/v1/dashboards/configurations`: Lists available Saved Configurations.
+        *   [x] `GET /api/v1/dashboards/configurations/{config_id}`: Gets details of a specific Saved Configuration.
+        *   [x] `PUT /api/v1/dashboards/configurations/{config_id}`: Updates a specific Saved Configuration.
+        *   [x] `DELETE /api/v1/dashboards/configurations/{config_id}`: Deletes a Saved Configuration.
+    *   [x] **Service/Repo:** Implement logic for these endpoints using `DashboardConfigurationEntity` (which maps to `dashboard_templates`).
 *   [ ] **Frontend - Toolbox Refactoring:**
     *   **Files:** `panel/toolbox.js`, `toolbox.html`.
     *   [ ] **Implement Tabs:** Update HTML and JS for tabs ("Structure", "Dashboard Components", "Dashboards").
     *   [x] **Fetch Components:** Load component definitions (`GET /api/v1/dashboards/components`).
     *   [x] **Display Components:** Show components in "Dashboard Components" tab as draggable items.
-    *   [x] **Associate Data:** Link component details (`component_key`, `definition`) to draggable items. # Plan changed: Using shared cache instead.
+    *   [ ] **Define Shared Cache:** Create mechanism (e.g., `designerComponentCache.js` or state) for component definitions.
+    *   [ ] **Populate Cache:** Modify `toolbox.js` to store fetched definitions in cache.
     *   [ ] **"Dashboards" Tab:**
-        *   [x] Add "New Dashboard Template" item with a "+"-Button.
+        *   [x] Add "New Dashboard Config" item with a "+"-Button.
         *   [x] Add listener to "+": Calls `POST /api/v1/dashboards/configurations`, gets new ID, dispatches `dashboardConfigCreated` event with the new ID.
         *   [ ] **Fetch Saved Configurations:** Call `GET /api/v1/dashboards/configurations`.
-        *   [ ] **Display Saved Configurations:** Render a clickable list of saved configurations (e.g., "Default Welcome Dashboard") below components. Store `config_id` on items.
+        *   [ ] **Display Saved Configurations:** Render a clickable list of **Saved Configurations** (e.g., "Default Welcome Dashboard"). Store `config_id` on items.
         *   [ ] **Add Click Listener:** Attach listener to saved configuration list items.
         *   [ ] **Handle Click:** Implement handler to fetch full config (`GET /api/v1/dashboards/configurations/{id}`) and dispatch `dashboardConfigLoaded` event.
 *   [ ] **Frontend - Dashboard Editor Widget (Builder):**
@@ -131,13 +134,11 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [x] **Define Widget:** `dashboard-editor` defined in `designerLayout.js` and default layout.
     *   [x] **Register Widget:** Registered in `designerWidgets.js`.
     *   [ ] **Update Widget Logic:**
-        *   [ ] **Define Shared Cache:** Create mechanism (e.g., `designerComponentCache.js` or state) for component definitions.
-        *   [ ] **Populate Cache:** Modify `toolbox.js` to store fetched definitions in cache.
         *   [ ] **Access Cache on Drop:** Update `drop` handler to look up definition from cache using `componentKey`.
         *   [x] **Add `currentEditingDashboardId` state.**
-        *   [x] **Listen for `dashboardConfigLoaded` event:** Update `currentEditingDashboardId`.
-        *   [ ] **Handle Drop:** Refine logic to store full component instance data (using definition from cache) in `this.components`.
-        *   [ ] **Trigger Save:** Ensure save (`_saveCurrentDashboardConfig`) uses the detailed `this.components` array.
+        *   [x] **Listen for `dashboardConfigLoaded` event:** Update `currentEditingDashboardId` (which refers to a **Saved Configuration** ID from `dashboard_templates`).
+        *   [ ] **Handle Drop:** Refine logic to store full component instance data (using definition from cache) in `this.components` (part of the **Saved Configuration** being edited).
+        *   [ ] **Trigger Save:** Remove automatic save on drop. Save should only happen via Config Widget button.
     *   [ ] **UI Layout:**
         *   [ ] Design the builder interface (drop area/canvas).
         *   [x] Implement drag-and-drop receiving for **Components** from Toolbox.
@@ -156,24 +157,37 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   **Files:** New `widget/dashboardConfiguration.js`, `designerLayout.js`, `designerWidgets.js`.
     *   [x] **Define Widget:** Add `dashboard-configuration` widget definition to `designerLayout.js` and default layout.
     *   [x] **Register Widget:** Add to `designerWidgets.js`.
-    *   [ ] **UI:** Create inputs for "Name", "Description", etc. of the *currently loaded* dashboard. Add a "Save Metadata" button.
+    *   [ ] **UI:** Create inputs for "Name", "Description", etc. of the *currently loaded* **Saved Configuration**. Add a "Save Configuration" button.
     *   [x] **Logic:**
         *   [x] Listen for `dashboardConfigLoaded` event: Update internal ID, load/display metadata (`GET .../configurations/{id}`).
-        *   [x] Implement Save: On button click, get values, call `PUT .../configurations/{id}` with name/description.
+        *   [ ] Implement Save: On button click, get values and current editor component state, call `PUT .../configurations/{id}` with full payload (name, description, config JSON).
 *   [ ] **Frontend - Dashboard Preview Widget:**
     *   **Files:** `widget/dashboardPreview.js`, `designerLayout.js`, `designerWidgets.js`.
     *   [x] **Define Widget:** `dashboard-preview` defined in `designerLayout.js` and default layout.
     *   [x] **Register Widget:** Registered in `designerWidgets.js`.
     *   [x] **Update Logic:**
-        *   [x] Listen for `dashboardConfigLoaded` event: Update internal ID, call `loadPreview(id)`.
+        *   [x] Listen for `dashboardConfigLoaded` event: Update internal ID (of the **Saved Configuration**), call `loadPreview(id)`.
     *   [ ] **Rendering Logic:**
         *   [ ] Implement `loadPreview(configId)`: Fetch config data (`GET .../configurations/{config_id}`), parse `config`.
-        *   [ ] **Render:** Create HTML to *approximate* Discord look based on `config`. Replace variables with placeholders.
+        *   [ ] **Render:** Create HTML to *approximate* Discord look based on `config` of the **Saved Configuration**. Replace variables with placeholders.
 *   [ ] **Frontend - Inter-Widget Communication:**
     *   **Files:** `designerState.js` / `designerEvents.js`, all relevant widgets.
-    *   [x] **Define State/Events:** Decide mechanism (state manager or custom events) to broadcast the `currentEditingDashboardId` and related events (`dashboardConfigLoaded`, `dashboardConfigCreated`).
+    *   [x] **Define State/Events:** Mechanism exists for `dashboardConfigLoaded`, `dashboardConfigCreated` (referring to **Saved Configurations**).
     *   [x] **Implement Listeners/Dispatchers:** Ensure Toolbox "+", Editor, Config, and Preview react appropriately.
-    *   [ ] **Toolbox Dispatcher:** Ensure Toolbox correctly dispatches `dashboardConfigLoaded` when a saved configuration is clicked.
+    *   [ ] **Toolbox Dispatcher:** Ensure Toolbox correctly dispatches `dashboardConfigLoaded` when a **Saved Configuration** is clicked.
+
+*   [ ] **Save/Share/Copy Functionality (Backend):**
+    *   [ ] **New Service/Endpoints:** Create dedicated service/API endpoints (e.g., `/dashboards/configurations/{id}/share`, `/dashboards/configurations/{id}/copy`) analogous to `TemplateSharingService`.
+    *   [ ] **DB Changes:** Add `is_shared`, `creator_user_id` flags/columns to `dashboard_templates` table.
+    *   [ ] **Copy Logic:** Implement deep copy mechanism for dashboard configurations (creating a new row in `dashboard_templates`) within the service.
+
+*   [ ] **Channel Assignment & Live Instances (Separate Task / Future):**
+    *   [ ] Design UI/UX for assigning a **Saved Configuration** ID (from `dashboard_templates`) to a channel.
+    *   [ ] Implement Bot logic to:
+        *   [ ] Create an entry in `active_dashboards` when assigned.
+        *   [ ] Store the ID of the chosen **Saved Configuration** (from `dashboard_templates`) in `active_dashboards.dashboard_template_id`.
+        *   [ ] Render/Manage the live dashboard based on the referenced **Saved Configuration** in `dashboard_templates` (potentially using `config_override` in `active_dashboards` for future runtime changes, but NOT copying the whole config on activation).
+    *   [ ] Design UI/UX and API for editing **live instances** directly (modifying `active_dashboards` records, potentially its `config_override`).
 
 # --- Guild Structure Template - Channel Dashboard Association ---
 *   **Workflow:** Snapshotting Dashboard Configs into Channel Templates.

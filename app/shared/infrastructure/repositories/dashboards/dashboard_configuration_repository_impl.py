@@ -4,20 +4,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shared.interface.logging.api import get_web_logger
 from app.shared.domain.repositories.dashboards.dashboard_configuration_repository import DashboardConfigurationRepository
-from app.shared.infrastructure.models import DashboardInstanceEntity
+from app.shared.infrastructure.models import DashboardConfigurationEntity
 # Assuming BaseRepositoryImpl exists and provides common CRUD operations
 from app.shared.infrastructure.repositories.base_repository_impl import BaseRepositoryImpl 
 
 logger = get_web_logger()
 
-class DashboardConfigurationRepositoryImpl(BaseRepositoryImpl[DashboardInstanceEntity], DashboardConfigurationRepository):
+class DashboardConfigurationRepositoryImpl(BaseRepositoryImpl[DashboardConfigurationEntity], DashboardConfigurationRepository):
     """SQLAlchemy implementation for the DashboardConfigurationRepository."""
 
     def __init__(self, session: AsyncSession):
-        super().__init__(DashboardInstanceEntity, session)
+        super().__init__(DashboardConfigurationEntity, session)
         logger.debug("DashboardConfigurationRepositoryImpl initialized.")
 
-    async def get_by_id(self, config_id: int) -> Optional[DashboardInstanceEntity]:
+    async def get_by_id(self, config_id: int) -> Optional[DashboardConfigurationEntity]:
         """Retrieves a dashboard configuration by its unique ID."""
         session_id = id(self.session) # Get ID of the session instance being used
         logger.debug(f"Repository (Session {session_id}): Attempting to get {self.model.__name__} by ID: {config_id}")
@@ -33,7 +33,7 @@ class DashboardConfigurationRepositoryImpl(BaseRepositoryImpl[DashboardInstanceE
             logger.error(f"Repository (Session {session_id}): Error during get_by_id for ID {config_id}: {e}", exc_info=True)
             raise e # Re-raise the exception
 
-    async def list_all(self) -> List[DashboardInstanceEntity]:
+    async def list_all(self) -> List[DashboardConfigurationEntity]:
         """Retrieves all dashboard configurations."""
         logger.debug(f"Repository: Getting all dashboard configurations")
         stmt = select(self.model)
@@ -48,10 +48,10 @@ class DashboardConfigurationRepositoryImpl(BaseRepositoryImpl[DashboardInstanceE
         dashboard_type: str,
         description: Optional[str] = None,
         config: Optional[Dict[str, Any]] = None
-    ) -> DashboardInstanceEntity:
+    ) -> DashboardConfigurationEntity:
         """Creates a new dashboard configuration."""
         logger.debug(f"Repository: Creating dashboard configuration: name='{name}', type='{dashboard_type}', description='{description}'")
-        new_config = DashboardInstanceEntity(
+        new_config = DashboardConfigurationEntity(
             name=name,
             dashboard_type=dashboard_type,
             description=description,
@@ -63,7 +63,7 @@ class DashboardConfigurationRepositoryImpl(BaseRepositoryImpl[DashboardInstanceE
         logger.info(f"Repository: Created dashboard configuration ID: {new_config.id}")
         return new_config
 
-    async def update(self, config_id: int, update_data: Dict[str, Any]) -> Optional[DashboardInstanceEntity]:
+    async def update(self, config_id: int, update_data: Dict[str, Any]) -> Optional[DashboardConfigurationEntity]:
         """Updates an existing dashboard configuration."""
         logger.debug(f"Repository: Updating dashboard configuration ID: {config_id} with data: {update_data}")
         config_entity = await self.get_by_id(config_id)
