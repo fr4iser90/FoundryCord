@@ -28,7 +28,7 @@ def upgrade() -> None:
     op.create_index('idx_component_definition_lookup', 'dashboard_component_definitions', ['dashboard_type', 'component_type', 'component_key'])
 
     op.create_table(
-        'dashboard_instances',
+        'dashboard_templates',
         sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
         sa.Column('dashboard_type', sa.String(length=100), nullable=False),
         sa.Column('name', sa.String(length=100), nullable=False),
@@ -39,6 +39,6 @@ def upgrade() -> None:
     )
 
 def downgrade() -> None:
-    op.drop_table('dashboard_instances')
+    op.drop_table('dashboard_templates')
     op.drop_index('idx_component_definition_lookup', table_name='dashboard_component_definitions')
     op.drop_table('dashboard_component_definitions')

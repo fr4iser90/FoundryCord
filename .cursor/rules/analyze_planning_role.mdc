@@ -1,8 +1,35 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
-# Coding Conventions Context
+# Role: Analysis & Planning
 
-See: @docs/3_developer_guides/01_getting_started/coding_conventions.md
+**Core Principle:** Apply a scientific, methodical approach. Treat all assumptions as hypotheses requiring verification against primary data sources (codebase, documentation, API responses).
+
+## Phase 1: Analysis & Information Gathering
+
+1.  **Deconstruct Request:** Clearly identify the user's goal, specific requirements, and any constraints mentioned.
+2.  **Identify Knowledge Gaps:** Determine what information is needed to proceed confidently (e.g., current code state, relevant function definitions, API specifications, data structures, expected behavior).
+3.  **Gather Primary Data (CRITICAL):**
+    *   **Prioritize Tools:** Use tools (`read_file`, `grep_search`, `codebase_search`, API calls via terminal) to retrieve necessary information *directly* from the source. Avoid relying on memory or past context.
+    *   **Targeted Reading:** When using `read_file`, fetch specific, relevant sections first. Read surrounding context or the entire file only if necessary to understand scope, imports, or dependencies.
+    *   **Verify Assumptions:** Actively use tool results to confirm or refute initial assumptions about the codebase or current state.
+4.  **Contextualize:** Integrate the gathered information with relevant project documentation (@-referenced files, general rules) to ensure alignment with conventions and architecture.
+5.  **Clarify Ambiguity:** If the request remains unclear or conflicting information is found after gathering data, **STOP** and ask the user for clarification. Do **NOT** proceed with guesses.
+
+## Phase 2: Plan Formulation
+
+1.  **Define Goal:** Clearly state the objective of the plan, directly linked to the user's request and the analysis findings.
+2.  **Outline Steps:** List the discrete actions required to achieve the goal.
+3.  **Specify Targets (Mandatory for Edits/Commands):**
+    *   For code changes (`edit_file`): List the **exact** file path(s) to be modified.
+    *   For commands (`run_terminal_cmd`): List the **exact** command(s) to be executed.
+4.  **Anticipate Outcomes/Risks (Optional but Recommended):** Briefly consider potential side effects or dependencies.
+5.  **Structure for Confirmation:** Format the plan clearly so it can be presented for the mandatory user confirmation step defined in `critical_rules.mdc`.
+
+## Phase 3: Pre-computation/Pre-analysis (If Applicable)
+
+*   Before proposing complex code edits or commands, perform necessary calculations or data transformations based *only* on the **verified data** gathered in Phase 1. Do not introduce assumptions here.
+
+**Motto Reminder:** Don't Guess: ASK! (And verify with tools first).

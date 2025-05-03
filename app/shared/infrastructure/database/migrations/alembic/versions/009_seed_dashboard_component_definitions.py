@@ -19,56 +19,56 @@ depends_on = None
 # Import all the seed dictionaries
 # Adjust paths if your structure is different
 try:
-    from app.shared.infrastructure.database.seeds.dashboard_instances.common.buttons import DEFAULT_BUTTONS as COMMON_BUTTONS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.common.embeds import DEFAULT_EMBEDS as COMMON_EMBEDS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.common.messages import DEFAULT_MESSAGES as COMMON_MESSAGES
-    from app.shared.infrastructure.database.seeds.dashboard_instances.common.modals import DEFAULT_MODALS as COMMON_MODALS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.common.selectors import DEFAULT_SELECTORS as COMMON_SELECTORS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.common.views import DEFAULT_VIEWS as COMMON_VIEWS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.common.buttons import DEFAULT_BUTTONS as COMMON_BUTTONS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.common.embeds import DEFAULT_EMBEDS as COMMON_EMBEDS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.common.messages import DEFAULT_MESSAGES as COMMON_MESSAGES
+    from app.shared.infrastructure.database.seeds.dashboard_templates.common.modals import DEFAULT_MODALS as COMMON_MODALS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.common.selectors import DEFAULT_SELECTORS as COMMON_SELECTORS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.common.views import DEFAULT_VIEWS as COMMON_VIEWS
 except ImportError as e:
     print(f"Could not import common seeds: {e}")
     COMMON_BUTTONS, COMMON_EMBEDS, COMMON_MESSAGES, COMMON_MODALS, COMMON_SELECTORS, COMMON_VIEWS = {}, {}, {}, {}, {}, {}
 
 try:
-    from app.shared.infrastructure.database.seeds.dashboard_instances.gamehub.buttons import GAMEHUB_BUTTONS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.gamehub.embeds import GAMEHUB_EMBEDS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.gamehub.messages import GAMEHUB_MESSAGES
-    from app.shared.infrastructure.database.seeds.dashboard_instances.gamehub.modals import GAMEHUB_MODALS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.gamehub.selectors import GAMEHUB_SELECTORS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.gamehub.views import GAMEHUB_VIEWS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.gamehub.buttons import GAMEHUB_BUTTONS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.gamehub.embeds import GAMEHUB_EMBEDS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.gamehub.messages import GAMEHUB_MESSAGES
+    from app.shared.infrastructure.database.seeds.dashboard_templates.gamehub.modals import GAMEHUB_MODALS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.gamehub.selectors import GAMEHUB_SELECTORS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.gamehub.views import GAMEHUB_VIEWS
 except ImportError as e:
     print(f"Could not import gamehub seeds: {e}")
     GAMEHUB_BUTTONS, GAMEHUB_EMBEDS, GAMEHUB_MESSAGES, GAMEHUB_MODALS, GAMEHUB_SELECTORS, GAMEHUB_VIEWS = {}, {}, {}, {}, {}, {}
 
 try:
-    from app.shared.infrastructure.database.seeds.dashboard_instances.monitoring.buttons import MONITORING_BUTTONS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.monitoring.embeds import MONITORING_EMBEDS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.monitoring.messages import MONITORING_MESSAGES
-    from app.shared.infrastructure.database.seeds.dashboard_instances.monitoring.modals import MONITORING_MODALS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.monitoring.selectors import MONITORING_SELECTORS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.monitoring.views import MONITORING_VIEWS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.monitoring.buttons import MONITORING_BUTTONS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.monitoring.embeds import MONITORING_EMBEDS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.monitoring.messages import MONITORING_MESSAGES
+    from app.shared.infrastructure.database.seeds.dashboard_templates.monitoring.modals import MONITORING_MODALS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.monitoring.selectors import MONITORING_SELECTORS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.monitoring.views import MONITORING_VIEWS
 except ImportError as e:
     print(f"Could not import monitoring seeds: {e}")
     MONITORING_BUTTONS, MONITORING_EMBEDS, MONITORING_MESSAGES, MONITORING_MODALS, MONITORING_SELECTORS, MONITORING_VIEWS = {}, {}, {}, {}, {}, {}
 
 try:
-    from app.shared.infrastructure.database.seeds.dashboard_instances.project.buttons import PROJECT_BUTTONS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.project.embeds import PROJECT_EMBEDS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.project.messages import PROJECT_MESSAGES
-    from app.shared.infrastructure.database.seeds.dashboard_instances.project.modals import PROJECT_MODALS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.project.selectors import PROJECT_SELECTORS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.project.views import PROJECT_VIEWS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.project.buttons import PROJECT_BUTTONS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.project.embeds import PROJECT_EMBEDS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.project.messages import PROJECT_MESSAGES
+    from app.shared.infrastructure.database.seeds.dashboard_templates.project.modals import PROJECT_MODALS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.project.selectors import PROJECT_SELECTORS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.project.views import PROJECT_VIEWS
 except ImportError as e:
     print(f"Could not import project seeds: {e}")
     PROJECT_BUTTONS, PROJECT_EMBEDS, PROJECT_MESSAGES, PROJECT_MODALS, PROJECT_SELECTORS, PROJECT_VIEWS = {}, {}, {}, {}, {}, {}
 
 try:
-    from app.shared.infrastructure.database.seeds.dashboard_instances.welcome.buttons import WELCOME_BUTTONS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.welcome.embeds import WELCOME_EMBEDS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.welcome.messages import WELCOME_MESSAGES # Check if exists
-    from app.shared.infrastructure.database.seeds.dashboard_instances.welcome.modals import WELCOME_MODALS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.welcome.selectors import WELCOME_SELECTORS
-    from app.shared.infrastructure.database.seeds.dashboard_instances.welcome.views import WELCOME_VIEWS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.welcome.buttons import WELCOME_BUTTONS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.welcome.embeds import WELCOME_EMBEDS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.welcome.messages import WELCOME_MESSAGES # Check if exists
+    from app.shared.infrastructure.database.seeds.dashboard_templates.welcome.modals import WELCOME_MODALS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.welcome.selectors import WELCOME_SELECTORS
+    from app.shared.infrastructure.database.seeds.dashboard_templates.welcome.views import WELCOME_VIEWS
 except ImportError as e:
     print(f"Could not import welcome seeds: {e}")
     WELCOME_BUTTONS, WELCOME_EMBEDS, WELCOME_MESSAGES, WELCOME_MODALS, WELCOME_SELECTORS, WELCOME_VIEWS = {}, {}, {}, {}, {}, {}

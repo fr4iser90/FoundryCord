@@ -303,6 +303,7 @@ export function initializeDashboardEditor(containerSelector = '#widget-content-d
         console.error("[DashboardEditor] Failed to initialize UI.");
         return null; // Return null on error
     }
+    return editor; // Return the created instance on success
 }
 
 

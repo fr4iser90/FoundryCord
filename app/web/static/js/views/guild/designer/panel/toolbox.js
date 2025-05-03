@@ -45,9 +45,8 @@ async function renderToolboxComponents() {
     // Clear existing content and set loading placeholders
     structureList.innerHTML = '<li class="list-group-item text-muted small">Loading structure...</li>';
     dashboardsList.innerHTML = '<li class="list-group-item text-muted small">Loading dashboards...</li>';
-    // We might not need to clear tabNav if we pre-defined the buttons in HTML, but good practice
-    // tabNav.innerHTML = ''; // Assuming tabs are now static in HTML
 
+    // --- Fetch API Components ---
     let apiComponents = [];
     try {
         console.log("[Toolbox] Fetching components from API: /api/v1/dashboards/components");
@@ -60,8 +59,30 @@ async function renderToolboxComponents() {
         }
     } catch (error) {
         console.error("[Toolbox] Error fetching components from API:", error);
-        showToast("Error loading dynamic components. Using defaults.", "error");
+        showToast("Error loading dynamic components.", "error"); // Simplified message
     }
+
+    // --- Fetch Saved Dashboard Configurations ---
+    let savedConfigs = [];
+    try {
+        console.log("[Toolbox] Fetching saved configurations from API: /api/v1/dashboards/configurations");
+        // Assuming the list endpoint returns an array directly or similar to components { configurations: [] }
+        // Adjust based on actual API response structure
+        const configResponse = await apiRequest('/api/v1/dashboards/configurations', { method: 'GET' });
+        // Check if the response itself is the array or if it's nested
+        if (Array.isArray(configResponse)) {
+             savedConfigs = configResponse;
+        } else if (configResponse && Array.isArray(configResponse.configurations)) { // Example nested structure
+            savedConfigs = configResponse.configurations;
+        } else {
+             console.warn("[Toolbox] Saved configurations API response format unexpected or empty:", configResponse);
+        }
+         console.log(`[Toolbox] Received ${savedConfigs.length} saved configurations from API.`);
+    } catch (error) {
+         console.error("[Toolbox] Error fetching saved configurations from API:", error);
+         showToast("Error loading saved dashboards.", "error");
+    }
+    // --------------------------------------------
 
     // --- Separate items into Structure and Dashboards --- 
     const dashboardItems = apiComponents.filter(comp => comp.component_type !== 'structure');
@@ -80,12 +101,12 @@ async function renderToolboxComponents() {
     }
     console.log(`[Toolbox] Rendered ${structureElements.length} structure items.`);
 
-    // --- Render Dashboards Tab (with internal grouping) --- 
+    // --- Render Dashboards Tab --- 
     
     // Clear placeholder first
     dashboardsList.innerHTML = '';
 
-    // Render the "New Dashboard" draggable item (which now includes the inline button via renderComponentItem)
+    // Render the \"New Dashboard\" draggable item
     if (dashboardStructureElements.length > 0) {
         dashboardStructureElements.forEach(comp => {
             renderComponentItem(dashboardsList, comp); 
@@ -94,7 +115,32 @@ async function renderToolboxComponents() {
         console.warn("[Toolbox] dashboardStructureElements array is empty!");
     }
     
-    // Optional: Add a visual separator if there are API components below
+    // --- Render Saved Configurations ---
+    const savedConfigsHeader = document.createElement('li');
+    savedConfigsHeader.className = 'list-group-item list-group-item-secondary text-uppercase small fw-bold mt-3'; // Header styling
+    savedConfigsHeader.textContent = 'Saved Configurations';
+    dashboardsList.appendChild(savedConfigsHeader);
+
+    if (savedConfigs.length === 0) {
+        const noConfigsLi = document.createElement('li');
+        noConfigsLi.className = 'list-group-item text-muted small';
+        noConfigsLi.textContent = 'No saved configurations found.';
+        dashboardsList.appendChild(noConfigsLi);
+    } else {
+        savedConfigs.forEach(config => {
+            const li = document.createElement('li');
+            // Make these clickable, not draggable
+            li.className = 'list-group-item list-group-item-action toolbox-load-config-item'; // Use distinct class
+            li.setAttribute('data-config-id', config.id);
+            li.innerHTML = `<i class="bi bi-file-earmark-text me-2"></i> ${config.name} <span class="text-muted small">(${config.dashboard_type})</span>`;
+            li.style.cursor = 'pointer'; // Indicate clickability
+            dashboardsList.appendChild(li);
+        });
+        console.log(`[Toolbox] Rendered ${savedConfigs.length} saved configurations.`);
+    }
+    // ------------------------------------
+
+    // Add a visual separator before API components if there are any
     if (dashboardItems.length > 0) {
         const separator = document.createElement('hr');
         separator.classList.add('my-2'); 
@@ -103,10 +149,11 @@ async function renderToolboxComponents() {
     
     // Now, handle the API components (dashboard widgets)
     if (dashboardItems.length === 0) {
-        // Append message only if New Dashboard wasn't added either
-        if (dashboardStructureElements.length === 0) {
-            dashboardsList.innerHTML = '<li class="list-group-item text-muted small">No dashboard components available.</li>';
-        }
+        // Don't add "No components" if we added saved configs
+        // const noComponentsLi = document.createElement('li');
+        // noComponentsLi.className = 'list-group-item text-muted small';
+        // noComponentsLi.textContent = 'No dashboard components available.';
+        // dashboardsList.appendChild(noComponentsLi);
     } else {
         // Group dashboard components by dashboard_type
         const groupedDashboards = dashboardItems.reduce((groups, comp) => {
@@ -123,7 +170,7 @@ async function renderToolboxComponents() {
             return groups;
         }, {});
 
-        // Sort dashboard categories (e.g., Common first, then alphabetical)
+        // Sort dashboard categories 
         const sortedDashboardCategories = Object.keys(groupedDashboards).sort((a, b) => {
             if (a === 'Common') return -1;
             if (b === 'Common') return 1;
@@ -132,6 +179,7 @@ async function renderToolboxComponents() {
             return a.localeCompare(b);
         });
 
+        // Render category headers and items
         let totalDashboardsRendered = 0;
         sortedDashboardCategories.forEach(category => {
             // Add category header within the dashboard list
@@ -142,18 +190,18 @@ async function renderToolboxComponents() {
 
             // Render components within this category
             groupedDashboards[category].forEach(comp => {
-                renderComponentItem(dashboardsList, comp);
+                renderComponentItem(dashboardsList, comp); // This makes them draggable
                 totalDashboardsRendered++;
             });
         });
          console.log(`[Toolbox] Rendered ${totalDashboardsRendered} dashboard items across ${sortedDashboardCategories.length} groups.`);
     }
 
-    makeItemsDraggable(); // Apply draggable to items in both tabs
-    console.log("[Toolbox] Finished rendering components into tabs.");
+    makeItemsDraggable(); // Apply draggable only to component items
+    console.log("[Toolbox] Finished rendering components and configurations into tabs.");
 }
 
-// Helper function to render a single component item
+// Helper function to render a single component item (Draggable or Static for New Dashboard)
 function renderComponentItem(listElement, comp) {
     // Validation
     if (!comp.metadata || !comp.metadata.display_name) {
@@ -198,9 +246,9 @@ function renderComponentItem(listElement, comp) {
 }
 
 
-// Function to make list items draggable (Updated Selector)
+// Function to make list items draggable (Updated Selector for specific items)
 function makeItemsDraggable() {
-    // Select items within the tab content area
+    // Select only items intended to be draggable components
     $("#toolbox-tab-content .toolbox-item").draggable({
         helper: "clone",
         revert: "invalid",
@@ -216,8 +264,52 @@ function makeItemsDraggable() {
             console.log("[Draggable] Stop dragging:", $(this).data('component-key'));
         }
     });
-    console.log("[Toolbox] Initialized/Re-initialized draggable for toolbox items in tabs.");
+    // Do NOT make .toolbox-load-config-item draggable here
+    console.log("[Toolbox] Initialized/Re-initialized draggable for toolbox component items in tabs.");
 }
+
+// --- NEW: Handler for clicking a saved configuration ---
+async function handleLoadConfigurationClick(event) {
+    // Find the list item element that was clicked
+    const targetElement = event.target.closest('.toolbox-load-config-item');
+    if (!targetElement) return; // Click wasn't on a loadable item
+
+    const configId = targetElement.dataset.configId;
+    if (!configId) {
+        console.error("[Toolbox] Clicked config item missing data-config-id attribute.");
+        return;
+    }
+
+    console.log(`[Toolbox] Requesting load for configuration ID: ${configId}`);
+    showToast(`Loading dashboard config ${configId}...`, 'info', 2000); // Short duration toast
+
+    try {
+        const apiUrl = `/api/v1/dashboards/configurations/${configId}`;
+        const configData = await apiRequest(apiUrl, { method: 'GET' });
+
+        if (!configData || !configData.id) {
+             console.error(`[Toolbox] Failed to load configuration ${configId} or response invalid.`, configData);
+             showToast(`Error: Could not load configuration ${configId}.`, 'error');
+             return;
+        }
+        
+        console.log(`[Toolbox] Configuration ${configId} loaded successfully. Dispatching event.`, configData);
+        
+        // Dispatch the custom event with the loaded data
+        document.dispatchEvent(new CustomEvent('dashboardConfigLoaded', {
+            detail: { configData: configData } 
+        }));
+        
+        showToast(`Dashboard '${configData.name}' loaded.`, 'success');
+
+    } catch (error) {
+        console.error(`[Toolbox] Error fetching configuration details for ID ${configId}:`, error);
+        // apiRequest usually shows a toast on error, but we can add a specific one
+        showToast(`Failed to fetch dashboard ${configId}.`, 'error');
+    }
+}
+// ----------------------------------------------------
+
 
 // Main initialization function for the toolbox
 export function initializeToolbox() {
@@ -231,7 +323,6 @@ export function initializeToolbox() {
     // Fetch and render components into the new tab structure
     renderToolboxComponents().catch(error => {
         console.error("[Toolbox] Unexpected error during initial tab render:", error);
-        // Simplified error display within the content area
         const tabContent = document.getElementById('toolbox-tab-content');
         if(tabContent) {
             tabContent.innerHTML = '<div class="p-3 text-danger">Critical toolbox initialization error. Cannot load components.</div>';
@@ -240,79 +331,68 @@ export function initializeToolbox() {
         }
     });
 
-    // Remove previous listener
-    // const addButton = document.getElementById('toolbox-add-btn'); 
-    // if (addButton) { addButton.removeEventListener(...) } // Need to store listener to remove properly
-
     // Add event listener for the new add button *inside* the dashboard tab
     // Use event delegation on the container in case the button is re-rendered
     const dashboardsListContainer = document.querySelector('#tab-pane-dashboards .toolbox-list-group');
     if (dashboardsListContainer) {
+        // Listener for the "+" button next to "New Dashboard"
         dashboardsListContainer.addEventListener('click', async (event) => {
-            const clickedButton = event.target.closest('#toolbox-add-dashboard-btn');
-            if (clickedButton) {
-                console.log("[Toolbox] Add New Dashboard Configuration button clicked. Triggering API call...");
-                // --- Direct API call to create new config --- 
-                const defaultName = `New Dashboard ${Date.now()}`;
-                // Use a default type or leave it to backend? Let's assume a default is needed.
-                const defaultType = 'custom'; 
-                const apiUrl = '/api/v1/dashboards/configurations';
-                const payload = { 
-                    name: defaultName,
-                    dashboard_type: defaultType 
-                    // description and config will be empty/null by default in backend
-                };
+            if (event.target.closest('#toolbox-add-dashboard-btn')) {
+                console.log("[Toolbox] 'Add new dashboard' button clicked.");
+                event.preventDefault();
+                event.stopPropagation(); // Prevent other listeners if needed
+                
+                // Disable button temporarily
+                const addButton = event.target.closest('#toolbox-add-dashboard-btn');
+                if (addButton) addButton.disabled = true;
 
-                clickedButton.disabled = true; // Disable button during API call
-                showToast('info', 'Creating new dashboard configuration...');
-
+                showToast("Creating new dashboard configuration...", "info");
                 try {
-                    const newConfig = await apiRequest(apiUrl, {
+                    const response = await apiRequest('/api/v1/dashboards/configurations', { 
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
+                        headers: {'Content-Type': 'application/json'},
+                        // Send minimal required data for creation
+                        body: JSON.stringify({
+                            name: "New Dashboard", 
+                            dashboard_type: "custom", // Default type? Or make selectable?
+                            description: "A newly created dashboard." 
+                        }) 
                     });
-                    
-                    if (newConfig && newConfig.id) {
-                        console.log("[Toolbox] New dashboard config created successfully:", newConfig);
-                        showToast('success', `Created: ${newConfig.name}`);
+
+                    if (response && response.id) {
+                        console.log(`[Toolbox] New dashboard created successfully. ID: ${response.id}. Dispatching event.`);
+                        showToast(`New dashboard created (ID: ${response.id}).`, 'success');
                         
-                        // Dispatch event to load the new config into editor/config widgets
-                        console.log("[Toolbox] Dispatching 'dashboardConfigLoaded' for new config.");
-                        document.dispatchEvent(new CustomEvent('dashboardConfigLoaded', { 
-                            detail: { 
-                                configData: newConfig
-                            } 
+                        // Dispatch event for other widgets to know a new config was made
+                        document.dispatchEvent(new CustomEvent('dashboardConfigCreated', {
+                            detail: { newConfigData: response } // Send the full response
                         }));
+                        
+                        // Optionally, re-render the toolbox to show the new item in the list
+                        await renderToolboxComponents(); 
 
                     } else {
-                         throw new Error("Invalid response received after creating dashboard config.");
+                        console.error("[Toolbox] Failed to create new dashboard configuration. Invalid response:", response);
+                        showToast("Error: Could not create new dashboard.", 'error');
                     }
-
                 } catch (error) {
-                    console.error("[Toolbox] Error creating dashboard configuration:", error);
-                    // showToast handled by apiRequest usually, but maybe add a specific one?
-                    showToast('error', 'Failed to create new dashboard configuration.');
+                    console.error("[Toolbox] Error creating new dashboard configuration:", error);
+                    // apiRequest should show an error toast
                 } finally {
-                    clickedButton.disabled = false; // Re-enable button
+                     // Re-enable button
+                     if (addButton) addButton.disabled = false;
                 }
-                // -------------------------------------------
             }
+
+            // --- NEW: Listener for loading saved configurations ---
+            if (event.target.closest('.toolbox-load-config-item')) {
+                handleLoadConfigurationClick(event);
+            }
+            // -----------------------------------------------------
         });
-        console.log("[Toolbox] Event listener added for #toolbox-add-dashboard-btn.");
     } else {
-        console.warn("[Toolbox] Dashboards list container not found for event delegation.");
+        console.warn("[Toolbox] Could not find dashboards list container (#tab-pane-dashboards .toolbox-list-group) to attach listeners.");
     }
-
-    // Optional: Initialize Bootstrap Tabs if needed (often handled automatically via data-bs-toggle)
-    // const triggerTabList = [].slice.call(document.querySelectorAll('#toolbox-tabs button'))
-    // triggerTabList.forEach(function (triggerEl) {
-    //   const tabTrigger = new bootstrap.Tab(triggerEl)
-    //   // Optional: Add listeners if needed
-    // })
-
-    console.log("[Toolbox] Toolbox module with tabs loaded successfully.");
 }
 
-// Initial log
-console.log("[Toolbox] Toolbox module loaded."); 
+console.log("[Toolbox] Toolbox module loaded.");

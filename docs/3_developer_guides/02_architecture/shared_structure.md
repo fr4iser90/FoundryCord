@@ -128,7 +128,7 @@ shared
 │   │   │   ├── versions
 │   │   │   └── wait_for_postgres.py
 │   │   ├── seeds
-│   │   │   └── dashboard_instances
+│   │   │   └── dashboard_templates
 │   │   │       ├── common
 │   │   │       │   ├── buttons.py
 │   │   │       │   ├── embeds.py

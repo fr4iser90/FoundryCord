@@ -118,26 +118,20 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [ ] **Implement Tabs:** Update HTML and JS for tabs ("Structure", "Dashboard Components", "Dashboards").
     *   [x] **Fetch Components:** Load component definitions (`GET /api/v1/dashboards/components`).
     *   [x] **Display Components:** Show components in "Dashboard Components" tab as draggable items.
-    *   [x] **Associate Data:** Link component details (`component_key`, `definition`) to draggable items. # Plan changed: Using shared cache instead.
+    *   [x] **Associate Data:** Link component details (`component_key`, `definition`) to draggable items.
     *   [ ] **"Dashboards" Tab:**
         *   [x] Add "New Dashboard Template" item with a "+"-Button.
         *   [x] Add listener to "+": Calls `POST /api/v1/dashboards/configurations`, gets new ID, dispatches `dashboardConfigCreated` event with the new ID.
-        *   [ ] **Fetch Saved Configurations:** Call `GET /api/v1/dashboards/configurations`.
-        *   [ ] **Display Saved Configurations:** Render a clickable list of saved configurations (e.g., "Default Welcome Dashboard") below components. Store `config_id` on items.
-        *   [ ] **Add Click Listener:** Attach listener to saved configuration list items.
-        *   [ ] **Handle Click:** Implement handler to fetch full config (`GET /api/v1/dashboards/configurations/{id}`) and dispatch `dashboardConfigLoaded` event.
+        *   [ ] (Optional) List existing configurations here for loading into the editor? Needs `GET /api/v1/dashboards/configurations`.
 *   [ ] **Frontend - Dashboard Editor Widget (Builder):**
     *   **Files:** `widget/dashboardEditor.js`, `designerLayout.js`, `designerWidgets.js`.
     *   [x] **Define Widget:** `dashboard-editor` defined in `designerLayout.js` and default layout.
     *   [x] **Register Widget:** Registered in `designerWidgets.js`.
     *   [ ] **Update Widget Logic:**
-        *   [ ] **Define Shared Cache:** Create mechanism (e.g., `designerComponentCache.js` or state) for component definitions.
-        *   [ ] **Populate Cache:** Modify `toolbox.js` to store fetched definitions in cache.
-        *   [ ] **Access Cache on Drop:** Update `drop` handler to look up definition from cache using `componentKey`.
+        *   [ ] **Remove Drop Handler for 'dashboard':** No longer needed.
         *   [x] **Add `currentEditingDashboardId` state.**
         *   [x] **Listen for `dashboardConfigLoaded` event:** Update `currentEditingDashboardId`.
-        *   [ ] **Handle Drop:** Refine logic to store full component instance data (using definition from cache) in `this.components`.
-        *   [ ] **Trigger Save:** Ensure save (`_saveCurrentDashboardConfig`) uses the detailed `this.components` array.
+        *   [x] **Handle Drop:** Always save configuration after a component is dropped.
     *   [ ] **UI Layout:**
         *   [ ] Design the builder interface (drop area/canvas).
         *   [x] Implement drag-and-drop receiving for **Components** from Toolbox.
@@ -171,9 +165,8 @@ _(This section covers applying templates to Discord, managing channel follows, d
         *   [ ] **Render:** Create HTML to *approximate* Discord look based on `config`. Replace variables with placeholders.
 *   [ ] **Frontend - Inter-Widget Communication:**
     *   **Files:** `designerState.js` / `designerEvents.js`, all relevant widgets.
-    *   [x] **Define State/Events:** Decide mechanism (state manager or custom events) to broadcast the `currentEditingDashboardId` and related events (`dashboardConfigLoaded`, `dashboardConfigCreated`).
+    *   [x] **Define State/Events:** Decide mechanism (state manager or custom events) to broadcast the `currentEditingDashboardId` and related events (`dashboardConfigLoaded`, `dashboardConfigUpdated`).
     *   [x] **Implement Listeners/Dispatchers:** Ensure Toolbox "+", Editor, Config, and Preview react appropriately.
-    *   [ ] **Toolbox Dispatcher:** Ensure Toolbox correctly dispatches `dashboardConfigLoaded` when a saved configuration is clicked.
 
 *   [ ] **Channel Assignment (Separate Task):**
     *   [ ] Design UI/UX for assigning a `dashboard_id` (from the configurations) to a channel (e.g., dropdown in Properties Panel when channel selected?). Requires listing available configurations.

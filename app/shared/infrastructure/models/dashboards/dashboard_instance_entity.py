@@ -10,7 +10,7 @@ from app.shared.infrastructure.models import Base # Assuming Base is defined her
 # TODO: Rename class to DashboardConfigurationEntity?
 class DashboardInstanceEntity(Base):
     """Represents a dashboard configuration (formerly instance linked to channel)."""
-    __tablename__ = "dashboard_instances"
+    __tablename__ = "dashboard_templates"
 
     id = Column(Integer, primary_key=True)
     dashboard_type = Column(String(100), nullable=False, comment="Functional type like 'welcome', 'project', 'gamehub'") # Clarified comment
