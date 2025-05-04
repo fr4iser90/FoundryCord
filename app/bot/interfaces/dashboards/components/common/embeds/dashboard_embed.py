@@ -12,6 +12,23 @@ if TYPE_CHECKING:
 
 logger = get_bot_logger()
 
+# Helper function to format strings with data, handling missing keys gracefully
+def format_string(template_string: Optional[str], data: Dict[str, Any]) -> str:
+    if not template_string:
+        return ""
+    try:
+        # Use string.format with a dictionary that handles missing keys
+        # This prevents KeyError if a template variable doesn't exist in data
+        class SafeDict(dict):
+            def __missing__(self, key):
+                # Return the original placeholder if key is missing
+                return f'{{{{{key}}}}}'
+        
+        return template_string.format_map(SafeDict(data))
+    except Exception as e:
+        logger.error(f"Error formatting string '{template_string[:50]}...': {e}")
+        return template_string # Return original on error
+
 class DashboardEmbed(BaseComponent):
     """Main dashboard embed for displaying dashboard content."""
     
@@ -32,8 +49,8 @@ class DashboardEmbed(BaseComponent):
         # No component-specific init logic needed here anymore, config is merged in base.
         # logger.debug(f"Initialized DashboardEmbed component for instance_id: {self.config.get('instance_id')}")
     
-    def build(self) -> nextcord.Embed:
-        """Build and return the Discord embed object using the merged config."""
+    def build(self, data: Optional[Dict[str, Any]] = None) -> nextcord.Embed:
+        """Build and return the Discord embed object using the merged config and provided data."""
         # --- DETAILED LOGGING START ---
         instance_id = self.config.get('instance_id', 'UNKNOWN_INSTANCE')
         logger.info(f"[Embed Build - {instance_id}] STARTING BUILD. Full self.config: {self.config}")
@@ -42,13 +59,15 @@ class DashboardEmbed(BaseComponent):
             # Use self.config which now holds the merged values
             # --- DETAILED LOGGING ---
             title = self.config.get("title", "Default Title")
+            formatted_title = format_string(title, data or {})
             description = self.config.get("description", "")
+            formatted_description = format_string(description, data or {})
             color_value = self.config.get("color", nextcord.Color.blurple().value)
-            logger.info(f"[Embed Build - {instance_id}] Creating base embed with Title='{title}', Desc='{description[:50]}...', Color={color_value}")
+            logger.info(f"[Embed Build - {instance_id}] Creating base embed with Title='{formatted_title}', Desc='{formatted_description[:50]}...', Color={color_value}")
             # --- DETAILED LOGGING END ---
             embed = nextcord.Embed(
-                title=title, # Use merged config
-                description=description, # Use merged config
+                title=formatted_title, # Use formatted string
+                description=formatted_description, # Use formatted string
                 color=color_value # Use merged config
             )
 
@@ -62,13 +81,15 @@ class DashboardEmbed(BaseComponent):
                      if isinstance(field, dict):
                            # --- DETAILED LOGGING ---
                            field_name = field.get("name", "\\u200b")
+                           formatted_field_name = format_string(field_name, data or {})
                            field_value = field.get("value", "")
+                           formatted_field_value = format_string(field_value, data or {})
                            field_inline = field.get("inline", True)
-                           logger.info(f"[Embed Build - {instance_id}] Adding Field {i+1}: Name='{field_name}', Value='{field_value[:50]}...', Inline={field_inline}")
+                           logger.info(f"[Embed Build - {instance_id}] Adding Field {i+1}: Name='{formatted_field_name}', Value='{formatted_field_value[:50]}...', Inline={field_inline}")
                            # --- DETAILED LOGGING END ---
                            embed.add_field(
-                               name=field_name,
-                               value=field_value,
+                               name=formatted_field_name,
+                               value=formatted_field_value,
                                inline=field_inline
                            )
                      else:
@@ -102,11 +123,12 @@ class DashboardEmbed(BaseComponent):
             if isinstance(footer_data, dict):
                  # --- DETAILED LOGGING ---
                  footer_text = footer_data.get("text", "")
+                 formatted_footer_text = format_string(footer_text, data or {})
                  footer_icon_url = footer_data.get("icon_url")
-                 logger.info(f"[Embed Build - {instance_id}] Setting Footer: Text='{footer_text}', Icon='{footer_icon_url}'")
+                 logger.info(f"[Embed Build - {instance_id}] Setting Footer: Text='{formatted_footer_text}', Icon='{footer_icon_url}'")
                  # --- DETAILED LOGGING END ---
                  embed.set_footer(
-                     text=footer_text,
+                     text=formatted_footer_text,
                      icon_url=footer_icon_url
                  )
             elif isinstance(footer_data, str): # Handle simple string footer
@@ -126,12 +148,13 @@ class DashboardEmbed(BaseComponent):
             if isinstance(author_data, dict):
                   # --- DETAILED LOGGING ---
                   author_name = author_data.get("name", "")
+                  formatted_author_name = format_string(author_name, data or {})
                   author_url = author_data.get("url")
                   author_icon_url = author_data.get("icon_url")
-                  logger.info(f"[Embed Build - {instance_id}] Setting Author: Name='{author_name}', URL='{author_url}', Icon='{author_icon_url}'")
+                  logger.info(f"[Embed Build - {instance_id}] Setting Author: Name='{formatted_author_name}', URL='{author_url}', Icon='{author_icon_url}'")
                   # --- DETAILED LOGGING END ---
                   embed.set_author(
-                     name=author_name,
+                     name=formatted_author_name,
                      url=author_url,
                      icon_url=author_icon_url
                   )

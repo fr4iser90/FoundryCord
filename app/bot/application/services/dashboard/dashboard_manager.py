@@ -130,13 +130,14 @@ class DashboardManager:
     async def refresh_all_dashboards(self) -> int:
         """Refresh all active dashboards."""
         refreshed = 0
-        for channel_id in self.active_dashboards:
+        # This logic is now moved to DashboardRegistry
+        logger.warning("refresh_all_dashboards called on DashboardManager, but logic is moved to DashboardRegistry.")
+        # Keep the basic structure for potential direct calls, but it won't loop
+        for channel_id in list(self.active_dashboards.keys()): # Use list for safety
             if await self.refresh_dashboard(channel_id):
                 refreshed += 1
-                
-        logger.info(f"Refreshed {refreshed}/{len(self.active_dashboards)} dashboards")
         return refreshed
-        
+
     async def cleanup_old_dashboards(self, guild, dashboard_channels=None) -> int:
         """Clean up old dashboard messages from specified channels."""
         if dashboard_channels is None:

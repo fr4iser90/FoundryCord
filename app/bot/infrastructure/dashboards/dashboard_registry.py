@@ -1,12 +1,15 @@
 # app/bot/infrastructure/dashboards/dashboard_registry.py
 from typing import Dict, Any, Optional, Type
 import nextcord
-
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
-# Import the correct, unified controller
+
 from app.bot.interfaces.dashboards.controller.dashboard_controller import DashboardController
+from app.bot.interfaces.dashboards.components.base_component import BaseComponent
+from app.bot.infrastructure.config.registries.component_registry import ComponentRegistry
+from app.bot.infrastructure.factories.service_factory import ServiceFactory
+from nextcord.ext import tasks
 
 class DashboardRegistry:
     """Registry for managing active dashboard controller instances."""
@@ -24,6 +27,7 @@ class DashboardRegistry:
         self.component_registry = None  # Will be fetched
         self.initialized = False
         self.logger = logger
+        self._refresh_active_dashboards_loop.start()
         
     async def initialize(self):
         """Initialize the dashboard registry (simple initialization)."""
@@ -182,3 +186,37 @@ class DashboardRegistry:
             if controller.dashboard_type == dashboard_type:
                 return controller
         return None
+
+    # --- Background Refresh Task ---
+    @tasks.loop(seconds=60) # Refresh every 60 seconds
+    async def _refresh_active_dashboards_loop(self):
+        """Periodically refresh all active dashboards."""
+        active_dashboard_ids = list(self.active_dashboards.keys())
+        if not active_dashboard_ids:
+            # logger.debug("No active dashboards in registry to refresh.")
+            return
+            
+        logger.info(f"Registry: Starting refresh cycle for {len(active_dashboard_ids)} active dashboards...")
+        refreshed_count = 0
+        failed_count = 0
+        
+        for channel_id, controller in list(self.active_dashboards.items()): # Use list() for safe iteration
+            try:
+                logger.debug(f"Registry: Refreshing dashboard in channel {channel_id} (Controller: {controller})...")
+                await controller.refresh_data() # Fetch new data
+                await controller.display_dashboard() # Update the message
+                refreshed_count += 1
+                logger.debug(f"Registry: Successfully refreshed dashboard in channel {channel_id}.")
+            except Exception as e:
+                failed_count += 1
+                logger.error(f"Registry: Error refreshing dashboard in channel {channel_id} during loop: {e}", exc_info=True)
+                # Optionally, consider deactivating the controller here if it fails repeatedly
+                
+        if refreshed_count > 0 or failed_count > 0:
+            logger.info(f"Registry: Finished refresh cycle. Refreshed: {refreshed_count}, Failed: {failed_count}/{len(active_dashboard_ids)}")
+            
+    @_refresh_active_dashboards_loop.before_loop
+    async def before_refresh_loop(self):
+        """Wait until the bot is ready before starting the loop."""
+        await self.bot.wait_until_ready()
+        logger.info("DashboardRegistry refresh loop is ready and starting.")

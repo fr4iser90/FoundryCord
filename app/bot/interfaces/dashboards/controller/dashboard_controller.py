@@ -538,8 +538,8 @@ class DashboardController:
             component_instance = component_class(self.bot, embed_component_config)
 
             # Build the embed using the component's own build method
-            # This method now uses the correctly merged config internal to the component.
-            built_embed = component_instance.build()
+            # --- MODIFIED: Pass data dictionary ---
+            built_embed = component_instance.build(data=data) # Pass data here
 
             if not isinstance(built_embed, nextcord.Embed):
                  logger.error(f"Dashboard {self.dashboard_id}: Component {component_key} build() method did not return a nextcord.Embed object.")
@@ -763,3 +763,69 @@ class DashboardController:
         # No separate refresh_data needed if display_dashboard fetches fresh data
         # await self.refresh_data() # Removed call to non-existent method
         return await self.display_dashboard()
+
+    async def refresh_data(self):
+        """Fetches new data and updates the displayed dashboard message."""
+        logger.debug(f"Dashboard {self.dashboard_id}: Starting data refresh.")
+        try:
+            data = await self.fetch_dashboard_data()
+            if data is None:
+                logger.error(f"Dashboard {self.dashboard_id}: Failed to fetch data during refresh.")
+                # Optionally update display with an error state?
+                return
+
+            embed = await self.build_embed(data)
+            view = await self.build_view(data)
+
+            if embed is None and view is None:
+                 logger.warning(f"Dashboard {self.dashboard_id}: Both embed and view were None after build during refresh. Cannot update.")
+                 return
+
+            await self.update_display(embed=embed, view=view)
+            logger.info(f"Dashboard {self.dashboard_id}: Successfully refreshed and updated display.")
+
+        except Exception as e:
+            logger.error(f"Dashboard {self.dashboard_id}: Unhandled error during refresh_data: {e}", exc_info=True)
+
+    async def update_display(self, embed: Optional[nextcord.Embed], view: Optional[nextcord.ui.View]):
+        """Edits the existing dashboard message with the new embed and view."""
+        if not self.message_id:
+            logger.error(f"Dashboard {self.dashboard_id}: Cannot update display, message_id is not set.")
+            return
+        if not self.channel_id:
+             logger.error(f"Dashboard {self.dashboard_id}: Cannot update display, channel_id is not set.")
+             return
+
+        try:
+            channel = await self.get_channel()
+            if not channel:
+                logger.error(f"Dashboard {self.dashboard_id}: Could not find channel {self.channel_id} to update display.")
+                return
+
+            # Fetch the existing message
+            message = await channel.fetch_message(self.message_id)
+            
+            # Edit the message
+            await message.edit(embed=embed, view=view)
+            logger.debug(f"Dashboard {self.dashboard_id}: Successfully edited message {self.message_id} in channel {self.channel_id}.")
+
+        except nextcord.NotFound:
+            logger.error(f"Dashboard {self.dashboard_id}: Message {self.message_id} not found in channel {self.channel_id}. Cannot update display. Maybe it was deleted?", exc_info=True)
+            # Consider resetting self.message_id or attempting to resend?
+        except nextcord.Forbidden:
+             logger.error(f"Dashboard {self.dashboard_id}: Bot lacks permissions to edit message {self.message_id} in channel {self.channel_id}.", exc_info=True)
+        except Exception as e:
+            logger.error(f"Dashboard {self.dashboard_id}: Unexpected error updating display for message {self.message_id}: {e}", exc_info=True)
+
+    async def cleanup(self):
+        """Clean up resources"""
+        logger.info(f"Cleaning up dashboard {self.dashboard_id}")
+        # Clear view items if applicable (view might be None)
+        # view = getattr(self, '_last_view', None) # Assuming view is stored if needed
+        # if view:
+        #      view.stop()
+        #      view.clear_items()
+        self.initialized = False
+        self.message = None # Remove reference
+        logger.info(f"Dashboard {self.dashboard_id}: Refresh triggered by interaction.")
+        await self.refresh_data() # Call the main refresh logic
