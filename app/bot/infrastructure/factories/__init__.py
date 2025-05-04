@@ -1,14 +1,7 @@
-# Export composite factories for top-level import
 from .composite.bot_factory import BotComponentFactory
 from .service_factory import ServiceFactory
-
-# Allow direct access to specific factories if needed
-
-from .service.task_factory import TaskFactory
-
-# You may want to export the base factory as well
+from .task_factory import TaskFactory
 from .base.base_factory import BaseFactory
-
 from app.shared.domain.monitoring.factories.collector_factory import CollectorFactory
 
 
@@ -18,7 +11,6 @@ __all__ = [
     'BaseFactory',
     'CollectorFactory',
     'ServiceFactory',
-    'BaseComponentFactory', # Base class, may not need export depending on usage
-    # 'DashboardFactory', # Removed as obsolete
+    'BaseComponentFactory',
 ]
 

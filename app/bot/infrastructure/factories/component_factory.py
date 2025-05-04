@@ -1,12 +1,13 @@
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Type
 
 import nextcord
 
-from app.bot.infrastructure.factories.component_registry import ComponentRegistry
 from app.bot.interfaces.dashboards.components.base_component import BaseComponent
+from app.bot.infrastructure.config.registries.component_registry import ComponentRegistry
+from app.shared.interface.logging.api import get_bot_logger
 
-logger = logging.getLogger("homelab.components")
+logger = get_bot_logger()
 
 class ComponentFactory:
     """Factory for creating dashboard UI components"""

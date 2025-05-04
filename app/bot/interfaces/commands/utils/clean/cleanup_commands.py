@@ -1,7 +1,8 @@
 import nextcord
+from nextcord.ext import commands
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
-from app.bot.utils.decorators.auth import admin_or_higher
+from app.bot.interfaces.commands.decorators.auth import admin_or_higher
 from app.bot.application.tasks.cleanup_task import cleanup_homelab_channel
 from app.bot.application.tasks.cleanup_dm_task import cleanup_dm_messages
 import traceback

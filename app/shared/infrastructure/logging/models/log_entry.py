@@ -15,5 +15,5 @@ class LogEntry:
     
     @property
     def is_error(self) -> bool:
-        """Check if this log entry represents an error"""
-        return self.level in ("ERROR", "CRITICAL")
+        """Check if this log entry represents an error or critical issue"""
+        return self.level.upper() in ("ERROR", "CRITICAL")

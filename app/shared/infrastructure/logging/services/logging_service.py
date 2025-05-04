@@ -28,3 +28,8 @@ class LoggingService(ABC):
     def warning(self, message: str, **context) -> None:
         """Log a warning message"""
         pass
+
+    @abstractmethod
+    def critical(self, message: str, exception: Optional[Exception] = None, **context) -> None:
+        """Log a critical message with optional exception"""
+        pass

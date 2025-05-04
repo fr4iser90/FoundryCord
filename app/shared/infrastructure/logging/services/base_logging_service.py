@@ -71,6 +71,25 @@ class BaseLoggingService(LoggingService):
         """Log a warning message"""
         self.log(message, "WARNING", **context)
     
+    def critical(self, message: str, exception: Optional[Exception] = None, **context) -> None:
+        """Log a critical message, handling potential exc_info conflict."""
+        extra = context or {}
+        # Explicitly remove exc_info from context before passing to logger.critical/exception
+        if 'exc_info' in extra:
+            self.logger.warning("Removed conflicting 'exc_info' from context before logging critical error.", extra={'original_context': extra.copy()})
+            popped_exc_info = extra.pop('exc_info')
+            # Decide which exc_info to use: the one passed explicitly or the one from context?
+            # Typically, the explicit one (or True/exception object) takes precedence.
+            final_exc_info = exception or popped_exc_info or True 
+        else:
+            final_exc_info = exception or True # Default for critical logging
+
+        if exception: # Prefer logger.exception if an exception object is available
+            self.logger.exception(message, exc_info=final_exc_info, extra=extra)
+        else:
+             # Log as critical, potentially with traceback if final_exc_info is True/Exception
+             self.logger.critical(message, exc_info=final_exc_info, extra=extra)
+    
     def get_child(self, name: str) -> 'BaseLoggingService':
         """Get a child logger with the specified name"""
         logger_name = f"{self.logger.name}.{name}"

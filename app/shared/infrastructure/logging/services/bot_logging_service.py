@@ -38,3 +38,6 @@ class BotLoggingService(commands.Cog):
         
     def warning(self, message, **context):
         return self.logger.warning(message, **context)
+
+    def critical(self, message, exception=None, **context):
+        return self.logger.critical(message, exception=exception, **context)

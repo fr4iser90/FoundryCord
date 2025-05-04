@@ -1,6 +1,6 @@
 import nextcord
 import os
-from app.bot.utils.chunk_manager import chunk_message
+from app.bot.infrastructure.messaging.chunk_manager import chunk_message
 from app.bot.infrastructure.messaging.response_mode import ResponseMode, ACTIVE_RESPONSE_MODE
 
 async def send_response(ctx, response):

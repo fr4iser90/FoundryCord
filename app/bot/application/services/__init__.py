@@ -5,7 +5,6 @@ from .channel.channel_factory import ChannelFactory
 from .channel.channel_setup_service import ChannelSetupService
 from .channel.game_server_channel_service import GameServerChannelService
 from .config.config_service import ConfigService
-from .dashboard.dashboard_builder import DashboardBuilder
 from .dashboard.dashboard_data_service import DashboardDataService
 from .dashboard.dashboard_lifecycle_service import DashboardLifecycleService
 from .dashboard.component_loader_service import ComponentLoaderService
@@ -24,7 +23,6 @@ __all__ = [
     'ChannelSetupService',
     'GameServerChannelService',
     'ConfigService',
-    'DashboardBuilder',
     'DashboardDataService',
     'DashboardLifecycleService',
     'ComponentLoaderService',
@@ -33,5 +31,5 @@ __all__ = [
     'TaskService',
     'SystemMonitoringService',
     'SystemMetricsService',
-    'WireguardService',
+    'WireguardService'
 ]

@@ -1,11 +1,14 @@
 import nextcord
 from typing import Optional, Dict, Any, List, ClassVar, TYPE_CHECKING
+from abc import ABC, abstractmethod
+from typing import Coroutine
 
 from app.shared.interface.logging.api import get_bot_logger
 from app.bot.interfaces.dashboards.components.base_component import BaseComponent
 
+# Use TYPE_CHECKING to avoid circular import during runtime
 if TYPE_CHECKING:
-    from app.bot.core.main import FoundryCord
+    from app.bot.infrastructure.startup.bot import FoundryCord
 
 logger = get_bot_logger()
 

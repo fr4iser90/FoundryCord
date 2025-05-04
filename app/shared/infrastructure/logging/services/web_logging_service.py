@@ -27,3 +27,7 @@ class WebLoggingService(BaseLoggingService):
         self.info(f"Response: {response.status_code}",
                 status_code=response.status_code)
         return response 
+
+    # Add explicit delegate method for clarity
+    def critical(self, message, exception=None, **context):
+        return super().critical(message, exception=exception, **context) 

@@ -8,4 +8,5 @@ __version__ = "0.0.1"
 from app.shared.interface.logging.api import get_web_logger
 logger = get_web_logger()
 # from app.bot.infrastructure.factories import BotComponentFactory
-# from app.bot.core.main import run_bot  # If you have a central start function
+# from .config import WEB_CONFIG_VALUE
+

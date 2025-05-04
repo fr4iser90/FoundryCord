@@ -1,18 +1,18 @@
 import logging
+import importlib
 from collections.abc import Awaitable
 from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
 from app.bot.infrastructure.factories.service_factory import ServiceFactory
 from app.shared.interface.logging.api import get_bot_logger
 
-from app.bot.infrastructure.factories.component_registry import ComponentRegistry
+from app.bot.infrastructure.config.registries.component_registry import ComponentRegistry
+from app.bot.infrastructure.factories.component_factory import ComponentFactory
 from app.bot.infrastructure.factories.task_factory import TaskFactory
 
-# Import specific factories (not BaseFactory)
-from app.bot.interfaces.dashboards.components.factories.button_factory import ButtonFactory
-from app.bot.interfaces.dashboards.components.factories.embed_factory import EmbedFactory
-
+# Use TYPE_CHECKING to avoid circular import during runtime
 if TYPE_CHECKING:
-    from app.bot.core.main import FoundryCord # For type hinting
+    from app.bot.infrastructure.startup.bot import FoundryCord
+
 
 logger = get_bot_logger()
 
@@ -110,14 +110,26 @@ class BotComponentFactory:
         return RepositoryFactory(self.bot)
 
     def _initialize_interface_factories(self) -> Dict[str, Any]:
-        """Initialize UI component factories."""
+        """Initialize UI component factories by retrieving them from the ServiceFactory."""
         if not self.component_registry:
              logger.error("Cannot initialize interface factories: ComponentRegistry not available.")
              return {}
+        if not self.service_factory:
+             logger.error("Cannot initialize interface factories: ServiceFactory not available.")
+             return {}
+
+        # Retrieve UI factories from ServiceFactory instead of direct import/instantiation
+        button_factory = self.service_factory.get_service('button_factory')
+        embed_factory = self.service_factory.get_service('embed_factory')
+
+        if not button_factory:
+            logger.warning("_initialize_interface_factories: ButtonFactory not found in ServiceFactory.")
+        if not embed_factory:
+            logger.warning("_initialize_interface_factories: EmbedFactory not found in ServiceFactory.")
 
         return {
-            'button': ButtonFactory(self.bot),
-            'embed': EmbedFactory(self.bot),
+            'button': button_factory, # Use retrieved instance (or None if not found)
+            'embed': embed_factory,   # Use retrieved instance (or None if not found)
             'dashboard': self.component_registry,
         }
 

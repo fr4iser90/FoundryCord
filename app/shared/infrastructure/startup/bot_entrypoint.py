@@ -22,7 +22,7 @@ async def start_bot():
         
         # Import and run main after successful bootstrap
         try:
-            from app.bot.core.main import main
+            from app.bot.infrastructure.startup.main import main
             await main()
             return True
         except ImportError as ie:
