@@ -1,10 +1,13 @@
 """Dashboard embed component for displaying dashboard content."""
 
 import nextcord
-from typing import Optional, Dict, Any, ClassVar, List, Union
+from typing import Optional, Dict, Any, ClassVar, List, Union, TYPE_CHECKING
 
 from app.shared.interface.logging.api import get_bot_logger
 from app.bot.interfaces.dashboards.components.base_component import BaseComponent
+
+if TYPE_CHECKING:
+    from app.bot.core.main import FoundryCord
 
 logger = get_bot_logger()
 
@@ -14,138 +17,111 @@ class DashboardEmbed(BaseComponent):
     # Class variables
     COMPONENT_TYPE: ClassVar[str] = "dashboard_embed"
     
-    def __init__(self, bot, config: Optional[Dict[str, Any]] = None):
-        """Initialize the dashboard embed.
-        
-        Args:
-            bot: The bot instance (accepted but maybe not used internally).
-            config: Configuration for the dashboard embed
-                - title: The title of the embed
-                - description: The description of the embed
-                - color: The color of the embed (in integer form)
-                - fields: List of fields to add to the embed
-                - image_url: Optional URL for the embed image
-                - thumbnail_url: Optional URL for the embed thumbnail
-                - footer: Optional footer text
-                - author: Optional author configuration
+    def __init__(self, bot: 'FoundryCord', instance_config: Dict[str, Any]):
         """
-        self.bot = bot
-        
-        default_config = {
-            "title": "Dashboard",
-            "description": "Dashboard information",
-            "color": nextcord.Color.blurple().value,
-            "fields": [],
-            "image_url": None,
-            "thumbnail_url": None,
-            "footer": None,
-            "author": None,
-            "visible": True,
-            "enabled": True,
-        }
-        
-        super().__init__(config=config, default_config=default_config)
+        Initialize the dashboard embed.
+
+        Args:
+            bot: The bot instance.
+            instance_config: Configuration specific to this instance from the dashboard layout.
+                             MUST contain 'instance_id' and 'component_key'.
+        """
+        # Call the updated BaseComponent __init__ which handles the config merging
+        super().__init__(bot=bot, instance_config=instance_config)
+        # No component-specific init logic needed here anymore, config is merged in base.
+        # logger.debug(f"Initialized DashboardEmbed component for instance_id: {self.config.get('instance_id')}")
     
     def build(self) -> nextcord.Embed:
-        """Build and return the Discord embed object.
-        
-        Returns:
-            The built Discord embed
-        """
+        """Build and return the Discord embed object using the merged config."""
         try:
-            # Create the base embed
+            # Use self.config which now holds the merged values
             embed = nextcord.Embed(
-                title=self.config.get("title", "Dashboard"),
-                description=self.config.get("description", ""),
-                color=self.config.get("color", nextcord.Color.blurple().value)
+                title=self.config.get("title", "Default Title"), # Use merged config
+                description=self.config.get("description", ""), # Use merged config
+                color=self.config.get("color", nextcord.Color.blurple().value) # Use merged config
             )
-            
-            # Add fields if provided
+
+            # Add fields if provided in merged config
             fields = self.config.get("fields", [])
-            for field in fields:
-                embed.add_field(
-                    name=field.get("name", "\u200b"),
-                    value=field.get("value", "\u200b"),
-                    inline=field.get("inline", True)
-                )
-            
+            if isinstance(fields, list):
+                for field in fields:
+                     if isinstance(field, dict):
+                          embed.add_field(
+                              name=field.get("name", "\u200b"),
+                              value=field.get("value", "\u200b"),
+                              inline=field.get("inline", True)
+                          )
+
             # Add image if provided
             if self.config.get("image_url"):
                 embed.set_image(url=self.config["image_url"])
-            
+
             # Add thumbnail if provided
             if self.config.get("thumbnail_url"):
                 embed.set_thumbnail(url=self.config["thumbnail_url"])
-            
+
             # Add footer if provided
-            if self.config.get("footer"):
-                if isinstance(self.config["footer"], dict):
-                    embed.set_footer(
-                        text=self.config["footer"].get("text", ""),
-                        icon_url=self.config["footer"].get("icon_url")
-                    )
-                else:
-                    embed.set_footer(text=str(self.config["footer"]))
-                
+            footer_data = self.config.get("footer")
+            if isinstance(footer_data, dict):
+                embed.set_footer(
+                    text=footer_data.get("text", ""),
+                    icon_url=footer_data.get("icon_url")
+                )
+            elif isinstance(footer_data, str): # Handle simple string footer
+                 embed.set_footer(text=footer_data)
+
             # Add author if provided
-            if self.config.get("author"):
-                if isinstance(self.config["author"], dict):
-                    embed.set_author(
-                        name=self.config["author"].get("name", ""),
-                        url=self.config["author"].get("url"),
-                        icon_url=self.config["author"].get("icon_url")
-                    )
-                else:
-                    embed.set_author(name=str(self.config["author"]))
-            
-            # Add timestamp
+            author_data = self.config.get("author")
+            if isinstance(author_data, dict):
+                 embed.set_author(
+                    name=author_data.get("name", ""),
+                    url=author_data.get("url"),
+                    icon_url=author_data.get("icon_url")
+                 )
+            elif isinstance(author_data, str): # Handle simple string author name
+                 embed.set_author(name=author_data)
+
+            # Add timestamp if configured
             if self.config.get("timestamp", True):
-                embed.timestamp = nextcord.utils.utcnow()
-                
+                 embed.timestamp = nextcord.utils.utcnow()
+
             return embed
-            
+
         except Exception as e:
-            logger.error(f"Error building dashboard embed: {str(e)}")
+            logger.error(f"Error building dashboard embed (Instance: {self.config.get('instance_id')}): {str(e)}")
             # Return a minimal embed if we had an error building the proper one
             return nextcord.Embed(
                 title="Dashboard Error",
                 description="An error occurred while building this dashboard embed.",
                 color=nextcord.Color.dark_gray()
             )
-    
+
+    # --- Field methods now directly modify self.config ---
     def add_field(self, name: str, value: str, inline: bool = True) -> None:
-        """Add a field to the embed configuration.
-        
-        Args:
-            name: The name of the field
-            value: The value of the field
-            inline: Whether the field should be inline
-        """
-        if "fields" not in self.config:
+        """Add a field to the embed configuration."""
+        if "fields" not in self.config or not isinstance(self.config["fields"], list):
             self.config["fields"] = []
-            
+
         self.config["fields"].append({
             "name": name,
             "value": value,
             "inline": inline
         })
-    
+
     def clear_fields(self) -> None:
         """Clear all fields from the embed configuration."""
         self.config["fields"] = []
-    
+
     @classmethod
     def deserialize(cls, data: Dict[str, Any], bot=None) -> 'DashboardEmbed':
-        """Create a DashboardEmbed from serialized data.
-        
-        Args:
-            data: The serialized data
-            bot: The bot instance (optional, needed for instantiation)
-            
-        Returns:
-            The created DashboardEmbed instance
-        """
+        """Create a DashboardEmbed from serialized data."""
+        # Assumes 'data' contains the 'instance_config' structure
         if not bot:
              logger.warning("Deserializing DashboardEmbed without bot instance.")
-        # Pass bot to constructor
-        return cls(bot=bot, config=data.get("config", {})) 
+        return cls(bot=bot, instance_config=data)
+
+    async def render_to_embed(self, embed: nextcord.Embed, data: Any, config: Dict[str, Any]):
+         # This method might become redundant if 'build' does everything based on self.config
+         # For now, just log a warning if called directly.
+         logger.warning("DashboardEmbed.render_to_embed called directly. Logic should be in build().")
+         pass

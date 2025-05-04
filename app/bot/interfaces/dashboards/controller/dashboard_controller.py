@@ -668,7 +668,12 @@ class DashboardController:
                 logger.error(f"[{self.dashboard_id}] Component implementation class not found in registry for type: {component_type} (from key: {component_key})")
                 return
 
+            # --- ADD GENERIC DIAGNOSTIC LOG ---
+            logger.info(f"[DIAGNOSTIC Controller] Config passed to {component_impl_class.__name__} for key '{component_key}' (Instance: {component_config.get('instance_id')}): {component_config}")
+            # --- END DIAGNOSTIC LOG ---
+
             # Create component instance and add to view
+            # Pass the **entire instance config** found earlier, which includes component_key, instance_id, and settings
             component = component_impl_class(self.bot, component_config)
             component.dashboard_id = self.dashboard_id # Assign dashboard ID for context
             # Check if the component has the add_to_view method
