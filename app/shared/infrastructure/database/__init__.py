@@ -27,15 +27,6 @@ from app.shared.infrastructure.database.core import (
     AUTO_DB_CREDENTIAL_MANAGEMENT
 )
 
-# Import models
-from app.shared.infrastructure.models import (
-    Base,
-    AppUserEntity, SessionEntity, RateLimitEntity, AuditLogEntity,
-    ChannelMapping, CategoryMapping,
-    Project, Task,
-    MetricModel, AlertModel,
-    ConfigEntity,
-)
 
 # Import API functions
 from .api import (
@@ -53,14 +44,6 @@ from .core import (
 
 # Export all components for easy imports elsewhere
 __all__ = [
-    # Models
-    'Base',
-    'AppUserEntity', 'SessionEntity', 'RateLimitEntity', 'AuditLogEntity',
-    'ChannelMapping', 'CategoryMapping',
-    'Project', 'Task',
-    'MetricModel', 'AlertModel',
-    'ConfigEntity',
-
     # Database management
     'DatabaseConnection',
     'get_db_connection',

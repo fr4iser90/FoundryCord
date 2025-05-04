@@ -2,7 +2,7 @@ import logging
 from typing import List, Optional
 from app.shared.infrastructure.database.service import DatabaseService
 from app.shared.infrastructure.repositories.projects.task_repository_impl import TaskRepositoryImpl
-from app.shared.infrastructure.models.project.task import Task
+from app.shared.infrastructure.models.project.task_entity import Task
 
 logger = logging.getLogger("homelab.bot")
 

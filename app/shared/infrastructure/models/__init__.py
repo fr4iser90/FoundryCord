@@ -41,16 +41,16 @@ from .discord import (
     CategoryEntity, 
     CategoryPermissionEntity
 )
-# Dashboard models - Updated to reflect current structure
+
 from .dashboards import (
-    ActiveDashboardEntity,              # Keep/Add
-    DashboardComponentDefinitionEntity, # Keep/Add
-    DashboardConfigurationEntity,     # Keep/Add
+    ActiveDashboardEntity,              
+    DashboardComponentDefinitionEntity,
+    DashboardConfigurationEntity,
 )
 
 # Project models 
 from .project import (
-    Project, 
+    ProjectEntity, 
     Task, 
     ProjectMember
 )
@@ -96,7 +96,7 @@ __all__ = [
     'DashboardComponentDefinitionEntity',
     'DashboardConfigurationEntity',
     # Project models
-    'Project', 
+    'ProjectEntity', 
     'Task', 
     'ProjectMember',
     # Monitoring models

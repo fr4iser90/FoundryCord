@@ -2,7 +2,7 @@ from typing import List, Optional
 from sqlalchemy import select, update, delete
 from app.shared.domain.repositories.projects.task_repository import TaskRepository
 from app.shared.infrastructure.database.service import DatabaseService
-from app.shared.infrastructure.models.project.task import Task
+from app.shared.infrastructure.models.project.task_entity import Task
 import logging
 
 logger = logging.getLogger("homelab.bot")

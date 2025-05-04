@@ -24,7 +24,7 @@ class Task(Base):
     task_data = Column(JSON, nullable=True)  # Renamed from metadata_json
     
     # Relationships
-    project = relationship("Project", back_populates="tasks")
+    project = relationship("ProjectEntity", back_populates="tasks")
     
     def __repr__(self):
         return f"<Task(id={self.id}, title='{self.title}', status='{self.status}')>" 

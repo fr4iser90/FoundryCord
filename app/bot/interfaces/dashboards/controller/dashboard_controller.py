@@ -596,7 +596,11 @@ class DashboardController:
             # --- ADD DEBUG LOG ---
             logger.debug(f"[{self.dashboard_id}] fetch_dashboard_data: Calling data_service.fetch_data...")
             # --- END DEBUG LOG ---
-            fetched_data = await self.data_service.fetch_data(data_sources)
+            # --- MODIFIED: Pass context --- 
+            context_to_pass = {'guild_id': self.guild_id}
+            logger.debug(f"[{self.dashboard_id}] fetch_dashboard_data: Passing context: {context_to_pass}")
+            fetched_data = await self.data_service.fetch_data(data_sources, context=context_to_pass)
+            # --- END MODIFICATION ---
             # --- ADD DEBUG LOG ---
             logger.debug(f"[{self.dashboard_id}] fetch_dashboard_data: Data fetched successfully. Keys: {list(fetched_data.keys()) if fetched_data else 'None'}")
             # --- END DEBUG LOG ---

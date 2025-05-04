@@ -12,7 +12,7 @@ class ProjectMember(Base):
     joined_at = Column(DateTime, default=func.now())
     
     # Relationship
-    project = relationship("Project", back_populates="members")
+    project = relationship("ProjectEntity", back_populates="members")
     
     def __repr__(self):
         return f"<ProjectMember project_id={self.project_id}, user_id={self.user_id}>" 

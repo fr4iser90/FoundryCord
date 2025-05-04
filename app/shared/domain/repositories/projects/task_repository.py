@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from app.shared.infrastructure.models.project.task import Task
+from app.shared.infrastructure.models.project.task_entity import Task
 
 class TaskRepository(ABC):
     """Interface for task repository operations"""

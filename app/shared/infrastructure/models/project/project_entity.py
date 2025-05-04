@@ -6,7 +6,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.shared.infrastructure.models import Base
 
-class Project(Base):
+class ProjectEntity(Base):
     """Project model for project management"""
     __tablename__ = "projects"
     
@@ -26,4 +26,4 @@ class Project(Base):
     members = relationship("ProjectMember", back_populates="project", cascade="all, delete-orphan")
     
     def __repr__(self):
-        return f"<Project(id={self.id}, name='{self.name}')>" 
+        return f"<ProjectEntity(id={self.id}, name='{self.name}')>" 

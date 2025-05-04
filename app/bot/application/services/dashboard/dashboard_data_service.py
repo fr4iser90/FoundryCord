@@ -9,6 +9,8 @@ import psutil
 from datetime import datetime, timedelta
 
 from app.shared.interface.logging.api import get_bot_logger
+from app.shared.infrastructure.database.session import get_session
+from app.shared.infrastructure.repositories.projects.project_repository_impl import ProjectRepositoryImpl
 
 # --- REMOVE INCORRECT IMPORT ---
 # from app.bot.infrastructure.factories.data_source_registry_factory import DataSourceRegistryFactory # OLD AND DELETED
@@ -16,8 +18,7 @@ from app.shared.interface.logging.api import get_bot_logger
 if TYPE_CHECKING:
     from app.bot.core.main import FoundryCord
     from app.bot.infrastructure.factories.service_factory import ServiceFactory
-    # --- Remove obsolete type hint --- 
-    # from app.bot.infrastructure.factories.data_source_registry import DataSourceRegistry
+
 
 logger = get_bot_logger()
 
@@ -68,9 +69,13 @@ class DashboardDataService:
             
     # Removed add_component_to_view method
             
-    async def fetch_data(self, data_sources_config: Dict[str, Any]) -> Dict[str, Any]:
+    async def fetch_data(self, data_sources_config: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Fetches data from multiple sources based on the provided configuration.
+        
+        Args:
+            data_sources_config: Dictionary defining the data sources.
+            context: Optional dictionary containing context like guild_id.
         """
         if not self.initialized:
             logger.error("Cannot fetch data: DashboardDataService not initialized.")
@@ -126,12 +131,48 @@ class DashboardDataService:
             elif source_type == 'db_repository':
                 repo_name = source_config.get('repository')
                 method_name = source_config.get('method')
-                params = source_config.get('params', {})
                 logger.debug(f"Fetching data for '{data_key}' using repository '{repo_name}' method '{method_name}'...")
-                # TODO: Implement logic to get repository instance (e.g., via ServiceFactory or specific context)
-                #       and call the specified method with params.
-                logger.warning(f"Database repository fetching not implemented yet for '{data_key}'.")
-                result_data[data_key] = {"placeholder": f"Data from {repo_name}.{method_name}"}
+                
+                if not repo_name or not method_name:
+                    logger.error(f"DB Repository source for '{data_key}' missing 'repository' or 'method' config.")
+                    result_data[data_key] = {"error": "Missing repository or method config"}
+                    continue
+                    
+                try:
+                    guild_id = context.get('guild_id') if context else None
+                    if not guild_id:
+                         logger.error(f"DB Repository source for '{data_key}' requires 'guild_id' in context, but none was provided.")
+                         result_data[data_key] = {"error": "guild_id missing from context"}
+                         continue
+
+                    # --- MODIFICATION START: Use get_session() and instantiate repo --- 
+                    # Check if it's the project repository (for now, special case)
+                    if repo_name == 'ProjectRepository':
+                        async for session in get_session(): # Get session via context manager
+                            repository_instance = ProjectRepositoryImpl(session)
+                            repository_method = getattr(repository_instance, method_name, None)
+                            
+                            if not callable(repository_method):
+                                logger.error(f"Method '{method_name}' not found or not callable on repository '{repo_name}' for '{data_key}'.")
+                                result_data[data_key] = {"error": f"Method '{method_name}' not found on {repo_name}"}
+                                # Break inner loop/session context if method invalid?
+                                # For now, just log and the outer loop continues
+                            else:
+                                logger.debug(f"Calling {repo_name}.{method_name}(guild_id={guild_id})...")
+                                fetched_repo_data = await repository_method(guild_id=guild_id)
+                                result_data[data_key] = fetched_repo_data 
+                                logger.debug(f"Successfully fetched data using {repo_name}.{method_name} for '{data_key}'. Type: {type(fetched_repo_data).__name__}")
+                        # Exit loop after session is used
+                    else:
+                         # Fallback/Error for other repositories until ServiceFactory handles them
+                         logger.error(f"Repository type '{repo_name}' not explicitly handled yet. ServiceFactory needs update.")
+                         result_data[data_key] = {"error": f"Repository type '{repo_name}' not supported yet"}
+                         continue
+                    # --- MODIFICATION END ---
+
+                except Exception as e:
+                    logger.error(f"Error fetching data from DB Repository for '{data_key}' ({repo_name}.{method_name}): {e}", exc_info=True)
+                    result_data[data_key] = {"error": str(e)}
                 
             # --- Handle other source types (Example: Service Collector) --- 
             elif source_type == 'service_collector':

@@ -3,7 +3,7 @@ from typing import List, Optional, Dict
 import nextcord
 from app.shared.infrastructure.database.service import DatabaseService
 from app.shared.infrastructure.repositories.projects.project_repository_impl import ProjectRepositoryImpl
-from app.shared.infrastructure.models.project.project import Project
+from app.shared.infrastructure.models.project.project_entity import ProjectEntity
 
 logger = logging.getLogger("homelab.bot")
 
@@ -14,10 +14,10 @@ class ProjectService:
         self.db_service = db_service
         self.project_repository = ProjectRepositoryImpl(db_service)
     
-    async def create_project(self, name: str, description: str, guild_id: str, owner_id: str, due_date=None) -> Optional[Project]:
+    async def create_project(self, name: str, description: str, guild_id: str, owner_id: str, due_date=None) -> Optional[ProjectEntity]:
         """Create a new project"""
         try:
-            project = Project(
+            project = ProjectEntity(
                 name=name,
                 description=description,
                 guild_id=guild_id,
@@ -31,7 +31,7 @@ class ProjectService:
             logger.error(f"Error creating project: {e}")
             return None
     
-    async def get_projects_for_guild(self, guild_id: str) -> List[Project]:
+    async def get_projects_for_guild(self, guild_id: str) -> List[ProjectEntity]:
         """Get all projects for a guild"""
         try:
             return await self.project_repository.get_projects_by_guild(guild_id)
@@ -39,7 +39,7 @@ class ProjectService:
             logger.error(f"Error getting projects for guild {guild_id}: {e}")
             return []
     
-    async def get_project(self, project_id: int) -> Optional[Project]:
+    async def get_project(self, project_id: int) -> Optional[ProjectEntity]:
         """Get a project by ID"""
         try:
             return await self.project_repository.get_project(project_id)
