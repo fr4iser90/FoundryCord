@@ -36,18 +36,18 @@
 
 ## Phase 3: Implement GameHub Dashboard Data Fetching
 
-- [ ] **Task 3.1: Implement `service_collector` Fetch Logic**
-    - **Description:** Modify `DashboardDataService.fetch_data` to handle the `service_collector` source type. This involves getting the `ServiceCollector` instance from the `ServiceFactory` and calling its relevant method (e.g., `collect_game_services` or similar) to get game server data.
-    - **Affected Files:** `app/bot/application/services/dashboard/dashboard_data_service.py`
+- [x] ~~**Task 3.1: Implement `service_collector` Fetch Logic**~~
+    - ~~**Description:** Modify `DashboardDataService.fetch_data` to handle the `service_collector` source type. Get the `service_collector` service from `ServiceFactory`. Call the appropriate method (e.g., `collect_game_services`) based on config (defaulting to game services). Store the result (dict of service statuses) under a consistent key (e.g., `'services'`) in the `result_data`.~~
+    - ~~**Affected Files:** `app/bot/application/services/dashboard/dashboard_data_service.py`~~
 
-- [ ] **Task 3.2: Ensure `ServiceCollector` Registration**
-    - **Description:** Verify `ServiceCollector` is registered with the `ServiceFactory` (it likely is, but confirm) and accessible.
-    - **Affected Files:** `app/bot/infrastructure/startup/setup_hooks.py`
+- [x] ~~**Task 3.2: Ensure `ServiceCollector` Registration**~~
+    - ~~**Description:** Verify that `ServiceCollector` is instantiated and registered with the `ServiceFactory` during bot startup.~~
+    - ~~**Affected Files:** `app/bot/infrastructure/startup/setup_hooks.py`~~
 
-- [ ] **Task 3.3: Test GameHub Dashboard Display**
-    - **Description:** After implementing the fetch logic, restart the bot and check the GameHub dashboard display.
-    - **Affected Files:** Discord UI, Logs
-    - **Action:** User to test and confirm.
+- [x] ~~**Task 3.3: Test GameHub Dashboard Display**~~
+    - ~~**Description:** After implementing the fetch logic and ensuring registration, restart the bot. Verify the GameHub dashboard displays correctly, using the data fetched from `ServiceCollector`. Check that the template variables (e.g., for server status summary) are correctly populated.~~
+    - ~~**Affected Files:** Logs, Discord UI~~
+    - ~~**Requires:** Specific logic in the embed component (`DashboardEmbed.build`) to process the `services` dictionary into the `server_status_summary` string.~~
 
 ---
 

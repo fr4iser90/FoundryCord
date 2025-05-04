@@ -119,26 +119,50 @@ class DashboardEmbed(BaseComponent):
                             elif isinstance(data, dict):
                                 logger.debug(f"[{instance_id}] Field '{field_name}' processing as dict data using format_string.")
                                 # --- START: Python formatting for 'projects' list --- 
-                                # Check if the template is exactly '{{projects}}' and 'projects' key exists in data
-                                if field_value_template == '{{projects}}' and 'projects' in data and isinstance(data['projects'], list):
-                                    projects_list = data['projects']
-                                    if projects_list:
-                                        formatted_items = []
-                                        for project in projects_list:
-                                            # Attempt to format based on expected Project model attributes
-                                            p_name = getattr(project, 'name', 'Unnamed Project')
-                                            p_status = getattr(project, 'status', 'Unknown Status')
-                                            formatted_items.append(f"- {p_name} ({p_status})")
-                                        formatted_field_value = "\n".join(formatted_items)
-                                        # Limit length to avoid Discord embed limits
-                                        if len(formatted_field_value) > 1000: # Embed field value limit is 1024
-                                             formatted_field_value = formatted_field_value[:1000] + "..."
+                                if field_value_template == '{{projects}}' and 'projects' in data and isinstance(data.get('projects'), list):
+                                    project_list = data.get('projects', [])
+                                    if project_list:
+                                        formatted_lines = [f"- {p.get('name', 'N/A')} ({p.get('status', 'N/A')})" for p in project_list]
+                                        formatted_field_value = "\\n".join(formatted_lines)
                                     else:
-                                        formatted_field_value = "*No projects found.*"
-                                    logger.debug(f"[{instance_id}] Field '{field_name}' manually formatted projects list.")
+                                        formatted_field_value = "No projects found."
+                                    logger.debug(f"[{instance_id}] Field '{field_name}' formatted as project list: {formatted_field_value[:50]}...")
+                                # --- START: Python formatting for 'server_status_summary' ---
+                                elif field_value_template == '{{server_status_summary}}' and 'services' in data and isinstance(data.get('services'), dict):
+                                    service_statuses = data.get('services', {})
+                                    online_count = 0
+                                    offline_count = 0
+                                    other_count = 0
+                                    for status in service_statuses.values():
+                                        # Basic check, might need refinement based on actual status strings
+                                        if isinstance(status, str):
+                                            if 'online' in status.lower():
+                                                online_count += 1
+                                            elif 'offline' in status.lower():
+                                                offline_count += 1
+                                            else:
+                                                other_count += 1
+                                        else: # Handle unexpected status types
+                                            other_count += 1
+                                            
+                                    summary_parts = []
+                                    if online_count > 0:
+                                        summary_parts.append(f"Online: {online_count}")
+                                    if offline_count > 0:
+                                        summary_parts.append(f"Offline: {offline_count}")
+                                    if other_count > 0:
+                                        summary_parts.append(f"Other: {other_count}")
+                                    
+                                    formatted_field_value = " | ".join(summary_parts) if summary_parts else "N/A"
+                                    logger.debug(f"[{instance_id}] Field '{field_name}' formatted as server status summary: {formatted_field_value}")
                                 else:
-                                     # Fallback to generic format_string for other dict cases
-                                     formatted_field_value = format_string(field_value_template, data)
+                                    # --- ELSE: Fallback to generic format_string (CORRECTED CALL) ---
+                                    try:
+                                        formatted_field_value = format_string(field_value_template, data)
+                                        logger.debug(f"[{instance_id}] Field '{field_name}' processed using format_string. Result: {formatted_field_value[:100]}...") # Log first 100 chars
+                                    except Exception as fmt_e:
+                                        logger.warning(f"[{instance_id}] Failed to format field '{field_name}' with template '{field_value_template}' using format_string: {fmt_e}", exc_info=False)
+                                        formatted_field_value = f"Error formatting field '{field_name}'"
                                 # --- END: Python formatting for 'projects' list ---
                             # --- END ELSE ---
                             
