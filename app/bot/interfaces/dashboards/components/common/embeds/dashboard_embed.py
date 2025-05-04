@@ -17,16 +17,18 @@ def format_string(template_string: Optional[str], data: Dict[str, Any]) -> str:
     if not template_string:
         return ""
     try:
-        # Use string.format with a dictionary that handles missing keys
-        # This prevents KeyError if a template variable doesn't exist in data
-        class SafeDict(dict):
-            def __missing__(self, key):
-                # Return the original placeholder if key is missing
-                return f'{{{{{key}}}}}'
+        # Direct replacement approach
+        formatted_string = template_string
+        if data: # Only attempt replacements if data is provided
+            for key, value in data.items():
+                placeholder = f'{{{{{key}}}}}' # Construct the placeholder e.g., {{hostname}}
+                # Replace all occurrences of the placeholder with the string representation of the value
+                formatted_string = formatted_string.replace(placeholder, str(value))
         
-        return template_string.format_map(SafeDict(data))
+        return formatted_string
     except Exception as e:
-        logger.error(f"Error formatting string '{template_string[:50]}...': {e}")
+        # Log general errors but still return original template
+        logger.error(f"Error formatting string '{template_string[:50]}...': {e}", exc_info=True)
         return template_string # Return original on error
 
 class DashboardEmbed(BaseComponent):

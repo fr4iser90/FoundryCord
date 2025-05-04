@@ -73,6 +73,9 @@ def upgrade() -> None:
             'dashboard_type': 'monitoring',
             'description': 'Basic system monitoring overview.',
             'config': {
+                "data_sources": {
+                    "system_metrics": {"type": "system_collector"}
+                },
                 "components": [
                     {
                         "instance_id": "monitoring_embed_instance",
@@ -149,6 +152,9 @@ def upgrade() -> None:
             'dashboard_type': 'project',
             'description': 'Overview of projects and tasks.',
             'config': {
+                "data_sources": {
+                    "projects": {"type": "db_repository", "repository": "ProjectRepository", "method": "get_projects_by_guild"}
+                },
                 "components": [
                      {
                         "instance_id": "project_list_embed_instance",
@@ -213,6 +219,9 @@ def upgrade() -> None:
             'dashboard_type': 'gamehub',
             'description': 'Game server information and actions.',
             'config': {
+                "data_sources": {
+                    "game_servers": {"type": "service_collector"}
+                },
                 "components": [
                      {
                         "instance_id": "gamehub_main_embed_instance",

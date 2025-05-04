@@ -110,110 +110,6 @@ class DashboardController:
         logger.info(f"Dashboard {self.dashboard_id} initialization complete (Services might be missing).") # Adjusted log
         return True
     
-    # async def load_dashboard_definition(self): # <-- COMMENT OUT METHOD
-    #     """
-    #     Load dashboard definition from database
-    #     This is the key method that makes the controller flexible
-    #     [OBSOLETE] Config is now passed via __init__
-    #     """
-    #     logger.info(f"Loading definition for {self.dashboard_type} dashboard {self.dashboard_id}")
-    #     
-    #     try:
-    #         # Get dashboard repository from service factory
-    #         dashboard_repo = self.bot.service_factory.get_service('dashboard_repository')
-    #         if not dashboard_repo:
-    #             raise ValueError("Dashboard repository service not available")
-    #         
-    #         # Load dashboard configuration from database
-    #         dashboard = await dashboard_repo.get_dashboard_by_id(self.dashboard_id)
-    #         if not dashboard:
-    #             # Try to find by channel ID + type
-    #             dashboard = await dashboard_repo.get_dashboard_by_channel_and_type(
-    #                 self.channel_id, self.dashboard_type
-    #             )
-    #         
-    #         if not dashboard:
-    #             logger.warning(f"No dashboard found for ID {self.dashboard_id}, creating default")
-    #             # Create a default dashboard if not found
-    #             await self.create_default_dashboard()
-    #             return
-    #         
-    #         # Load components from the database
-    #         await self.load_components_from_database(dashboard)
-    #         
-    #         # Update properties from database
-    #         self.title = dashboard.title or self.title
-    #         self.description = dashboard.description or self.description
-    #         self.config = dashboard.config or self.config
-    #         self.message_id = dashboard.message_id or self.message_id
-    #         
-    #         logger.info(f"Loaded dashboard definition for {self.dashboard_id} from database")
-    #         
-    #     except Exception as e:
-    #         logger.error(f"Error loading dashboard definition from database: {e}")
-    #         # Create a default dashboard if loading fails
-    #         await self.create_default_dashboard()
-    
-    # async def load_components_from_database(self, dashboard): # <-- COMMENT OUT METHOD
-    #     """Load components for a dashboard from the database
-    #     [OBSOLETE] Components are now defined within the config JSON
-    #     """
-    #     try:
-    #         # Load components through the repository
-    #         components = await self.bot.service_factory.get_service('dashboard_repository').get_components_for_dashboard(dashboard.id)
-    #         
-    #         for component in components:
-    #             # Process each component based on its type
-    #             if component.component_type == 'button':
-    #                 self.register_button(
-    #                     component.custom_id,
-    #                     component.config.get('label', 'Button'),
-    #                     component.config.get('style', 'primary'),
-    #                     component.config.get('emoji'),
-    #                     component.config.get('row', 0),
-    #                     component.config.get('disabled', False)
-    #                 )
-    #             elif component.component_type == 'embed':
-    #                 self.register_embed(
-    #                     component.custom_id,
-    #                     component.config.get('title'),
-    #                     component.config.get('description'),
-    #                     component.config.get('color'),
-    #                     component.config.get('fields', []),
-    #                     component.config.get('footer')
-    #                 )
-    #             # Add more component types as needed
-    #             
-    #         logger.info(f"Loaded {len(components)} components for dashboard {dashboard.id}")
-    #         
-    #     except Exception as e:
-    #         logger.error(f"Error loading components from database: {e}")
-    
-    # async def create_default_dashboard(self): # <-- KEEP FOR NOW? Could be useful fallback if config is empty.
-    #     """Create a default dashboard configuration"""
-    #     logger.info(f"Creating default dashboard for {self.dashboard_type}")
-    #     
-    #     # Create a basic embed
-    #     self.register_embed(
-    #         "main_embed",
-    #         f"{self.dashboard_type.capitalize()} Dashboard",
-    #         "This dashboard was created with default settings",
-    #         0x3498db,  # Blue color
-    #         []  # No fields
-    #     )
-    #     
-    #     # Create a refresh button
-    #     self.register_button(
-    #         "refresh_button",
-    #         "Refresh",
-    #         "secondary",
-    #         "🔄",
-    #         0,  # Row 0
-    #         False  # Not disabled
-    #     )
-    #     
-    #     # Register the refresh handler
-    #     self.register_handler("refresh_button", self.on_refresh)
     
     def register_embed(self, embed_id, title=None, description=None, color=None, fields=None, footer=None):
         """Register an embed configuration"""
@@ -537,9 +433,30 @@ class DashboardController:
             # using component_key and merge it with instance settings.
             component_instance = component_class(self.bot, embed_component_config)
 
+            # --- Extract the relevant data for the embed ---
+            # Assumption: The first embed component uses the data from the first defined data source.
+            embed_data_to_pass = {}
+            data_sources_config = self.config.get('data_sources', {})
+            if data_sources_config and data: # Ensure config and fetched data exist
+                first_data_source_key = next(iter(data_sources_config), None)
+                if first_data_source_key and first_data_source_key in data:
+                    embed_data_to_pass = data.get(first_data_source_key, {})
+                    logger.debug(f"Dashboard {self.dashboard_id}: Extracted data for key '{first_data_source_key}' to pass to embed build.")
+                else:
+                     logger.warning(f"Dashboard {self.dashboard_id}: First data source key '{first_data_source_key}' not found in fetched data keys: {list(data.keys())}. Passing empty dict to embed.")
+            else:
+                 logger.debug(f"Dashboard {self.dashboard_id}: No data sources configured or no data fetched. Passing empty dict to embed.")
+            # --- End data extraction ---
+
+            # --- Add Log for Extracted Data --- 
+            hostname_val = embed_data_to_pass.get('hostname', 'NOT_FOUND')
+            cpu_val = embed_data_to_pass.get('cpu_percent', 'NOT_FOUND')
+            logger.info(f"[DIAGNOSTIC Controller - build_embed] Data to pass to embed: Hostname={hostname_val}, CPU={cpu_val}, Full Dict Keys: {list(embed_data_to_pass.keys())}")
+            # --- End Log --- 
+
             # Build the embed using the component's own build method
-            # --- MODIFIED: Pass data dictionary ---
-            built_embed = component_instance.build(data=data) # Pass data here
+            # --- MODIFIED: Pass extracted data dictionary ---
+            built_embed = component_instance.build(data=embed_data_to_pass) # Pass extracted data here
 
             if not isinstance(built_embed, nextcord.Embed):
                  logger.error(f"Dashboard {self.dashboard_id}: Component {component_key} build() method did not return a nextcord.Embed object.")

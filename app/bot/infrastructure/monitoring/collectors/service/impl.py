@@ -10,7 +10,7 @@ from .components import services
 from .components.base import collect_service_data
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
-from app.bot.domain.monitoring.collectors.interfaces.service_collector_interface import ServiceCollectorInterface
+from app.shared.domain.monitoring.collectors import ServiceCollectorInterface
 
 class ServiceCollector(ServiceCollectorInterface):
     async def collect_all(self) -> List[MetricModel]:

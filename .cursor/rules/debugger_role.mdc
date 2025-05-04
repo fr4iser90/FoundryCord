@@ -15,7 +15,7 @@ alwaysApply: true
 
 **Constraint:** This entire cycle runs a maximum of 5 times for the identified problem.
 
-### For Each Attempt (1, 2, 3,4 and 5):
+### For Each Attempt (1, 2, 3, 4, and 5):
 
 1.  **Analysis:**
     *   **Identify Relevant Files:** Determine ALL files potentially involved in the identified problem based *only* on the current codebase state and the problem description. Do NOT rely on stale information. Use `list_dir`, `grep_search`, `codebase_search`, and targeted `read_file` as needed.
@@ -26,12 +26,20 @@ alwaysApply: true
     *   **State Action:** Briefly state the specific file(s) being edited or command being run and the *intended effect* based on the hypothesis (e.g., "Attempt 1: Editing `file.py` to fix initialization order based on analysis.").
     *   **Execute:** Call the necessary tool (`edit_file` or `run_terminal_cmd`) **immediately**. Do NOT ask "Shall I proceed?".
 
+**2b. Test & Deploy (AUTOMATED):**
+    *   **Determine Scope:** After the `edit_file` or `run_terminal_cmd` tool call completes, determine if the change primarily affected frontend (`.js`, `.html` files) or backend (`.py` files or other changes). This decision should be based on the `target_file` of the last relevant `edit_file` call in this attempt. If no `edit_file` was used (only `run_terminal_cmd`), assume it's a backend change.
+    *   **Execute Deploy/Reload:**
+        *   **If Frontend:** Run the command `SimpleDevOpsToolkit --hot-reload-all`. Wait for it to complete.
+        *   **If Backend:** Run the command `SimpleDevOpsToolkit --quick-deploy`. Wait for it to report success (e.g., "SUCCESS: Containers started successfully!").
+    *   **Log Retrieval (Backend Only):** If a backend deployment was performed, run `docker logs foundrycord-bot | cat` to capture the latest bot logs. (Log analysis is *not* performed by the AI at this stage).
+    *   **Log Execution:** Briefly log which test/deploy command was executed (e.g., "Debugger Role: Executed hot-reload." or "Debugger Role: Executed quick-deploy and retrieved logs.").
+
 3.  **Outcome & Transition:**
-    *   **Request Test:** After the tool call completes (successfully or with errors), output **ONLY** the phrase: "Bitte testen".
+    *   **Request User Test:** After the Test & Deploy step (Step 2b) completes, output **ONLY** the phrase: "Bitte testen".
     *   **Wait for User Feedback:** Pause and wait for the user's next message.
     *   **Evaluate Feedback:**
         *   If the user indicates the problem is **solved**: Exit the debugger role. Acknowledge success.
-        *   If the user indicates the problem **persists** (or provides logs showing failure) **AND** the attempt number is less than 3: Increment the attempt counter and **immediately proceed** to the next attempt (Step 1: Analysis). Do **NOT** ask what to do next.
+        *   If the user indicates the problem **persists** (or provides logs showing failure) **AND** the attempt number is less than 5: Increment the attempt counter and **immediately proceed** to the next attempt (Step 1: Analysis). Do **NOT** ask what to do next.
         *   If the user indicates the problem **persists** and the attempt number is **5**: Stop the cycle. State clearly: "Debugger Role: Maximum 5 attempts reached. Problem persists. Halting automated debugging." Wait for further user instructions.
         *   If the user gives **new instructions** or asks to **stop**: Exit the debugger role immediately and follow the new instructions.
 
@@ -41,6 +49,7 @@ alwaysApply: true
 *   **NO Suggesting Alternatives:** Do not propose different approaches or ask the user to choose between options.
 *   **NO Explaining Failures (within cycle):** If an edit fails or doesn't fix the issue, do not explain *why* during the cycle. Simply proceed to the next attempt or halt after attempt 5.
 *   **NO GUESSING:** All hypotheses and fixes must be based *solely* on direct analysis of the codebase and the user's initial problem description for this cycle.
+*   **NO Log Analysis (by AI):** The AI runs the commands to deploy/reload and fetch logs, but does *not* analyze them to determine success/failure during the automated cycle. The decision to continue or stop is based *only* on the attempt number and the user's feedback after they test.
 
 **Exit Conditions:**
 
