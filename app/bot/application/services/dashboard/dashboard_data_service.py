@@ -3,6 +3,11 @@ from typing import Dict, Any, List, Optional, TYPE_CHECKING
 import nextcord
 from datetime import datetime
 
+# Added imports for data fetching logic
+import platform
+import psutil
+from datetime import datetime, timedelta
+
 from app.shared.interface.logging.api import get_bot_logger
 
 # --- REMOVE INCORRECT IMPORT ---
@@ -66,47 +71,78 @@ class DashboardDataService:
     async def fetch_data(self, data_sources_config: Dict[str, Any]) -> Dict[str, Any]:
         """
         Fetches data from multiple sources based on the provided configuration.
-        [OBSOLETE] This method is currently non-functional due to DataSourceRegistry removal.
-        Needs refactoring to use a new data source mechanism.
         """
-        # --- Remove check for registry --- 
-        # if not self.initialized or not self.data_source_registry:
         if not self.initialized:
             logger.error("Cannot fetch data: DashboardDataService not initialized.")
-            return {}
+            return None # Indicate critical failure
             
-        logger.warning("fetch_data called, but DataSourceRegistry was removed. Returning empty data. Needs refactor.")
-        return {} # Return empty dict as data fetching is broken
+        result_data: Dict[str, Any] = {}
+        logger.debug(f"DashboardDataService: Starting data fetch for config: {data_sources_config}")
 
-        # --- Comment out original logic --- 
-        # fetched_data_results = {}
-        # logger.debug(f"Fetching data for sources: {list(data_sources_config.keys())}")
-        # 
-        # for data_key, source_config in data_sources_config.items():
-        #     source_type = source_config.get('type')
-        #     source_params = source_config.get('params', {})
-        # 
-        #     if not source_type:
-        #         logger.warning(f"Skipping data source for key '{data_key}': Missing 'type' in configuration.")
-        #         continue
-        # 
-        #     DataSourceClass = self.data_source_registry.get_data_source(source_type)
-        #     if not DataSourceClass:
-        #         logger.warning(f"Skipping data source for key '{data_key}': Type '{source_type}' not found in DataSourceRegistry.")
-        #         continue
-        # 
-        #     try:
-        #         data_source_instance = DataSourceClass(self.bot, source_params)
-        # 
-        #         if hasattr(data_source_instance, 'fetch_data') and callable(data_source_instance.fetch_data):
-        #             data = await data_source_instance.fetch_data()
-        #             fetched_data_results[data_key] = data
-        #             logger.debug(f"Successfully fetched data for key '{data_key}' using source type '{source_type}'.")
-        #         else:
-        #             logger.warning(f"Data source type '{source_type}' instance does not have a callable 'fetch_data' method.")
-        # 
-        #     except Exception as e:
-        #         logger.error(f"Error fetching data for key '{data_key}' using source type '{source_type}': {e}", exc_info=True)
-        #         fetched_data_results[data_key] = None
-        # 
-        # return fetched_data_results 
+        for data_key, source_config in data_sources_config.items():
+            source_type = source_config.get('type')
+            if not source_type:
+                logger.warning(f"Skipping data source '{data_key}': Missing 'type' config.")
+                continue
+
+            # --- Handle System Collector --- 
+            if source_type == 'system_collector':
+                logger.debug(f"Fetching data for '{data_key}' using system_collector...")
+                try:
+                    system_collector = self.service_factory.get_service('system_collector')
+                    if not system_collector:
+                        logger.error("SystemCollector service not found in ServiceFactory.")
+                        result_data[data_key] = {"error": "SystemCollector not available"}
+                        continue
+                    
+                    # Collect metrics (List[MetricModel])
+                    collected_metrics = await system_collector.collect_all()
+                    
+                    # Transform into flat dictionary for templates
+                    system_data = {}
+                    for metric in collected_metrics:
+                        if metric.name == "cpu_usage":
+                            system_data['cpu_percent'] = round(metric.value, 1) if metric.value is not None else 'N/A'
+                        elif metric.name == "memory_percent":
+                            system_data['memory_percent'] = round(metric.value, 1) if metric.value is not None else 'N/A'
+                        elif metric.name == "disk_percent":
+                            system_data['disk_percent'] = round(metric.value, 1) if metric.value is not None else 'N/A'
+                        elif metric.name == "hostname" and metric.metric_data:
+                            system_data['hostname'] = metric.metric_data.get('hostname', 'N/A')
+                        elif metric.name == "platform" and metric.metric_data:
+                            system_data['platform'] = metric.metric_data.get('platform', 'N/A')
+                        elif metric.name == "uptime" and metric.metric_data:
+                            system_data['uptime'] = metric.metric_data.get('uptime', 'N/A')
+                        # Add mappings for other metrics if needed by templates
+                        
+                    result_data[data_key] = system_data
+                    logger.debug(f"Successfully processed system_collector data for '{data_key}'.")
+
+                except Exception as e:
+                    logger.error(f"Error fetching data from SystemCollector for '{data_key}': {e}", exc_info=True)
+                    result_data[data_key] = {"error": str(e)}
+            
+            # --- Handle other source types (Example: Database) --- 
+            elif source_type == 'db_repository':
+                repo_name = source_config.get('repository')
+                method_name = source_config.get('method')
+                params = source_config.get('params', {})
+                logger.debug(f"Fetching data for '{data_key}' using repository '{repo_name}' method '{method_name}'...")
+                # TODO: Implement logic to get repository instance (e.g., via ServiceFactory or specific context)
+                #       and call the specified method with params.
+                logger.warning(f"Database repository fetching not implemented yet for '{data_key}'.")
+                result_data[data_key] = {"placeholder": f"Data from {repo_name}.{method_name}"}
+                
+            # --- Handle other source types (Example: Service Collector) --- 
+            elif source_type == 'service_collector':
+                logger.debug(f"Fetching data for '{data_key}' using service_collector...")
+                # TODO: Implement logic similar to system_collector for ServiceCollector
+                logger.warning(f"Service collector fetching not implemented yet for '{data_key}'.")
+                result_data[data_key] = {"placeholder": "Data from ServiceCollector"}
+
+            else:
+                logger.warning(f"Unsupported data source type '{source_type}' for key '{data_key}'.")
+                result_data[data_key] = {"error": f"Unsupported type: {source_type}"}
+
+        logger.debug(f"DashboardDataService: Finished data fetch. Result keys: {list(result_data.keys())}")
+        return result_data 

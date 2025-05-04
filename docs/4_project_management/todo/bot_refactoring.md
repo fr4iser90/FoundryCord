@@ -69,4 +69,4 @@
 ## General Notes / Future Considerations
 
 *   [ ] Minor TODOs added during refactoring (e.g., error handling, specific implementation details like data fetching in `DashboardController`) should be reviewed and prioritized separately.
-*   **(Analysis Confirmed): `DashboardDataService` needs refactoring/implementation for its `fetch_data` method, as the dependency on `DataSourceRegistry` was removed.**
+*   **`DashboardDataService` `fetch_data` method was re-implemented** to use the `SystemCollector` (via ServiceFactory) and transform `MetricModel` data. Placeholders for other data source types (DB, ServiceCollector) exist.

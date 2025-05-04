@@ -31,6 +31,35 @@ class SystemCollector(SystemCollectorInterface):
         # Convert to metrics
         metrics = []
         
+        # --- System Info --- 
+        # Hostname (Using platform.node() for consistency)
+        hostname = platform.node() 
+        metrics.append(MetricModel(
+            name="hostname",
+            value=0.0, # Dummy float value
+            unit=None,
+            metric_data={"type": "system", "component": "system", "hostname": hostname}
+        ))
+        
+        # Platform (From collected data or platform module)
+        platform_name = data.get('platform', platform.system())
+        metrics.append(MetricModel(
+            name="platform",
+            value=0.0, # Dummy float value
+            unit=None,
+            metric_data={"type": "system", "component": "system", "platform": platform_name}
+        ))
+        
+        # Uptime (From collected data)
+        uptime_str = data.get('uptime', "N/A")
+        metrics.append(MetricModel(
+            name="uptime",
+            value=0.0, # Dummy float value
+            unit=None,
+            metric_data={"type": "system", "component": "system", "uptime": uptime_str}
+        ))
+        # --- End System Info ---
+        
         # CPU metrics
         metrics.append(MetricModel(
             name="cpu_usage",
@@ -163,13 +192,13 @@ class SystemCollector(SystemCollectorInterface):
                 name="net_upload",
                 value=round(data['network_stats'].get('net_upload', 0), 1),
                 unit="mbps",
-                metadata_json={"type": "system", "component": "network"}
+                metric_data={"type": "system", "component": "network"}
             ))
             metrics.append(MetricModel(
                 name="net_download",
                 value=round(data['network_stats'].get('net_download', 0), 1),
                 unit="mbps",
-                metadata_json={"type": "system", "component": "network"}
+                metric_data={"type": "system", "component": "network"}
             ))
         logger.info(f"Collected {len(metrics)} system metrics")
         return metrics
