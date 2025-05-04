@@ -13,7 +13,7 @@ alwaysApply: true
 
 ## TODO List Adherence
 
-- **TODO File:** @docs/4_project_management/todo/bot_refactoring.md
+- **TODO File:** @docs/4_project_management/todo/structure.md
 
 - **Rule:** Strictly follow the order and content of the specified TODO file unless explicitly told otherwise by the user *for the current step*.
 

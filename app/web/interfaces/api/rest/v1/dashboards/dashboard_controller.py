@@ -3,6 +3,9 @@ from typing import List
 
 from app.web.interfaces.api.rest.v1.base_controller import BaseController
 from app.shared.interface.logging.api import get_web_logger
+# Import necessary DB components
+from app.shared.infrastructure.database.session.context import session_context
+from app.shared.infrastructure.repositories.dashboards.dashboard_component_definition_repository_impl import DashboardComponentDefinitionRepositoryImpl
 # from fastapi import Depends
 # from app.shared.infrastructure.models.auth import AppUserEntity
 # from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
@@ -28,16 +31,18 @@ class DashboardController(BaseController):
         self,
         # current_user: AppUserEntity = Depends(get_current_user) # Optional: Add auth if needed
     ):
-        """Returns a list of all known dashboard type identifiers (strings)."""
+        """Returns a list of all available dashboard type identifiers from the database."""
         logger.info("Request received to list available dashboard types.")
         try:
-            # TODO: Rework dashboard type listing.
-            # Need to fetch available types from DB (DashboardTemplate?) or use DashboardCategory Enum
-            from app.shared.infrastructure.constants import DashboardCategory # Use Enum instead
-            dashboard_types = [category.value for category in DashboardCategory]
+            # Fetch available types from DB (DashboardComponentDefinitionEntity)
+            async with session_context() as session:
+                repo = DashboardComponentDefinitionRepositoryImpl(session)
+                definitions = await repo.list_all()
+                # Extract unique dashboard_type strings
+                dashboard_types = sorted(list(set(d.dashboard_type for d in definitions)))
             return dashboard_types
         except Exception as e:
-            logger.error(f"Error retrieving dashboard types: {e}", exc_info=True)
+            logger.error(f"Error retrieving dashboard types from DB: {e}", exc_info=True)
             return self.handle_exception(e)
 
 dashboard_controller = DashboardController()

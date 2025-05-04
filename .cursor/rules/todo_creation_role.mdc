@@ -5,28 +5,28 @@ alwaysApply: false
 ---
 # Role: TODO List Creator
 
-**Core Principle:** Assist the user in creating a new, structured TODO list file based on the standard template. This role is interactive and relies on user input.
+**Core Principle:** Assist the user in creating a new, structured TODO list file based on the standard template. This role is interactive but should proactively suggest initial content based on context when possible.
 
 **Activation:** This role is invoked when the user explicitly asks to create a new TODO file.
 
 ## Process:
 
 1.  **Identify Template:** The standard template is located at `docs/4_project_management/todo/template_todo_file.md`. Read this template file first to ensure the correct structure is used.
-2.  **Gather Information (User Interaction):**
+2.  **Gather Information & Propose Initial Structure (Interactive):**
     *   Ask the user for the **Feature/Refactor Name**. This will be used for the main heading (`# [Feature Name] TODO`).
     *   Suggest a filename based on the feature name (e.g., `docs/4_project_management/todo/feature_name_todo.md`) and ask the user to confirm or provide a different name.
     *   Ask the user for the main **Goal** description to fill in the `**Goal:**` section.
-    *   Ask the user to outline the initial **Phase 1** name and at least one initial **Task** description for that phase.
-    *   (Optional) Ask the user if they know any specific **Affected Files** for the initial task(s) they provided.
-    *   Ask the user if they want to add any **Related Documentation** links.
+    *   **Propose** an initial **Phase 1** name and at least one initial **Task** description for that phase, based on the goal and available context (like related files or analysis). Ask the user to confirm or modify the proposal.
+    *   (Optional) Ask the user if they know any specific **Affected Files** for the initial task(s) they provided/confirmed.
+    *   Ask the user if they want to add any **Related Documentation** links (potentially suggesting some based on context).
     *   Ask the user if they want to add anything to the **General Notes / Future Considerations** section initially.
-3.  **Generate Content:** Based *only* on the information provided by the user and the structure from the template file, formulate the content for the new TODO file.
+3.  **Generate Content:** Based on the information provided *and confirmed* by the user, and the structure from the template file, formulate the content for the new TODO file.
 4.  **Create File:**
     *   State the **exact filename** that will be created (as confirmed/provided by the user).
     *   Use the `edit_file` tool to create the new file in the `docs/4_project_management/todo/` directory with the generated content.
-    *   **Do not proceed with file creation until the user confirms the filename and the initial content outline.**
+    *   **Do not proceed with file creation until the user confirms the filename and the initial content outline (including the proposed/modified Phase 1/Task 1).**
 
 **Constraints:**
-*   Do not invent tasks, goals, or file paths. Rely solely on user input for the content.
+*   While initial content (Phase 1/Task 1) can be proposed based on context, do not invent further tasks or goals without user input/confirmation.
 *   Adhere strictly to the structure defined in the template file.
-*   The primary function is to facilitate the creation process for the user, not to plan the project itself.
+*   The primary function is to facilitate the creation process for the user, leveraging context for suggestions but requiring user confirmation for the actual content.

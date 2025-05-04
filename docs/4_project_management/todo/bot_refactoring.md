@@ -35,9 +35,9 @@
         *   ~~`app/bot/infrastructure/discord/dashboard_setup_service.py`~~ (Deleted)
         *   ~~`app/bot/infrastructure/config/services/dashboard_config.py`~~ (Deleted)
 *   [x] **Ensure Source of Truth:** Available dashboard *types/components* defined by `dashboard_component_definitions`. **Saved Configurations** stored in `dashboard_configurations`. Active instances tracked in `active_dashboards`.
-*   [ ] **Clarify Role of `DashboardCategory`:** Enum is solely for categorization/filtering. 
-    *   **(Analysis complete. Confirmed role should be informational. `dashboard_controller.py::list_available_dashboard_types` currently uses Enum but has TODO to fetch from DB instead - NEEDS REWORK).**
-*   [ ] **Refactor Dashboard Instantiation:** No explicit factory needed. Instantiation via Lifecycle/Registry based on DB entities (`active_dashboards`).
+*   [x] **Clarify Role of `DashboardCategory`:** Enum is solely for categorization/filtering.
+    *   **(Analysis complete. Confirmed role should be informational. `dashboard_controller.py::list_available_dashboard_types` now fetches from DB instead of Enum).**
+*   [x?] **Refactor Dashboard Instantiation:** No explicit factory needed. Instantiation via Lifecycle/Registry based on DB entities (`active_dashboards`).
     *   **(Implementation seems to exist in `DashboardLifecycleService`)**
     *   **Affected Files:** (Previously involved `DashboardFactory`)
 *   [x] **Consolidate Saved Config Logic:** Logic to manage **Saved Configurations** exists in `DashboardConfigurationController`.
@@ -55,12 +55,12 @@
     *   **Affected Files:**
         *   `app/bot/core/workflows/dashboard/dashboard_workflow.py` (Verify path)
 *   [ ] **API (Web):** CRUD for **Saved Configurations** exists. Live instance management TBD.
-*   [ ] **Review `DashboardLifecycleService.sync_dashboard_from_snapshot`:** Review method relevance/logic/name in the context of template application and `active_dashboards`.
+*   [x] **Review `DashboardLifecycleService.sync_dashboard_from_snapshot`:** Review method relevance/logic/name in the context of template application and `active_dashboards`.
     *   **Affected Files:**
         *   `app/bot/application/services/dashboard/dashboard_lifecycle_service.py`
-*   [ ] **Remove Obsolete `DashboardService.py`:** File seems entirely commented out and superseded by other services.
+*   [x] **Remove Obsolete `DashboardService.py`:** File seems entirely commented out and superseded by other services.
     *   **Affected Files:**
-        *   `app/bot/application/services/dashboard/dashboard_service.py`
+        *   ~~`app/bot/application/services/dashboard/dashboard_service.py`~~ (Deleted)
 
 ## Phase 3: Specific Checklist Review (Actions Taken Previously)
 
