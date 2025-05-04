@@ -21,7 +21,7 @@ def register_all_state_collectors():
     # --- Bot Collectors --- 
     try:
         # Dynamically import or define bot collectors here
-        from app.bot.state_collectors import get_bot_status_info
+        from app.bot.infrastructure.state.collectors.bot_status import get_bot_status_info
         snapshot_service.register_collector(
             name="bot_status",
             collector_fn=get_bot_status_info,

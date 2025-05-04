@@ -37,9 +37,9 @@
 *   [x] **Ensure Source of Truth:** Available dashboard *types/components* defined by `dashboard_component_definitions`. **Saved Configurations** stored in `dashboard_configurations`. Active instances tracked in `active_dashboards`.
 *   [x] **Clarify Role of `DashboardCategory`:** Enum is solely for categorization/filtering.
     *   **(Analysis complete. Confirmed role should be informational. `dashboard_controller.py::list_available_dashboard_types` now fetches from DB instead of Enum).**
-*   [x?] **Refactor Dashboard Instantiation:** No explicit factory needed. Instantiation via Lifecycle/Registry based on DB entities (`active_dashboards`).
-    *   **(Implementation seems to exist in `DashboardLifecycleService`)**
-    *   **Affected Files:** (Previously involved `DashboardFactory`)
+*   [x] **Refactor Dashboard Instantiation:** No explicit factory needed. Instantiation via Lifecycle/Registry based on DB entities (`active_dashboards`).
+    *   **(Confirmed: Logic exists in `DashboardLifecycleService` and `DashboardRegistry`).**
+*   **Affected Files:** (Previously involved `DashboardFactory`)
 *   [x] **Consolidate Saved Config Logic:** Logic to manage **Saved Configurations** exists in `DashboardConfigurationController`.
     *   **Affected Files:**
         *   `app/web/interfaces/api/rest/v1/dashboards/dashboard_controller.py`
@@ -47,10 +47,10 @@
     *   **Affected Files:**
         *   `app/web/application/services/dashboards/dashboard_configuration_service.py`
 *   [x] **Verify Data/Config-Driven Services:** `DashboardConfigurationService` uses DB.
-*   [x?] **Rework `DashboardLifecycleService`:** Activation must use `active_dashboards` table, referencing the specific **Saved Configuration ID** from `dashboard_configurations`.
-    *   **(Implementation seems to exist; uses correct entities/repos)**
-    *   **Affected Files:**
-        *   `app/bot/application/services/dashboard/dashboard_lifecycle_service.py` (Path confirmed)
+*   [x] **Rework `DashboardLifecycleService`:** Activation must use `active_dashboards` table, referencing the specific **Saved Configuration ID** from `dashboard_configurations`.
+    *   **(Confirmed: Service uses correct entities/repos for activation).**
+*   **Affected Files:**
+    *   `app/bot/application/services/dashboard/dashboard_lifecycle_service.py` (Path confirmed)
 *   [x] **Review `DashboardWorkflow`:** Manages state.
     *   **Affected Files:**
         *   `app/bot/core/workflows/dashboard/dashboard_workflow.py` (Verify path)
@@ -69,3 +69,4 @@
 ## General Notes / Future Considerations
 
 *   [ ] Minor TODOs added during refactoring (e.g., error handling, specific implementation details like data fetching in `DashboardController`) should be reviewed and prioritized separately.
+*   **(Analysis Confirmed): `DashboardDataService` needs refactoring/implementation for its `fetch_data` method, as the dependency on `DataSourceRegistry` was removed.**
