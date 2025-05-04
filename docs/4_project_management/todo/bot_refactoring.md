@@ -1,6 +1,6 @@
 # Bot Refactoring Plan: Phase 1 - Dynamic Structure & Constant Removal
 
-**Goal:** Transition from hardcoded constants to a dynamic, database-driven configuration for core components (channels, categories, dashboards), based on Guild Templates and Dashboard Templates.
+**Goal:** Transition from hardcoded constants to a dynamic, database-driven configuration for core components (channels, categories, dashboards), based on Guild Templates and Dashboard Configurations.
 
 **Related Documentation (Optional):**
 *   [Link to relevant ADRs, design docs, etc.]
@@ -34,9 +34,11 @@
     *   **Affected Files:**
         *   ~~`app/bot/infrastructure/discord/dashboard_setup_service.py`~~ (Deleted)
         *   ~~`app/bot/infrastructure/config/services/dashboard_config.py`~~ (Deleted)
-*   [ ] **Ensure Source of Truth:** Available dashboard *types/components* defined by `dashboard_component_definitions`. **Saved Configurations** stored in `dashboard_templates`. Active instances tracked in `active_dashboards`.
-*   [ ] **Clarify Role of `DashboardCategory`:** Enum is solely for categorization/filtering.
+*   [x] **Ensure Source of Truth:** Available dashboard *types/components* defined by `dashboard_component_definitions`. **Saved Configurations** stored in `dashboard_configurations`. Active instances tracked in `active_dashboards`.
+*   [ ] **Clarify Role of `DashboardCategory`:** Enum is solely for categorization/filtering. 
+    *   **(Analysis complete. Confirmed role should be informational. `dashboard_controller.py::list_available_dashboard_types` currently uses Enum but has TODO to fetch from DB instead - NEEDS REWORK).**
 *   [ ] **Refactor Dashboard Instantiation:** No explicit factory needed. Instantiation via Lifecycle/Registry based on DB entities (`active_dashboards`).
+    *   **(Implementation seems to exist in `DashboardLifecycleService`)**
     *   **Affected Files:** (Previously involved `DashboardFactory`)
 *   [x] **Consolidate Saved Config Logic:** Logic to manage **Saved Configurations** exists in `DashboardConfigurationController`.
     *   **Affected Files:**
@@ -45,16 +47,20 @@
     *   **Affected Files:**
         *   `app/web/application/services/dashboards/dashboard_configuration_service.py`
 *   [x] **Verify Data/Config-Driven Services:** `DashboardConfigurationService` uses DB.
-*   [ ] **Rework `DashboardLifecycleService`:** Activation must use `active_dashboards` table, referencing the specific **Saved Configuration ID** from `dashboard_templates`. (`Setup` deleted. `Lifecycle` currently uses old repo - **NEEDS REWORK**).
+*   [x?] **Rework `DashboardLifecycleService`:** Activation must use `active_dashboards` table, referencing the specific **Saved Configuration ID** from `dashboard_configurations`.
+    *   **(Implementation seems to exist; uses correct entities/repos)**
     *   **Affected Files:**
-        *   `app/bot/application/services/dashboard/dashboard_lifecycle_service.py` (Verify path)
+        *   `app/bot/application/services/dashboard/dashboard_lifecycle_service.py` (Path confirmed)
 *   [x] **Review `DashboardWorkflow`:** Manages state.
     *   **Affected Files:**
         *   `app/bot/core/workflows/dashboard/dashboard_workflow.py` (Verify path)
 *   [ ] **API (Web):** CRUD for **Saved Configurations** exists. Live instance management TBD.
-*   [ ] **Review/Remove `DashboardService.sync_dashboard_from_snapshot`:** This concept is likely obsolete. Sync/Update of live instances needs a new mechanism based on `active_dashboards`.
+*   [ ] **Review `DashboardLifecycleService.sync_dashboard_from_snapshot`:** Review method relevance/logic/name in the context of template application and `active_dashboards`.
     *   **Affected Files:**
-        *   (Find relevant `DashboardService` file)
+        *   `app/bot/application/services/dashboard/dashboard_lifecycle_service.py`
+*   [ ] **Remove Obsolete `DashboardService.py`:** File seems entirely commented out and superseded by other services.
+    *   **Affected Files:**
+        *   `app/bot/application/services/dashboard/dashboard_service.py`
 
 ## Phase 3: Specific Checklist Review (Actions Taken Previously)
 

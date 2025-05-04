@@ -11,11 +11,9 @@ alwaysApply: true
 - Add any **specific context or files** relevant ONLY to this immediate task.
 - **Leave the file empty** if no specific task context is needed beyond the general rules.
 
-## Current Feature: [User: Specify Feature Name, e.g., Guild Designer - Phase 1]
-
 ## TODO List Adherence
 
-- **TODO File:** @docs/4_project_management/todo/guild_selector.md
+- **TODO File:** @docs/4_project_management/todo/bot_refactoring.md
 
 - **Rule:** Strictly follow the order and content of the specified TODO file unless explicitly told otherwise by the user *for the current step*.
 
