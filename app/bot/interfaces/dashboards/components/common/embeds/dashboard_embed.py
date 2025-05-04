@@ -12,24 +12,60 @@ if TYPE_CHECKING:
 
 logger = get_bot_logger()
 
-# Helper function to format strings with data, handling missing keys gracefully
+def format_list_to_string(items: List[Any]) -> str:
+    """Formats a list into a bulleted string representation."""
+    if not items:
+        return "*Keine Einträge vorhanden*"
+    
+    formatted_items = []
+    for item in items:
+        # Attempt to get a meaningful representation
+        if hasattr(item, 'name'):
+            formatted_items.append(f"- {getattr(item, 'name')}")
+        elif hasattr(item, 'title'):
+            formatted_items.append(f"- {getattr(item, 'title')}")
+        elif isinstance(item, str):
+            formatted_items.append(f"- {item}")
+        elif isinstance(item, (int, float)):
+             formatted_items.append(f"- {str(item)}")
+        else:
+            # Fallback to generic string representation
+            try:
+                 item_str = str(item)
+                 # Optional: Truncate long representations
+                 if len(item_str) > 50:
+                      item_str = item_str[:47] + "..."
+                 formatted_items.append(f"- {item_str}")
+            except Exception:
+                 formatted_items.append("- *[Fehler bei Darstellung]*")
+            
+    return "\n".join(formatted_items)
+
 def format_string(template_string: Optional[str], data: Dict[str, Any]) -> str:
     if not template_string:
         return ""
     try:
-        # Direct replacement approach
         formatted_string = template_string
         if data: # Only attempt replacements if data is provided
             for key, value in data.items():
-                placeholder = f'{{{{{key}}}}}' # Construct the placeholder e.g., {{hostname}}
-                # Replace all occurrences of the placeholder with the string representation of the value
-                formatted_string = formatted_string.replace(placeholder, str(value))
+                placeholder = f'{{{{{key}}}}}' # Construct the placeholder e.g., {{projects}}
+                
+                # --- MODIFICATION START: Handle lists --- 
+                if isinstance(value, list):
+                    replacement_value = format_list_to_string(value)
+                else:
+                    replacement_value = str(value)
+                # --- MODIFICATION END --- 
+                
+                # Replace all occurrences
+                formatted_string = formatted_string.replace(placeholder, replacement_value)
         
         return formatted_string
     except Exception as e:
-        # Log general errors but still return original template
+        # Log general errors but still return original template or partial
         logger.error(f"Error formatting string '{template_string[:50]}...': {e}", exc_info=True)
-        return template_string # Return original on error
+        # Return partially formatted or original template on error
+        return template_string # Or potentially formatted_string if partial is okay
 
 class DashboardEmbed(BaseComponent):
     """Main dashboard embed for displaying dashboard content."""
@@ -53,146 +89,128 @@ class DashboardEmbed(BaseComponent):
     
     def build(self, data: Optional[Dict[str, Any]] = None) -> nextcord.Embed:
         """Build and return the Discord embed object using the merged config and provided data."""
-        # --- DETAILED LOGGING START ---
+         # --- DETAILED LOGGING START ---
         instance_id = self.config.get('instance_id', 'UNKNOWN_INSTANCE')
-        logger.info(f"[Embed Build - {instance_id}] STARTING BUILD. Full self.config: {self.config}")
-        # --- DETAILED LOGGING END ---
+        logger.debug(f"[{instance_id}] Building embed with data keys: {list(data.keys()) if data else 'None'}") # Simplified log
         try:
-            # Use self.config which now holds the merged values
-            # --- DETAILED LOGGING ---
-            title = self.config.get("title", "Default Title")
-            formatted_title = format_string(title, data or {})
-            description = self.config.get("description", "")
-            formatted_description = format_string(description, data or {})
-            color_value = self.config.get("color", nextcord.Color.blurple().value)
-            logger.info(f"[Embed Build - {instance_id}] Creating base embed with Title='{formatted_title}', Desc='{formatted_description[:50]}...', Color={color_value}")
-            # --- DETAILED LOGGING END ---
-            embed = nextcord.Embed(
-                title=formatted_title, # Use formatted string
-                description=formatted_description, # Use formatted string
-                color=color_value # Use merged config
-            )
+             # Use self.config which now holds the merged values
+             # --- DETAILED LOGGING ---
+             title = self.config.get("title", "Default Title")
+             formatted_title = format_string(title, data or {})
+             description = self.config.get("description", "")
+             formatted_description = format_string(description, data or {})
+             color_value = self.config.get("color", nextcord.Color.blurple().value)
+             # Removed detailed base embed creation log
+             embed = nextcord.Embed(
+                 title=formatted_title, # Use formatted string
+                 description=formatted_description, # Use formatted string
+                 color=color_value # Use merged config
+             )
 
-            # Add fields if provided in merged config
-            fields = self.config.get("fields", [])
-            # --- DETAILED LOGGING ---
-            logger.info(f"[Embed Build - {instance_id}] Processing {len(fields) if isinstance(fields, list) else 0} fields...")
-            # --- DETAILED LOGGING END ---
-            if isinstance(fields, list):
-                 for i, field in enumerate(fields):
-                     if isinstance(field, dict):
-                           # --- DETAILED LOGGING ---
-                           field_name = field.get("name", "\\u200b")
-                           formatted_field_name = format_string(field_name, data or {})
-                           field_value = field.get("value", "")
-                           formatted_field_value = format_string(field_value, data or {})
-                           field_inline = field.get("inline", True)
-                           logger.info(f"[Embed Build - {instance_id}] Adding Field {i+1}: Name='{formatted_field_name}', Value='{formatted_field_value[:50]}...', Inline={field_inline}")
-                           # --- DETAILED LOGGING END ---
-                           embed.add_field(
-                               name=formatted_field_name,
-                               value=formatted_field_value,
-                               inline=field_inline
-                           )
-                     else:
-                         # --- DETAILED LOGGING ---
-                         logger.warning(f"[Embed Build - {instance_id}] Field {i+1} in config is not a dict: {field}. Skipping.")
-                         # --- DETAILED LOGGING END ---
-            else:
-                 # --- DETAILED LOGGING ---
-                 logger.warning(f"[Embed Build - {instance_id}] 'fields' in config is not a list: {fields}. Skipping fields.")
-                 # --- DETAILED LOGGING END ---
-
-
-            # Set image if provided
-            image_url = self.config.get("image_url")
-            if image_url:
-                # --- DETAILED LOGGING ---
-                logger.info(f"[Embed Build - {instance_id}] Setting Image URL: {image_url}")
-                # --- DETAILED LOGGING END ---
-                embed.set_image(url=image_url)
-
-            # Set thumbnail if provided
-            thumbnail_url = self.config.get("thumbnail_url")
-            if thumbnail_url:
-                # --- DETAILED LOGGING ---
-                logger.info(f"[Embed Build - {instance_id}] Setting Thumbnail URL: {thumbnail_url}")
-                # --- DETAILED LOGGING END ---
-                embed.set_thumbnail(url=thumbnail_url)
-
-            # Add footer if provided
-            footer_data = self.config.get("footer")
-            if isinstance(footer_data, dict):
-                 # --- DETAILED LOGGING ---
-                 footer_text = footer_data.get("text", "")
-                 formatted_footer_text = format_string(footer_text, data or {})
-                 footer_icon_url = footer_data.get("icon_url")
-                 logger.info(f"[Embed Build - {instance_id}] Setting Footer: Text='{formatted_footer_text}', Icon='{footer_icon_url}'")
-                 # --- DETAILED LOGGING END ---
-                 embed.set_footer(
-                     text=formatted_footer_text,
-                     icon_url=footer_icon_url
-                 )
-            elif isinstance(footer_data, str): # Handle simple string footer
-                 # --- DETAILED LOGGING ---
-                 logger.info(f"[Embed Build - {instance_id}] Setting Footer (string): Text='{footer_data}'")
-                 # --- DETAILED LOGGING END ---
-                 embed.set_footer(text=footer_data)
-            else:
-                 # --- DETAILED LOGGING ---
-                 if footer_data is not None:
-                    logger.info(f"[Embed Build - {instance_id}] No valid footer data found in config (Type: {type(footer_data)}). Skipping footer.")
-                 # --- DETAILED LOGGING END ---
-
-
-            # Add author if provided
-            author_data = self.config.get("author")
-            if isinstance(author_data, dict):
+             # Add fields if provided in merged config
+             fields = self.config.get("fields", [])
+             # --- DETAILED LOGGING ---
+             # Removed field processing count log
+             if isinstance(fields, list):
+                  for i, field in enumerate(fields):
+                      if isinstance(field, dict):
+                            # --- DETAILED LOGGING ---
+                            field_name = field.get("name", "\u200b")
+                            formatted_field_name = format_string(field_name, data or {})
+                            field_value = field.get("value", "")
+                            formatted_field_value = format_string(field_value, data or {})
+                            field_inline = field.get("inline", True)
+                            # Removed individual field add log
+                            embed.add_field(
+                                name=formatted_field_name,
+                                value=formatted_field_value,
+                                inline=field_inline
+                            )
+                      else:
+                          # --- DETAILED LOGGING ---
+                          logger.warning(f"[{instance_id}] Field {i+1} in config is not a dict: {field}. Skipping.")
+             else:
                   # --- DETAILED LOGGING ---
-                  author_name = author_data.get("name", "")
-                  formatted_author_name = format_string(author_name, data or {})
-                  author_url = author_data.get("url")
-                  author_icon_url = author_data.get("icon_url")
-                  logger.info(f"[Embed Build - {instance_id}] Setting Author: Name='{formatted_author_name}', URL='{author_url}', Icon='{author_icon_url}'")
-                  # --- DETAILED LOGGING END ---
-                  embed.set_author(
-                     name=formatted_author_name,
-                     url=author_url,
-                     icon_url=author_icon_url
+                  logger.warning(f"[{instance_id}] 'fields' in config is not a list: {fields}. Skipping fields.")
+ 
+ 
+             # Set image if provided
+             image_url = self.config.get("image_url")
+             if image_url:
+                 # --- DETAILED LOGGING ---
+                 # Removed image set log
+                 embed.set_image(url=image_url)
+ 
+             # Set thumbnail if provided
+             thumbnail_url = self.config.get("thumbnail_url")
+             if thumbnail_url:
+                 # --- DETAILED LOGGING ---
+                 # Removed thumbnail set log
+                 embed.set_thumbnail(url=thumbnail_url)
+ 
+             # Add footer if provided
+             footer_data = self.config.get("footer")
+             if isinstance(footer_data, dict):
+                  # --- DETAILED LOGGING ---
+                  footer_text = footer_data.get("text", "")
+                  formatted_footer_text = format_string(footer_text, data or {})
+                  footer_icon_url = footer_data.get("icon_url")
+                  # Removed footer set log
+                  embed.set_footer(
+                      text=formatted_footer_text,
+                      icon_url=footer_icon_url
                   )
-            elif isinstance(author_data, str): # Handle simple string author name
-                 # --- DETAILED LOGGING ---
-                 logger.info(f"[Embed Build - {instance_id}] Setting Author (string): Name='{author_data}'")
-                 # --- DETAILED LOGGING END ---
-                 embed.set_author(name=author_data)
-            else:
-                 # --- DETAILED LOGGING ---
-                 if author_data is not None:
-                     logger.info(f"[Embed Build - {instance_id}] No valid author data found in config (Type: {type(author_data)}). Skipping author.")
-                 # --- DETAILED LOGGING END ---
-
-            # Add timestamp if configured
-            if self.config.get("timestamp", True):
+             elif isinstance(footer_data, str): # Handle simple string footer
                   # --- DETAILED LOGGING ---
-                  logger.info(f"[Embed Build - {instance_id}] Setting Timestamp.")
-                  # --- DETAILED LOGGING END ---
-                  embed.timestamp = nextcord.utils.utcnow()
-
-            # --- DETAILED LOGGING ---
-            logger.info(f"[Embed Build - {instance_id}] BUILD SUCCESSFUL. Returning embed.")
-            # --- DETAILED LOGGING END ---
-            return embed
-
+                  # Removed footer set log (string)
+                  embed.set_footer(text=footer_data)
+             else:
+                  # --- DETAILED LOGGING ---
+                  if footer_data is not None:
+                     logger.warning(f"[{instance_id}] Invalid footer data type in config: {type(footer_data)}. Skipping footer.")
+ 
+ 
+             # Add author if provided
+             author_data = self.config.get("author")
+             if isinstance(author_data, dict):
+                   # --- DETAILED LOGGING ---
+                   author_name = author_data.get("name", "")
+                   formatted_author_name = format_string(author_name, data or {})
+                   author_url = author_data.get("url")
+                   author_icon_url = author_data.get("icon_url")
+                   # Removed author set log
+                   embed.set_author(
+                       name=formatted_author_name,
+                       url=author_url,
+                       icon_url=author_icon_url
+                   )
+             elif isinstance(author_data, str): # Handle simple string author name
+                  # Removed author set log (string)
+                  embed.set_author(name=author_data)
+             else:
+                  # --- DETAILED LOGGING ---
+                  if author_data is not None:
+                      logger.warning(f"[{instance_id}] Invalid author data type in config: {type(author_data)}. Skipping author.")
+ 
+             # Add timestamp if configured
+             if self.config.get("timestamp", True):
+                   # --- DETAILED LOGGING ---
+                   # Removed timestamp set log
+                   embed.timestamp = nextcord.utils.utcnow()
+ 
+             # --- DETAILED LOGGING ---
+             logger.debug(f"[{instance_id}] Embed build successful.") # Changed to debug
+             return embed
+ 
         except Exception as e:
-            # --- DETAILED LOGGING ---
-            logger.error(f"[Embed Build - {instance_id}] BUILD FAILED with exception: {str(e)}", exc_info=True)
-            # --- DETAILED LOGGING END ---
-            # Return a minimal embed if we had an error building the proper one
-            return nextcord.Embed(
-                 title="Error Building Embed",
-                 description=f"An error occurred while building this embed ({instance_id}).",
-                 color=nextcord.Color.red()
-            )
+             # --- DETAILED LOGGING ---
+             logger.error(f"[{instance_id}] Embed build FAILED: {str(e)}", exc_info=True)
+             # Return a minimal embed if we had an error building the proper one
+             return nextcord.Embed(
+                  title="Error Building Embed",
+                  description=f"An error occurred while building this embed ({instance_id}).",
+                  color=nextcord.Color.red()
+             )
 
     # --- Field methods now directly modify self.config ---
     def add_field(self, name: str, value: str, inline: bool = True) -> None:

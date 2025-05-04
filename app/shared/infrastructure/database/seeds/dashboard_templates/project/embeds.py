@@ -31,7 +31,7 @@ PROJECT_EMBEDS = {
         "fields": [
             {
                 "name": "Projects",
-                "value": "{{project_list}}",
+                "value": "{{projects}}",
                 "inline": False
             }
         ]

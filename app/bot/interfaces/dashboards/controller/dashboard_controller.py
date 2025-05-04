@@ -46,17 +46,19 @@ class DashboardController:
         self.component_registry = None 
         self.data_service = None # Renamed from builder service
         
+        # Keep this initial log, maybe change level if too noisy later
         logger.info(f"Initialized dashboard controller for {dashboard_type} dashboard {self.dashboard_id}")
     
     async def initialize(self, bot):
         """Initialize the dashboard controller"""
         self.bot = bot
         
+        # Keep initial check logs for now, might reduce later if stable
         bot_id = getattr(bot.user, 'id', 'N/A')
         has_factory = hasattr(bot, 'service_factory')
         factory_obj = getattr(bot, 'service_factory', None)
         factory_type = type(factory_obj).__name__
-        logger.info(f"[DEBUG controller.initialize] Received bot. Bot ID: {bot_id}, Has service_factory attr: {has_factory}, Factory Object Type: {factory_type}")
+        logger.debug(f"[DEBUG controller.initialize] Received bot. Bot ID: {bot_id}, Has service_factory attr: {has_factory}, Factory Object Type: {factory_type}") # Changed to DEBUG
         
 
         # Get Component Registry & Data Service
@@ -69,13 +71,11 @@ class DashboardController:
 
                  if not self.component_registry:
                      logger.error("[DEBUG controller.initialize] Component Registry service IS NONE within Service Factory.")
-                 else:
-                     logger.debug(f"[DEBUG controller.initialize] Component Registry obtained: {type(self.component_registry).__name__}")
+                 # Removed else log for component registry obtained
 
                  if not self.data_service:
                      logger.error("[DEBUG controller.initialize] DashboardDataService service IS NONE within Service Factory.")
-                 else:
-                     logger.debug(f"[DEBUG controller.initialize] Data Service obtained: {type(self.data_service).__name__}")
+                 # Removed else log for data service obtained
 
             elif has_factory and factory_obj is None:
                  logger.error("[DEBUG controller.initialize] Service factory attribute EXISTS but IS NONE on bot instance.")
@@ -84,17 +84,16 @@ class DashboardController:
                  logger.error("[DEBUG controller.initialize] Service factory attribute DOES NOT EXIST on bot instance.")
                  return False # Explicitly return False
 
-            # Check if services were actually retrieved
+            # Keep these checks for now
             if not self.component_registry:
                 logger.error("Component Registry not available for DashboardController after factory check.")
-                # return False # Decide handling - maybe allow init but log error? For now, let it proceed with error logs.
             if not self.data_service:
                  logger.error("DashboardDataService not available for DashboardController after factory check.")
-                 # return False # Decide handling
 
         except AttributeError as ae:
              # Catch if factory_obj doesn't have get_service
-             logger.error(f"[DEBUG controller.initialize] Service Factory ({factory_type}) missing 'get_service' method? Error: {ae}", exc_info=True)
+             # Use the simplified log from previous fix attempt
+             logger.error(f"[DEBUG controller.initialize] Service Factory ({factory_type}) missing 'get_service' method?", exc_info=True)
              return False
         except Exception as e:
             logger.error(f"[DEBUG controller.initialize] Error getting services/registries: {e}", exc_info=True)
@@ -107,7 +106,8 @@ class DashboardController:
         self.register_standard_handlers()
         
         self.initialized = True
-        logger.info(f"Dashboard {self.dashboard_id} initialization complete (Services might be missing).") # Adjusted log
+        # Keep this completion log
+        logger.info(f"Dashboard {self.dashboard_id} initialization complete (Services might be missing).")
         return True
     
     
@@ -120,7 +120,7 @@ class DashboardController:
             'fields': fields or [],
             'footer': footer
         }
-        logger.debug(f"Registered embed {embed_id} for dashboard {self.dashboard_id}")
+        # Removed debug log for embed registration
     
     def register_button(self, button_id, label, style="primary", emoji=None, row=0, disabled=False):
         """Register a button configuration"""
@@ -131,12 +131,12 @@ class DashboardController:
             'row': row,
             'disabled': disabled
         }
-        logger.debug(f"Registered button {button_id} for dashboard {self.dashboard_id}")
+        # Removed debug log for button registration
     
     def register_handler(self, component_id, handler_func):
         """Register a handler function for a component"""
         self.registered_handlers[component_id] = handler_func
-        logger.debug(f"Registered handler for {component_id} on dashboard {self.dashboard_id}")
+        # Removed debug log for handler registration
     
     def register_standard_handlers(self):
         """Register standard handlers for common components"""
@@ -189,48 +189,36 @@ class DashboardController:
     
     async def display_dashboard(self):
         """Display or update the dashboard in the channel"""
-        # --- ADD DEBUG LOG ---
-        logger.debug(f"[{self.dashboard_id}] display_dashboard: Method started.")
-        # --- END DEBUG LOG ---
+        # Remove entry log
         try:
             if not self.initialized:
                 logger.error(f"[{self.dashboard_id}] display_dashboard: Attempted to display uninitialized dashboard.")
-                # Try to send an error message to the channel?
                 channel = await self.get_channel()
                 if channel:
                      await channel.send(embed=self.create_error_embed("Dashboard controller not initialized.", title="Display Error"))
                 return None
 
-            # --- ADD DEBUG LOG ---
-            logger.debug(f"[{self.dashboard_id}] display_dashboard: Checking data_service...")
-            # --- END DEBUG LOG ---
+            # Remove data service check log
             if not self.data_service:
                 logger.error(f"[{self.dashboard_id}] display_dashboard: DataService not available.")
                 channel = await self.get_channel()
                 if channel:
                      await channel.send(embed=self.create_error_embed("Data service unavailable.", title="Display Error"))
                 return None
-            logger.debug(f"[{self.dashboard_id}] display_dashboard: DataService check passed.")
+            # Remove data service check passed log
 
-            # --- ADD DEBUG LOG ---
-            logger.debug(f"[{self.dashboard_id}] display_dashboard: Calling fetch_dashboard_data...")
-            # --- END DEBUG LOG ---
+            # Remove calling fetch log
             data = await self.fetch_dashboard_data()
-            # --- ADD DEBUG LOG ---
-            logger.debug(f"[{self.dashboard_id}] display_dashboard: fetch_dashboard_data returned: {data is not None}")
-            # --- END DEBUG LOG ---
+            # Remove fetch returned log
 
             if data is None: # Check if fetch failed critically
                  logger.error(f"[{self.dashboard_id}] display_dashboard: Failed to fetch data. Aborting display.")
-                 # Display an error state on the dashboard
                  channel = await self.get_channel()
                  if channel:
                      error_embed = self.create_error_embed("Failed to fetch required data.", title="Data Error")
-                     # Try to update existing message or send new one
                      await self._send_or_edit(channel, error_embed, None) # Send error embed, no view
                  return None
-            logger.debug(f"[{self.dashboard_id}] display_dashboard: Data fetched successfully.")
-            # --- END Data Fetch ---
+            # Remove data fetched success log
 
             # Get channel
             channel = await self.get_channel()
@@ -238,47 +226,29 @@ class DashboardController:
                 logger.error(f"[{self.dashboard_id}] display_dashboard: Channel {self.channel_id} not found.")
                 return None
 
-            # --- ADD DEBUG LOG ---
-            logger.debug(f"[{self.dashboard_id}] display_dashboard: Calling build_embed...")
-            # --- END DEBUG LOG ---
+            # Remove calling build_embed log
             embed = await self.build_embed(data)
-            # --- ADD DEBUG LOG ---
-            embed_type = type(embed).__name__ if embed else 'None'
-            logger.debug(f"[{self.dashboard_id}] display_dashboard: build_embed returned type: {embed_type}")
-            # --- END DEBUG LOG ---
+            # Remove build_embed returned log
 
-            # --- ADD DEBUG LOG ---
-            logger.debug(f"[{self.dashboard_id}] display_dashboard: Calling build_view...")
-            # --- END DEBUG LOG ---
+            # Remove calling build_view log
             view = await self.build_view(data) # Returns None if no interactive components
-            # --- ADD DEBUG LOG ---
-            view_type = type(view).__name__ if view else 'None'
-            logger.debug(f"[{self.dashboard_id}] display_dashboard: build_view returned type: {view_type}")
-            # --- END DEBUG LOG ---
+            # Remove build_view returned log
 
-            # Update existing message or send new one
-            # --- ADD DEBUG LOG ---
-            logger.debug(f"[{self.dashboard_id}] display_dashboard: Calling _send_or_edit...")
-            # --- END DEBUG LOG ---
+            # Remove calling _send_or_edit log
             self.message = await self._send_or_edit(channel, embed, view)
-            # --- ADD DEBUG LOG ---
-            msg_id = self.message.id if self.message else 'None'
-            logger.debug(f"[{self.dashboard_id}] display_dashboard: _send_or_edit returned message with ID: {msg_id}")
-            # --- END DEBUG LOG ---
+            # Remove _send_or_edit returned log
 
             if self.message:
                  self.message_id = str(self.message.id)
-                 logger.info(f"[{self.dashboard_id}] Dashboard displayed/updated. Message ID: {self.message_id}")
+                 logger.info(f"[{self.dashboard_id}] Dashboard displayed/updated. Message ID: {self.message_id}") # Keep INFO log
             else:
                  logger.error(f"[{self.dashboard_id}] Failed to send or edit dashboard message.")
-                 self.message_id = None # Ensure message_id is None if sending failed
+                 self.message_id = None 
 
-            # Return the message object (or None if failed)
             return self.message
 
         except Exception as e:
             logger.error(f"[{self.dashboard_id}] Error in display_dashboard: {e}", exc_info=True)
-            # Try to display error embed
             try:
                 channel = await self.get_channel()
                 if channel:
@@ -291,54 +261,41 @@ class DashboardController:
     # Helper for sending/editing message
     async def _send_or_edit(self, channel: nextcord.TextChannel, embed: Optional[nextcord.Embed], view: Optional[nextcord.ui.View]) -> Optional[nextcord.Message]:
         """Handles sending a new message or editing an existing one."""
-        # --- ADD DEBUG LOG ---
-        current_msg_id = self.message.id if self.message else self.message_id
-        logger.debug(f"[{self.dashboard_id}] _send_or_edit: Started. Channel: {channel.id}, Current Msg Obj: {self.message is not None}, Current Msg ID: {current_msg_id}, Has Embed: {embed is not None}, Has View: {view is not None}")
-        # --- END DEBUG LOG ---
+        # Remove entry log
         message_to_return = None
         if self.message:
             try:
-                # --- ADD DEBUG LOG ---
-                logger.debug(f"[{self.dashboard_id}] _send_or_edit: Attempting to edit existing message object {self.message.id}...")
-                # --- END DEBUG LOG ---
+                # Remove attempting edit log
                 await self.message.edit(embed=embed, view=view)
                 message_to_return = self.message
-                logger.debug(f"[{self.dashboard_id}] _send_or_edit: Edited existing message object {self.message.id} successfully.")
+                # Removed edited success log
             except (nextcord.NotFound, nextcord.HTTPException) as e:
                 logger.warning(f"[{self.dashboard_id}] _send_or_edit: Failed to edit message object {self.message_id}: {e}. Sending new message.")
-                self.message = None # Reset message object
-                self.message_id = None # Reset message id
+                self.message = None 
+                self.message_id = None 
                 try:
-                     # --- ADD DEBUG LOG ---
-                     logger.debug(f"[{self.dashboard_id}] _send_or_edit: Attempting to send new message after edit failure...")
-                     # --- END DEBUG LOG ---
+                     # Remove attempt send log
                      message_to_return = await channel.send(embed=embed, view=view)
-                     logger.debug(f"[{self.dashboard_id}] _send_or_edit: Sent new message (ID: {message_to_return.id}) after edit failure.")
+                     # Removed sent new message log
                 except Exception as send_err:
                      logger.error(f"[{self.dashboard_id}] _send_or_edit: Failed to send new message after edit failure: {send_err}", exc_info=True)
         elif self.message_id:
             try:
-                # --- ADD DEBUG LOG ---
-                logger.debug(f"[{self.dashboard_id}] _send_or_edit: Attempting to fetch message {self.message_id}...")
-                # --- END DEBUG LOG ---
+                # Remove attempt fetch log
                 msg = await channel.fetch_message(int(self.message_id))
-                # --- ADD DEBUG LOG ---
-                logger.debug(f"[{self.dashboard_id}] _send_or_edit: Fetched message {self.message_id}. Attempting to edit...")
-                # --- END DEBUG LOG ---
+                # Remove fetched log
                 await msg.edit(embed=embed, view=view)
-                self.message = msg # Store fetched message object
+                self.message = msg 
                 message_to_return = msg
-                logger.debug(f"[{self.dashboard_id}] _send_or_edit: Fetched and edited message {self.message_id} successfully.")
+                # Removed fetched and edited success log
             except (nextcord.NotFound, nextcord.HTTPException) as e:
                 logger.warning(f"[{self.dashboard_id}] _send_or_edit: Failed to fetch/edit message {self.message_id}: {e}. Sending new message.")
-                self.message = None # Reset message object
-                self.message_id = None # Reset message id
+                self.message = None 
+                self.message_id = None 
                 try:
-                    # --- ADD DEBUG LOG ---
-                    logger.debug(f"[{self.dashboard_id}] _send_or_edit: Attempting to send new message after fetch/edit failure...")
-                    # --- END DEBUG LOG ---
+                    # Remove attempt send log
                     message_to_return = await channel.send(embed=embed, view=view)
-                    logger.debug(f"[{self.dashboard_id}] _send_or_edit: Sent new message (ID: {message_to_return.id}) after fetch/edit failure.")
+                    # Removed sent new message log
                 except Exception as send_err:
                     logger.error(f"[{self.dashboard_id}] _send_or_edit: Failed to send new message after fetch/edit failure: {send_err}", exc_info=True)
             except ValueError:
@@ -346,40 +303,30 @@ class DashboardController:
                  self.message = None
                  self.message_id = None
                  try:
-                    # --- ADD DEBUG LOG ---
-                    logger.debug(f"[{self.dashboard_id}] _send_or_edit: Attempting to send new message after invalid ID format...")
-                    # --- END DEBUG LOG ---
+                    # Removed attempt send log
                     message_to_return = await channel.send(embed=embed, view=view)
-                    logger.debug(f"[{self.dashboard_id}] _send_or_edit: Sent new message (ID: {message_to_return.id}) after invalid ID format.")
+                    # Removed sent new message log
                  except Exception as send_err:
                      logger.error(f"[{self.dashboard_id}] _send_or_edit: Failed to send new message after invalid ID format: {send_err}", exc_info=True)
         else:
             # No existing message, create new one
             try:
-                # --- ADD DEBUG LOG ---
-                logger.debug(f"[{self.dashboard_id}] _send_or_edit: No message ID found. Attempting to send new message...")
-                # --- END DEBUG LOG ---
+                # Removed attempt send log
                 message_to_return = await channel.send(embed=embed, view=view)
-                logger.debug(f"[{self.dashboard_id}] _send_or_edit: Sent new message (ID: {message_to_return.id}) successfully.")
+                # Removed sent new message log
             except Exception as send_err:
                 logger.error(f"[{self.dashboard_id}] _send_or_edit: Failed to send initial message: {send_err}", exc_info=True)
 
-        # --- ADD DEBUG LOG ---
-        return_msg_id = message_to_return.id if message_to_return else 'None'
-        logger.debug(f"[{self.dashboard_id}] _send_or_edit: Finished. Returning message object with ID: {return_msg_id}")
-        # --- END DEBUG LOG ---
+        # Removed finished log
         return message_to_return
 
     async def cleanup(self):
         """Clean up resources"""
+        # Keep info log
         logger.info(f"Cleaning up dashboard {self.dashboard_id}")
-        # Clear view items if applicable (view might be None)
-        # view = getattr(self, '_last_view', None) # Assuming view is stored if needed
-        # if view:
-        #      view.stop()
-        #      view.clear_items()
         self.initialized = False
-        self.message = None # Remove reference
+        self.message = None 
+        # Removed the refresh_data call from cleanup as it seemed odd here
 
     # --- Methods moved/adapted from DashboardBuilderService --- 
 
@@ -389,6 +336,7 @@ class DashboardController:
         embed component and calling its build() method.
         Assumes only one primary embed component per dashboard message.
         """
+        # Keep warning logs for config issues
         if not self.config or 'components' not in self.config:
             logger.warning(f"Dashboard {self.dashboard_id}: Config is missing or has no components key.")
             return self.create_error_embed("Dashboard configuration is missing components.")
@@ -410,63 +358,30 @@ class DashboardController:
             # Check the type of the component referenced by the key
             definition_wrapper = self.component_registry.get_definition_by_key(key)
             if definition_wrapper and definition_wrapper.get('type') == 'embed':
-                 # Found the primary embed component configuration
                  embed_component_config = comp_config
                  component_key = key
-                 logger.debug(f"Dashboard {self.dashboard_id}: Found embed component config with key '{key}' and instance_id '{comp_config.get('instance_id')}'")
-                 break # Use the first one found
+                 # Removed found embed component log
+                 break 
 
         if not embed_component_config or not component_key:
             logger.warning(f"Dashboard {self.dashboard_id}: No component with type 'embed' found in configuration.")
-            # Maybe return None or a default embed indicating no content?
-            return None # No embed component defined
+            return None 
 
-        # Get the implementation class for 'embed'
+        # Keep error logs for missing classes
         component_class = self.component_registry.get_component_class('embed')
         if not component_class:
             logger.error(f"Dashboard {self.dashboard_id}: No implementation class registered for component type 'embed'.")
             return self.create_error_embed("Internal Error: Embed component class not found.")
 
         try:
-            # Instantiate the component using the specific instance config from the layout
-            # The component's __init__ (via BaseComponent) will fetch the base definition
-            # using component_key and merge it with instance settings.
             component_instance = component_class(self.bot, embed_component_config)
-
-            # --- Extract the relevant data for the embed ---
-            # Assumption: The first embed component uses the data from the first defined data source.
-            embed_data_to_pass = {}
-            data_sources_config = self.config.get('data_sources', {})
-            if data_sources_config and data: # Ensure config and fetched data exist
-                first_data_source_key = next(iter(data_sources_config), None)
-                if first_data_source_key and first_data_source_key in data:
-                    embed_data_to_pass = data.get(first_data_source_key, {})
-                    logger.debug(f"Dashboard {self.dashboard_id}: Extracted data for key '{first_data_source_key}' to pass to embed build.")
-                else:
-                     logger.warning(f"Dashboard {self.dashboard_id}: First data source key '{first_data_source_key}' not found in fetched data keys: {list(data.keys())}. Passing empty dict to embed.")
-            else:
-                 logger.debug(f"Dashboard {self.dashboard_id}: No data sources configured or no data fetched. Passing empty dict to embed.")
-            # --- End data extraction ---
-
-            # --- Add Log for Extracted Data --- 
-            hostname_val = embed_data_to_pass.get('hostname', 'NOT_FOUND')
-            cpu_val = embed_data_to_pass.get('cpu_percent', 'NOT_FOUND')
-            logger.info(f"[DIAGNOSTIC Controller - build_embed] Data to pass to embed: Hostname={hostname_val}, CPU={cpu_val}, Full Dict Keys: {list(embed_data_to_pass.keys())}")
-            # --- End Log --- 
-
-            # Build the embed using the component's own build method
-            # --- MODIFIED: Pass extracted data dictionary ---
-            built_embed = component_instance.build(data=embed_data_to_pass) # Pass extracted data here
+            built_embed = component_instance.build(data=data) 
 
             if not isinstance(built_embed, nextcord.Embed):
                  logger.error(f"Dashboard {self.dashboard_id}: Component {component_key} build() method did not return a nextcord.Embed object.")
                  return self.create_error_embed("Internal Error: Failed to build embed content.")
 
-            # Apply standard footer or dynamic data if needed (optional)
-            # Example: self.apply_standard_footer(built_embed)
-            # Example: Add dynamic data to description/fields if necessary
-            # built_embed.description = f"{built_embed.description}\nLast updated: {datetime.now()}" # Example dynamic data
-
+            # Keep success log
             logger.info(f"Dashboard {self.dashboard_id}: Successfully built embed using component {component_key}.")
             return built_embed
 
@@ -477,32 +392,25 @@ class DashboardController:
     async def build_view(self, data: Dict[str, Any]) -> Optional[nextcord.ui.View]:
         """Build a view from configuration and data."""
         try:
-            interactive_components_ids = self.config.get('interactive_components', []) # List of instance_ids
-            component_configs = self.config.get('components', []) # Full definitions list
+            interactive_components_ids = self.config.get('interactive_components', []) 
+            component_configs = self.config.get('components', []) 
 
             if not interactive_components_ids or not component_configs:
                 return None
 
             view = nextcord.ui.View(timeout=None)
 
-            # Add components to view based on interactive_components list
             for instance_id_to_add in interactive_components_ids:
-                # Find the full config using instance_id
-                # --- ENSURE THIS LINE USES 'instance_id' ---
                 component_config = next((c for c in component_configs if c.get('instance_id') == instance_id_to_add), None)
-                # --- END ENSURE ---
-
                 if not component_config:
                     logger.warning(f"Interactive component config not found for instance_id '{instance_id_to_add}' in 'components' list for dashboard {self.dashboard_id}")
                     continue
-
-                # Create and add component to view
                 await self.add_component_to_view(view, component_config, data)
 
             if len(view.children) > 0:
                 return view
             else:
-                logger.debug(f"View built but no components added for dashboard {self.dashboard_id}")
+                # Removed view built but no components added log
                 return None
 
         except Exception as e:
@@ -515,16 +423,13 @@ class DashboardController:
             logger.error(f"[{self.dashboard_id}] Component Registry not available in add_component_to_view")
             return
 
-        # --- MODIFIED: Get component_key instead of type ---
         component_key = component_config.get('component_key')
         if not component_key:
             instance_id = component_config.get('instance_id', 'N/A')
             logger.warning(f"[{self.dashboard_id}] Component config (instance_id: {instance_id}) missing 'component_key': {component_config}")
             return
-        # --- END MODIFICATION ---
 
         try:
-            # --- ADDED: Get type from registry using the key ---
             if not hasattr(self.component_registry, 'get_type_by_key'):
                  logger.error(f"[{self.dashboard_id}] ComponentRegistry is missing the required 'get_type_by_key' method.")
                  return
@@ -532,29 +437,19 @@ class DashboardController:
             if not component_type:
                 logger.error(f"[{self.dashboard_id}] Component type not found in registry for key: {component_key}")
                 return
-            logger.debug(f"[{self.dashboard_id}] Resolved component key '{component_key}' to type '{component_type}'.")
-            # --- END ADDED SECTION ---
+            # Removed resolved component key log
 
-            # --- MODIFIED: Use get_component_class ---
             component_impl_class = self.component_registry.get_component_class(component_type)
-            # --- END MODIFICATION ---
-
             if not component_impl_class:
                 logger.error(f"[{self.dashboard_id}] Component implementation class not found in registry for type: {component_type} (from key: {component_key})")
                 return
 
-            # --- ADD GENERIC DIAGNOSTIC LOG ---
-            logger.info(f"[DIAGNOSTIC Controller] Config passed to {component_impl_class.__name__} for key '{component_key}' (Instance: {component_config.get('instance_id')}): {component_config}")
-            # --- END DIAGNOSTIC LOG ---
+            # Removed DIAGNOSTIC log about config passed
 
-            # Create component instance and add to view
-            # Pass the **entire instance config** found earlier, which includes component_key, instance_id, and settings
             component = component_impl_class(self.bot, component_config)
-            component.dashboard_id = self.dashboard_id # Assign dashboard ID for context
-            # Check if the component has the add_to_view method
+            component.dashboard_id = self.dashboard_id 
             if hasattr(component, 'add_to_view') and callable(component.add_to_view):
-                 # Pass component_config (contains instance_id, key, settings) and fetched data
-                await component.add_to_view(view, data, component_config) # Pass config dict
+                await component.add_to_view(view, data, component_config) 
             else:
                 logger.warning(f"Component type {component_type} does not have add_to_view method.")
 
@@ -577,37 +472,27 @@ class DashboardController:
 
     async def fetch_dashboard_data(self) -> Optional[Dict[str, Any]]:
         """Fetches data required for this dashboard using the DashboardDataService."""
-        # --- ADD DEBUG LOG ---
-        logger.debug(f"[{self.dashboard_id}] fetch_dashboard_data: Method started.")
-        # --- END DEBUG LOG ---
+        # Removed entry log
         if not self.data_service:
             logger.error(f"[{self.dashboard_id}] fetch_dashboard_data: DashboardDataService not available.")
-            return None # Indicate critical failure
+            return None 
             
         data_sources = self.config.get('data_sources', {})
-        # --- ADD DEBUG LOG ---
-        logger.debug(f"[{self.dashboard_id}] fetch_dashboard_data: Configured data sources: {data_sources}")
-        # --- END DEBUG LOG ---
+        # Removed configured data sources log
         if not data_sources:
-            logger.debug(f"[{self.dashboard_id}] fetch_dashboard_data: No data sources defined.")
-            return {} # Return empty dict if no sources defined
+            # Removed no data sources log
+            return {} 
             
         try:
-            # --- ADD DEBUG LOG ---
-            logger.debug(f"[{self.dashboard_id}] fetch_dashboard_data: Calling data_service.fetch_data...")
-            # --- END DEBUG LOG ---
-            # --- MODIFIED: Pass context --- 
+            # Removed calling data service log
             context_to_pass = {'guild_id': self.guild_id}
-            logger.debug(f"[{self.dashboard_id}] fetch_dashboard_data: Passing context: {context_to_pass}")
+            # Removed passing context log
             fetched_data = await self.data_service.fetch_data(data_sources, context=context_to_pass)
-            # --- END MODIFICATION ---
-            # --- ADD DEBUG LOG ---
-            logger.debug(f"[{self.dashboard_id}] fetch_dashboard_data: Data fetched successfully. Keys: {list(fetched_data.keys()) if fetched_data else 'None'}")
-            # --- END DEBUG LOG ---
+            # Removed data fetched success log
             return fetched_data
         except Exception as e:
             logger.error(f"[{self.dashboard_id}] fetch_dashboard_data: Error fetching data via service: {e}", exc_info=True)
-            return None # Indicate critical failure
+            return None 
 
     async def get_channel(self) -> Optional[nextcord.TextChannel]:
         """Get the channel for this dashboard"""
@@ -679,20 +564,17 @@ class DashboardController:
 
     async def refresh(self, interaction: Optional[nextcord.Interaction] = None):
         """Refresh the dashboard display"""
-        # Modified to directly call fetch/display as refresh_data is gone
+        # Keep info log
         logger.info(f"Refreshing dashboard {self.dashboard_id}")
-        # No separate refresh_data needed if display_dashboard fetches fresh data
-        # await self.refresh_data() # Removed call to non-existent method
         return await self.display_dashboard()
 
     async def refresh_data(self):
         """Fetches new data and updates the displayed dashboard message."""
-        logger.debug(f"Dashboard {self.dashboard_id}: Starting data refresh.")
+        # Removed entry log
         try:
             data = await self.fetch_dashboard_data()
             if data is None:
                 logger.error(f"Dashboard {self.dashboard_id}: Failed to fetch data during refresh.")
-                # Optionally update display with an error state?
                 return
 
             embed = await self.build_embed(data)
@@ -703,6 +585,7 @@ class DashboardController:
                  return
 
             await self.update_display(embed=embed, view=view)
+            # Keep info log
             logger.info(f"Dashboard {self.dashboard_id}: Successfully refreshed and updated display.")
 
         except Exception as e:
@@ -723,30 +606,23 @@ class DashboardController:
                 logger.error(f"Dashboard {self.dashboard_id}: Could not find channel {self.channel_id} to update display.")
                 return
 
-            # Fetch the existing message
-            message = await channel.fetch_message(self.message_id)
-            
-            # Edit the message
+            message = await channel.fetch_message(int(self.message_id)) # Ensure message_id is int
             await message.edit(embed=embed, view=view)
-            logger.debug(f"Dashboard {self.dashboard_id}: Successfully edited message {self.message_id} in channel {self.channel_id}.")
+            # Removed successful edit log
 
         except nextcord.NotFound:
             logger.error(f"Dashboard {self.dashboard_id}: Message {self.message_id} not found in channel {self.channel_id}. Cannot update display. Maybe it was deleted?", exc_info=True)
-            # Consider resetting self.message_id or attempting to resend?
         except nextcord.Forbidden:
              logger.error(f"Dashboard {self.dashboard_id}: Bot lacks permissions to edit message {self.message_id} in channel {self.channel_id}.", exc_info=True)
+        except ValueError: # Handle case where self.message_id is not a valid integer
+             logger.error(f"Dashboard {self.dashboard_id}: Stored message_id '{self.message_id}' is not a valid integer. Cannot update display.")
         except Exception as e:
             logger.error(f"Dashboard {self.dashboard_id}: Unexpected error updating display for message {self.message_id}: {e}", exc_info=True)
 
     async def cleanup(self):
         """Clean up resources"""
+        # Keep info log
         logger.info(f"Cleaning up dashboard {self.dashboard_id}")
-        # Clear view items if applicable (view might be None)
-        # view = getattr(self, '_last_view', None) # Assuming view is stored if needed
-        # if view:
-        #      view.stop()
-        #      view.clear_items()
         self.initialized = False
-        self.message = None # Remove reference
-        logger.info(f"Dashboard {self.dashboard_id}: Refresh triggered by interaction.")
-        await self.refresh_data() # Call the main refresh logic
+        self.message = None 
+        # Removed the refresh_data call from cleanup as it seemed odd here
