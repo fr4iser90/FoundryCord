@@ -44,9 +44,28 @@
 
 ## Phase 2: Implement Initial Moves
 
-*   [ ] **Task:** [Placeholder]
-    *   **Affected Files:**
-        *   `path/to/file`
+*   [ ] **Task 2.1:** Create initial directories: `app/bot/domain/`, `app/bot/application/services/`, `app/bot/application/tasks/`, `app/bot/infrastructure/wireguard/`.
+    *   **Affected Files:** (Creates new directories)
+*   [ ] **Task 2.2:** Move existing service folders from `app/bot/application/` to `app/bot/application/services/`.
+    *   **Affected Files/Dirs:** (Move commands needed)
+        *   `mv app/bot/application/auth app/bot/application/services/auth`
+        *   `mv app/bot/application/category app/bot/application/services/category`
+        *   `mv app/bot/application/channel app/bot/application/services/channel`
+        *   `mv app/bot/application/config app/bot/application/services/config`
+        *   `mv app/bot/application/dashboard app/bot/application/services/dashboard`
+        *   `mv app/bot/application/discord app/bot/application/services/discord`
+        *   `mv app/bot/application/monitoring app/bot/application/services/monitoring`
+        *   `mv app/bot/application/project_management app/bot/application/services/project_management`
+        *   `mv app/bot/application/system_metrics app/bot/application/services/system_metrics`
+        *   `mv app/bot/application/wireguard app/bot/application/services/wireguard`
+        *   (Also move: `bot_control_service.py`? Decide if it's a service or core logic)
+*   [ ] **Task 2.3:** Rename `app/bot/application/process/` to `app/bot/application/tasks/`.
+    *   **Affected Files/Dirs:**
+        *   `mv app/bot/application/process app/bot/application/tasks`
+*   [ ] **Task 2.4:** Move `app/bot/database/wireguard/` to `app/bot/infrastructure/wireguard/`.
+    *   **Affected Files/Dirs:**
+        *   `mv app/bot/database/wireguard app/bot/infrastructure/wireguard`
+        *   `rmdir app/bot/database` (If empty after move)
 
 ## General Notes / Future Considerations
 
