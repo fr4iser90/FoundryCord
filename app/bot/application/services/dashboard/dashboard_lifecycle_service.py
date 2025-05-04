@@ -303,7 +303,7 @@ class DashboardLifecycleService:
                 logger.info(f"LifecycleService: Registry successfully activated/updated dashboard controller for channel {channel.id}.")
 
             # 5. Get the updated message_id from the controller (if it was created/updated)
-            controller = self.registry.get_dashboard(channel.id)
+            controller = await self.registry.get_dashboard(channel.id)
             updated_message_id = None
             if controller and controller.message_id:
                 updated_message_id = str(controller.message_id)

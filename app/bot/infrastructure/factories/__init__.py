@@ -14,10 +14,11 @@ from app.shared.domain.monitoring.factories.collector_factory import CollectorFa
 
 __all__ = [
     'BotComponentFactory',
-    'DashboardFactory',
     'TaskFactory',
     'BaseFactory',
     'CollectorFactory',
-    'ServiceFactory'
+    'ServiceFactory',
+    'BaseComponentFactory', # Base class, may not need export depending on usage
+    # 'DashboardFactory', # Removed as obsolete
 ]
 

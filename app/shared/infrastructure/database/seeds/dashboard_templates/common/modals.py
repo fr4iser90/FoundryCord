@@ -2,7 +2,7 @@
 from typing import Dict, List, Any
 
 DEFAULT_MODALS = {
-    "text_input": {
+    "text_input_modal": {
         "title": "Enter Information",
         "fields": [
             {
@@ -15,7 +15,7 @@ DEFAULT_MODALS = {
             }
         ]
     },
-    "confirmation": {
+    "confirmation_modal": {
         "title": "Confirm Action",
         "fields": [
             {
@@ -28,7 +28,7 @@ DEFAULT_MODALS = {
             }
         ]
     },
-    "feedback": {
+    "feedback_modal": {
         "title": "Submit Feedback",
         "fields": [
             {

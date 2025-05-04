@@ -18,6 +18,7 @@ from app.bot.infrastructure.internal_api.server import InternalAPIServer
 from app.bot.interfaces.dashboards.components.common.embeds.dashboard_embed import DashboardEmbed
 from app.bot.interfaces.dashboards.components.common.embeds.error_embed import ErrorEmbed
 from app.bot.interfaces.dashboards.components.common.buttons.generic_button import GenericButtonComponent
+from app.bot.interfaces.dashboards.components.common.selectors.generic_selector import GenericSelectorComponent
 from app.bot.infrastructure.factories.service_factory import ServiceFactory
 from app.bot.infrastructure.factories.data_source_registry import DataSourceRegistry
 
@@ -142,6 +143,14 @@ def register_default_components(bot):
             description="Generic button component implementation"
         )
         logger.info("Registered 'button' type to use GenericButtonComponent class.")
+
+        # Register 'selector' type -> Use the new GenericSelectorComponent class
+        bot.component_registry.register_component(
+            component_type="selector",
+            component_class=GenericSelectorComponent,
+            description="Generic selector component implementation"
+        )
+        logger.info("Registered 'selector' type to use GenericSelectorComponent class.")
 
         bot._default_components_registered = True
         logger.info(f"Finished registering default/generic components. Total implementation types registered: {len(bot.component_registry.get_all_component_types())}")

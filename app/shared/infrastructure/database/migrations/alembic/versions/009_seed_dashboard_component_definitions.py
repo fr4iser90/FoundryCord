@@ -170,13 +170,10 @@ def upgrade() -> None:
 
     seed_data.extend(_prepare_data(WELCOME_BUTTONS, 'welcome', 'button'))
     seed_data.extend(_prepare_data(WELCOME_EMBEDS, 'welcome', 'embed'))
-    # Ensure WELCOME_MESSAGES exists or handle the case where it doesn't
-    if 'WELCOME_MESSAGES' in globals() and WELCOME_MESSAGES:
-       seed_data.extend(_prepare_data(WELCOME_MESSAGES, 'welcome', 'message'))
+    seed_data.extend(_prepare_data(WELCOME_MESSAGES, 'welcome', 'message'))
     seed_data.extend(_prepare_data(WELCOME_MODALS, 'welcome', 'modal'))
     seed_data.extend(_prepare_data(WELCOME_SELECTORS, 'welcome', 'selector'))
     seed_data.extend(_prepare_data(WELCOME_VIEWS, 'welcome', 'view'))
-
 
     if seed_data:
         print(f"Inserting {len(seed_data)} component definitions...")

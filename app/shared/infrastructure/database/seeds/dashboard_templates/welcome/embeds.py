@@ -2,7 +2,7 @@
 from typing import Dict, Any
 
 WELCOME_EMBEDS = {
-    "welcome_main": {
+    "welcome_main_embed": {
         "title": "Welcome to HomeLab Discord",
         "description": "This server is dedicated to managing and monitoring homelab systems.",
         "color": 0x3498db,
@@ -27,7 +27,7 @@ WELCOME_EMBEDS = {
             "text": "HomeLab Bot - Making your homelab experience better"
         }
     },
-    "server_info": {
+    "server_info_embed": {
         "title": "Server Information",
         "description": "Details about this Discord server",
         "color": 0x2ecc71,
@@ -44,7 +44,7 @@ WELCOME_EMBEDS = {
             }
         ]
     },
-    "bot_info": {
+    "bot_info_embed": {
         "title": "HomeLab Bot Information",
         "description": "All about the HomeLab Discord Bot",
         "color": 0xe74c3c,

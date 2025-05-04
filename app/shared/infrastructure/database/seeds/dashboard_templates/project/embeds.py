@@ -2,7 +2,7 @@
 from typing import Dict, Any
 
 PROJECT_EMBEDS = {
-    "project_dashboard": {
+    "project_dashboard_embed": {
         "title": "📊 Project Dashboard",
         "description": "Manage and track your projects from one place.",
         "color": 0x3498db,
@@ -24,7 +24,7 @@ PROJECT_EMBEDS = {
             }
         ]
     },
-    "project_list": {
+    "project_list_embed": {
         "title": "📋 Project List",
         "description": "All available projects",
         "color": 0x3498db,
@@ -36,7 +36,7 @@ PROJECT_EMBEDS = {
             }
         ]
     },
-    "project_details": {
+    "project_details_embed": {
         "title": "🔍 {{project_name}}",
         "description": "{{project_description}}",
         "color": 0x3498db,
@@ -83,7 +83,7 @@ PROJECT_EMBEDS = {
             }
         ]
     },
-    "task_list": {
+    "task_list_embed": {
         "title": "📝 Tasks for {{project_name}}",
         "description": "Manage tasks for this project",
         "color": 0x3498db,

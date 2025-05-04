@@ -5,14 +5,14 @@ GAMEHUB_VIEWS = {
     "gamehub_view": {
         "timeout": None,
         "buttons": [
-            "minecraft_server",
-            "factorio_server",
-            "valheim_server",
-            "terraria_server",
-            "satisfactory_server", 
-            "ark_server",
-            "refresh_servers",
-            "add_server"
+            "minecraft_server_button",
+            "factorio_server_button",
+            "valheim_server_button",
+            "terraria_server_button",
+            "satisfactory_server_button", 
+            "ark_server_button",
+            "refresh_servers_button",
+            "add_server_button"
         ],
         "selectors": [
             "server_filter_selector"
@@ -22,7 +22,7 @@ GAMEHUB_VIEWS = {
     "server_detail_view": {
         "timeout": 300,  # 5 minutes
         "buttons": [
-            "refresh_servers"
+            "refresh_servers_button"
         ],
         "selectors": [
             "server_action_selector"

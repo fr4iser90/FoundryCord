@@ -2,7 +2,7 @@
 from typing import Dict, List, Any
 
 GAMEHUB_EMBEDS = {
-    "gamehub_main": {
+    "gamehub_main_embed": {
         "title": "🎮 Game Server Dashboard",
         "description": "View and manage all available game servers.",
         "color": 0x2ecc71,
@@ -17,7 +17,7 @@ GAMEHUB_EMBEDS = {
             }
         ]
     },
-    "minecraft_server": {
+    "minecraft_server_embed": {
         "title": "⛏️ Minecraft Server",
         "description": "Minecraft server status and management",
         "color": 0x4f8a10,
@@ -59,7 +59,7 @@ GAMEHUB_EMBEDS = {
             }
         ]
     },
-    "factorio_server": {
+    "factorio_server_embed": {
         "title": "🏭 Factorio Server",
         "description": "Factorio server status and management",
         "color": 0xf79e11,

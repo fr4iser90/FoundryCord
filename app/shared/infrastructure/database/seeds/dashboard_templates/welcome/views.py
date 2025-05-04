@@ -5,9 +5,9 @@ WELCOME_VIEWS = {
     "welcome_view": {
         "timeout": None,
         "buttons": [
-            "accept_rules",
-            "server_info",
-            "bot_info"
+            "accept_rules_button",
+            "server_info_button",
+            "bot_info_button"
         ],
         "selectors": [
             "tech_selector"

@@ -5,7 +5,9 @@ from datetime import datetime
 from app.shared.interface.logging.api import get_bot_logger
 logger = get_bot_logger()
 
-from .base_factory import BaseFactory
+from app.bot.interfaces.dashboards.components.common.embeds.dashboard_embed import DashboardEmbed
+
+from app.bot.infrastructure.factories.base.base_factory import BaseFactory
 
 class EmbedFactory(BaseFactory):
     """Factory for creating embed UI components."""

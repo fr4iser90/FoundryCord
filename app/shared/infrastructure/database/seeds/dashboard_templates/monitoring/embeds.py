@@ -2,7 +2,7 @@
 from typing import Dict, Any
 
 MONITORING_EMBEDS = {
-    "system_status": {
+    "system_status_embed": {
         "title": "🖥️ System Status",
         "description": "Current system metrics and status",
         "color": 0x3498db,
@@ -39,7 +39,7 @@ MONITORING_EMBEDS = {
             }
         ]
     },
-    "cpu_details": {
+    "cpu_details_embed": {
         "title": "📊 CPU Details",
         "description": "Detailed CPU metrics",
         "color": 0x3498db,
@@ -66,7 +66,7 @@ MONITORING_EMBEDS = {
             }
         ]
     },
-    "memory_details": {
+    "memory_details_embed": {
         "title": "🧠 Memory Details",
         "description": "Detailed memory metrics",
         "color": 0x3498db,
@@ -98,7 +98,7 @@ MONITORING_EMBEDS = {
             }
         ]
     },
-    "disk_details": {
+    "disk_details_embed": {
         "title": "💾 Disk Details",
         "description": "Storage metrics for main partitions",
         "color": 0x3498db,
@@ -110,7 +110,7 @@ MONITORING_EMBEDS = {
             }
         ]
     },
-    "network_details": {
+    "network_details_embed": {
         "title": "🌐 Network Details",
         "description": "Network interface metrics",
         "color": 0x3498db,
@@ -132,7 +132,7 @@ MONITORING_EMBEDS = {
             }
         ]
     },
-    "processes": {
+    "processes_embed": {
         "title": "📝 Running Processes",
         "description": "Top processes by CPU and memory usage",
         "color": 0x3498db,
@@ -149,7 +149,7 @@ MONITORING_EMBEDS = {
             }
         ]
     },
-    "docker_services": {
+    "docker_services_embed": {
         "title": "🐳 Docker Containers",
         "description": "Status of running Docker containers",
         "color": 0x3498db,

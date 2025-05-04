@@ -6,11 +6,11 @@ WELCOME_MESSAGES = {
         "content": "Welcome to the HomeLab Discord server! Please check out the information below.",
         "ephemeral": False
     },
-    "rules_accepted": {
+    "rules_accepted_message": {
         "content": "Thank you for accepting the rules! You now have access to all channels.",
         "ephemeral": True
     },
-    "already_accepted": {
+    "already_accepted_message": {
         "content": "You have already accepted the rules.",
         "ephemeral": True
     },

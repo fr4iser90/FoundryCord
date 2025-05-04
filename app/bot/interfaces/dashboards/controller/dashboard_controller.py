@@ -487,117 +487,75 @@ class DashboardController:
 
     # --- Methods moved/adapted from DashboardBuilderService --- 
 
-    async def build_embed(self, data: Dict[str, Any]) -> nextcord.Embed:
-        """Build an embed from configuration and data."""
-        try:
-            # Basic embed properties from self.config loaded during initialization
-            title = self.config.get('title', self.title) # Use self.title as fallback
-            description = self.config.get('description', self.description) # Use self.description as fallback
-            color = self.config.get('color', 0x3498db)
-            
-            if isinstance(color, str) and color.startswith('0x'):
-                try:
-                    color = int(color, 16)
-                except ValueError:
-                    logger.warning(f"Invalid color format in config: {color}. Using default.")
-                    color = 0x3498db
-                
-            embed = nextcord.Embed(
-                title=title,
-                description=description,
-                color=color
-            )
-            
-            # Add timestamp
-            embed.timestamp = datetime.now()
-            
-            # Add footer
-            footer_config = self.config.get('footer', {})
-            if footer_config:
-                embed.set_footer(
-                    text=footer_config.get('text', 'HomeLab Discord Bot'),
-                    icon_url=footer_config.get('icon_url')
-                )
-            else: # Apply standard footer if none configured
-                self.apply_standard_footer(embed)
-                
-            # Add author
-            author_config = self.config.get('author', {})
-            if author_config:
-                embed.set_author(
-                    name=author_config.get('name'),
-                    url=author_config.get('url'),
-                    icon_url=author_config.get('icon_url')
-                )
-                
-            # Add components defined in config
-            component_configs = self.config.get('components', [])
-            for component_config in component_configs:
-                # Filter for components that render to embed (logic might vary)
-                # Assuming components meant for embed have a specific property or type
-                # For now, attempt to render all, let component decide
-                await self.add_component_to_embed(embed, component_config, data)
-                
-            return embed
-            
-        except Exception as e:
-            logger.error(f"Error building embed for dashboard {self.dashboard_id}: {e}", exc_info=True)
-            # Return a minimal error embed (inherited method)
-            return self.create_error_embed(f"Error building embed: {str(e)}", title="Embed Error")
-            
-    async def add_component_to_embed(self, embed: nextcord.Embed, component_config: Dict[str, Any], data: Dict[str, Any]):
-        """Add a component representation to an embed."""
-        if not self.component_registry:
-            logger.error(f"[{self.dashboard_id}] Component Registry not available in add_component_to_embed")
-            return
+    async def build_embed(self, data: Dict[str, Any]) -> Optional[nextcord.Embed]:
+        """
+        Builds the main embed for the dashboard by finding the first configured
+        embed component and calling its build() method.
+        Assumes only one primary embed component per dashboard message.
+        """
+        if not self.config or 'components' not in self.config:
+            logger.warning(f"Dashboard {self.dashboard_id}: Config is missing or has no components key.")
+            return self.create_error_embed("Dashboard configuration is missing components.")
 
-        # --- MODIFIED: Get component_key instead of type ---
-        component_key = component_config.get('component_key')
-        if not component_key:
-            instance_id = component_config.get('instance_id', 'N/A')
-            logger.warning(f"[{self.dashboard_id}] Component config (instance_id: {instance_id}) missing 'component_key': {component_config}")
-            return
-        # --- END MODIFICATION ---
+        embed_component_config = None
+        component_key = None
+
+        # Find the first component definition that resolves to an embed type
+        for comp_config in self.config.get('components', []):
+            key = comp_config.get('component_key')
+            if not key:
+                logger.warning(f"Dashboard {self.dashboard_id}: Component config missing 'component_key': {comp_config}")
+                continue
+
+            if not self.component_registry:
+                 logger.error(f"Dashboard {self.dashboard_id}: Cannot build embed, ComponentRegistry is not available.")
+                 return self.create_error_embed("Internal Error: Component Registry unavailable.")
+
+            # Check the type of the component referenced by the key
+            definition_wrapper = self.component_registry.get_definition_by_key(key)
+            if definition_wrapper and definition_wrapper.get('type') == 'embed':
+                 # Found the primary embed component configuration
+                 embed_component_config = comp_config
+                 component_key = key
+                 logger.debug(f"Dashboard {self.dashboard_id}: Found embed component config with key '{key}' and instance_id '{comp_config.get('instance_id')}'")
+                 break # Use the first one found
+
+        if not embed_component_config or not component_key:
+            logger.warning(f"Dashboard {self.dashboard_id}: No component with type 'embed' found in configuration.")
+            # Maybe return None or a default embed indicating no content?
+            return None # No embed component defined
+
+        # Get the implementation class for 'embed'
+        component_class = self.component_registry.get_component_class('embed')
+        if not component_class:
+            logger.error(f"Dashboard {self.dashboard_id}: No implementation class registered for component type 'embed'.")
+            return self.create_error_embed("Internal Error: Embed component class not found.")
 
         try:
-            # --- ADDED: Get type from registry using the key ---
-            # Assuming ComponentRegistry has a method to get the type based on the key
-            # This might need adjustment depending on the actual ComponentRegistry implementation
-            if not hasattr(self.component_registry, 'get_type_by_key'):
-                 logger.error(f"[{self.dashboard_id}] ComponentRegistry is missing the required 'get_type_by_key' method.")
-                 # Fallback or alternative lookup might be needed here
-                 # For now, we cannot proceed without the type.
-                 return
+            # Instantiate the component using the specific instance config from the layout
+            # The component's __init__ (via BaseComponent) will fetch the base definition
+            # using component_key and merge it with instance settings.
+            component_instance = component_class(self.bot, embed_component_config)
 
-            component_type = self.component_registry.get_type_by_key(component_key)
-            if not component_type:
-                logger.error(f"[{self.dashboard_id}] Component type not found in registry for key: {component_key}")
-                return
-            logger.debug(f"[{self.dashboard_id}] Resolved component key '{component_key}' to type '{component_type}'.")
-            # --- END ADDED SECTION ---
+            # Build the embed using the component's own build method
+            # This method now uses the correctly merged config internal to the component.
+            built_embed = component_instance.build()
 
-            # --- MODIFIED: Use get_component_class ---
-            component_impl_class = self.component_registry.get_component_class(component_type)
-            # --- END MODIFICATION ---
+            if not isinstance(built_embed, nextcord.Embed):
+                 logger.error(f"Dashboard {self.dashboard_id}: Component {component_key} build() method did not return a nextcord.Embed object.")
+                 return self.create_error_embed("Internal Error: Failed to build embed content.")
 
-            if not component_impl_class:
-                # This case should be less likely now if get_type_by_key worked
-                logger.error(f"[{self.dashboard_id}] Component implementation class not found in registry for type: {component_type} (from key: {component_key})")
-                return
+            # Apply standard footer or dynamic data if needed (optional)
+            # Example: self.apply_standard_footer(built_embed)
+            # Example: Add dynamic data to description/fields if necessary
+            # built_embed.description = f"{built_embed.description}\nLast updated: {datetime.now()}" # Example dynamic data
 
-            # Create component instance and render to embed
-            # Pass the original component_config which contains instance_id, key, settings
-            component = component_impl_class(self.bot, component_config)
-            # Check if the component has the render_to_embed method
-            if hasattr(component, 'render_to_embed') and callable(component.render_to_embed):
-                # Pass component_config (contains instance_id, key, settings) and fetched data
-                await component.render_to_embed(embed, data, component_config) # Pass config dict
-            else:
-                # logger.debug(f"Component type {component_type} does not render to embed.")
-                pass # Not all components render to embed
+            logger.info(f"Dashboard {self.dashboard_id}: Successfully built embed using component {component_key}.")
+            return built_embed
 
         except Exception as e:
-            logger.error(f"[{self.dashboard_id}] Error rendering component (key: {component_key}, type: {component_type}) to embed: {e}", exc_info=True)
+            logger.error(f"Dashboard {self.dashboard_id}: Failed to instantiate or build embed component {component_key}: {e}", exc_info=True)
+            return self.create_error_embed(f"Error building dashboard content ({component_key}).")
 
     async def build_view(self, data: Dict[str, Any]) -> Optional[nextcord.ui.View]:
         """Build a view from configuration and data."""
