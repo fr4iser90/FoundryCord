@@ -80,13 +80,28 @@ class FoundryCord(commands.Bot):
         """Called when the bot is ready"""
         logger.info(f"Logged in as {self.user.name} (ID: {self.user.id})")
 
-        # --- Start workflow initialization ---
-        # It now receives a bot instance where service_factory *should* be valid
-        if await self.start_initialization(self): # Pass self
-            # --- Activate DB Dashboards AFTER workflows are initialized ---
+        # --- Start workflow and service initialization ---
+        initialization_success = False
+        try:
+            initialization_success = await self.start_initialization(self) # Pass self
+        except Exception as init_err:
+             logger.critical(f"An uncaught exception occurred during start_initialization: {init_err}", exc_info=True)
+             initialization_success = False # Ensure it's marked as failed
+
+        if initialization_success:
+            logger.info("Core initialization (Workflows & Services) completed successfully.")
+            # --- ADD DELAY (Keep commented out for now, re-enable if needed) ---
+            # wait_seconds = 5 # Wait 5 seconds
+            # logger.info(f"Waiting {wait_seconds}s before activating DB dashboards...")
+            # await asyncio.sleep(wait_seconds)
+            # logger.info("Wait finished. Proceeding with DB dashboard activation.")
+            # --- END DELAY ---
+
+            # --- Activate DB Dashboards AFTER workflows AND services are initialized ---
             if hasattr(self, 'dashboard_workflow') and self.dashboard_workflow and hasattr(self.dashboard_workflow, 'lifecycle_service') and self.dashboard_workflow.lifecycle_service:
                  logger.info("on_ready: Triggering activation of DB-configured dashboards...")
                  try:
+                     # This call now happens after services (like ComponentRegistry) are initialized
                      await self.dashboard_workflow.lifecycle_service.activate_db_configured_dashboards()
                  except Exception as e:
                       logger.error(f"Error during deferred activation of DB dashboards: {e}", exc_info=True)
@@ -100,33 +115,46 @@ class FoundryCord(commands.Bot):
             else:
                  logger.error("Internal API Server not initialized or failed to start.")
         else:
-             logger.error("Bot initialization failed, skipping deferred actions and API start.")
+             logger.error("Bot core initialization (Workflows/Services) failed. Skipping deferred actions and API start.")
 
 
     async def start_initialization(self, bot_instance):
-        """Start the bot initialization process"""
-        logger.info("Starting bot initialization")
+        """Initializes workflows and then core services."""
+        logger.info("Starting bot core initialization...")
+
+        # 1. Initialize Workflows
+        logger.info("Initializing workflows...")
         if not self.workflow_manager:
              logger.error("Workflow manager not initialized. Cannot start initialization.")
              return False
-
-        # REMOVED DIAGNOSTIC FACTORY CHECK - It should be set by __init__ now
-        # factory_type_before_init = type(getattr(bot_instance, 'service_factory', None)).__name__
-        # logger.info(f"[DIAGNOSTIC main.start_initialization] BEFORE calling initialize_all: bot_instance.service_factory type is {factory_type_before_init}")
-
-        # Add a check here just in case __init__ failed silently
         if not bot_instance.service_factory:
-             logger.critical("CRITICAL ERROR in start_initialization: bot_instance.service_factory is None! __init__ setup likely failed.")
+             logger.critical("CRITICAL ERROR: bot_instance.service_factory is None before workflow initialization!")
              return False
 
-        success = await self.workflow_manager.initialize_all(bot_instance)
-
-        if not success:
-            logger.error("Bot initialization failed")
+        workflow_success = await self.workflow_manager.initialize_all(bot_instance)
+        if not workflow_success:
+            logger.error("Workflow initialization failed.")
             return False
+        logger.info("Workflow initialization completed successfully.")
 
-        logger.info("Bot initialization completed successfully")
-        return True
+        # 2. Initialize Services (after workflows)
+        logger.info("Initializing core services via ServiceFactory...")
+        service_init_success = False
+        try:
+            # Call initialize_services on the factory instance
+            service_init_success = await bot_instance.service_factory.initialize_services()
+            if not service_init_success:
+                 logger.error("Core service initialization failed (returned False).")
+                 # Decide if this is critical. For now, let's say it is.
+                 return False
+            else:
+                 logger.info("Core service initialization completed successfully.")
+        except Exception as service_err:
+            logger.error(f"An exception occurred during service initialization: {service_err}", exc_info=True)
+            return False # Treat exceptions during service init as critical failure
+
+        logger.info("Bot core initialization completed successfully.")
+        return True # Return True only if both workflow and service init succeed
 
     async def cleanup(self):
         """Clean up all resources before shutdown"""

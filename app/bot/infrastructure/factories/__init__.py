@@ -1,7 +1,6 @@
 # Export composite factories for top-level import
 from .composite.bot_factory import BotComponentFactory
 from .service_factory import ServiceFactory
-from app.bot.interfaces.dashboards.components.factories.dashboard_factory import DashboardFactory
 
 # Allow direct access to specific factories if needed
 

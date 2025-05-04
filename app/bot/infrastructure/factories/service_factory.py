@@ -71,20 +71,61 @@ class ServiceFactory:
         return name in self._services or name in self._creators
 
     async def initialize_services(self):
-        """Initialize registered services that have initialize method."""
-        for name, service in self._services.items():
+        """Initialize registered services that have an initialize method."""
+        logger.info("Initializing registered services...")
+        overall_success = True
+
+        # --- Ensure ComponentRegistry is initialized first ---
+        try:
+            # Use get_service which handles creation/retrieval
+            component_registry = self.get_service('component_registry')
+            if component_registry and hasattr(component_registry, 'initialize') and callable(component_registry.initialize):
+                 logger.debug("Attempting to initialize ComponentRegistry (load DB definitions)...")
+                 # Ensure bot instance is available
+                 if not self.bot:
+                     logger.error("Cannot initialize ComponentRegistry: Bot instance not available in ServiceFactory.")
+                     overall_success = False
+                 else:
+                    # Call initialize on the retrieved/created component_registry instance
+                    init_success = await component_registry.initialize(self.bot)
+                    if not init_success:
+                         logger.error("ComponentRegistry initialization failed.")
+                         overall_success = False # Mark as failed if registry init fails
+                    else:
+                         logger.debug("ComponentRegistry initialized successfully.")
+            elif component_registry:
+                 logger.debug("ComponentRegistry found but has no initialize method.")
+            else:
+                 # This case might indicate an issue if component_registry should always be registered
+                 logger.warning("ComponentRegistry service not found via get_service. Skipping its initialization.")
+                 # Depending on requirements, maybe overall_success = False here?
+        except Exception as reg_init_err:
+            logger.error(f"Error during specific initialization of ComponentRegistry: {reg_init_err}", exc_info=True)
+            overall_success = False
+        # --- End ComponentRegistry Initialization ---
+
+        # --- Initialize other services ---
+        logger.debug("Initializing other registered services...")
+        services_to_init = list(self._services.items())
+        for name, service in services_to_init:
+            # Skip ComponentRegistry as we explicitly initialized it above
+            if name == 'component_registry':
+                continue
+
             if hasattr(service, 'initialize') and callable(service.initialize):
                 try:
-                    # Check if initialize is a coroutine function
+                    logger.debug(f"Initializing service: {name}...")
                     if asyncio.iscoroutinefunction(service.initialize):
                         await service.initialize()
                     else:
                         service.initialize()
-                    logger.debug(f"Initialized service: {name}")
+                    logger.debug(f"Successfully initialized service: {name}")
                 except Exception as e:
-                    logger.error(f"Error initializing service {name}: {e}")
-        
-        return True
+                    logger.error(f"Error initializing service {name}: {e}", exc_info=True)
+                    overall_success = False
+
+        logger.info(f"Service initialization process completed. Overall success: {overall_success}")
+        return overall_success
     
     def create(self, service_type: str, *args, **kwargs) -> Optional[Any]:
         """Create a service instance."""

@@ -32,19 +32,21 @@ def upgrade() -> None:
             'name': 'Default Welcome Dashboard',
             'dashboard_type': 'welcome',
             'description': 'Standard welcome message and rules display.',
-            # Provide the dictionary directly
             'config': {
                 "components": [
                     {
                         "instance_id": "welcome_main_embed_instance",
-                        "component_key": "welcome_main_embed",
+                        "component_key": "welcome_main",
                         "settings": {}
                     },
                     {
                         "instance_id": "welcome_rules_button_instance",
-                        "component_key": "welcome_rules_button",
+                        "component_key": "accept_rules",
                         "settings": {}
                     }
+                ],
+                "interactive_components": [
+                    "welcome_rules_button_instance"
                 ]
             }
         },
@@ -56,15 +58,16 @@ def upgrade() -> None:
                 "components": [
                     {
                         "instance_id": "monitoring_embed_instance",
-                        "component_key": "monitoring_system_info_embed",
+                        "component_key": "system_status",
                         "settings": {}
                     },
                     {
                         "instance_id": "monitoring_refresh_button_instance",
-                        "component_key": "monitoring_refresh_button",
+                        "component_key": "refresh",
                         "settings": {}
                     }
-                ]
+                ],
+                "interactive_components": ["monitoring_refresh_button_instance"]
             }
         },
         {
@@ -75,15 +78,16 @@ def upgrade() -> None:
                 "components": [
                      {
                         "instance_id": "project_list_embed_instance",
-                        "component_key": "project_list_embed",
+                        "component_key": "project_list",
                         "settings": {}
                      },
                      {
                         "instance_id": "project_actions_view_instance",
-                        "component_key": "project_main_view",
+                        "component_key": "project_dashboard_view",
                         "settings": {}
                      }
-                ]
+                ],
+                "interactive_components": ["project_actions_view_instance"]
             }
         },
          {
@@ -94,15 +98,16 @@ def upgrade() -> None:
                 "components": [
                      {
                         "instance_id": "gamehub_main_embed_instance",
-                        "component_key": "gamehub_main_embed",
+                        "component_key": "gamehub_main",
                         "settings": {}
                      },
                      {
                          "instance_id": "gamehub_actions_view_instance",
-                         "component_key": "gamehub_main_view",
+                         "component_key": "gamehub_view",
                          "settings": {}
                      }
-                ]
+                ],
+                "interactive_components": ["gamehub_actions_view_instance"]
             }
         }
     ]

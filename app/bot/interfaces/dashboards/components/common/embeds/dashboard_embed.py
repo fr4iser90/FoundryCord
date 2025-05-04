@@ -14,10 +14,11 @@ class DashboardEmbed(BaseComponent):
     # Class variables
     COMPONENT_TYPE: ClassVar[str] = "dashboard_embed"
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, bot, config: Optional[Dict[str, Any]] = None):
         """Initialize the dashboard embed.
         
         Args:
+            bot: The bot instance (accepted but maybe not used internally).
             config: Configuration for the dashboard embed
                 - title: The title of the embed
                 - description: The description of the embed
@@ -28,6 +29,8 @@ class DashboardEmbed(BaseComponent):
                 - footer: Optional footer text
                 - author: Optional author configuration
         """
+        self.bot = bot
+        
         default_config = {
             "title": "Dashboard",
             "description": "Dashboard information",
@@ -132,13 +135,17 @@ class DashboardEmbed(BaseComponent):
         self.config["fields"] = []
     
     @classmethod
-    def deserialize(cls, data: Dict[str, Any]) -> 'DashboardEmbed':
+    def deserialize(cls, data: Dict[str, Any], bot=None) -> 'DashboardEmbed':
         """Create a DashboardEmbed from serialized data.
         
         Args:
             data: The serialized data
+            bot: The bot instance (optional, needed for instantiation)
             
         Returns:
             The created DashboardEmbed instance
         """
-        return cls(config=data.get("config", {})) 
+        if not bot:
+             logger.warning("Deserializing DashboardEmbed without bot instance.")
+        # Pass bot to constructor
+        return cls(bot=bot, config=data.get("config", {})) 

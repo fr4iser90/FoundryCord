@@ -49,60 +49,114 @@ class DashboardLifecycleService:
         logger.info("Attempting to activate dashboards configured in the database...")
         count = 0
         failed_count = 0
+        activated_ids_to_update: Dict[int, Dict[str, Any]] = {} # Store IDs and new message IDs needing update
+
         try:
-            async with session_context() as session:
-                # Use the new repository
-                repo = ActiveDashboardRepositoryImpl(session)
-                # Call the method that loads active dashboards with their configurations
+            # --- Initial Read Session ---
+            async with session_context() as initial_session:
+                repo = ActiveDashboardRepositoryImpl(initial_session)
                 active_dashboards: List[ActiveDashboardEntity] = await repo.list_all_active()
                 logger.info(f"Found {len(active_dashboards)} active dashboard instances in the database.")
-                
-                # Iterate through the correct entities
+
                 for active_dashboard in active_dashboards:
                     try:
                         logger.debug(f"Processing activation for ActiveDashboard ID: {active_dashboard.id}, Channel: {active_dashboard.channel_id}")
-                        
-                        # Check if configuration was loaded correctly
+
                         if not active_dashboard.configuration:
                             logger.warning(f"Skipping activation for ActiveDashboard {active_dashboard.id}: Configuration relationship not loaded.")
                             failed_count += 1
                             continue
-                            
-                        # --- Get required data from entities --- 
-                        channel_id_str = active_dashboard.channel_id
-                        dashboard_config = active_dashboard.configuration # The related DashboardConfigurationEntity
-                        config_data = dashboard_config.config or {} # The JSON config from the configuration
-                        dashboard_type = dashboard_config.dashboard_type # Type from configuration
-                        # TODO: Implement logic for config_override from active_dashboard if needed
-                        # if active_dashboard.config_override:
-                        #     config_data = merge_configs(config_data, active_dashboard.config_override)
 
-                        # Ensure channel_id is valid
+                        channel_id_str = active_dashboard.channel_id
+                        dashboard_config = active_dashboard.configuration
+                        config_data = dashboard_config.config or {}
+                        dashboard_type = dashboard_config.dashboard_type
+                        original_message_id = active_dashboard.message_id # Store original message_id
+
                         if not channel_id_str:
                              logger.warning(f"Skipping activation for ActiveDashboard {active_dashboard.id}: Missing channel_id.")
                              failed_count += 1
                              continue
-                             
-                        # --- Call the registry to handle activation/update --- 
-                        # The registry needs channel_id and the config JSON (from the configuration entity)
-                        # It might also need the active_dashboard.id or message_id later.
-                        # Adapt the signature of activate_or_update_dashboard if necessary.
+
+                        # Convert channel_id to int for registry usage
+                        try:
+                            channel_id_int = int(channel_id_str)
+                        except ValueError:
+                            logger.error(f"Invalid channel_id format for ActiveDashboard {active_dashboard.id}: {channel_id_str}")
+                            failed_count += 1
+                            continue
+
+                        # --- Call the registry to activate/update ---
                         success = await self.registry.activate_or_update_dashboard(
-                            channel_id=int(channel_id_str), # Pass channel ID
-                            dashboard_type=dashboard_type, # Pass the type from config
-                            config_data=config_data, # Pass the config JSON from config
-                            active_dashboard_id=active_dashboard.id, # Pass the ID of the active instance
-                            message_id=active_dashboard.message_id # Pass the current message ID
+                            channel_id=channel_id_int,
+                            dashboard_type=dashboard_type,
+                            config_data=config_data,
+                            active_dashboard_id=active_dashboard.id,
+                            message_id=original_message_id # Pass original ID for initial edit attempt
                         )
+
                         if success:
                              count += 1
+                             logger.debug(f"Registry successfully activated/updated controller for channel {channel_id_int}.")
+                             # --- Check if message_id needs update AFTER successful activation ---
+                             controller = await self.registry.get_dashboard(channel_id_int)
+                             updated_message_id = None
+                             if controller:
+                                 if hasattr(controller, 'message_id') and controller.message_id:
+                                     updated_message_id = str(controller.message_id)
+                                 else:
+                                     logger.debug(f"ActiveDashboard {active_dashboard.id}: Controller retrieved but has no message_id attribute or it's None.")
+
+                                 # Compare and queue for update
+                                 if updated_message_id and updated_message_id != original_message_id:
+                                     logger.info(f"ActiveDashboard {active_dashboard.id}: Message ID changed from '{original_message_id}' to '{updated_message_id}'. Queuing for DB update.")
+                                     activated_ids_to_update[active_dashboard.id] = {
+                                         'message_id': updated_message_id,
+                                         'channel_id': channel_id_int
+                                     }
+                                 elif not updated_message_id and original_message_id:
+                                     logger.warning(f"ActiveDashboard {active_dashboard.id}: Controller lost message ID '{original_message_id}' after activation. Not updating DB.")
+                                 elif not updated_message_id:
+                                     logger.debug(f"ActiveDashboard {active_dashboard.id}: Controller has no message ID after activation (likely first creation or fetch failed).")
+                                 else: # updated_message_id == original_message_id
+                                     logger.debug(f"ActiveDashboard {active_dashboard.id}: Message ID '{original_message_id}' remains correct.")
+                             else:
+                                 logger.error(f"Failed to retrieve controller for channel {channel_id_int} after activation via get_dashboard.")
+                             # --- End Message ID Update Check ---
                         else:
                              failed_count += 1
-                             logger.warning(f"Activation/update failed for ActiveDashboard {active_dashboard.id} in channel {channel_id_str}.")
-                             
+                             logger.warning(f"Registry activation/update failed for ActiveDashboard {active_dashboard.id} in channel {channel_id_str}.")
+
                     except Exception as activation_err:
                          failed_count += 1
                          logger.error(f"Error during activation loop for ActiveDashboard {active_dashboard.id}: {activation_err}", exc_info=True)
+            # --- End Initial Read Session ---
+
+            # --- Separate Session for Updates ---
+            if activated_ids_to_update:
+                logger.info(f"Persisting {len(activated_ids_to_update)} updated message IDs to the database...")
+                async with session_context() as update_session:
+                    update_repo = ActiveDashboardRepositoryImpl(update_session)
+                    updated_count = 0
+                    update_failed_count = 0
+                    for db_id, update_info in activated_ids_to_update.items():
+                        new_msg_id = update_info['message_id']
+                        ch_id = update_info['channel_id']
+                        try:
+                            persist_success = await update_repo.set_message_id(db_id, new_msg_id)
+                            if persist_success:
+                                logger.debug(f"Successfully persisted message_id '{new_msg_id}' for ActiveDashboard {db_id} (Channel: {ch_id}).")
+                                updated_count += 1
+                            else:
+                                logger.warning(f"Failed to persist updated message_id for ActiveDashboard {db_id} (Channel: {ch_id}). Repo returned False.")
+                                update_failed_count += 1
+                        except Exception as persist_err:
+                            logger.error(f"Error persisting message_id for ActiveDashboard {db_id} (Channel: {ch_id}): {persist_err}", exc_info=True)
+                            update_failed_count += 1
+                logger.info(f"Finished persisting message IDs. Successful: {updated_count}, Failed: {update_failed_count}")
+            else:
+                 logger.info("No message IDs needed database persistence after activation.")
+            # --- End Separate Update Session ---
 
         except Exception as e:
             # Check for the specific UndefinedTableError vs other errors
@@ -113,7 +167,7 @@ class DashboardLifecycleService:
             else:
                 logger.error(f"Failed to activate DB configured dashboards: {e}", exc_info=True)
             
-        logger.info(f"Finished DB dashboard activation. Activated/Updated: {count}, Failed: {failed_count}")
+        logger.info(f"Finished DB dashboard activation. Activated/Updated in Registry: {count}, Failed Registry Activation: {failed_count}")
 
     async def sync_dashboard_from_snapshot(self, channel: nextcord.TextChannel, config_json: Dict[str, Any]) -> bool:
         """

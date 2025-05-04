@@ -1,39 +1,62 @@
-"""Service for building dashboard instances."""
-from typing import Dict, Any, List, Optional
+"""Service for fetching data for dashboard instances."""
+from typing import Dict, Any, List, Optional, TYPE_CHECKING
 import nextcord
 from datetime import datetime
 
 from app.shared.interface.logging.api import get_bot_logger
+
+# --- REMOVE INCORRECT IMPORT ---
+# from app.bot.infrastructure.factories.data_source_registry_factory import DataSourceRegistryFactory # OLD AND DELETED
+
+if TYPE_CHECKING:
+    from app.bot.core.main import FoundryCord
+    from app.bot.infrastructure.factories.service_factory import ServiceFactory
+    # --- ADD CORRECT TYPE HINT ---
+    from app.bot.infrastructure.factories.data_source_registry import DataSourceRegistry
+
 logger = get_bot_logger()
 
 class DashboardDataService:
-    """Service focused on fetching data for dashboard configurations.
-       (Formerly responsible for building UI elements as well).
-    """
+    """Service focused on fetching data for dashboard configurations."""
     
-    def __init__(self, bot):
+    def __init__(self, bot: 'FoundryCord', service_factory: 'ServiceFactory'):
         self.bot = bot
-        # Removed component_registry dependency
-        self.data_source_registry = None
+        self.service_factory = service_factory
+        # --- USE CORRECT TYPE HINT ---
+        self.data_source_registry: Optional['DataSourceRegistry'] = None
+        self.initialized = False
         
     async def initialize(self):
-        """Initialize the dashboard data service."""
+        """Initialize the dashboard data service by getting dependencies."""
+        logger.debug("Initializing DashboardDataService...")
         try:
-            # Get registry services
-            # Removed component_registry logic
-            self.data_source_registry = self.bot.get_service('data_source_registry')
-            
-            # Removed component_registry check
-                
-            if not self.data_source_registry:
-                logger.warning("Data Source Registry service not available - data fetching will be limited.")
-                # We'll continue without it, fetch_data has fallback
-                
-            logger.info("Dashboard Builder/Data Service initialized.")
+            # --- GET CORRECT REGISTRY FROM SERVICE FACTORY ---
+            # Use the correct service name used during registration in setup_hooks.py
+            registry_instance = self.service_factory.get_service('data_source_registry')
+
+            # Check if the retrieved instance is of the expected type (optional but good practice)
+            # Need to import the actual class for instanceof check
+            from app.bot.infrastructure.factories.data_source_registry import DataSourceRegistry
+            if isinstance(registry_instance, DataSourceRegistry):
+                 self.data_source_registry = registry_instance
+                 logger.debug("DataSourceRegistry retrieved successfully.")
+            elif registry_instance is not None:
+                 logger.error(f"Retrieved 'data_source_registry' service is not of type DataSourceRegistry (Type: {type(registry_instance).__name__}). Data fetching will fail.")
+                 self.data_source_registry = None # Ensure it's None if type is wrong
+            else:
+                 logger.warning("DataSourceRegistry service not found in ServiceFactory. Data fetching will be limited.")
+                 self.data_source_registry = None
+            # --- END GET CORRECT REGISTRY ---
+
+            # Removed old factory instantiation
+
+            logger.info("Dashboard Data Service initialized.")
+            self.initialized = True
             return True
             
         except Exception as e:
-            logger.error(f"Failed to initialize Dashboard Builder/Data Service: {e}")
+            logger.error(f"Failed to initialize Dashboard Data Service: {e}", exc_info=True)
+            self.initialized = False
             return False
             
     # Removed build_dashboard method
@@ -46,50 +69,56 @@ class DashboardDataService:
             
     # Removed add_component_to_view method
             
-    async def fetch_data(self, data_sources: Dict[str, Any]) -> Dict[str, Any]:
-        """Fetch data from all data sources specified in the config."""
-        data = {}
-        
-        # Fallback mechanism if registry isn't available
-        if not self.data_source_registry:
-            logger.warning("Data Source Registry not available. Attempting fallback data sources.")
-            # Try to use system metrics service directly as a fallback
+    async def fetch_data(self, data_sources_config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Fetches data from multiple sources based on the provided configuration.
+
+        Args:
+            data_sources_config: A dictionary where keys are identifiers for the fetched data
+                                 and values are configurations for the data source to use.
+                                 Example: {'system_info': {'type': 'system_metrics', 'params': {}},
+                                          'recent_users': {'type': 'database_query', 'query_key': 'get_recent_users'}}
+
+        Returns:
+            A dictionary containing the fetched data, keyed by the identifiers from the config.
+        """
+        if not self.initialized or not self.data_source_registry:
+            logger.error("Cannot fetch data: DashboardDataService not initialized or DataSourceRegistry unavailable.")
+            # Return empty dict to prevent downstream errors trying to access keys
+            return {}
+
+        fetched_data_results = {}
+        logger.debug(f"Fetching data for sources: {list(data_sources_config.keys())}")
+
+        for data_key, source_config in data_sources_config.items():
+            source_type = source_config.get('type')
+            source_params = source_config.get('params', {})
+
+            if not source_type:
+                logger.warning(f"Skipping data source for key '{data_key}': Missing 'type' in configuration.")
+                continue
+
+            # --- USE CORRECT REGISTRY METHOD ---
+            DataSourceClass = self.data_source_registry.get_data_source(source_type)
+            if not DataSourceClass:
+                logger.warning(f"Skipping data source for key '{data_key}': Type '{source_type}' not found in DataSourceRegistry.")
+                continue
+            # --- END USE CORRECT REGISTRY METHOD ---
+
             try:
-                system_metrics = self.bot.get_service('system_metrics')
-                if system_metrics:
-                    # Assuming 'system_metrics' is a conventional key if registry is missing
-                    if 'system_metrics' in data_sources:
-                        logger.debug("Fetching system_metrics via fallback.")
-                        data['system_metrics'] = await system_metrics.get_metrics()
-                    else:
-                         logger.debug("System metrics service found but not requested in data_sources.")
+                # Instantiate the data source (passing bot and params)
+                # Assuming data source constructors accept (bot, params_dict)
+                data_source_instance = DataSourceClass(self.bot, source_params)
+
+                if hasattr(data_source_instance, 'fetch_data') and callable(data_source_instance.fetch_data):
+                    data = await data_source_instance.fetch_data()
+                    fetched_data_results[data_key] = data
+                    logger.debug(f"Successfully fetched data for key '{data_key}' using source type '{source_type}'.")
                 else:
-                    logger.warning("System metrics service not found for fallback.")
-            except Exception as fallback_err:
-                 logger.error(f"Error during fallback data fetching: {fallback_err}")
-            return data # Return whatever fallback could get
-        
-        # Primary mechanism using the registry
-        for source_id, source_config in data_sources.items():
-            try:
-                source_type = source_config.get('type')
-                if not source_type:
-                     logger.warning(f"Data source config missing 'type' for key '{source_id}'")
-                     continue
-                     
-                data_source = self.data_source_registry.create_data_source(source_type, source_config)
-                
-                if not data_source:
-                    logger.warning(f"Could not create data source instance for type: {source_type}")
-                    continue
-                    
-                # Fetch data
-                logger.debug(f"Fetching data from source '{source_id}' (type: {source_type})")
-                result = await data_source.fetch_data(source_config.get('params', {}))
-                data[source_id] = result
-                
+                    logger.warning(f"Data source type '{source_type}' instance does not have a callable 'fetch_data' method.")
+
             except Exception as e:
-                logger.error(f"Error fetching data from source {source_id} (type: {source_config.get('type', 'N/A')}): {e}", exc_info=True)
-                data[source_id] = {"error": str(e)} # Include error in data
-                
-        return data 
+                logger.error(f"Error fetching data for key '{data_key}' using source type '{source_type}': {e}", exc_info=True)
+                fetched_data_results[data_key] = None # Indicate error for this key
+
+        return fetched_data_results 

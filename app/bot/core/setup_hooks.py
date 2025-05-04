@@ -17,7 +17,9 @@ from app.bot.infrastructure.factories.component_factory import ComponentFactory
 from app.bot.infrastructure.internal_api.server import InternalAPIServer
 from app.bot.interfaces.dashboards.components.common.embeds.dashboard_embed import DashboardEmbed
 from app.bot.interfaces.dashboards.components.common.embeds.error_embed import ErrorEmbed
+from app.bot.interfaces.dashboards.components.common.buttons.generic_button import GenericButtonComponent
 from app.bot.infrastructure.factories.service_factory import ServiceFactory
+from app.bot.infrastructure.factories.data_source_registry import DataSourceRegistry
 
 logger = get_bot_logger()
 
@@ -28,12 +30,13 @@ def setup_core_components(bot):
         bot.lifecycle = BotLifecycleManager()
         bot.workflow_manager = BotWorkflowManager()
         bot.component_registry = ComponentRegistry()
+        bot.data_source_registry = DataSourceRegistry(bot)
         bot.component_factory = ComponentFactory(bot.component_registry)
         bot.shutdown_handler = ShutdownHandler(bot)
         bot.control_service = BotControlService(bot)
         bot.internal_api_server = InternalAPIServer(bot)
         bot._default_components_registered = False
-        logger.info("Core components setup complete.")
+        logger.info("Core components setup complete (incl. DataSourceRegistry).")
     except Exception as e:
         logger.critical(f"Failed to setup core components: {e}", exc_info=True)
         raise
@@ -88,7 +91,7 @@ def register_workflows(bot):
         logger.critical(f"Failed to register workflows: {e}", exc_info=True)
 
 def register_default_components(bot):
-    """Registers the default UI components like standard embeds."""
+    """Registers the default UI components AND necessary generic types."""
     if not bot.component_registry:
         logger.error("Cannot register default components: bot.component_registry is None.")
         return
@@ -96,7 +99,7 @@ def register_default_components(bot):
         logger.debug("Default components already registered.")
         return
 
-    logger.info("Registering default components...")
+    logger.info("Registering default and generic components...")
     try:
         # CORE EMBED COMPONENTS
         bot.component_registry.register_component(
@@ -120,10 +123,32 @@ def register_default_components(bot):
                 "error_code": None
             }
         )
+
+        # Register IMPLEMENTATIONS FOR GENERIC DB TYPES
+        logger.info("Registering implementation classes for generic database component types...")
+
+        # Register 'embed' type -> Use the existing DashboardEmbed class
+        bot.component_registry.register_component(
+            component_type="embed",
+            component_class=DashboardEmbed,
+            description="Generic embed component implementation (uses DashboardEmbed)"
+        )
+        logger.info("Registered 'embed' type to use DashboardEmbed class.")
+
+        # Register 'button' type -> Use the new GenericButtonComponent class
+        bot.component_registry.register_component(
+            component_type="button",
+            component_class=GenericButtonComponent,
+            description="Generic button component implementation"
+        )
+        logger.info("Registered 'button' type to use GenericButtonComponent class.")
+
         bot._default_components_registered = True
-        logger.info(f"Registered {len(bot.component_registry.get_all_component_types())} default components")
+        logger.info(f"Finished registering default/generic components. Total implementation types registered: {len(bot.component_registry.get_all_component_types())}")
+    except NameError as ne:
+        logger.error(f"Failed to register a component - Class not found (NameError): {ne}. Ensure component classes are imported.", exc_info=True)
     except Exception as e:
-        logger.error(f"Error registering default components: {e}", exc_info=True)
+        logger.error(f"Error registering default/generic components: {e}", exc_info=True)
 
 def register_core_services(service_factory: ServiceFactory, bot):
     """Registers essential services with the ServiceFactory SYNCHRONOUSLY."""
@@ -149,7 +174,7 @@ def register_core_services(service_factory: ServiceFactory, bot):
 
         # 2. Instantiate and Register DashboardDataService
         logger.debug("Instantiating DashboardDataService...")
-        dashboard_data_service_instance = DashboardDataService(bot)
+        dashboard_data_service_instance = DashboardDataService(bot, service_factory)
         if hasattr(service_factory, 'register_service'):
             service_factory.register_service(
                 'dashboard_data_service',
@@ -175,6 +200,20 @@ def register_core_services(service_factory: ServiceFactory, bot):
                 logger.info("ComponentLoaderService already registered.")
         else:
             logger.error("Service Factory instance is missing expected registration methods.")
+
+        # 4. Register DataSourceRegistry
+        if hasattr(bot, 'data_source_registry') and bot.data_source_registry:
+            if hasattr(service_factory, 'register_service'):
+                service_factory.register_service(
+                    'data_source_registry',
+                    bot.data_source_registry,
+                    overwrite=True
+                )
+                logger.info("Registered service: data_source_registry")
+            else:
+                logger.error("service_factory is missing register_service method (DataSourceRegistry).")
+        else:
+            logger.error("bot.data_source_registry not found. Cannot register as service.")
 
     except Exception as e:
         logger.error(f"Error registering core services SYNCHRONOUSLY in ServiceFactory: {e}", exc_info=True)

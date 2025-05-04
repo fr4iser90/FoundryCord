@@ -1,36 +1,51 @@
 import logging
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Awaitable
+from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
 from app.bot.infrastructure.factories.service_factory import ServiceFactory
-from ..service.task_factory import TaskFactory
-from ..discord.channel_factory import ChannelFactory
-from ..discord.thread_factory import ThreadFactory
 from app.shared.interface.logging.api import get_bot_logger
-logger = get_bot_logger()
 
-logger = logging.getLogger(__name__)
-
-from app.bot.infrastructure.factories.component_registry_factory import ComponentRegistryFactory
-from app.bot.infrastructure.factories.data_source_registry_factory import DataSourceRegistryFactory
+from app.bot.infrastructure.factories.component_registry import ComponentRegistry
 from app.bot.infrastructure.factories.task_factory import TaskFactory
 
 # Import specific factories (not BaseFactory)
 from app.bot.interfaces.dashboards.components.factories.button_factory import ButtonFactory
 from app.bot.interfaces.dashboards.components.factories.embed_factory import EmbedFactory
 
+if TYPE_CHECKING:
+    from app.bot.core.main import FoundryCord # For type hinting
+
+logger = get_bot_logger()
+
 class BotComponentFactory:
-    """Factory for creating bot components."""
-    
-    def __init__(self, bot):
+    """
+    Composite Factory attempting to provide access to various factories and registries.
+    Consider if its role overlaps too much with ServiceFactory.
+    """
+
+    def __init__(self, bot: 'FoundryCord'):
         """Initialize the factory with a bot instance."""
         self.bot = bot
         self.initialized = False
         self.settings = {}
         self._load_settings()
-        self.component_registry = None
+
+        self.component_registry: Optional[ComponentRegistry] = None
         self.data_source_registry = None
-        self.service_factory = None
-        self.task_factory = None
-        
+        self.service_factory: Optional[ServiceFactory] = None
+        self.task_factory: Optional[TaskFactory] = None
+        self.workflow_factory = None
+        self.manager_factory = None
+        self.repository_factory = None
+        self.interface_factories: Dict[str, Any] = {}
+        self.service_factories: Dict[str, Any] = {}
+
+        if hasattr(self.bot, 'service_factory') and self.bot.service_factory is not None:
+             self.service_factory = self.bot.service_factory
+             logger.debug(f"[BotComponentFactory.__init__] Assigned existing service factory: {type(self.service_factory).__name__}")
+        else:
+             logger.warning("[BotComponentFactory.__init__] Bot has no service_factory attribute during init.")
+
+
     def _load_settings(self):
         """Load factory settings."""
         try:
@@ -45,95 +60,110 @@ class BotComponentFactory:
         except Exception as e:
             logger.error(f"Error loading factory settings: {e}")
             self.initialized = False
-            
-    async def create_service_factory(self) -> Optional[ServiceFactory]:
-        """Returns the existing service factory instance attached to the bot."""
-        logger.debug("[BotComponentFactory] Attempting to retrieve existing service factory from bot.")
-        if hasattr(self.bot, 'service_factory') and self.bot.service_factory is not None:
-            logger.debug(f"[BotComponentFactory] Returning existing ServiceFactory instance: {type(self.bot.service_factory).__name__}")
-            return self.bot.service_factory
-        else:
-            logger.error("[BotComponentFactory] Bot instance does not have a valid service_factory attribute.")
-            return None
-        
+
+    async def initialize_dependencies(self):
+         """Initializes or retrieves dependent factories and registries."""
+         logger.info("[BotComponentFactory] Initializing dependencies...")
+         if not self.service_factory:
+              logger.error("[BotComponentFactory] Cannot initialize dependencies: ServiceFactory is missing.")
+              return False
+
+         self.component_registry = self.service_factory.get_service('component_registry')
+         if not self.component_registry:
+              logger.error("[BotComponentFactory] Failed to get ComponentRegistry from ServiceFactory.")
+         else:
+              logger.info(f"[BotComponentFactory] ComponentRegistry retrieved: {type(self.component_registry).__name__}")
+
+         self.data_source_registry = self.service_factory.get_service('data_source_registry')
+         if not self.data_source_registry:
+              logger.warning("[BotComponentFactory] Failed to get DataSourceRegistry from ServiceFactory (might be expected if not used/registered).")
+         else:
+              logger.info(f"[BotComponentFactory] DataSourceRegistry retrieved: {type(self.data_source_registry).__name__}")
+
+         self.task_factory = self.service_factory.get_service('task_factory')
+         if not self.task_factory:
+              logger.info("[BotComponentFactory] TaskFactory not found as service, creating new instance.")
+              self.task_factory = TaskFactory(self.bot)
+              # Optionally register it back?
+              # self.service_factory.register_service('task_factory', self.task_factory)
+         else:
+              logger.info(f"[BotComponentFactory] TaskFactory retrieved: {type(self.task_factory).__name__}")
+
+         self.interface_factories = self._initialize_interface_factories()
+         logger.info("[BotComponentFactory] Dependencies initialized.")
+         self.initialized = True
+         return True
+
     async def create_workflow_factory(self):
         """Create a workflow factory."""
         from app.bot.infrastructure.factories.composite.workflow_factory import WorkflowFactory
         return WorkflowFactory(self.bot)
-        
+
     async def create_manager_factory(self):
         """Create a manager factory."""
         from app.bot.infrastructure.factories.composite.manager_factory import ManagerFactory
         return ManagerFactory(self.bot)
-        
+
     async def create_repository_factory(self):
         """Create a repository factory."""
         from app.bot.infrastructure.factories.composite.repository_factory import RepositoryFactory
         return RepositoryFactory(self.bot)
 
-    def initialize_registries(self):
-        """Initialize component and data source registries."""
-        self.component_registry = ComponentRegistryFactory(self.bot)
-        self.data_source_registry = DataSourceRegistryFactory(self.bot)
-        if hasattr(self.bot, 'service_factory') and self.bot.service_factory is not None:
-             self.service_factory = self.bot.service_factory
-             logger.debug(f"[BotComponentFactory] Assigned existing service factory to self.service_factory: {type(self.service_factory).__name__}")
-        else:
-             logger.error("[BotComponentFactory] Could not assign service factory in initialize_registries: Bot has no valid service_factory.")
-             self.service_factory = None
-        self.task_factory = TaskFactory(self.bot)
-    
     def _initialize_interface_factories(self) -> Dict[str, Any]:
         """Initialize UI component factories."""
+        if not self.component_registry:
+             logger.error("Cannot initialize interface factories: ComponentRegistry not available.")
+             return {}
+
         return {
             'button': ButtonFactory(self.bot),
             'embed': EmbedFactory(self.bot),
-            'dashboard': self.component_registry,  # Use component registry for dashboards
+            'dashboard': self.component_registry,
         }
-    
-    def _initialize_service_factories(self) -> Dict[str, Any]:
-        """Initialize service factories."""
-        return {
-            'data_source': self.data_source_registry,
-        }
-    
+
+    # --- Methods below might need review based on the final role of this factory ---
+
     def get_factory(self, factory_type: str):
         """Get a factory by type."""
-        return self.factories.get(factory_type)
-    
+        # This relies on self.factories which doesn't seem to be populated consistently.
+        # Consider if this method is still needed or should use self.interface_factories etc.
+        logger.warning("BotComponentFactory.get_factory might be unreliable.")
+        if factory_type in self.interface_factories:
+             return self.interface_factories[factory_type]
+        # Add checks for other factory types if necessary
+        return None
+
     def create(self, factory_type: str, *args, **kwargs):
         """Create a component using the specified factory."""
         factory = self.get_factory(factory_type)
-        
+
         if not factory:
-            logger.error(f"Factory not found: {factory_type}")
+            logger.error(f"Factory not found for type: {factory_type}")
             return None
-            
-        return factory.create(*args, **kwargs)
 
-    def register_component_creator(self, component_type: str, creator_func: Callable):
-        """Dynamically register new component types"""
-        self._component_creators[component_type] = creator_func
-        logger.debug(f"Registered creator for component type: {component_type}")
+        # Assuming the retrieved factory has a 'create' method
+        if hasattr(factory, 'create') and callable(factory.create):
+            return factory.create(*args, **kwargs)
+        else:
+             logger.error(f"Retrieved factory for type '{factory_type}' has no 'create' method.")
+             return None
 
-    def create_component(self, component_type: str, name: str, **kwargs):
-        """Dynamically create components"""
-        if component_type not in self._component_creators:
-            raise ValueError(f"Unknown component type: {component_type}")
-            
-        creator = self._component_creators[component_type]
-        return creator(name, **kwargs)
+    def create_service(self, service_type: str, *args, **kwargs) -> Optional[Any]:
+         """Creates a service using the bot's main ServiceFactory."""
+         if not self.service_factory:
+              logger.error("Cannot create service: ServiceFactory not available.")
+              return None
+         return self.service_factory.create_or_get(service_type, *args, **kwargs)
 
-    def create_service(self, name: str, setup_func, **kwargs):
-        """Create a service using the service factory"""
-        return self.factories['service'].create(name, setup_func, **kwargs)
-    
-    def create_task(self, name: str, task_func, *args, **kwargs):
-        """Create a task using the task factory"""
-        return self.factories['task'].create(name, task_func, *args, **kwargs)
+    def create_task(self, task_name: str, coro_func: Callable[..., Awaitable], *args, **kwargs):
+         """Create a task using the Task factory."""
+         if not self.task_factory:
+              logger.error("Cannot create task: TaskFactory not available.")
+              return None
+         return self.task_factory.create(task_name, coro_func, *args, **kwargs)
 
     def create_command(self, name: str, command_cog, **kwargs):
-        """Create a command component"""
+        """Create a command component dictionary."""
         return {
             'name': name,
             'cog': command_cog,
@@ -141,44 +171,40 @@ class BotComponentFactory:
             'config': kwargs,
             'guild_only': kwargs.get('guild_only', False)
         }
-        
+
     def create_middleware(self, name: str, middleware_cog, **kwargs):
-        """Create a middleware component"""
+        """Create a middleware component dictionary."""
         return {
             'name': name,
             'cog': middleware_cog,
             'type': 'middleware',
             'config': kwargs,
-            'priority': kwargs.get('priority', 5)  # Higher number = higher priority
+            'priority': kwargs.get('priority', 5)
         }
-        
-    def batch_create_services(self, service_configs: List[Dict]) -> List[Dict]:
-        """Create multiple services from a list of configurations"""
+
+    def batch_create_services(self, service_configs: List[Dict]) -> List[Any]:
+        """Create multiple services from a list of configurations using the main ServiceFactory."""
         services = []
         for config in service_configs:
             service = self.create_service(
-                config['name'], 
-                config['setup'], 
+                config['name'], # Assuming 'name' is the service_type key
+                # Pass other args/kwargs if needed by create_or_get
                 **config.get('config', {})
             )
-            services.append(service)
+            if service:
+                services.append(service)
         return services
-        
-    def batch_create_tasks(self, task_configs: List[Dict]) -> List[Dict]:
-        """Create multiple tasks from a list of configurations"""
+
+    def batch_create_tasks(self, task_configs: List[Dict]) -> List[Any]:
+        """Create multiple tasks from a list of configurations using the TaskFactory."""
         tasks = []
         for config in task_configs:
             task = self.create_task(
-                config['name'], 
-                config['func'], 
+                config['name'],
+                config['func'], # Assuming 'func' holds the coroutine function
                 *config.get('args', []),
                 **config.get('config', {})
             )
-            tasks.append(task)
+            if task:
+                tasks.append(task)
         return tasks
-
-    def get_component(self, factory_type: str, name: str):
-        """Get a registered component from specific factory"""
-        if factory_type not in self.factories:
-            raise ValueError(f"Unknown factory type: {factory_type}")
-        return self.factories[factory_type].get(name)

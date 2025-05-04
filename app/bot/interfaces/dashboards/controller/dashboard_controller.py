@@ -548,98 +548,138 @@ class DashboardController:
     async def add_component_to_embed(self, embed: nextcord.Embed, component_config: Dict[str, Any], data: Dict[str, Any]):
         """Add a component representation to an embed."""
         if not self.component_registry:
-            logger.error("Component Registry not available in add_component_to_embed")
+            logger.error(f"[{self.dashboard_id}] Component Registry not available in add_component_to_embed")
             return
-            
-        component_type = component_config.get('type')
-        if not component_type:
-            logger.warning(f"Component config missing 'type': {component_config}")
+
+        # --- MODIFIED: Get component_key instead of type ---
+        component_key = component_config.get('component_key')
+        if not component_key:
+            instance_id = component_config.get('instance_id', 'N/A')
+            logger.warning(f"[{self.dashboard_id}] Component config (instance_id: {instance_id}) missing 'component_key': {component_config}")
             return
-            
-        component_impl_class = self.component_registry.get_component(component_type)
-        
-        if not component_impl_class:
-            logger.error(f"Component type not found in registry: {component_type}")
-            return
-            
+        # --- END MODIFICATION ---
+
         try:
+            # --- ADDED: Get type from registry using the key ---
+            # Assuming ComponentRegistry has a method to get the type based on the key
+            # This might need adjustment depending on the actual ComponentRegistry implementation
+            if not hasattr(self.component_registry, 'get_type_by_key'):
+                 logger.error(f"[{self.dashboard_id}] ComponentRegistry is missing the required 'get_type_by_key' method.")
+                 # Fallback or alternative lookup might be needed here
+                 # For now, we cannot proceed without the type.
+                 return
+
+            component_type = self.component_registry.get_type_by_key(component_key)
+            if not component_type:
+                logger.error(f"[{self.dashboard_id}] Component type not found in registry for key: {component_key}")
+                return
+            logger.debug(f"[{self.dashboard_id}] Resolved component key '{component_key}' to type '{component_type}'.")
+            # --- END ADDED SECTION ---
+
+            # --- MODIFIED: Use get_component_class ---
+            component_impl_class = self.component_registry.get_component_class(component_type)
+            # --- END MODIFICATION ---
+
+            if not component_impl_class:
+                # This case should be less likely now if get_type_by_key worked
+                logger.error(f"[{self.dashboard_id}] Component implementation class not found in registry for type: {component_type} (from key: {component_key})")
+                return
+
             # Create component instance and render to embed
+            # Pass the original component_config which contains instance_id, key, settings
             component = component_impl_class(self.bot, component_config)
             # Check if the component has the render_to_embed method
             if hasattr(component, 'render_to_embed') and callable(component.render_to_embed):
-                await component.render_to_embed(embed, data, component_config.get('config', {}))
+                # Pass component_config (contains instance_id, key, settings) and fetched data
+                await component.render_to_embed(embed, data, component_config) # Pass config dict
             else:
                 # logger.debug(f"Component type {component_type} does not render to embed.")
                 pass # Not all components render to embed
+
         except Exception as e:
-            logger.error(f"Error rendering component {component_type} to embed: {e}", exc_info=True)
+            logger.error(f"[{self.dashboard_id}] Error rendering component (key: {component_key}, type: {component_type}) to embed: {e}", exc_info=True)
 
     async def build_view(self, data: Dict[str, Any]) -> Optional[nextcord.ui.View]:
         """Build a view from configuration and data."""
         try:
-            # Check if there are interactive components defined in config
-            interactive_components = self.config.get('interactive_components', []) # IDs of components to add
-            component_configs = self.config.get('components', []) # Full definitions
-            
-            if not interactive_components or not component_configs:
-                # logger.debug(f"No interactive components defined for dashboard {self.dashboard_id}")
-                return None # No view needed if no interactive components
-                
-            # Create view
+            interactive_components_ids = self.config.get('interactive_components', []) # List of instance_ids
+            component_configs = self.config.get('components', []) # Full definitions list
+
+            if not interactive_components_ids or not component_configs:
+                return None
+
             view = nextcord.ui.View(timeout=None)
-            
+
             # Add components to view based on interactive_components list
-            for component_id in interactive_components:
-                # Find the full config for this component ID
-                component_config = next((c for c in component_configs if c.get('id') == component_id), None)
-                        
+            for instance_id_to_add in interactive_components_ids:
+                # Find the full config using instance_id
+                # --- ENSURE THIS LINE USES 'instance_id' ---
+                component_config = next((c for c in component_configs if c.get('instance_id') == instance_id_to_add), None)
+                # --- END ENSURE ---
+
                 if not component_config:
-                    logger.warning(f"Interactive component config not found in 'components' list: {component_id} for dashboard {self.dashboard_id}")
+                    logger.warning(f"Interactive component config not found for instance_id '{instance_id_to_add}' in 'components' list for dashboard {self.dashboard_id}")
                     continue
-                    
+
                 # Create and add component to view
                 await self.add_component_to_view(view, component_config, data)
-            
-            # Only return view if items were actually added
-            if len(view.children) > 0:    
+
+            if len(view.children) > 0:
                 return view
             else:
                 logger.debug(f"View built but no components added for dashboard {self.dashboard_id}")
                 return None
-            
+
         except Exception as e:
             logger.error(f"Error building view for dashboard {self.dashboard_id}: {e}", exc_info=True)
-            return None # Return None on error
+            return None
             
     async def add_component_to_view(self, view: nextcord.ui.View, component_config: Dict[str, Any], data: Dict[str, Any]):
         """Add a component to a view."""
         if not self.component_registry:
-            logger.error("Component Registry not available in add_component_to_view")
+            logger.error(f"[{self.dashboard_id}] Component Registry not available in add_component_to_view")
             return
-            
-        component_type = component_config.get('type')
-        if not component_type:
-            logger.warning(f"Component config missing 'type': {component_config}")
+
+        # --- MODIFIED: Get component_key instead of type ---
+        component_key = component_config.get('component_key')
+        if not component_key:
+            instance_id = component_config.get('instance_id', 'N/A')
+            logger.warning(f"[{self.dashboard_id}] Component config (instance_id: {instance_id}) missing 'component_key': {component_config}")
             return
-            
-        component_impl_class = self.component_registry.get_component(component_type)
-        
-        if not component_impl_class:
-            logger.error(f"Component type not found in registry: {component_type}")
-            return
-            
+        # --- END MODIFICATION ---
+
         try:
+            # --- ADDED: Get type from registry using the key ---
+            if not hasattr(self.component_registry, 'get_type_by_key'):
+                 logger.error(f"[{self.dashboard_id}] ComponentRegistry is missing the required 'get_type_by_key' method.")
+                 return
+            component_type = self.component_registry.get_type_by_key(component_key)
+            if not component_type:
+                logger.error(f"[{self.dashboard_id}] Component type not found in registry for key: {component_key}")
+                return
+            logger.debug(f"[{self.dashboard_id}] Resolved component key '{component_key}' to type '{component_type}'.")
+            # --- END ADDED SECTION ---
+
+            # --- MODIFIED: Use get_component_class ---
+            component_impl_class = self.component_registry.get_component_class(component_type)
+            # --- END MODIFICATION ---
+
+            if not component_impl_class:
+                logger.error(f"[{self.dashboard_id}] Component implementation class not found in registry for type: {component_type} (from key: {component_key})")
+                return
+
             # Create component instance and add to view
             component = component_impl_class(self.bot, component_config)
             component.dashboard_id = self.dashboard_id # Assign dashboard ID for context
             # Check if the component has the add_to_view method
             if hasattr(component, 'add_to_view') and callable(component.add_to_view):
-                await component.add_to_view(view, data, component_config.get('config', {}))
+                 # Pass component_config (contains instance_id, key, settings) and fetched data
+                await component.add_to_view(view, data, component_config) # Pass config dict
             else:
                 logger.warning(f"Component type {component_type} does not have add_to_view method.")
-                
+
         except Exception as e:
-            logger.error(f"Error adding component {component_type} to view: {e}", exc_info=True)
+            logger.error(f"[{self.dashboard_id}] Error adding component (key: {component_key}, type: {component_type}) to view: {e}", exc_info=True)
             
     # --- Original methods below (load_components, display_dashboard etc remain largely the same) --- 
 
