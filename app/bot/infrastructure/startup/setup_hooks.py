@@ -28,6 +28,7 @@ from app.bot.interfaces.dashboards.components.common.embeds.error_embed import E
 from app.bot.interfaces.dashboards.components.common.buttons.generic_button import GenericButtonComponent
 from app.bot.interfaces.dashboards.components.common.selectors.generic_selector import GenericSelectorComponent
 from app.bot.infrastructure.monitoring.collectors.system.impl import SystemCollector
+from app.bot.infrastructure.monitoring.collectors.service.impl import ServiceCollector
 
 # Imports for State Collector Registration
 from app.shared.infrastructure.state.secure_state_snapshot import get_state_snapshot_service
@@ -316,7 +317,23 @@ def register_core_services(service_factory: ServiceFactory, bot):
         else:
             logger.error("service_factory is missing register_service/has_service method (SystemCollector).")
 
-        # 3. Instantiate and Register DashboardDataService (Now depends on SystemCollector being registered)
+        # 3. Instantiate and Register ServiceCollector
+        logger.debug("Instantiating ServiceCollector...")
+        service_collector_instance = ServiceCollector()
+        if hasattr(service_factory, 'register_service') and hasattr(service_factory, 'has_service'):
+            if not service_factory.has_service('service_collector'):
+                service_factory.register_service(
+                    'service_collector',
+                    service_collector_instance,
+                    overwrite=True
+                )
+                logger.info("Registered service: service_collector")
+            else:
+                logger.info("ServiceCollector already registered.")
+        else:
+            logger.error("service_factory is missing register_service/has_service method (ServiceCollector).")
+
+        # 4. Instantiate and Register DashboardDataService (Now depends on SystemCollector being registered)
         logger.debug("Instantiating DashboardDataService...")
         dashboard_data_service_instance = DashboardDataService(bot, service_factory)
         if hasattr(service_factory, 'register_service'):
@@ -329,7 +346,7 @@ def register_core_services(service_factory: ServiceFactory, bot):
         else:
             logger.error("service_factory is missing register_service method (DashboardDataService).")
 
-        # 4. Instantiate and Register ComponentLoaderService
+        # 5. Instantiate and Register ComponentLoaderService
         logger.debug("Instantiating ComponentLoaderService...")
         component_loader_instance = ComponentLoaderService(bot)
         if hasattr(service_factory, 'register_service') and hasattr(service_factory, 'has_service'):
@@ -345,7 +362,7 @@ def register_core_services(service_factory: ServiceFactory, bot):
         else:
             logger.error("service_factory is missing register_service method (ComponentLoaderService).")
 
-        # 5. Register State Collectors (New)
+        # 6. Register State Collectors (New)
         register_state_collectors(bot) # Call the new registration function
 
     except Exception as e:

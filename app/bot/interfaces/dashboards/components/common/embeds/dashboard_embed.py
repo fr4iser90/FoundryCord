@@ -42,30 +42,22 @@ def format_list_to_string(items: List[Any]) -> str:
     return "\n".join(formatted_items)
 
 def format_string(template_string: Optional[str], data: Dict[str, Any]) -> str:
+    # This function now only needs to handle dict data, 
+    # as list data is handled directly in the build method.
     if not template_string:
         return ""
     try:
         formatted_string = template_string
-        if data: # Only attempt replacements if data is provided
+        if data and isinstance(data, dict): # Ensure data is a dictionary
             for key, value in data.items():
-                placeholder = f'{{{{{key}}}}}' # Construct the placeholder e.g., {{projects}}
-                
-                # --- MODIFICATION START: Handle lists --- 
-                if isinstance(value, list):
-                    replacement_value = format_list_to_string(value)
-                else:
-                    replacement_value = str(value)
-                # --- MODIFICATION END --- 
-                
-                # Replace all occurrences
+                placeholder = f'{{{{{key}}}}}' 
+                replacement_value = str(value) # Simple string conversion for dict values
                 formatted_string = formatted_string.replace(placeholder, replacement_value)
         
         return formatted_string
     except Exception as e:
-        # Log general errors but still return original template or partial
-        logger.error(f"Error formatting string '{template_string[:50]}...': {e}", exc_info=True)
-        # Return partially formatted or original template on error
-        return template_string # Or potentially formatted_string if partial is okay
+        logger.error(f"Error formatting string '{template_string[:50]}...' with dict data: {e}", exc_info=True)
+        return template_string 
 
 class DashboardEmbed(BaseComponent):
     """Main dashboard embed for displaying dashboard content."""
@@ -87,125 +79,130 @@ class DashboardEmbed(BaseComponent):
         # No component-specific init logic needed here anymore, config is merged in base.
         # logger.debug(f"Initialized DashboardEmbed component for instance_id: {self.config.get('instance_id')}")
     
-    def build(self, data: Optional[Dict[str, Any]] = None) -> nextcord.Embed:
+    def build(self, data: Optional[Union[Dict[str, Any], List[Any]]] = None) -> nextcord.Embed: # Allow data to be list or dict
         """Build and return the Discord embed object using the merged config and provided data."""
-         # --- DETAILED LOGGING START ---
         instance_id = self.config.get('instance_id', 'UNKNOWN_INSTANCE')
-        logger.debug(f"[{instance_id}] Building embed with data keys: {list(data.keys()) if data else 'None'}") # Simplified log
+        # Keep log minimal
+        data_type_log = type(data).__name__ if data is not None else 'None'
+        logger.debug(f"[{instance_id}] Building embed with data type: {data_type_log}") 
         try:
-             # Use self.config which now holds the merged values
-             # --- DETAILED LOGGING ---
              title = self.config.get("title", "Default Title")
-             formatted_title = format_string(title, data or {})
+             # Title/Description usually don't use list data directly
+             formatted_title = format_string(title, data if isinstance(data, dict) else {}) 
              description = self.config.get("description", "")
-             formatted_description = format_string(description, data or {})
+             formatted_description = format_string(description, data if isinstance(data, dict) else {})
              color_value = self.config.get("color", nextcord.Color.blurple().value)
-             # Removed detailed base embed creation log
              embed = nextcord.Embed(
-                 title=formatted_title, # Use formatted string
-                 description=formatted_description, # Use formatted string
-                 color=color_value # Use merged config
+                 title=formatted_title, 
+                 description=formatted_description, 
+                 color=color_value 
              )
 
-             # Add fields if provided in merged config
              fields = self.config.get("fields", [])
-             # --- DETAILED LOGGING ---
-             # Removed field processing count log
              if isinstance(fields, list):
                   for i, field in enumerate(fields):
                       if isinstance(field, dict):
-                            # --- DETAILED LOGGING ---
                             field_name = field.get("name", "\u200b")
-                            formatted_field_name = format_string(field_name, data or {})
-                            field_value = field.get("value", "")
-                            formatted_field_value = format_string(field_value, data or {})
+                            field_value_template = field.get("value", "") # The template like {{projects}} or {{hostname}}
                             field_inline = field.get("inline", True)
-                            # Removed individual field add log
+                            
+                            formatted_field_value = "" # Default value
+
+                            # --- START SPECIAL LIST HANDLING ---
+                            # Check if data is a list AND the template looks like a simple placeholder {{key}}
+                            if isinstance(data, list) and field_value_template.startswith("{{") and field_value_template.endswith("}}") and field_value_template.count('{') == 2: 
+                                logger.debug(f"[{instance_id}] Field '{field_name}' processing as list data.")
+                                formatted_field_value = format_list_to_string(data) # Format the list directly
+                            # --- END SPECIAL LIST HANDLING ---
+                            
+                            # --- ELSE: Handle as dictionary (or if template is complex) ---
+                            elif isinstance(data, dict):
+                                logger.debug(f"[{instance_id}] Field '{field_name}' processing as dict data using format_string.")
+                                # --- START: Python formatting for 'projects' list --- 
+                                # Check if the template is exactly '{{projects}}' and 'projects' key exists in data
+                                if field_value_template == '{{projects}}' and 'projects' in data and isinstance(data['projects'], list):
+                                    projects_list = data['projects']
+                                    if projects_list:
+                                        formatted_items = []
+                                        for project in projects_list:
+                                            # Attempt to format based on expected Project model attributes
+                                            p_name = getattr(project, 'name', 'Unnamed Project')
+                                            p_status = getattr(project, 'status', 'Unknown Status')
+                                            formatted_items.append(f"- {p_name} ({p_status})")
+                                        formatted_field_value = "\n".join(formatted_items)
+                                        # Limit length to avoid Discord embed limits
+                                        if len(formatted_field_value) > 1000: # Embed field value limit is 1024
+                                             formatted_field_value = formatted_field_value[:1000] + "..."
+                                    else:
+                                        formatted_field_value = "*No projects found.*"
+                                    logger.debug(f"[{instance_id}] Field '{field_name}' manually formatted projects list.")
+                                else:
+                                     # Fallback to generic format_string for other dict cases
+                                     formatted_field_value = format_string(field_value_template, data)
+                                # --- END: Python formatting for 'projects' list ---
+                            # --- END ELSE ---
+                            
+                            else: # Fallback if data is not dict or list, or if template didn't match list pattern
+                                 logger.debug(f"[{instance_id}] Field '{field_name}' using template directly as data type ('{data_type_log}') was unexpected.")
+                                 formatted_field_value = field_value_template # Use template string as fallback
+
                             embed.add_field(
-                                name=formatted_field_name,
+                                name=format_string(field_name, data if isinstance(data, dict) else {}), # Format name only with dict data
                                 value=formatted_field_value,
                                 inline=field_inline
                             )
                       else:
-                          # --- DETAILED LOGGING ---
                           logger.warning(f"[{instance_id}] Field {i+1} in config is not a dict: {field}. Skipping.")
              else:
-                  # --- DETAILED LOGGING ---
                   logger.warning(f"[{instance_id}] 'fields' in config is not a list: {fields}. Skipping fields.")
- 
  
              # Set image if provided
              image_url = self.config.get("image_url")
              if image_url:
-                 # --- DETAILED LOGGING ---
-                 # Removed image set log
-                 embed.set_image(url=image_url)
+                 embed.set_image(url=format_string(image_url, data if isinstance(data, dict) else {}))
  
              # Set thumbnail if provided
              thumbnail_url = self.config.get("thumbnail_url")
              if thumbnail_url:
-                 # --- DETAILED LOGGING ---
-                 # Removed thumbnail set log
-                 embed.set_thumbnail(url=thumbnail_url)
+                 embed.set_thumbnail(url=format_string(thumbnail_url, data if isinstance(data, dict) else {}))
  
              # Add footer if provided
              footer_data = self.config.get("footer")
              if isinstance(footer_data, dict):
-                  # --- DETAILED LOGGING ---
                   footer_text = footer_data.get("text", "")
-                  formatted_footer_text = format_string(footer_text, data or {})
+                  formatted_footer_text = format_string(footer_text, data if isinstance(data, dict) else {})
                   footer_icon_url = footer_data.get("icon_url")
-                  # Removed footer set log
                   embed.set_footer(
                       text=formatted_footer_text,
-                      icon_url=footer_icon_url
+                      icon_url=format_string(footer_icon_url, data if isinstance(data, dict) else {})
                   )
-             elif isinstance(footer_data, str): # Handle simple string footer
-                  # --- DETAILED LOGGING ---
-                  # Removed footer set log (string)
-                  embed.set_footer(text=footer_data)
-             else:
-                  # --- DETAILED LOGGING ---
-                  if footer_data is not None:
-                     logger.warning(f"[{instance_id}] Invalid footer data type in config: {type(footer_data)}. Skipping footer.")
- 
+             elif isinstance(footer_data, str): 
+                  embed.set_footer(text=format_string(footer_data, data if isinstance(data, dict) else {}))
  
              # Add author if provided
              author_data = self.config.get("author")
              if isinstance(author_data, dict):
-                   # --- DETAILED LOGGING ---
                    author_name = author_data.get("name", "")
-                   formatted_author_name = format_string(author_name, data or {})
+                   formatted_author_name = format_string(author_name, data if isinstance(data, dict) else {})
                    author_url = author_data.get("url")
                    author_icon_url = author_data.get("icon_url")
-                   # Removed author set log
                    embed.set_author(
                        name=formatted_author_name,
-                       url=author_url,
-                       icon_url=author_icon_url
+                       url=format_string(author_url, data if isinstance(data, dict) else {}),
+                       icon_url=format_string(author_icon_url, data if isinstance(data, dict) else {})
                    )
-             elif isinstance(author_data, str): # Handle simple string author name
-                  # Removed author set log (string)
-                  embed.set_author(name=author_data)
-             else:
-                  # --- DETAILED LOGGING ---
-                  if author_data is not None:
-                      logger.warning(f"[{instance_id}] Invalid author data type in config: {type(author_data)}. Skipping author.")
+             elif isinstance(author_data, str): 
+                  embed.set_author(name=format_string(author_data, data if isinstance(data, dict) else {}))
  
              # Add timestamp if configured
              if self.config.get("timestamp", True):
-                   # --- DETAILED LOGGING ---
-                   # Removed timestamp set log
                    embed.timestamp = nextcord.utils.utcnow()
  
-             # --- DETAILED LOGGING ---
-             logger.debug(f"[{instance_id}] Embed build successful.") # Changed to debug
+             logger.debug(f"[{instance_id}] Embed build successful.")
              return embed
  
         except Exception as e:
-             # --- DETAILED LOGGING ---
              logger.error(f"[{instance_id}] Embed build FAILED: {str(e)}", exc_info=True)
-             # Return a minimal embed if we had an error building the proper one
              return nextcord.Embed(
                   title="Error Building Embed",
                   description=f"An error occurred while building this embed ({instance_id}).",

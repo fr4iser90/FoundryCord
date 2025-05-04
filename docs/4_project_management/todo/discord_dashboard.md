@@ -6,33 +6,33 @@
 
 ## Phase 1: Fix Monitoring Dashboard (Current Focus)
 
-- [ ] **Task 1.1: Verify Service Registration & Consistency**
+- [x] **Task 1.1: Verify Service Registration & Consistency**
     - **Description:** After the latest changes to `setup_hooks.py` (registering `SystemCollector` before `DashboardDataService`), restart the bot and check the logs. Verify that:
         - `SystemCollector` is successfully registered.
         - The "Service 'system_collector' not found" error no longer appears when the dashboard attempts to fetch data.
     - **Affected Files:** Logs (`docker logs foundrycord-bot | cat` or similar)
     - **Action:** User to restart bot and provide logs if issues persist.
 
-- [ ] **Task 1.2: Test Monitoring Dashboard Display**
+- [x] **Task 1.2: Test Monitoring Dashboard Display**
     - **Description:** Once the bot is running without the `system_collector` error, check the Monitoring dashboard display in Discord. It should now show actual system metrics (Hostname, CPU %, etc.) instead of placeholders (`{hostname}`, etc.).
     - **Affected Files:** Discord UI
     - **Action:** User to check the dashboard visually and confirm if data is displayed.
 
 ## Phase 2: Implement Project Dashboard Data Fetching
 
-- [ ] **Task 2.1: Implement `db_repository` Fetch Logic**
-    - **Description:** Modify `DashboardDataService.fetch_data` to handle the `db_repository` source type defined in the dashboard config. This involves getting the specified repository (e.g., `ProjectRepository`) from the `ServiceFactory` and calling the specified method (e.g., `get_projects_by_guild`).
-    - **Affected Files:** `app/bot/application/services/dashboard/dashboard_data_service.py`
-    - **Requires:** Access to `guild_id` or other necessary parameters for the repository method call (needs investigation on how context is passed).
+- [x] ~~**Task 2.1: Implement `db_repository` Fetch Logic**~~
+    - ~~**Description:** Modify `DashboardDataService.fetch_data` to handle the `db_repository` source type defined in the dashboard config. This involves getting the specified repository (e.g., `ProjectRepository`) from the `ServiceFactory` and calling the specified method (e.g., `get_projects_by_guild`).~~
+    - ~~**Affected Files:** `app/bot/application/services/dashboard/dashboard_data_service.py`~~
+    - ~~**Requires:** Access to `guild_id` or other necessary parameters for the repository method call (needs investigation on how context is passed).~~
 
-- [ ] **Task 2.2: Ensure `ProjectRepository` Registration**
-    - **Description:** Verify that `ProjectRepositoryImpl` (or the relevant service providing it) is registered with the `ServiceFactory` so `DashboardDataService` can retrieve it. If not, add registration logic (likely in `setup_hooks.py`).
-    - **Affected Files:** `app/bot/infrastructure/startup/setup_hooks.py`, `app/bot/infrastructure/factories/service_factory.py`
+- [x] ~~**Task 2.2: Ensure `ProjectRepository` Registration**~~
+    - ~~**Description:** Verify that `ProjectRepositoryImpl` (or the relevant service providing it) is registered with the `ServiceFactory` so `DashboardDataService` can retrieve it. If not, add registration logic (likely in `setup_hooks.py`).~~
+    - ~~**Affected Files:** `app/bot/infrastructure/startup/setup_hooks.py`, `app/bot/infrastructure/factories/service_factory.py`~~
 
-- [ ] **Task 2.3: Test Project Dashboard Display**
-    - **Description:** After implementing the fetch logic and ensuring repository availability, restart the bot, reset the DB/run migrations (if repository registration was added), and check the Project dashboard display.
-    - **Affected Files:** Discord UI, Logs
-    - **Action:** User to test and confirm.
+- [x] ~~**Task 2.3: Test Project Dashboard Display**~~
+    - ~~**Description:** After implementing the fetch logic and ensuring repository availability, restart the bot, reset the DB/run migrations (if repository registration was added), and check the Project dashboard display.~~
+    - ~~**Affected Files:** Discord UI, Logs~~
+    - ~~**Action:** User to test and confirm.~~
 
 ## Phase 3: Implement GameHub Dashboard Data Fetching
 

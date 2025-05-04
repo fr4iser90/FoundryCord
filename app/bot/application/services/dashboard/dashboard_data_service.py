@@ -160,8 +160,15 @@ class DashboardDataService:
                             else:
                                 logger.debug(f"Calling {repo_name}.{method_name}(guild_id={guild_id})...")
                                 fetched_repo_data = await repository_method(guild_id=guild_id)
-                                result_data[data_key] = fetched_repo_data 
-                                logger.debug(f"Successfully fetched data using {repo_name}.{method_name} for '{data_key}'. Type: {type(fetched_repo_data).__name__}")
+                                # --- MODIFICATION START: Wrap list in dict ---
+                                if isinstance(fetched_repo_data, list):
+                                    result_data[data_key] = {"items": fetched_repo_data}
+                                    logger.debug(f"Successfully fetched list data using {repo_name}.{method_name} for '{data_key}'. Wrapped in dict.")
+                                else:
+                                    # Assume it's already dict-like or scalar, pass as-is (or handle specific non-list types if needed)
+                                    result_data[data_key] = fetched_repo_data
+                                    logger.debug(f"Successfully fetched non-list data using {repo_name}.{method_name} for '{data_key}'. Type: {type(fetched_repo_data).__name__}")
+                                # --- MODIFICATION END ---
                         # Exit loop after session is used
                     else:
                          # Fallback/Error for other repositories until ServiceFactory handles them
@@ -177,9 +184,40 @@ class DashboardDataService:
             # --- Handle other source types (Example: Service Collector) --- 
             elif source_type == 'service_collector':
                 logger.debug(f"Fetching data for '{data_key}' using service_collector...")
-                # TODO: Implement logic similar to system_collector for ServiceCollector
-                logger.warning(f"Service collector fetching not implemented yet for '{data_key}'.")
-                result_data[data_key] = {"placeholder": "Data from ServiceCollector"}
+                # --- START IMPLEMENTATION ---
+                try:
+                    service_collector = self.service_factory.get_service('service_collector')
+                    if not service_collector:
+                        logger.error("ServiceCollector service not found in ServiceFactory.")
+                        result_data[data_key] = {"error": "ServiceCollector not available"}
+                        continue
+
+                    # --- Call the specific method for game services --- 
+                    # Check if the config specifies a method, default to collect_game_services
+                    method_name = source_config.get('method', 'collect_game_services')
+                    if method_name == 'collect_game_services':
+                         logger.debug(f"Calling ServiceCollector.collect_game_services() for '{data_key}'...")
+                         # Returns Dict[str, Any] e.g., {'Minecraft': 'Online', 'Factorio': 'Offline'}
+                         collected_services = await service_collector.collect_game_services()
+                         # Wrap the dictionary in another dict under a predictable key for template consistency
+                         result_data[data_key] = {"services": collected_services} 
+                         logger.debug(f"Successfully processed service_collector (game services) data for '{data_key}'.")
+                    elif method_name == 'collect_all': # Or handle collect_service_metrics?
+                         # Handle the metric list similar to system_collector if needed
+                         logger.warning(f"Service collector configured to use '{method_name}', returning raw metrics list for '{data_key}' - processing TBD.")
+                         collected_metrics = await service_collector.collect_all()
+                         # Decide how to process/structure this metric list for the dashboard
+                         # For now, just pass the raw list wrapped
+                         result_data[data_key] = {"metrics": collected_metrics} 
+                    else:
+                         logger.error(f"Unsupported method '{method_name}' specified for service_collector source '{data_key}'.")
+                         result_data[data_key] = {"error": f"Unsupported method: {method_name}"}
+                         continue
+                         
+                except Exception as e:
+                    logger.error(f"Error fetching data from ServiceCollector for '{data_key}': {e}", exc_info=True)
+                    result_data[data_key] = {"error": str(e)}
+                # --- END IMPLEMENTATION ---
 
             else:
                 logger.warning(f"Unsupported data source type '{source_type}' for key '{data_key}'.")
