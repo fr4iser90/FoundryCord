@@ -22,7 +22,7 @@ async def get_memory_info() -> Dict[str, Any]:
         logger.debug(f"Gesammelte Memory Informationen: {memory_info}")
         return memory_info
     except Exception as e:
-        logger.error(f"Fehler beim Sammeln der Memory Informationen: {e}")
+        logger.error(f"Error collecting memory information: {e}", exc_info=True)
         return {
             'ram_total': 0,
             'ram_used': 0,

@@ -121,7 +121,7 @@ class DashboardLifecycleService:
                                  else: # updated_message_id == original_message_id
                                      logger.debug(f"ActiveDashboard {active_dashboard.id}: Message ID '{original_message_id}' remains correct.")
                              else:
-                                 logger.error(f"Failed to retrieve controller for channel {channel_id_int} after activation via get_dashboard.")
+                                 logger.error(f"Failed to retrieve controller for channel {channel_id_int} (ActiveDashboard ID: {active_dashboard.id}) after activation via get_dashboard.")
                              # --- End Message ID Update Check ---
                         else:
                              failed_count += 1
@@ -284,7 +284,7 @@ class DashboardLifecycleService:
             # 4. Call the registry to activate/update the controller and display
             logger.debug(f"LifecycleService: Calling registry.activate_or_update_dashboard for channel {channel.id} (ActiveDashboard ID: {active_dashboard_id})")
             if not self.registry:
-                 logger.error("LifecycleService: DashboardRegistry not initialized!")
+                 logger.error(f"LifecycleService: DashboardRegistry not initialized! Cannot process sync for channel {channel.id}.")
                  return False
                  
             registry_success = await self.registry.activate_or_update_dashboard(

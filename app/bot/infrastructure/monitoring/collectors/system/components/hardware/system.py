@@ -50,7 +50,7 @@ async def get_system_info() -> Dict[str, Any]:
             'system_hostname': real_hostname
         }
     except Exception as e:
-        logger.error(f"System Info Fehler: {e}")
+        logger.error(f"System info error: {e}", exc_info=True)
         return {
             'system_platform': "N/A",
             'system_version': "N/A",

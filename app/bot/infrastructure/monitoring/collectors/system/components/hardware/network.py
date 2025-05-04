@@ -24,7 +24,7 @@ async def perform_speed_test() -> Dict[str, float]:
                 speed_mbps = (len(data) * 8 / 1_000_000) / duration  # Convert to Mbps
                 return {"download": speed_mbps}
     except Exception as e:
-        logger.error(f"Speed test failed: {e}")
+        logger.error(f"Speed test failed: {e}", exc_info=True)
         return {"download": 0.0}
 
 async def get_network_info() -> Dict[str, Any]:
@@ -89,7 +89,7 @@ async def get_network_info() -> Dict[str, Any]:
             'network_adapters': "\n".join(network_info) if network_info else "Keine aktiven Netzwerk-Adapter"
         }
     except Exception as e:
-        logger.error(f"Network Info Fehler: {e}")
+        logger.error(f"Network info error: {e}", exc_info=True)
         return {
             'network_adapters': "Netzwerk-Informationen nicht verfügbar"
         }

@@ -196,7 +196,7 @@ class DashboardRegistry:
             # logger.debug("No active dashboards in registry to refresh.")
             return
             
-        logger.info(f"Registry: Starting refresh cycle for {len(active_dashboard_ids)} active dashboards...")
+        logger.debug(f"Registry: Starting refresh cycle for {len(active_dashboard_ids)} active dashboards...")
         refreshed_count = 0
         failed_count = 0
         
@@ -213,7 +213,7 @@ class DashboardRegistry:
                 # Optionally, consider deactivating the controller here if it fails repeatedly
                 
         if refreshed_count > 0 or failed_count > 0:
-            logger.info(f"Registry: Finished refresh cycle. Refreshed: {refreshed_count}, Failed: {failed_count}/{len(active_dashboard_ids)}")
+            logger.debug(f"Registry: Finished refresh cycle. Refreshed: {refreshed_count}, Failed: {failed_count}/{len(active_dashboard_ids)}")
             
     @_refresh_active_dashboards_loop.before_loop
     async def before_refresh_loop(self):

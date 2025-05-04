@@ -68,36 +68,36 @@ class DashboardController:
                  self.data_service = factory_obj.get_service('dashboard_data_service') 
 
                  if not self.component_registry:
-                     logger.error("[DEBUG controller.initialize] Component Registry service IS NONE within Service Factory.")
+                     logger.warning("[DEBUG controller.initialize] Component Registry service IS NONE within Service Factory.")
                  else:
                      logger.debug(f"[DEBUG controller.initialize] Component Registry obtained: {type(self.component_registry).__name__}")
 
                  if not self.data_service:
-                     logger.error("[DEBUG controller.initialize] DashboardDataService service IS NONE within Service Factory.")
+                     logger.warning("[DEBUG controller.initialize] DashboardDataService service IS NONE within Service Factory.")
                  else:
                      logger.debug(f"[DEBUG controller.initialize] Data Service obtained: {type(self.data_service).__name__}")
 
             elif has_factory and factory_obj is None:
-                 logger.error("[DEBUG controller.initialize] Service factory attribute EXISTS but IS NONE on bot instance.")
+                 logger.error(f"[{self.dashboard_id}] [DEBUG controller.initialize] Service factory attribute EXISTS but IS NONE on bot instance.")
                  return False # Explicitly return False
             else: # Attribute doesn't exist
-                 logger.error("[DEBUG controller.initialize] Service factory attribute DOES NOT EXIST on bot instance.")
+                 logger.error(f"[{self.dashboard_id}] [DEBUG controller.initialize] Service factory attribute DOES NOT EXIST on bot instance.")
                  return False # Explicitly return False
 
             # Check if services were actually retrieved
             if not self.component_registry:
-                logger.error("Component Registry not available for DashboardController after factory check.")
+                logger.error(f"[{self.dashboard_id}] Component Registry not available for DashboardController after factory check.")
                 # return False # Decide handling - maybe allow init but log error? For now, let it proceed with error logs.
             if not self.data_service:
-                 logger.error("DashboardDataService not available for DashboardController after factory check.")
+                 logger.error(f"[{self.dashboard_id}] DashboardDataService not available for DashboardController after factory check.")
                  # return False # Decide handling
 
         except AttributeError as ae:
              # Catch if factory_obj doesn't have get_service
-             logger.error(f"[DEBUG controller.initialize] Service Factory ({factory_type}) missing 'get_service' method? Error: {ae}", exc_info=True)
+             logger.error(f"[{self.dashboard_id}] [DEBUG controller.initialize] Service Factory ({factory_type}) missing 'get_service' method? Error: {ae}", exc_info=True)
              return False
         except Exception as e:
-            logger.error(f"[DEBUG controller.initialize] Error getting services/registries: {e}", exc_info=True)
+            logger.error(f"[{self.dashboard_id}] [DEBUG controller.initialize] Error getting services/registries: {e}", exc_info=True)
             return False
             
         # Load dashboard definition from database
@@ -268,7 +268,7 @@ class DashboardController:
 
             if self.message:
                  self.message_id = str(self.message.id)
-                 logger.info(f"[{self.dashboard_id}] Dashboard displayed/updated. Message ID: {self.message_id}")
+                 logger.debug(f"[{self.dashboard_id}] Dashboard displayed/updated. Message ID: {self.message_id}")
             else:
                  logger.error(f"[{self.dashboard_id}] Failed to send or edit dashboard message.")
                  self.message_id = None # Ensure message_id is None if sending failed
@@ -451,7 +451,7 @@ class DashboardController:
             # --- Add Log for Extracted Data --- 
             hostname_val = embed_data_to_pass.get('hostname', 'NOT_FOUND')
             cpu_val = embed_data_to_pass.get('cpu_percent', 'NOT_FOUND')
-            logger.info(f"[DIAGNOSTIC Controller - build_embed] Data to pass to embed: Hostname={hostname_val}, CPU={cpu_val}, Full Dict Keys: {list(embed_data_to_pass.keys())}")
+            logger.debug(f"[DIAGNOSTIC Controller - build_embed] Data to pass to embed: Hostname={hostname_val}, CPU={cpu_val}, Full Dict Keys: {list(embed_data_to_pass.keys())}")
             # --- End Log --- 
 
             # --- MODIFICATION START: Adapt data structure for template --- 
@@ -475,9 +475,11 @@ class DashboardController:
             # Apply standard footer or dynamic data if needed (optional)
             # Example: self.apply_standard_footer(built_embed)
             # Example: Add dynamic data to description/fields if necessary
-            # built_embed.description = f"{built_embed.description}\nLast updated: {datetime.now()}" # Example dynamic data
+            # built_embed.description = f"{built_embed.description}\\nLast updated: {datetime.now()}" # Example dynamic data
 
-            logger.info(f"Dashboard {self.dashboard_id}: Successfully built embed using component {component_key}.")
+            # --- MODIFICATION START: Change log level ---
+            logger.debug(f"Dashboard {self.dashboard_id}: Successfully built embed using component {component_key}.")
+            # --- MODIFICATION END ---
             return built_embed
 
         except Exception as e:
@@ -531,10 +533,9 @@ class DashboardController:
             instance_id = component_config.get('instance_id', 'N/A')
             logger.warning(f"[{self.dashboard_id}] Component config (instance_id: {instance_id}) missing 'component_key': {component_config}")
             return
-        # --- END MODIFICATION ---
 
         try:
-            # --- ADDED: Get type from registry using the key ---
+
             if not hasattr(self.component_registry, 'get_type_by_key'):
                  logger.error(f"[{self.dashboard_id}] ComponentRegistry is missing the required 'get_type_by_key' method.")
                  return
@@ -543,19 +544,17 @@ class DashboardController:
                 logger.error(f"[{self.dashboard_id}] Component type not found in registry for key: {component_key}")
                 return
             logger.debug(f"[{self.dashboard_id}] Resolved component key '{component_key}' to type '{component_type}'.")
-            # --- END ADDED SECTION ---
 
-            # --- MODIFIED: Use get_component_class ---
             component_impl_class = self.component_registry.get_component_class(component_type)
-            # --- END MODIFICATION ---
+
 
             if not component_impl_class:
                 logger.error(f"[{self.dashboard_id}] Component implementation class not found in registry for type: {component_type} (from key: {component_key})")
                 return
 
-            # --- ADD GENERIC DIAGNOSTIC LOG ---
-            logger.info(f"[DIAGNOSTIC Controller] Config passed to {component_impl_class.__name__} for key '{component_key}' (Instance: {component_config.get('instance_id')}): {component_config}")
-            # --- END DIAGNOSTIC LOG ---
+
+            logger.debug(f"[DIAGNOSTIC Controller] Config passed to {component_impl_class.__name__} for key '{component_key}' (Instance: {component_config.get('instance_id')}): {component_config}")
+
 
             # Create component instance and add to view
             # Pass the **entire instance config** found earlier, which includes component_key, instance_id, and settings
@@ -649,7 +648,7 @@ class DashboardController:
                 logger.warning(f"Channel {self.channel_id} not found for dashboard {self.dashboard_id}")
                 return None
         except Exception as e:
-            logger.error(f"Error getting channel for dashboard {self.dashboard_id}: {str(e)}")
+            logger.error(f"Error getting channel for dashboard {self.dashboard_id}: {str(e)}", exc_info=True)
             return None
 
     def apply_standard_footer(self, embed):
@@ -725,7 +724,9 @@ class DashboardController:
                  return
 
             await self.update_display(embed=embed, view=view)
-            logger.info(f"Dashboard {self.dashboard_id}: Successfully refreshed and updated display.")
+            # --- MODIFICATION START: Change log level ---
+            logger.debug(f"Dashboard {self.dashboard_id}: Successfully refreshed and updated display.")
+            # --- MODIFICATION END ---
 
         except Exception as e:
             logger.error(f"Dashboard {self.dashboard_id}: Unhandled error during refresh_data: {e}", exc_info=True)

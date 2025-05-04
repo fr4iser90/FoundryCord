@@ -63,7 +63,7 @@ class SpeedTestManager:
             return results
             
         except Exception as e:
-            logger.error(f"Speed test failed: {e}")
+            logger.error(f"Speed test failed: {e}", exc_info=True)
             return {
                 "download": 0.0,
                 "upload": 0.0,
@@ -119,7 +119,7 @@ class SpeedTestManager:
                 duration = (datetime.now() - start_time).total_seconds()
                 return (len(data) * 8 / 1_000_000) / duration  # Mbps
         except Exception as e:
-            logger.error(f"Download test failed: {e}")
+            logger.error(f"Download test failed: {e}", exc_info=True)
             return 0.0
 
     async def _test_upload(self, session: aiohttp.ClientSession) -> float:
@@ -132,7 +132,7 @@ class SpeedTestManager:
             with open(self.cache_file, 'w') as f:
                 json.dump(results, f)
         except Exception as e:
-            logger.error(f"Failed to cache speed test results: {e}")
+            logger.error(f"Failed to cache speed test results: {e}", exc_info=True)
 
     async def _load_results(self) -> Optional[Dict]:
         try:
@@ -148,5 +148,5 @@ class SpeedTestManager:
                     
                 return data
         except Exception as e:
-            logger.error(f"Failed to load cached speed test results: {e}")
+            logger.error(f"Failed to load cached speed test results: {e}", exc_info=True)
             return None

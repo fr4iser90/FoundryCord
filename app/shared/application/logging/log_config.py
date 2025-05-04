@@ -13,11 +13,10 @@ class LoggingConfig:
     # Level configuration
     console_level: str = "INFO"
     file_level: str = "INFO" # Keep for potential future use
-    debug_level: str = "DEBUG"
     
     # Memory Handler configuration
     memory_capacity: int = 200 # How many log records to keep in memory
-    memory_flush_level: int = logging.CRITICAL # Only flush to target on CRITICAL or buffer full
+    memory_flush_level: int = logging.ERROR # Flush on ERROR or higher
     
     # File configuration (keep for potential future use)
     max_bytes: int = 1_000_000
@@ -36,8 +35,11 @@ class LoggingConfig:
         # Clear existing handlers first to prevent duplicates on reconfigure
         root_logger.handlers.clear()
         
-        # Determine the lowest level needed for the root logger
-        min_level = logging.INFO # Start with a sensible default
+        # --- MODIFICATION 1 & 4: Set root logger level directly to DEBUG ---
+        # We set it to DEBUG so that all messages are processed and can reach handlers (like MemoryHandler)
+        # Handlers themselves will filter based on their own configured levels.
+        root_logger.setLevel(logging.DEBUG)
+
         configured_handlers: List[logging.Handler] = [] 
 
         # --- Setup Console Handler (always needed as target for memory) ---
@@ -47,13 +49,13 @@ class LoggingConfig:
         console_level_num = getattr(logging, self.console_level, logging.INFO)
         console_handler.setLevel(console_level_num)
         configured_handlers.append(console_handler)
-        min_level = min(min_level, console_level_num) # Update minimum root level
+        # No need to track min_level anymore
 
         # --- Setup Memory Handler (if requested) ---
         if "memory" in self.handlers:
             memory_handler = logging.handlers.MemoryHandler(
                 capacity=self.memory_capacity,
-                flushLevel=self.memory_flush_level,
+                flushLevel=self.memory_flush_level, # Use the configured flush level (now ERROR)
                 target=console_handler, # Target the console handler
                 flushOnClose=True
             )
@@ -79,9 +81,8 @@ class LoggingConfig:
         for handler in configured_handlers:
             root_logger.addHandler(handler)
             
-        # Set root logger level to the minimum required by its handlers
-        root_logger.setLevel(min_level)
-        logging.info(f"Logging configured with handlers: {[h.__class__.__name__ for h in configured_handlers]}, root level: {logging.getLevelName(min_level)}")
+        # --- MODIFICATION 5: Update final log message ---
+        logging.info(f"Logging configured with handlers: {[h.__class__.__name__ for h in configured_handlers]}, root level: {logging.getLevelName(root_logger.level)}")
         
     def update(self, config: Dict[str, Any]) -> None:
         """Update configuration with provided values"""

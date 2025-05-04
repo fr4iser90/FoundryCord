@@ -23,7 +23,7 @@ class SystemCollector(SystemCollectorInterface):
         
     async def collect_system_metrics(self) -> List[MetricModel]:
         """Converts system data into MetricModel objects"""
-        logger.info("Collecting system metrics...")
+        logger.debug("Collecting system metrics...")
         
         # Get raw data from your existing collector
         data = await collect_system_data()
@@ -203,7 +203,7 @@ class SystemCollector(SystemCollectorInterface):
                 unit="mbps",
                 metric_data={"type": "system", "component": "network"}
             ))
-        logger.info(f"Collected {len(metrics)} system metrics")
+        logger.debug(f"Collected {len(metrics)} system metrics")
         return metrics
 
 

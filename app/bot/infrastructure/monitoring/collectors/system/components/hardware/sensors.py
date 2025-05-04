@@ -31,7 +31,7 @@ async def get_sensor_info() -> Dict[str, Any]:
             
         return sensors
     except Exception as e:
-        logger.error(f"Sensor Info Fehler: {e}")
+        logger.error(f"Sensor info error: {e}", exc_info=True)
         return {
             'sensors': "Nicht verfügbar",
             'error': str(e)

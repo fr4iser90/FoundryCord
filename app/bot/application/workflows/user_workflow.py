@@ -116,7 +116,7 @@ class UserWorkflow(BaseWorkflow):
             await self.sync_guild_to_database(guild)
             
             members = guild.members
-            logger.info(f"Starting sync of {len(members)} members from guild {guild.name}")
+            logger.info(f"[Guild:{guild.id}] Starting sync of {len(members)} members from guild {guild.name}")
             
             synced_count = 0
             skipped_count = 0
@@ -147,19 +147,18 @@ class UserWorkflow(BaseWorkflow):
                          
                      except Exception as e:
                          error_count += 1
-                         logger.error(f"Failed to sync member {member.name}: {str(e)}")
+                         logger.error(f"[Guild:{guild.id}] Failed to sync member {member.name} (ID: {member.id}): {e}", exc_info=True)
                          continue
             
             # Log final statistics
-            logger.info(f"Guild {guild.name} sync complete:")
-            logger.info(f"- Total members processed: {len(members)}")
-            logger.info(f"- Successfully synced: {synced_count}")
-            logger.info(f"- Skipped (bots): {skipped_count}")
-            logger.info(f"- Errors: {error_count}")
+            logger.info(f"[Guild:{guild.id}] Guild {guild.name} sync complete:")
+            logger.info(f"[Guild:{guild.id}] - Total members processed: {len(members)}")
+            logger.info(f"[Guild:{guild.id}] - Successfully synced: {synced_count}")
+            logger.info(f"[Guild:{guild.id}] - Skipped (bots): {skipped_count}")
+            logger.info(f"[Guild:{guild.id}] - Errors: {error_count}")
             
         except Exception as e:
-            logger.error(f"Failed to sync guild members: {str(e)}")
-            logger.error("Full traceback:", exc_info=True)
+            logger.error(f"[Guild:{guild.id}] Failed to sync members for guild {guild.name}: {e}", exc_info=True)
 
     async def cleanup_guild(self, guild_id: str) -> None:
         """Cleanup resources for a specific guild"""

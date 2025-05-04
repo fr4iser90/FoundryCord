@@ -75,7 +75,7 @@ async def get_power_info() -> Dict[str, Any]:
         return power_info
 
     except Exception as e:
-        logger.error(f"Fehler beim Sammeln der Power-Informationen: {e}")
+        logger.error(f"Error collecting power information: {e}", exc_info=True)
         return {
             'power_status': "Fehler beim Abrufen der Power-Informationen"
         }

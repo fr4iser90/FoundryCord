@@ -11,18 +11,17 @@ async def get_cpu_info() -> Dict[str, Any]:
     try:
         cpu_info = {}
         
-        # Detaillierte CPU Info
         try:
             info = cpuinfo.get_cpu_info()
             cpu_info['cpu_model'] = info.get('brand_raw', 'Unbekannt')
             logger.debug(f"CPU Info erfolgreich gelesen: {info.get('brand_raw')}")
         except Exception as e:
-            logger.error(f"Fehler beim Lesen der CPU Info via cpuinfo: {e}")
+            logger.error(f"Error reading CPU info via cpuinfo: {e}", exc_info=True)
             try:
                 cpu_info['cpu_model'] = platform.processor()
                 logger.debug(f"CPU Info via platform erfolgreich gelesen: {platform.processor()}")
             except Exception as e:
-                logger.error(f"Fehler beim Lesen der CPU Info via platform: {e}")
+                logger.error(f"Error reading CPU info via platform: {e}", exc_info=True)
                 cpu_info['cpu_model'] = "Unbekannt"
         
         # Kerne und Threads
@@ -39,7 +38,7 @@ async def get_cpu_info() -> Dict[str, Any]:
         logger.debug(f"Gesammelte CPU Informationen: {cpu_info}")
         return cpu_info
     except Exception as e:
-        logger.error(f"Kritischer Fehler in get_cpu_info: {e}")
+        logger.error(f"Critical error in get_cpu_info: {e}", exc_info=True)
         return {
             'cpu_model': "Nicht verfügbar",
             'cpu_cores': "N/A",

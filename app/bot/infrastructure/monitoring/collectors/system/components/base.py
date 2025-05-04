@@ -17,7 +17,7 @@ DOMAIN = os.getenv('DOMAIN')
 
 async def collect_system_data():
     """Sammelt alle Systemdaten und gibt sie als Dictionary zurück"""
-    logger.info("Sammle Systemdaten...")
+    logger.debug("Collecting system data...")
     
     data = {}
     
@@ -30,7 +30,7 @@ async def collect_system_data():
     data['release'] = platform.release()
     data['domain'] = DOMAIN
     
-    logger.info("Basis-Systemdaten gesammelt, sammle erweiterte Daten...")
+    logger.debug("Base system data collected, collecting extended data...")
     
     # Erweiterte Daten parallel sammeln
     tasks = [
