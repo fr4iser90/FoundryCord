@@ -37,9 +37,8 @@ class GenericButtonComponent(BaseComponent):
             return None
 
         try:
-            # --- ADDED DIAGNOSTIC LOG (KEEP IT) ---
-            logger.info(f"[DIAGNOSTIC Button Build] Building button with self.config: {self.config}")
-            # --- END DIAGNOSTIC LOG ---
+            logger.debug(f"[DIAGNOSTIC Button Build] Building button with self.config: {self.config}") # Changed to debug
+            
 
             # Now self.config should have the correct values merged from base definition
             button_style_str = self.config.get("style", "primary").lower() # Default still useful if base def is broken

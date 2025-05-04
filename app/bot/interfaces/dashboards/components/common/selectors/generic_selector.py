@@ -44,7 +44,7 @@ class GenericSelectorComponent(BaseComponent):
 
         try:
             instance_id = self.config.get('instance_id', 'UNKNOWN_INSTANCE')
-            logger.info(f"[DIAGNOSTIC Selector Build - {instance_id}] Building selector with self.config: {self.config}")
+            logger.debug(f"[DIAGNOSTIC Selector Build - {instance_id}] Building selector with self.config: {self.config}")
 
             options_data = self.config.get("options", [])
             select_options: List[nextcord.SelectOption] = []
@@ -88,7 +88,7 @@ class GenericSelectorComponent(BaseComponent):
                 disabled=not self.is_enabled()
             )
             
-            logger.info(f"[Selector Build - {instance_id}] Successfully built selector.")
+            logger.debug(f"[Selector Build - {instance_id}] Successfully built selector.")
             return select_menu
 
         except Exception as e:
