@@ -1,12 +1,12 @@
 # Guild Designer TODO
 
-## Structure Application & Related Features (See the [Structure Workflow documentation](../../3_developer_guides/04_feature_implementation/guild_designer/structure_workflow.md) and its [detailed TODO list](../../3_developer_guides/04_feature_implementation/guild_designer/structure_workflow_todo.md))
+**Goal:** Implement a web-based visual editor for creating, managing, and applying guild structure templates (channels, categories, permissions) and associated dashboard configurations to Discord guilds.
 
-_(This section covers applying templates to Discord, managing channel follows, dashboards, etc. Details are tracked in the separate linked files.)_
+**Related Documentation (Optional):**
+*   [Structure Workflow documentation](../../3_developer_guides/04_feature_implementation/guild_designer/structure_workflow.md)
+*   [Structure Workflow detailed TODO list](../../3_developer_guides/04_feature_implementation/guild_designer/structure_workflow_todo.md)
 
-## Core Functionality
-
-### Phase 1: Saving Edited Structure & Basic Actions
+## Phase 1: Saving Edited Structure & Basic Actions
 
 *   [x] **Implement Frontend Save Logic:**
     *   [x] **Capture Moves:** Enhanced `move_node.jstree` event handler.
@@ -16,21 +16,39 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [x] **Trigger Save:** Implemented `handleSaveStructureClick` in `designerEvents.js` (PUT).
     *   [x] **Save As New Modal:** Implemented (`saveAsNewModal.js`, `save_as_new_modal.html`).
     *   [x] **Handle Save As New:** Implemented listener for `saveAsNewConfirmed` in `designerEvents.js` (POST).
+    *   **Affected Files:**
+        *   `app/web/static/js/views/guild/designer/designerState.js`
+        *   `app/web/static/js/views/guild/designer/designerUtils.js`
+        *   `app/web/static/js/views/guild/designer/designerEvents.js`
+        *   `app/web/static/js/views/guild/designer/modal/saveAsNewModal.js`
+        *   `app/web/templates/views/guild/designer/index.html`
+        *   `app/web/templates/components/guild/designer/panel/save_as_new_modal.html`
 *   [x] **Implement Frontend Logic for Toolbar "Activate" Button:**
-    *   [x] **Target File:** `designerEvents.js` (listener setup), `index.js`/`designerState.js` (state/button updates).
     *   [x] **UI:** Add/uncomment "Activate" button in `index.html` toolbar.
-    *   [x] **Listener:** Add listener in `initializeDesignerEventListeners` (`designerEvents.js`) calling `handleToolbarActivateClick`.
-    *   [x] **Handler:** Implement `handleToolbarActivateClick` to call `POST /api/v1/templates/guilds/{template_id}/activate`, update state, update toolbar buttons via `updateButtonStates`, dispatch `templateActivated` event.
-    *   [x] **Consideration:** Add confirmation modal (`activateConfirmModal.js`, `activate_confirm_modal.html`).
+    *   [x] **Listener:** Add listener in `initializeDesignerEventListeners` calling `handleToolbarActivateClick`.
+    *   [x] **Handler:** Implement `handleToolbarActivateClick` to call API, update state/toolbar, dispatch event.
+    *   [x] **Confirmation:** Add confirmation modal (`activateConfirmModal.js`, `activate_confirm_modal.html`).
+    *   **Affected Files:**
+        *   `app/web/static/js/views/guild/designer/designerEvents.js`
+        *   `app/web/static/js/views/guild/designer/index.js`
+        *   `app/web/static/js/views/guild/designer/designerState.js`
+        *   `app/web/static/js/views/guild/designer/modal/activateConfirmModal.js`
+        *   `app/web/templates/views/guild/designer/index.html`
+        *   `app/web/templates/components/guild/designer/panel/activate_confirm_modal.html`
 *   [x] **Update Core State/Loading Logic for Activation:**
-    *   [x] **Target File:** `index.js`, `designerState.js`, `designerEvents.js`.
-    *   [x] **Loading:** Update `fetchGuildTemplate` (`index.js`) and `handleTemplateDataLoad` (`designerEvents.js`) to fetch/use `is_active` status and store in `state`.
+    *   [x] **Loading:** Update `fetchGuildTemplate` and `handleTemplateDataLoad` to use `is_active` status.
     *   [x] **State:** Ensure `designerState.js` tracks `currentTemplateIsActive`.
-    *   [x] **Button States:** Implement `updateToolbarButtonStates` in `designerEvents.js` to manage toolbar buttons based on `isDirty` and `currentTemplateIsActive`.
+    *   [x] **Button States:** Implement `updateToolbarButtonStates`.
+    *   **Affected Files:**
+        *   `app/web/static/js/views/guild/designer/index.js`
+        *   `app/web/static/js/views/guild/designer/designerState.js`
+        *   `app/web/static/js/views/guild/designer/designerEvents.js`
 *   [x] **Ensure `templateList.js` Updates on Activation:**
-    *   [x] **Target File:** `templateList.js`.
-    *   [x] **Listener:** Add listener for `templateActivated` event to re-initialize the list with the correct active indicator (via `_renderTemplateList`).
-    *   [x] **Refactor:** Activate button in list now dispatches `requestActivateTemplate`, handled by `designerEvents.js`.
+    *   [x] **Listener:** Add listener for `templateActivated` event to re-initialize list.
+    *   [x] **Refactor:** Activate button dispatches `requestActivateTemplate` handled by `designerEvents.js`.
+    *   **Affected Files:**
+        *   `app/web/static/js/views/guild/designer/widget/templateList.js`
+        *   `app/web/static/js/views/guild/designer/designerEvents.js`
 *   [x] **Create Backend Save API Endpoints:**
     *   [x] **API Route (PUT):** Defined `PUT /api/v1/templates/guilds/{template_id}/structure`.
     *   [x] **API Route (POST):** Defined `POST /api/v1/templates/guilds/from_structure`.
@@ -38,223 +56,249 @@ _(This section covers applying templates to Discord, managing channel follows, d
     *   [x] **Service Logic (PUT):** Implemented `update_template_structure`.
     *   [x] **Service Logic (POST):** Implemented `create_template_from_structure`.
     *   [x] **Database Interaction:** Ensured services use session correctly.
+    *   **Affected Files:**
+        *   `app/web/interfaces/api/rest/v1/guild/designer/guild_template_controller.py`
+        *   `app/web/interfaces/api/rest/v1/guild/designer/guild_template_schemas.py`
+        *   `app/web/application/services/template/template_service.py`
+        *   `app/shared/infrastructure/repositories/guild_templates.py` (Verify path)
 *   [x] **Create Backend Activate API Endpoint:**
-    *   [x] **API Route (POST):** Define `POST /api/v1/templates/guilds/{template_id}/activate` in `guild_template_controller.py`.
-    *   [x] **Service Logic:** Implement `activate_template` in `template_service.py` to set `is_active` flag (ensure only one per guild).
-    *   [x] **Permissions:** Ensure only owner or GUILD ADMIN can activate (Basic check implemented, comments added for future enhancement).
-*   [x] **Refactor Core Bot Workflows/Services:** Implemented session-based repository handling to ensure reliable database interactions for template application and future API calls.
+    *   [x] **API Route (POST):** Define `POST /api/v1/templates/guilds/{template_id}/activate`.
+    *   [x] **Service Logic:** Implement `activate_template` to set `is_active` flag.
+    *   [x] **Permissions:** Basic check implemented.
+    *   **Affected Files:**
+        *   `app/web/interfaces/api/rest/v1/guild/designer/guild_template_controller.py`
+        *   `app/web/application/services/template/template_service.py`
+*   [x] **Refactor Core Bot Workflows/Services:** Implemented session-based repository handling.
+    *   **Affected Files:** (Various bot workflow/service files)
 
-### Phase 2: Applying Template to Discord
+## Phase 2: Applying Template to Discord
 
 *   [x] **Complete Bot `apply_template` Logic:**
-    *   **Target File:** `app/bot/core/workflows/guild_workflow.py` (function `apply_template`).
     *   **Enhancements:**
-        *   [x] Fetch the full template structure (categories, channels, positions, parents, permissions etc.) from the database using the shared Template Repositories. (Implemented repository calls)
-        *   [x] Fetch the *current* guild structure directly from Discord using the Discord service (`app/bot/application/services/discord/discord_query_service.py` created and used).
-        *   [x] Implement comparison logic (diffing) between the template and the live Discord state. (Implemented via loops/checks in apply_template)
-        *   [x] Call Discord API functions (via the service) to:
-            *   [x] Create missing categories/channels based on the template.
-            *   [x] Delete extra categories/channels not in the template (controlled by `template_delete_unmanaged` flag in GuildConfig).
-            *   [x] Update names, topics, types if they differ.
-            *   [ ] **Reorder** categories and channels using Discord's bulk update endpoints if possible, or individual position updates otherwise, to match the template's `position` and parent structure. **(Deferred: To be handled by future Sync Job)**
-        *   [x] Update `discord_channel_id` in DB. (Implemented via session commit)
+        *   [x] Fetch full template structure from DB.
+        *   [x] Fetch current guild structure from Discord.
+        *   [x] Implement comparison logic (diffing).
+        *   [x] Call Discord API functions (Create, Delete, Update names/topics/types).
+        *   [ ] **Reorder** categories/channels (**Deferred: Future Sync Job**).
+        *   [x] Update `discord_channel_id` in DB.
+    *   **Affected Files:**
+        *   `app/bot/core/workflows/guild/guild_workflow.py`
+        *   `app/bot/application/services/discord/discord_query_service.py`
+        *   `app/shared/infrastructure/repositories/guild_templates.py` (Verify path)
 *   [x] **Add "Apply Template" Trigger:**
-    *   [x] **UI Button:** Add an "Apply to Discord" button in `app/web/templates/views/guild/designer/index.html`.
-    *   [x] **UI Setting:** Add "Clean Apply" (`template_delete_unmanaged`) checkbox to control deletion behavior.
-    *   [x] **Frontend Logic:** Add event listener in `app/web/static/js/views/guild/designer/designerEvents.js` for the apply button and checkbox. Added confirmation dialog for apply.
-    *   [x] **Backend API (Apply):** Create a new endpoint `POST /api/v1/guilds/{guild_id}/template/apply` in `app/web/interfaces/api/rest/v1/guild/designer/guild_template_controller.py`.
-    *   [x] **Backend API (Settings):** Create `PUT /guilds/{guild_id}/template/settings` endpoint to save the "Clean Apply" setting.
-    *   [x] **Trigger Workflow:** The apply API endpoint calls the `guild_workflow.apply_template` function.
+    *   [x] **UI Button:** Add "Apply to Discord" button.
+    *   [x] **UI Setting:** Add "Clean Apply" (`template_delete_unmanaged`) checkbox.
+    *   [x] **Frontend Logic:** Add event listener and confirmation dialog.
+    *   [x] **Backend API (Apply):** Create `POST /api/v1/guilds/{guild_id}/template/apply`.
+    *   [x] **Backend API (Settings):** Create `PUT /guilds/{guild_id}/template/settings`.
+    *   [x] **Trigger Workflow:** Apply API calls `guild_workflow.apply_template`.
+    *   **Affected Files:**
+        *   `app/web/templates/views/guild/designer/index.html`
+        *   `app/web/static/js/views/guild/designer/designerEvents.js`
+        *   `app/web/interfaces/api/rest/v1/guild/designer/guild_template_controller.py`
+        *   `app/bot/core/workflows/guild/guild_workflow.py`
 *   [x] **Deletion Safety:**
-    *   [x] **Prevent Initial Snapshot Deletion:** In `templateList.js`, disable the delete button for templates marked as `is_initial_snapshot`.
-    *   [x] **Add Delete Confirmation Modal:**
-        *   [x] Create a Bootstrap modal (`delete_confirmation_modal.html`).
-        *   [x] Create associated JS (`modal/deleteModal.js`) with `initializeDeleteModal` and `openDeleteModal(id, name)` functions.
-        *   [x] Modify `templateList.js` and `sharedTemplateList.js` delete handlers to use events triggering `openDeleteModal`.
-        *   [x] The modal's confirm button triggers the actual DELETE API call.
-    *   [x] **Refresh List after Delete:** Ensure the template list widgets correctly refresh after a successful deletion triggered via the modal.
+    *   [x] **Prevent Initial Snapshot Deletion:** Disable delete button for `is_initial_snapshot` templates.
+    *   [x] **Add Delete Confirmation Modal:** Create modal and JS logic.
+    *   [x] **Modify Delete Handlers:** Use events to trigger modal.
+    *   [x] **Refresh List after Delete:** Ensure list widgets refresh.
+    *   **Affected Files:**
+        *   `app/web/static/js/views/guild/designer/widget/templateList.js`
+        *   `app/web/static/js/views/guild/shared/sharedTemplateList.js` (Verify path)
+        *   `app/web/static/js/views/guild/designer/modal/deleteModal.js`
+        *   `app/web/templates/components/guild/designer/panel/delete_confirmation_modal.html`
 
-### Phase 3: Full Designer Editing Capabilities
+## Phase 3: Full Designer Editing Capabilities
 
-*   [ ] **Elemente hinzufügen (Toolbox):**
-    *   **Files:** `panel/toolbox.js`, `toolbox.html`, `structureTree.js`, `designerEvents.js`, `template_service.py`, `guild_template_controller.py`, Repos.
-    *   [ ] **Toolbox UI:** Draggable Elemente für "Neue Kategorie", "Neuer Textkanal" etc. erstellen.
-    *   [ ] **Tree Drag-and-Drop:** jsTree konfigurieren, um Drop aus Toolbox zu akzeptieren.
-    *   [ ] **Input Modal:** Modal für Namenseingabe bei neuem Element erstellen/verwenden.
-    *   [ ] **Frontend State:** Nach Eingabe: Temporären Knoten zum Baum hinzufügen, Daten in `state.pendingAdditions` speichern, `state.setDirty(true)`.
-    *   [ ] **Backend API (POST):** Neue Endpunkte (`POST /templates/guilds/categories`, `POST /templates/guilds/channels` - *Prüfen ob diese oder `from_structure` gemeint war*) erstellen.
-    *   [ ] **Backend Logik:** Service/Repo-Methoden zum Erstellen neuer DB-Entitäten implementieren.
-    *   [ ] **Frontend Call:** Eigene POST Calls nach Modal-Bestätigung machen das Hinzufügen direkter (statt über "Save Structure").
-    *   [ ] **UI Update:** Nach Erfolg: Temporären Knoten mit echter DB-ID aktualisieren, Listen neu laden.
-*   [ ] **Widget-Synchronisation verbessern:**
-    *   **Files:** Alle Widget-JS-Dateien, `designerEvents.js`, `designerState.js`.
-    *   [ ] **Events definieren:** Klare Events für Aktionen wie `propertyUpdated`, `nodeDeleted`, `nodeAdded` definieren.
-    *   [ ] **Listener implementieren:** Alle relevanten Widgets müssen auf diese Events hören und ihre Anzeige entsprechend aktualisieren (nicht nur auf `loadTemplateData`).
+*   [ ] **Add Elements (Toolbox):**
+    *   [ ] **Toolbox UI:** Create draggable elements for new categories/channels.
+    *   [ ] **Tree Drag-and-Drop:** Configure jsTree to accept drop from Toolbox.
+    *   [ ] **Input Modal:** Create/use modal for naming new elements.
+    *   [ ] **Frontend State:** Add temporary node, track in `state.pendingAdditions`, set dirty.
+    *   [ ] **Backend API (POST):** Define endpoints for adding elements (or use `from_structure`?).
+    *   [ ] **Backend Logic:** Implement service/repo methods to create DB entities.
+    *   [ ] **Frontend Call:** Trigger POST calls directly after modal confirmation.
+    *   [ ] **UI Update:** Update temp node with real ID after success.
+    *   **Affected Files:**
+        *   `app/web/static/js/views/guild/designer/panel/toolbox.js`
+        *   `app/web/templates/components/guild/designer/panel/toolbox.html`
+        *   `app/web/static/js/views/guild/designer/widget/structureTree.js`
+        *   `app/web/static/js/views/guild/designer/designerEvents.js`
+        *   `app/web/application/services/template/template_service.py`
+        *   `app/web/interfaces/api/rest/v1/guild/designer/guild_template_controller.py`
+        *   `app/shared/infrastructure/repositories/guild_templates.py` (Verify path)
+*   [ ] **Improve Widget Synchronization:**
+    *   [ ] **Events:** Define clear events (`propertyUpdated`, `nodeDeleted`, `nodeAdded`).
+    *   [ ] **Listeners:** Ensure all relevant widgets listen and update accordingly.
+    *   **Affected Files:**
+        *   All widget JS files (e.g., `structureTree.js`, `properties.js`, etc.)
+        *   `app/web/static/js/views/guild/designer/designerEvents.js`
+        *   `app/web/static/js/views/guild/designer/designerState.js`
 
-# --- Dashboard Configuration Builder (Designer) ---
+## Phase 4: Dashboard Configuration Builder (Designer)
+
 *   **Goal:** Allow users to create and configure **Saved Dashboard Configurations** using predefined components. Provide a live preview. These configurations are independent saved states.
-*   **Core Principle (Save/Share/Copy):** Analogous to Guild Structure Templates. When a user wants to use a saved/shared configuration (theirs or another user's), a **complete, independent copy** is created in the `dashboard_templates` table and associated with the current user. There is **no persistent link or inheritance** between the original and the copy. Each entry in `dashboard_templates` is a self-contained configuration.
-*   **Editing Scope:** The Builder UI currently edits these **Saved Configurations** directly. Editing of *live, running instances* in Discord channels (which will be tracked in `active_dashboards` and reference a specific Saved Configuration ID) is a **separate, future functionality** requiring its own UI/API.
+*   **Core Principle (Save/Share/Copy):** Creating/using saved/shared configurations creates independent copies in `dashboard_templates`. No persistent link/inheritance.
+*   **Editing Scope:** Builder edits **Saved Configurations** (`dashboard_templates`). Editing live instances (`active_dashboards`) is future functionality.
 *   [ ] **Database & Seeds:**
-    *   [x] `dashboard_templates` table exists for storing Saved Configurations.
+    *   [x] `dashboard_templates` table exists.
     *   [x] `dashboard_component_definitions` table exists and is seeded.
-    *   [ ] Clarify: Table/Schema for Saved Dashboard Configurations (name, description, ID, the `config` JSON) exists as `dashboard_templates`.
+    *   [ ] Clarify: Schema for `dashboard_templates` (name, description, ID, `config` JSON) exists.
+    *   **Affected Files:**
+        *   `app/shared/infrastructure/models/dashboards/dashboard_template.py` (Verify name)
+        *   `app/shared/infrastructure/database/seeds/dashboard_templates/`
 *   [x] **Backend - Component API:**
-    *   **Files:** `DashboardComponentController`, `DashboardComponentService`.
     *   [x] **New Endpoint (`GET /api/v1/dashboards/components`):** Returns available components.
+    *   **Affected Files:**
+        *   `app/web/interfaces/api/rest/v1/dashboards/dashboard_component_controller.py` (Verify name)
+        *   `app/web/application/services/dashboards/dashboard_component_service.py` (Verify name)
 *   [ ] **Backend - Variables API (Optional/Placeholder):**
-    *   **Files:** New controller/service.
     *   [ ] **New Endpoint (`GET /api/v1/dashboards/variables`):** Returns available template variables.
+    *   **Affected Files:** (New controller/service needed)
 *   [x] **Backend - Saved Dashboard Configuration Management API:**
-    *   **Files:** `DashboardConfigurationController`, `DashboardConfigurationService`, `DashboardConfigurationRepositoryImpl`.
-    *   **API Naming:** Endpoint prefix is `/configurations`. This manages the **Saved Configurations** stored in `dashboard_templates`.
-    *   [x] **API Design:** Define CRUD endpoints for Saved Dashboard Configurations:
-        *   [x] `POST /api/v1/dashboards/configurations`: Creates a new Saved Configuration.
-        *   [x] `GET /api/v1/dashboards/configurations`: Lists available Saved Configurations.
-        *   [x] `GET /api/v1/dashboards/configurations/{config_id}`: Gets details of a specific Saved Configuration.
-        *   [x] `PUT /api/v1/dashboards/configurations/{config_id}`: Updates a specific Saved Configuration.
-        *   [x] `DELETE /api/v1/dashboards/configurations/{config_id}`: Deletes a Saved Configuration.
-    *   [x] **Service/Repo:** Implement logic for these endpoints using `DashboardConfigurationEntity` (which maps to `dashboard_templates`).
+    *   **API Naming:** Endpoint prefix `/configurations` manages `dashboard_templates`.
+    *   [x] **API Design:** Define CRUD endpoints (`POST`, `GET` list, `GET` single, `PUT`, `DELETE`).
+    *   [x] **Service/Repo:** Implement logic using `DashboardConfigurationEntity`.
+    *   **Affected Files:**
+        *   `app/web/interfaces/api/rest/v1/dashboards/dashboard_configuration_controller.py` (Verify name)
+        *   `app/web/application/services/dashboards/dashboard_configuration_service.py` (Verify name)
+        *   `app/shared/infrastructure/repositories/dashboards/dashboard_configuration_repository.py` (Verify name)
+        *   `app/shared/infrastructure/models/dashboards/dashboard_template.py` (Verify name/entity)
 *   [ ] **Frontend - Toolbox Refactoring:**
-    *   **Files:** `panel/toolbox.js`, `toolbox.html`.
-    *   [ ] **Implement Tabs:** Update HTML and JS for tabs ("Structure", "Dashboard Components", "Dashboards").
+    *   [ ] **Implement Tabs:** Update HTML/JS for tabs ("Structure", "Dashboard Components", "Dashboards").
     *   [x] **Fetch Components:** Load component definitions (`GET /api/v1/dashboards/components`).
-    *   [x] **Display Components:** Show components in "Dashboard Components" tab as draggable items.
-    *   [ ] **Define Shared Cache:** Create mechanism (e.g., `designerComponentCache.js` or state) for component definitions.
-    *   [ ] **Populate Cache:** Modify `toolbox.js` to store fetched definitions in cache.
+    *   [x] **Display Components:** Show components in tab as draggable items.
+    *   [ ] **Define Shared Cache:** Create mechanism (e.g., `designerComponentCache.js`).
+    *   [ ] **Populate Cache:** Store fetched definitions in cache.
     *   [ ] **"Dashboards" Tab:**
-        *   [x] Add "New Dashboard Config" item with a "+"-Button.
-        *   [x] Add listener to "+": Calls `POST /api/v1/dashboards/configurations`, gets new ID, dispatches `dashboardConfigCreated` event with the new ID.
-        *   [ ] **Fetch Saved Configurations:** Call `GET /api/v1/dashboards/configurations`.
-        *   [ ] **Display Saved Configurations:** Render a clickable list of **Saved Configurations** (e.g., "Default Welcome Dashboard"). Store `config_id` on items.
-        *   [ ] **Add Click Listener:** Attach listener to saved configuration list items.
-        *   [ ] **Handle Click:** Implement handler to fetch full config (`GET /api/v1/dashboards/configurations/{id}`) and dispatch `dashboardConfigLoaded` event.
+        *   [x] Add "New Dashboard Config" item/button.
+        *   [x] Add listener to button: Calls `POST .../configurations`, gets ID, dispatches `dashboardConfigCreated`.
+        *   [ ] **Fetch Saved Configurations:** Call `GET .../configurations`.
+        *   [ ] **Display Saved Configurations:** Render clickable list.
+        *   [ ] **Add Click Listener:** Attach listener to list items.
+        *   [ ] **Handle Click:** Fetch full config (`GET .../configurations/{id}`) and dispatch `dashboardConfigLoaded`.
+    *   **Affected Files:**
+        *   `app/web/static/js/views/guild/designer/panel/toolbox.js`
+        *   `app/web/templates/components/guild/designer/panel/toolbox.html`
+        *   `app/web/static/js/views/guild/designer/designerComponentCache.js` (New or state)
 *   [ ] **Frontend - Dashboard Editor Widget (Builder):**
-    *   **Files:** `widget/dashboardEditor.js`, `designerLayout.js`, `designerWidgets.js`.
-    *   [x] **Define Widget:** `dashboard-editor` defined in `designerLayout.js` and default layout.
-    *   [x] **Register Widget:** Registered in `designerWidgets.js`.
+    *   [x] **Define Widget:** `dashboard-editor` defined.
+    *   [x] **Register Widget:** Registered.
     *   [ ] **Update Widget Logic:**
-        *   [ ] **Access Cache on Drop:** Update `drop` handler to look up definition from cache using `componentKey`.
+        *   [ ] **Access Cache on Drop:** Look up definition from cache.
         *   [x] **Add `currentEditingDashboardId` state.**
-        *   [x] **Listen for `dashboardConfigLoaded` event:** Update `currentEditingDashboardId` (which refers to a **Saved Configuration** ID from `dashboard_templates`).
-        *   [ ] **Handle Drop:** Refine logic to store full component instance data (using definition from cache) in `this.components` (part of the **Saved Configuration** being edited).
-        *   [ ] **Trigger Save:** Remove automatic save on drop. Save should only happen via Config Widget button.
-    *   [ ] **UI Layout:**
-        *   [ ] Design the builder interface (drop area/canvas).
-        *   [x] Implement drag-and-drop receiving for **Components** from Toolbox.
-    *   [ ] **Component Handling:**
-        *   [ ] When a component is dropped/added: Render its configurable fields based on its `definition`. Requires `currentEditingDashboardId` to be set.
-        *   [ ] Allow reordering/removing components within the editor.
-        *   [ ] Persist component arrangement/data to the `config` JSON.
-    *   [ ] **Variable Integration:**
-        *   [ ] Fetch available variables.
-        *   [ ] Provide UI to insert variables into component fields.
-    *   [ ] **Config Generation:** On save, generate the complex `config` JSON.
-    *   [ ] **Save/Load Logic:**
-        *   [ ] Implement `loadDashboardConfig(configId)`: Fetch config data (`GET .../configurations/{config_id}`), parse `config`, populate editor.
-        *   [ ] Implement `saveDashboardConfig()`: Generate `config`, call `PUT .../configurations/{currentEditingDashboardId}`.
+        *   [x] **Listen for `dashboardConfigLoaded` event:** Update `currentEditingDashboardId`.
+        *   [ ] **Handle Drop:** Store full component instance data in `this.components`.
+        *   [ ] **Trigger Save:** Remove automatic save; only via Config Widget button.
+    *   [ ] **UI Layout:** Design builder interface.
+    *   [x] Implement drag-and-drop receiving.
+    *   [ ] **Component Handling:** Render fields, allow reorder/remove, persist arrangement.
+    *   [ ] **Variable Integration:** Fetch variables, provide UI.
+    *   [ ] **Config Generation:** Generate `config` JSON on save.
+    *   [ ] **Save/Load Logic:** Implement `loadDashboardConfig(configId)` and `saveDashboardConfig()`.
+    *   **Affected Files:**
+        *   `app/web/static/js/views/guild/designer/widget/dashboardEditor.js`
+        *   `app/web/static/js/views/guild/designer/designerLayout.js`
+        *   `app/web/static/js/views/guild/designer/designerWidgets.js`
+        *   `app/web/static/js/views/guild/designer/designerState.js`
+        *   `app/web/static/js/views/guild/designer/designerEvents.js`
 *   [ ] **Frontend - Dashboard Configuration Widget (Metadata Editor):**
-    *   **Files:** New `widget/dashboardConfiguration.js`, `designerLayout.js`, `designerWidgets.js`.
-    *   [x] **Define Widget:** Add `dashboard-configuration` widget definition to `designerLayout.js` and default layout.
-    *   [x] **Register Widget:** Add to `designerWidgets.js`.
-    *   [ ] **UI:** Create inputs for "Name", "Description", etc. of the *currently loaded* **Saved Configuration**. Add a "Save Configuration" button.
+    *   [x] **Define Widget:** `dashboard-configuration` defined.
+    *   [x] **Register Widget:** Registered.
+    *   [ ] **UI:** Create inputs for Name, Description, etc. Add "Save Configuration" button.
     *   [x] **Logic:**
-        *   [x] Listen for `dashboardConfigLoaded` event: Update internal ID, load/display metadata (`GET .../configurations/{id}`).
-        *   [ ] Implement Save: On button click, get values and current editor component state, call `PUT .../configurations/{id}` with full payload (name, description, config JSON).
+        *   [x] Listen for `dashboardConfigLoaded` event: Update ID, load/display metadata.
+        *   [ ] Implement Save: On button click, get values, call `PUT .../configurations/{id}`.
+    *   **Affected Files:**
+        *   `app/web/static/js/views/guild/designer/widget/dashboardConfiguration.js` (New or existing?)
+        *   `app/web/static/js/views/guild/designer/designerLayout.js`
+        *   `app/web/static/js/views/guild/designer/designerWidgets.js`
+        *   `app/web/static/js/views/guild/designer/designerState.js`
+        *   `app/web/static/js/views/guild/designer/designerEvents.js`
 *   [ ] **Frontend - Dashboard Preview Widget:**
-    *   **Files:** `widget/dashboardPreview.js`, `designerLayout.js`, `designerWidgets.js`.
-    *   [x] **Define Widget:** `dashboard-preview` defined in `designerLayout.js` and default layout.
-    *   [x] **Register Widget:** Registered in `designerWidgets.js`.
+    *   [x] **Define Widget:** `dashboard-preview` defined.
+    *   [x] **Register Widget:** Registered.
     *   [x] **Update Logic:**
-        *   [x] Listen for `dashboardConfigLoaded` event: Update internal ID (of the **Saved Configuration**), call `loadPreview(id)`.
+        *   [x] Listen for `dashboardConfigLoaded` event: Update ID, call `loadPreview(id)`.
     *   [ ] **Rendering Logic:**
-        *   [ ] Implement `loadPreview(configId)`: Fetch config data (`GET .../configurations/{config_id}`), parse `config`.
-        *   [ ] **Render:** Create HTML to *approximate* Discord look based on `config` of the **Saved Configuration**. Replace variables with placeholders.
+        *   [ ] Implement `loadPreview(configId)`: Fetch config data, parse `config`.
+        *   [ ] **Render:** Create HTML to approximate Discord look based on `config`.
+    *   **Affected Files:**
+        *   `app/web/static/js/views/guild/designer/widget/dashboardPreview.js`
+        *   `app/web/static/js/views/guild/designer/designerLayout.js`
+        *   `app/web/static/js/views/guild/designer/designerWidgets.js`
+        *   `app/web/static/js/views/guild/designer/designerState.js`
+        *   `app/web/static/js/views/guild/designer/designerEvents.js`
 *   [ ] **Frontend - Inter-Widget Communication:**
-    *   **Files:** `designerState.js` / `designerEvents.js`, all relevant widgets.
-    *   [x] **Define State/Events:** Mechanism exists for `dashboardConfigLoaded`, `dashboardConfigCreated` (referring to **Saved Configurations**).
-    *   [x] **Implement Listeners/Dispatchers:** Ensure Toolbox "+", Editor, Config, and Preview react appropriately.
-    *   [ ] **Toolbox Dispatcher:** Ensure Toolbox correctly dispatches `dashboardConfigLoaded` when a **Saved Configuration** is clicked.
-
+    *   [x] **Define State/Events:** Mechanism exists for `dashboardConfigLoaded`, `dashboardConfigCreated`.
+    *   [x] **Implement Listeners/Dispatchers:** Ensure Toolbox, Editor, Config, Preview react.
+    *   [ ] **Toolbox Dispatcher:** Ensure Toolbox correctly dispatches `dashboardConfigLoaded`.
+    *   **Affected Files:**
+        *   `app/web/static/js/views/guild/designer/designerState.js`
+        *   `app/web/static/js/views/guild/designer/designerEvents.js`
+        *   All relevant widget JS files.
 *   [ ] **Save/Share/Copy Functionality (Backend):**
-    *   [ ] **New Service/Endpoints:** Create dedicated service/API endpoints (e.g., `/dashboards/configurations/{id}/share`, `/dashboards/configurations/{id}/copy`) analogous to `TemplateSharingService`.
-    *   [ ] **DB Changes:** Add `is_shared`, `creator_user_id` flags/columns to `dashboard_templates` table.
-    *   [ ] **Copy Logic:** Implement deep copy mechanism for dashboard configurations (creating a new row in `dashboard_templates`) within the service.
-
+    *   [ ] **New Service/Endpoints:** Create dedicated service/API endpoints (e.g., `/share`, `/copy`).
+    *   [ ] **DB Changes:** Add `is_shared`, `creator_user_id` flags/columns to `dashboard_templates`.
+    *   [ ] **Copy Logic:** Implement deep copy mechanism for configurations.
+    *   **Affected Files:** (New Service), `app/shared/infrastructure/models/dashboards/dashboard_template.py`
 *   [ ] **Channel Assignment & Live Instances (Separate Task / Future):**
-    *   [ ] Design UI/UX for assigning a **Saved Configuration** ID (from `dashboard_templates`) to a channel.
-    *   [ ] Implement Bot logic to:
-        *   [ ] Create an entry in `active_dashboards` when assigned.
-        *   [ ] Store the ID of the chosen **Saved Configuration** (from `dashboard_templates`) in `active_dashboards.dashboard_template_id`.
-        *   [ ] Render/Manage the live dashboard based on the referenced **Saved Configuration** in `dashboard_templates` (potentially using `config_override` in `active_dashboards` for future runtime changes, but NOT copying the whole config on activation).
-    *   [ ] Design UI/UX and API for editing **live instances** directly (modifying `active_dashboards` records, potentially its `config_override`).
+    *   [ ] Design UI/UX for assigning a Saved Configuration ID to a channel.
+    *   [ ] Implement Bot logic (create `active_dashboards` entry, store template ID, render/manage).
+    *   [ ] Design UI/UX and API for editing live instances.
+    *   **Affected Files:** (New Bot logic, new UI components, new API endpoints)
 
-# --- Guild Structure Template - Channel Dashboard Association ---
+## Phase 5: Guild Structure Template - Channel Dashboard Association
+
 *   **Workflow:** Snapshotting Dashboard Configs into Channel Templates.
 *   **Goal:** When associating a dashboard with a channel in the Guild Structure Designer, copy the selected master Dashboard Template's `config` JSON and store it directly within the `guild_template_channels` record for that channel. The live bot will use this copied config.
-*   **Files:** `003_create_guild_template_tables.py` (for downgrade reference), new migration file, `guild_template_channels.py` (model), `template_service.py`, `guild_template_controller.py`, `properties.js`, `designerState.js`, `designerEvents.js`, `guild_workflow.py` (or relevant bot apply logic).
 *   **Steps:**
-    1.  **Database Schema Change:**
-        *   [x] Modify migration `003` to replace `dashboard_types` with `dashboard_config_snapshot` (JSON, nullable) in `guild_template_channels`.
-        *   [x] Update the SQLAlchemy model `GuildTemplateChannelEntity`.
-    2.  **Backend API & Services:**
-        *   [x] Update `PropertyChangeValue` and `ChannelResponseSchema` in `guild_template_schemas.py`.
-        *   [x] Update `structure_service.py` to save the `dashboard_config_snapshot` JSON.
-        *   [x] Update `query_service.py` to return the `dashboard_config_snapshot` JSON.
-        *   [x] Update `structure_controller.py` to correctly handle the snapshot field in request/response.
-    3.  **Frontend (Properties Panel - `properties.js`):**
-        *   **Goal:** Keep existing input field (`propDashboardAddInput`) and display area (`propDashboardSelectedDisplay`). Modify functionality to find template by name, copy its config as a snapshot, and display/manage that single snapshot.
-        *   [x] **Modify `handleDashboardAddInputKeydown`:**
-            *   On Enter, get the template `name` entered by the user.
-            *   Fetch list of all available master templates (`GET /api/v1/dashboards/configurations`). (TODO: Consider backend filtering by name later).
-            *   Search the fetched list for a template matching the entered `name`.
-            *   If found, extract its `config` JSON (the snapshot).
-            *   If not found, show error toast and return.
-            *   Store the **copied `config` JSON** in state using `state.addPendingPropertyChange(..., 'dashboard_config_snapshot', copiedConfig)`.
-            *   Update the display area (call modified `renderDashboardBadges` or a new function) to show the assigned snapshot (e.g., the name of the template copied from).
-            *   Clear the input field. Set state dirty.
-        *   [x] **Modify Display Logic (e.g., `renderDashboardBadges`):**
-            *   Change the function to accept the `dashboard_config_snapshot` (object or null) from the state, instead of an array of types.
-            *   If a snapshot exists, display its origin template name (passed as argument or extracted if possible) as a single badge/item with a remove ('x') button.
-            *   If snapshot is null, display "None".
-        *   [x] **Modify Remove Logic (e.g., `handleRemoveDashboardType`):**
-            *   Rename function (e.g., `handleRemoveDashboardSnapshot`).
-            *   On clicking the 'x' button for the displayed snapshot, update the state using `state.addPendingPropertyChange(..., 'dashboard_config_snapshot', null)`.
-            *   Update the display area. Set state dirty.
-        *   [x] **Update `populatePanel` / `resetPanel`:** Ensure these functions correctly read the `dashboard_config_snapshot` from the channel data and update/clear the display area accordingly.
-    4.  **Bot Logic (Apply Template):**
-        *   [x] Modify the bot workflow (`guild_workflow.py` or relevant apply logic).
-        *   [x] When applying the structure template, read the `dashboard_config_snapshot` JSON directly from the `guild_template_channels` record.
-        *   [x] Use *this copied/stored JSON* to create the dashboard message in the live Discord channel.
+    1.  [x] **Database Schema Change:** Modify migration `003`, update model `GuildTemplateChannelEntity`.
+        *   **Affected Files:**
+            *   `app/shared/infrastructure/database/migrations/versions/003_...py`
+            *   `app/shared/infrastructure/models/guild_templates/guild_template_channels.py`
+    2.  [x] **Backend API & Services:** Update schemas, services (`structure_service`, `query_service`), controller (`structure_controller`).
+        *   **Affected Files:**
+            *   `app/web/interfaces/api/rest/v1/guild/designer/guild_template_schemas.py`
+            *   `app/web/application/services/template/structure_service.py` (Verify name)
+            *   `app/web/application/services/template/query_service.py` (Verify name)
+            *   `app/web/interfaces/api/rest/v1/guild/designer/structure_controller.py` (Verify name)
+    3.  [x] **Frontend (Properties Panel - `properties.js`):**
+        *   [x] **Modify `handleDashboardAddInputKeydown`:** Fetch templates, find by name, copy config, store snapshot in state, update display.
+        *   [x] **Modify Display Logic (`renderDashboardBadges`):** Accept snapshot, display name/badge with remove button.
+        *   [x] **Modify Remove Logic (`handleRemoveDashboardSnapshot`):** Update state to `null`.
+        *   [x] **Update `populatePanel` / `resetPanel`:** Correctly read/clear snapshot.
+        *   **Affected Files:**
+            *   `app/web/static/js/views/guild/designer/widget/properties.js`
+            *   `app/web/static/js/views/guild/designer/designerState.js`
+            *   `app/web/static/js/views/guild/designer/designerEvents.js`
+    4.  [x] **Bot Logic (Apply Template):** Modify workflow to read snapshot JSON from `guild_template_channels` and use it.
+        *   **Affected Files:**
+            *   `app/bot/core/workflows/guild/guild_workflow.py` (or relevant bot apply logic)
 
-# --- Previous/Other Sections ---
-
-### Phase 4: Template Synchronization Job (Future)
+## Phase 6: Future Enhancements
 
 *   [ ] **Implement Scheduled Template Sync Job:**
-    *   [ ] **Scheduler Setup:** Bot-seitigen Scheduler einrichten (z.B. `apscheduler` oder integrierte `tasks.loop`).
-    *   [ ] **Sync Workflow/Service:** Neuen Workflow/Service für den Sync-Job erstellen.
-    *   [ ] **Core Sync Logic:**
-        *   [ ] Guild-spezifische Ausführung für alle "approved" Guilds.
-        *   [ ] Aktives Template für die Guild laden.
-        *   [ ] Live-Discord-Struktur holen.
-        *   [ ] Vergleich (Diff) durchführen.
-        *   [ ] Erstellen/Löschen/Updaten von Elementen auf Discord basierend auf dem Template (Teile von `apply_template` wiederverwenden).
-        *   [ ] **Neuordnung implementieren:** Verwendung von `edit_channel_positions` basierend auf Template-Reihenfolge.
-    *   [ ] **Reverse Sync (Flag-Based):**
-        *   [ ] Kanäle/Kategorien auf Discord erkennen, die *nicht* im Template sind.
-        *   [ ] Auf spezielles Flag prüfen (z.B. `#please_add` in Name/Topic).
-        *   [ ] Wenn Flag vorhanden: Entsprechenden Eintrag im DB-Template erstellen (Name, Typ, Positionierung ableiten).
-        *   [ ] Flag auf Discord entfernen nach erfolgreicher Übernahme.
-        *   [ ] **Konfiguration:** Job-Intervall und Flag-Marker konfigurierbar machen.
+    *   [ ] **Scheduler Setup:** Set up bot-side scheduler.
+    *   [ ] **Sync Workflow/Service:** Create new workflow/service.
+    *   [ ] **Core Sync Logic:** Implement guild-specific execution, fetch template/live structure, diff, create/delete/update, implement reordering.
+    *   [ ] **Reverse Sync (Flag-Based):** Detect unmanaged elements, check flag, create in template, remove flag.
+    *   [ ] **Configuration:** Make interval/flags configurable.
+    *   **Affected Files:** (New scheduler config, new workflow/service file)
+*   [ ] **UI/UX Enhancements (Lower Priority):**
+    *   [x] **Improve Visual Accuracy:** Adjust sorting for uncategorized channels.
+        *   **Affected Files:**
+            *   `app/web/static/js/views/guild/designer/widget/structureTree.js`
+            *   `app/web/static/js/views/guild/designer/widget/channelsList.js`
+    *   [ ] **Toolbox Panel:** Implement drag/drop for new elements, integrate with Save.
+        *   **Affected Files:**
+            *   `app/web/static/js/views/guild/designer/panel/toolbox.js`
+            *   `app/web/static/js/views/guild/designer/widget/structureTree.js`
+    *   [ ] **Refine Share Modal:** (Further details needed)
+        *   **Affected Files:** `app/web/templates/views/guild/designer/index.html`
 
-## UI/UX Enhancements (Lower Priority)
+## General Notes / Future Considerations
 
-*   [x] **Improve Visual Accuracy:**
-    *   **Files:** `app/web/static/js/views/guild/designer/widget/structureTree.js`, `app/web/static/js/views/guild/designer/widget/channelsList.js`.
-    *   **Task:** Adjust sorting/data generation to place uncategorized channels visually at the top.
-*   [ ] **Toolbox Panel:**
-    *   **Files:** `app/web/static/js/views/guild/designer/panel/toolbox.js`, `app/web/static/js/views/guild/designer/widget/structureTree.js`.
-    *   **Task:** Implement UI for dragging new elements. Integrate adding new elements with the "Save Structure" API call (Phase 1).
-*   [ ] **Refine Share Modal:**
-    *   **Files:** `app/web/templates/views/guild/designer/index.html`, `
+*   Items previously under "--- Previous/Other Sections ---" have been integrated or are covered by future phases.
+*   Ensure consistent use of `guild_template_id` vs. `dashboard_configuration_id` where appropriate.
+*   Review permissions checks across all new API endpoints.
