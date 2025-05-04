@@ -146,14 +146,14 @@ class BotControlService:
         logger.info("Received get_config command (Not Implemented)")
         return {"error": "Not Implemented"} # Placeholder
 
-    async def join_server(self, guild_id: str):
-        # Logic to make the bot join a server (likely needs admin privileges)
-        logger.info(f"Received join_server command for {guild_id} (Not Implemented)")
+    async def join_guild(self, guild_id: str):
+        # Logic to make the bot join a guild (likely needs admin privileges)
+        logger.info(f"Received join_guild command for {guild_id} (Not Implemented)")
         return {"error": "Not Implemented"} # Placeholder
 
-    async def leave_server(self, guild_id: str):
-        # Logic to make the bot leave a server
-        logger.info(f"Received leave_server command for {guild_id}")
+    async def leave_guild(self, guild_id: str):
+        # Logic to make the bot leave a guild
+        logger.info(f"Received leave_guild command for {guild_id}")
         try:
             guild = self.bot.get_guild(int(guild_id))
             if guild:

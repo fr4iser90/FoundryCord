@@ -1,7 +1,7 @@
 """Constants related to app_roles and permissions in the system"""
 
 # Server role configuration
-SERVER_ROLES = {
+GUILD_ROLES = {
     "OWNER": ["Bot Owner"],  # Full, unrestricted access
     "ADMIN": ["Admin"],  # High-level control, but some restrictions
     "MODERATOR": ["Moderator"],  # Moderates content, but limited system access

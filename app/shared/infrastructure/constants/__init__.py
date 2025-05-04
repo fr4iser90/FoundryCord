@@ -15,7 +15,7 @@ from .user_constants import (
 
 
 from .role_constants import (
-    SERVER_ROLES,
+    GUILD_ROLES,
     ROLE_PRIORITIES,
     DEFAULT_USER_GROUPS
 )
@@ -31,7 +31,7 @@ __all__ = [
     
     
     # Role constants
-    'SERVER_ROLES',
+    'GUILD_ROLES',
     'ROLE_PRIORITIES',
     'DEFAULT_USER_GROUPS'
 ]
