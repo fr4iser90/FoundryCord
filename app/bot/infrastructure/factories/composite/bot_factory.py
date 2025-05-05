@@ -3,7 +3,7 @@ import importlib
 from collections.abc import Awaitable
 from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
 from app.bot.infrastructure.factories.service_factory import ServiceFactory
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 
 from app.bot.infrastructure.config.registries.component_registry import ComponentRegistry
 from app.bot.infrastructure.factories.component_factory import ComponentFactory

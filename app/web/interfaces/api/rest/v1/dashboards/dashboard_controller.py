@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from typing import List
 
 from app.web.interfaces.api.rest.v1.base_controller import BaseController
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 # Import necessary DB components
 from app.shared.infrastructure.database.session.context import session_context
 from app.shared.infrastructure.repositories.dashboards.dashboard_component_definition_repository_impl import DashboardComponentDefinitionRepositoryImpl

@@ -5,7 +5,7 @@ from fastapi import Request, HTTPException, status
 from app.shared.infrastructure.models.auth import AppUserEntity
 from app.shared.infrastructure.models.discord import GuildEntity, DiscordGuildUserEntity
 from app.shared.infrastructure.database.session.context import session_context
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload # If needed later
 from typing import Optional

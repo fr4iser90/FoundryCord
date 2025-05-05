@@ -5,7 +5,7 @@ Acts as a Facade, delegating calls to more specific template services.
 from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 # Import Schemas (needed for type hints in method signatures)
 from app.web.interfaces.api.rest.v1.schemas.guild_template_schemas import GuildStructureUpdatePayload, GuildStructureTemplateCreateFromStructure
 # Import User Entity (needed for type hints)

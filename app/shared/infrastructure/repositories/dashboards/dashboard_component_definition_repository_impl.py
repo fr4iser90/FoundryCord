@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.shared.domain.repositories.dashboards.dashboard_component_definition_repository import DashboardComponentDefinitionRepository
 from app.shared.infrastructure.models.dashboards import DashboardComponentDefinitionEntity
 from app.shared.infrastructure.repositories.base_repository_impl import BaseRepositoryImpl
-from app.shared.interface.logging.api import get_db_logger
+from app.shared.interfaces.logging.api import get_db_logger
 
 logger = get_db_logger()
 

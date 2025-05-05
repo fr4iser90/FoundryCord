@@ -2,7 +2,7 @@ from cryptography.fernet import Fernet
 from datetime import datetime, timedelta
 import base64
 import os
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 logger = get_bot_logger()
 from app.shared.infrastructure.repositories.auth.key_repository_impl import KeyRepositoryImpl
 from app.shared.infrastructure.database.session.factory import get_session

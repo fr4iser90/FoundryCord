@@ -16,7 +16,7 @@ from app.web.interfaces.api.rest.v1.schemas.guild_template_schemas import (
     GuildStructureTemplateInfo      # For copy_shared response mapping potentially
 )
 from app.shared.domain.exceptions import TemplateNotFound, PermissionDenied, InvalidOperation, ConfigurationNotFound
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 
 logger = get_web_logger()
 

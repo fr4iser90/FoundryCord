@@ -2,7 +2,7 @@
 from typing import Dict, Any, List, Optional
 import asyncio
 
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 logger = get_bot_logger()
 
 from .base_workflow import BaseWorkflow

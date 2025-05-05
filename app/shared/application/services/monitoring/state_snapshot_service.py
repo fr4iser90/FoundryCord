@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional, List
 
 # Assuming the model is defined here relative to the shared infrastructure
 from app.shared.infrastructure.models.monitoring.state_snapshot import StateSnapshot
-from app.shared.interface.logging.api import get_shared_logger
+from app.shared.interfaces.logging.api import get_shared_logger
 import uuid
 from datetime import datetime, timezone
 

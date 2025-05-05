@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Optional
 import speedtest
 from functools import partial
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 logger = get_bot_logger()
 
 SKIP_SPEED_TEST = True

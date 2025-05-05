@@ -1,6 +1,6 @@
 from typing import Type, TypeVar, Generic
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.shared.interface.logging.api import get_db_logger
+from app.shared.interfaces.logging.api import get_db_logger
 
 # Define a type variable for the SQLAlchemy model entity
 EntityType = TypeVar('EntityType')

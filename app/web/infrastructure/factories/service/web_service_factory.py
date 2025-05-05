@@ -2,7 +2,7 @@ from app.web.infrastructure.factories.base.base_factory import BaseFactory
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
 from app.shared.domain.auth.services import AuthenticationService, AuthorizationService
 from app.web.application.services.guild.guild_service import GuildService
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 
 logger = get_web_logger()
 

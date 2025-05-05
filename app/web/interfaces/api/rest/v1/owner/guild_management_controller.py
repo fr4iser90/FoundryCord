@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from app.shared.infrastructure.models.auth import AppUserEntity, AppRoleEntity
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 from app.shared.infrastructure.database.session import session_context
 from app.shared.infrastructure.models.discord.entities import GuildEntity
 from sqlalchemy import select

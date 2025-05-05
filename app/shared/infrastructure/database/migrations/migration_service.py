@@ -5,7 +5,7 @@ import os
 import subprocess
 import traceback
 from pathlib import Path
-from app.shared.interface.logging.api import get_db_logger
+from app.shared.interfaces.logging.api import get_db_logger
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
 

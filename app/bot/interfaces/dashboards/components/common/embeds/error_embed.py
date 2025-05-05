@@ -3,7 +3,7 @@
 import nextcord
 from typing import Optional, Dict, Any, ClassVar
 
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from app.bot.interfaces.dashboards.components.base_component import BaseComponent
 
 logger = get_bot_logger()

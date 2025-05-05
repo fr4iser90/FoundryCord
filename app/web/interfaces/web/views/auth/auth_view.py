@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from app.web.interfaces.web.views.base_view import BaseView
 from app.shared.infrastructure.models.auth import AppUserEntity, AppRoleEntity
 from app.shared.domain.auth.services import AuthenticationService, AuthorizationService
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 from app.shared.infrastructure.database.session import session_context
 from app.shared.infrastructure.models.discord import GuildEntity
 from sqlalchemy import select

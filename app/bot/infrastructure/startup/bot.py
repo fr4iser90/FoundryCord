@@ -5,7 +5,7 @@ import sys
 from typing import Dict, Any, Optional, List, TYPE_CHECKING
 
 # Import necessary components used within FoundryCord
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from .setup_hooks import (
     setup_core_components, register_workflows, 
     setup_service_factory_and_register_core_services, register_default_components, 

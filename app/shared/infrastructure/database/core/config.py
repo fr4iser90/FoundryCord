@@ -1,6 +1,6 @@
 """Database configuration."""
 import os
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
 import asyncio

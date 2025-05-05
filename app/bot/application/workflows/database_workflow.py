@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot.application.workflows.base_workflow import BaseWorkflow, WorkflowStatus
 from app.shared.infrastructure.database.core.connection import DatabaseConnection
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from app.shared.infrastructure.database.session.context import session_context  # Add this import
 
 logger = get_bot_logger()

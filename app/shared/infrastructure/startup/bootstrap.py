@@ -1,6 +1,6 @@
 """Application bootstrap module."""
 import asyncio
-from app.shared.interface.logging.api import get_db_logger
+from app.shared.interfaces.logging.api import get_db_logger
 from app.shared.infrastructure.database.service import DatabaseService
 from app.shared.infrastructure.security import initialize_security, get_security_bootstrapper
 from app.shared.infrastructure.database.migrations.migration_service import MigrationService

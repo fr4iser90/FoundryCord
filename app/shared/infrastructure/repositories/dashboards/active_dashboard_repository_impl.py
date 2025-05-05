@@ -11,7 +11,7 @@ from sqlalchemy.sql import null
 # from app.shared.domain.repositories.dashboards.active_dashboard_repository import ActiveDashboardRepository
 from app.shared.infrastructure.models.dashboards import ActiveDashboardEntity
 from app.shared.infrastructure.repositories.base_repository_impl import BaseRepositoryImpl
-from app.shared.interface.logging.api import get_db_logger
+from app.shared.interfaces.logging.api import get_db_logger
 
 logger = get_db_logger()
 

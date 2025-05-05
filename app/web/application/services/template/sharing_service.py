@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 
 from app.shared.infrastructure.database.session.context import session_context
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 # Import Template Repositories & Entities (copied from OLD.py imports)
 from app.shared.infrastructure.repositories.guild_templates import (
     GuildTemplateRepositoryImpl,

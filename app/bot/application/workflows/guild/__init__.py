@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from nextcord import Guild
 from app.bot.application.workflows.base_workflow import BaseWorkflow, WorkflowStatus
 from app.bot.application.workflows.database_workflow import DatabaseWorkflow
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from app.shared.infrastructure.database.session import session_context
 
 # Import methods from other files within this directory

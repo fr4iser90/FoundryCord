@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, status, APIRouter
 from app.shared.infrastructure.models.auth import AppUserEntity
 from typing import Dict, Any
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 # Import the dependency for the current user directly
 from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
 # Import response model/helper if you have one (assuming BaseController had one)

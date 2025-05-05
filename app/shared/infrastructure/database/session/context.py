@@ -2,7 +2,7 @@
 from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import AsyncGenerator
-from app.shared.interface.logging.api import get_db_logger
+from app.shared.interfaces.logging.api import get_db_logger
 from .factory import get_session
 
 logger = get_db_logger()

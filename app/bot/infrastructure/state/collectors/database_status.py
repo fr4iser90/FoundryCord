@@ -1,6 +1,6 @@
 """Collector for database connection status from the bot's perspective."""
 from typing import Dict, Any
-from app.shared.interface.logging.api import get_shared_logger
+from app.shared.interfaces.logging.api import get_shared_logger
 import time
 
 logger = get_shared_logger()

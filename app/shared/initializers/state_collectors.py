@@ -2,7 +2,7 @@
 Initializes and registers server-side state collectors.
 """
 from app.shared.infrastructure.state.secure_state_snapshot import get_state_snapshot_service
-from app.shared.interface.logging.api import get_shared_logger
+from app.shared.interfaces.logging.api import get_shared_logger
 
 # Import collector functions from their respective modules
 # (These will be added in the next steps)

@@ -8,7 +8,7 @@ from sqlalchemy import select, update, delete
 from datetime import datetime
 
 from app.shared.infrastructure.database.session.context import session_context
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 # Import Template Repositories & Entities
 from app.shared.infrastructure.repositories.guild_templates import (
     GuildTemplateRepositoryImpl,

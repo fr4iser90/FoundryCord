@@ -3,7 +3,7 @@ import asyncio
 import inspect
 from typing import Dict, List, Type, Optional
 from app.bot.application.workflows.base_workflow import BaseWorkflow, WorkflowStatus
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 
 logger = get_bot_logger()
 

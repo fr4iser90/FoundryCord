@@ -2,7 +2,7 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 # TODO: Rename Repository interface import
 from app.shared.domain.repositories.dashboards.dashboard_configuration_repository import DashboardConfigurationRepository
 # TODO: Rename Repository implementation import

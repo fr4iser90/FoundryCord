@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload # If needed for relationships later
 from app.shared.domain.repositories.guild_templates import GuildTemplateRepository
 from app.shared.infrastructure.models.guild_templates import GuildTemplateEntity
 from app.shared.infrastructure.repositories.base_repository_impl import BaseRepositoryImpl # Assuming a base class exists
-from app.shared.interface.logging.api import get_db_logger
+from app.shared.interfaces.logging.api import get_db_logger
 
 logger = get_db_logger()
 

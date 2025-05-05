@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse
 from app.shared.infrastructure.models.auth import AppUserEntity
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 from app.web.interfaces.web.views.base_view import BaseView
 from app.web.infrastructure.factories.service.web_service_factory import WebServiceFactory
 from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user

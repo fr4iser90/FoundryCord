@@ -2,7 +2,7 @@
 State collector functions specific to the Discord bot.
 """
 from typing import Dict, Any
-from app.shared.interface.logging.api import get_shared_logger
+from app.shared.interfaces.logging.api import get_shared_logger
 
 logger = get_shared_logger()
 

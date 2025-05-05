@@ -8,7 +8,7 @@ import hashlib
 import time
 import logging
 import inspect
-from app.shared.interface.logging.api import get_shared_logger
+from app.shared.interfaces.logging.api import get_shared_logger
 
 # Import collector functions from their new locations
 from .collectors.system_info import get_system_info

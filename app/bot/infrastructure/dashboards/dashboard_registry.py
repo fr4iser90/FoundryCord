@@ -1,7 +1,7 @@
 # app/bot/infrastructure/dashboards/dashboard_registry.py
 from typing import Dict, Any, Optional, Type
 import nextcord
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 logger = get_bot_logger()
 
 

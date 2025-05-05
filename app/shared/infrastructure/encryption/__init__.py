@@ -15,7 +15,7 @@ def get_key_management_service():
 
 async def setup(bot):
     """Initialize encryption components"""
-    from app.shared.interface.logging.api import get_bot_logger
+    from app.shared.interfaces.logging.api import get_bot_logger
     logger = get_bot_logger()
     try:
         encryption_service = get_encryption_service()(bot)

@@ -6,7 +6,7 @@ from app.shared.infrastructure.models import AppUserEntity, AppRoleEntity, Disco
 from typing import Optional, List
 from datetime import datetime
 from app.shared.domain.repositories.auth.user_repository import UserRepository
-from app.shared.interface.logging.api import get_db_logger
+from app.shared.interfaces.logging.api import get_db_logger
 
 logger = get_db_logger()
 

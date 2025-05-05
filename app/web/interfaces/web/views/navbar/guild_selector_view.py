@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from app.shared.infrastructure.database.session import session_context
 from app.shared.infrastructure.models.discord.entities.guild_entity import GuildEntity
 from sqlalchemy import select
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 
 router = APIRouter(prefix="/guilds", tags=["Guild Selection"])
 templates = Jinja2Templates(directory="app/web/templates")

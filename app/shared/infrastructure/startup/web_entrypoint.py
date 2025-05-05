@@ -3,7 +3,7 @@ import asyncio
 import traceback
 import sys
 
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 from app.shared.infrastructure.startup.bootstrap import ApplicationBootstrap
 
 logger = get_web_logger()

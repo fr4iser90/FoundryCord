@@ -8,7 +8,7 @@ import platform
 import psutil
 from datetime import datetime, timedelta
 
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from app.shared.infrastructure.database.session import get_session
 from app.shared.infrastructure.repositories.projects.project_repository_impl import ProjectRepositoryImpl
 

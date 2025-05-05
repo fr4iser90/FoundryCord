@@ -1,7 +1,7 @@
 # app/bot/infrastructure/internal_api/server.py
 import asyncio
 from aiohttp import web
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from .routes import setup_internal_routes  # Import from the routes file
 
 logger = get_bot_logger()

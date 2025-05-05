@@ -7,7 +7,7 @@ from app.shared.infrastructure.models.auth import AppUserEntity
 # Import necessary DB models and session management
 from app.shared.infrastructure.models.discord import GuildEntity, DiscordGuildUserEntity
 from app.shared.infrastructure.database.session.context import session_context # Or use the factory approach if preferred
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 from sqlalchemy import select, update # Import update
 from sqlalchemy.orm import selectinload # To potentially load relationships if needed by GuildInfo
 from typing import List, Dict, Any, Optional

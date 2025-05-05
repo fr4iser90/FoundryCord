@@ -4,7 +4,7 @@ import signal
 import sys
 from typing import Optional
 import nextcord.ext.commands as commands
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 
 logger = logging.getLogger("homelab.bot")
 

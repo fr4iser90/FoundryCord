@@ -5,7 +5,7 @@ import nextcord
 
 from app.bot.interfaces.dashboards.components.base_component import BaseComponent
 from app.bot.infrastructure.config.registries.component_registry import ComponentRegistry
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 
 logger = get_bot_logger()
 

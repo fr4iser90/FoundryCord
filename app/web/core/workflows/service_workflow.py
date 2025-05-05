@@ -1,6 +1,6 @@
 from app.web.core.workflows.base_workflow import BaseWorkflow
 from app.web.core.lifecycle_manager import WebLifecycleManager
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 
 logger = get_web_logger()
 

@@ -3,7 +3,7 @@ import asyncio
 from typing import Dict, Any, Optional, List
 import nextcord
 from app.bot.application.workflows.base_workflow import BaseWorkflow, WorkflowStatus
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from app.bot.application.workflows.database_workflow import DatabaseWorkflow
 from app.bot.application.services.project_management.task_service import TaskService
 

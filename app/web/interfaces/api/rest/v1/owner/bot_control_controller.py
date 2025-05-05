@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from app.shared.infrastructure.models.auth import AppUserEntity, AppRoleEntity
 from app.shared.domain.auth.services import AuthenticationService, AuthorizationService
 from app.shared.domain.auth.policies import is_authorized
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 from typing import Dict
 from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
 from app.web.interfaces.api.rest.v1.base_controller import BaseController

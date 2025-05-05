@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import NullPool
 import logging
 
-from app.shared.interface.logging.api import get_db_logger
+from app.shared.interfaces.logging.api import get_db_logger
 from app.shared.infrastructure.database.session.factory import get_session, initialize_session
 from app.shared.infrastructure.database.core.config import get_database_url
 from app.shared.infrastructure.database.migrations.wait_for_postgres import wait_for_postgres

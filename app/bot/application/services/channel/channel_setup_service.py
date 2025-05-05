@@ -6,7 +6,7 @@ from app.shared.domain.repositories.discord.category_repository import CategoryR
 from app.bot.application.services.channel.channel_builder import ChannelBuilder
 from app.shared.infrastructure.models.discord.entities.channel_entity import ChannelEntity
 from app.shared.infrastructure.models.discord.enums.channels import ChannelType
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from app.shared.infrastructure.repositories.discord.channel_repository_impl import ChannelRepositoryImpl
 from app.shared.infrastructure.repositories.discord.category_repository_impl import CategoryRepositoryImpl
 from sqlalchemy.ext.asyncio import AsyncSession

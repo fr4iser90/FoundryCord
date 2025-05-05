@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional
 from app.web.core.workflows.base_workflow import BaseWorkflow
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 from app.web.infrastructure.factories.service.web_service_factory import WebServiceFactory
 
 logger = get_web_logger()

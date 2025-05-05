@@ -8,7 +8,7 @@ from app.shared.infrastructure.repositories.auth.user_repository_impl import Use
 from app.shared.infrastructure.models.auth import AppUserEntity
 from app.shared.domain.auth.services import AuthenticationService, AuthorizationService
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import AsyncGenerator # Import AsyncGenerator for session dependency
 

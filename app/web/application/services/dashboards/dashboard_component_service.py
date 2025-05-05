@@ -6,7 +6,7 @@ from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import ValidationError
 
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 # Import the repository interface (Domain Layer)
 from app.shared.domain.repositories.dashboards import DashboardComponentDefinitionRepository
 # Import the repository implementation (Infrastructure Layer) for type hinting in factory/DI

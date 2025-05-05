@@ -3,7 +3,7 @@ from app.web.core.extensions import templates_extension
 from app.shared.infrastructure.database.session import session_context
 from app.shared.infrastructure.models import AppUserEntity, DiscordGuildUserEntity, GuildEntity
 from sqlalchemy import select
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 from fastapi.responses import HTMLResponse
 # Import BaseView for inheritance
 from app.web.interfaces.web.views.base_view import BaseView 

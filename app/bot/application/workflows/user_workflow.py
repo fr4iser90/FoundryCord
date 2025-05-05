@@ -4,7 +4,7 @@ from nextcord import Guild, Member
 from app.shared.infrastructure.models.discord.entities.guild_user_entity import DiscordGuildUserEntity
 from app.shared.domain.repositories.auth.user_repository import UserRepository
 from .base_workflow import BaseWorkflow, WorkflowStatus
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from sqlalchemy import select
 from app.shared.infrastructure.database.session import session_context
 from app.shared.infrastructure.repositories.auth.user_repository_impl import UserRepositoryImpl

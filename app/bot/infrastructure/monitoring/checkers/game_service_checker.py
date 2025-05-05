@@ -6,7 +6,7 @@ import asyncio
 import aiohttp
 from .docker_utils import get_container_ip, get_all_containers
 from .port_checker import check_tcp_port
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 logger = get_bot_logger()
 from app.bot.infrastructure.monitoring.collectors.game_servers.minecraft_server_collector_impl import MinecraftServerFetcher
 

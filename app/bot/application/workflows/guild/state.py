@@ -1,6 +1,6 @@
 import logging
 from app.bot.application.workflows.base_workflow import WorkflowStatus
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 
 logger = get_bot_logger()
 

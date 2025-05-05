@@ -1,4 +1,4 @@
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from app.shared.infrastructure.models.auth import AppUserEntity, AppRoleEntity
 from app.shared.domain.auth.policies import is_authorized
 from typing import Optional

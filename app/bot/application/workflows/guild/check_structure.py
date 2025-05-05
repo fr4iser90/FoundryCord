@@ -2,7 +2,7 @@ import logging
 from typing import Dict, List, Optional
 import nextcord
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from app.shared.infrastructure.models.discord.entities import GuildConfigEntity
 from app.shared.domain.repositories.guild_templates import (
     GuildTemplateCategoryPermissionRepository,

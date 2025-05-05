@@ -5,7 +5,7 @@ from fastapi import HTTPException, status
 from app.shared.infrastructure.models.auth import AppUserEntity
 from app.shared.infrastructure.models.discord import GuildEntity
 from app.shared.infrastructure.database.session.context import session_context
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 from sqlalchemy import select, update
 from datetime import datetime
 import httpx

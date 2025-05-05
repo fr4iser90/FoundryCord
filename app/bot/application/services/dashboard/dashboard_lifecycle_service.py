@@ -1,7 +1,7 @@
 # app/bot/application/services/dashboard/dashboard_lifecycle_service.py
 from typing import Dict, Any, Optional, List # Added Optional, List
 import nextcord # Add import for nextcord types
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 logger = get_bot_logger()
 
 # Imports needed for activation logic

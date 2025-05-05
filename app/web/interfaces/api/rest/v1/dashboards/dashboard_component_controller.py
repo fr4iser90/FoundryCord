@@ -6,7 +6,7 @@ from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.web.interfaces.api.rest.v1.base_controller import BaseController
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 # Import the service
 from app.web.application.services.dashboards import DashboardComponentService
 # Import the response schema

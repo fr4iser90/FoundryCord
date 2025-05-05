@@ -1,7 +1,7 @@
 """Workflow factory for creating and configuring bot workflows."""
 from typing import Dict, Any, Optional
 import asyncio
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 logger = get_bot_logger()
 
 # Import domain models

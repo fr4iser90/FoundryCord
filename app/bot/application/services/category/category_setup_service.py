@@ -6,7 +6,7 @@ from app.shared.domain.repositories.discord.category_repository import CategoryR
 from app.bot.application.services.category.category_builder import CategoryBuilder
 from app.shared.infrastructure.models.discord.entities.category_entity import CategoryEntity
 from app.shared.infrastructure.models.discord.enums.category import CategoryPermissionLevel
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from app.shared.infrastructure.repositories.discord.category_repository_impl import CategoryRepositoryImpl
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select

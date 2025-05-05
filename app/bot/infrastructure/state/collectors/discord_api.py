@@ -1,7 +1,7 @@
 """Collectors related to Discord API state."""
 from typing import Dict, Any
 import nextcord  # type: ignore
-from app.shared.interface.logging.api import get_shared_logger
+from app.shared.interfaces.logging.api import get_shared_logger
 
 logger = get_shared_logger()
 

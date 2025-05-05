@@ -35,7 +35,7 @@ from app.shared.domain.exceptions import TemplateNotFound, PermissionDenied, Inv
 # --- NEW: Add HTTP client import (adjust based on available library) ---
 import httpx 
 # --- NEW: Import logging API and create logger ---
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 logger = get_web_logger()
 # -------------------------------------------------------------------
 # --- NEW: Import settings if available --- 

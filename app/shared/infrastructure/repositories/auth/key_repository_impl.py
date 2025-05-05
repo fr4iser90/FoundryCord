@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 import json
 from datetime import datetime
 from app.shared.domain.repositories.auth.key_repository import KeyRepository
-from app.shared.interface.logging.api import get_db_logger
+from app.shared.interfaces.logging.api import get_db_logger
 
 logger = get_db_logger()
 

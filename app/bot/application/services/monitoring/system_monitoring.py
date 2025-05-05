@@ -4,7 +4,7 @@ import socket
 from dotenv import load_dotenv
 import os
 from app.bot.infrastructure.messaging.http_client import http_client
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 logger = get_bot_logger()
 from app.bot.infrastructure.config.feature_flags import DOMAIN, OFFLINE_MODE, ENABLE_DOMAIN_CHECKS
 

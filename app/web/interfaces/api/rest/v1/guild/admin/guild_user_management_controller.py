@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from app.shared.infrastructure.database.session import session_context
 from app.shared.infrastructure.models import AppUserEntity, DiscordGuildUserEntity, GuildEntity
 from sqlalchemy import select
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
 
 # Change the prefix to include guild_id and update tags

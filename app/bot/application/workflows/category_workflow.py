@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot.application.workflows.base_workflow import BaseWorkflow, WorkflowStatus
 from app.bot.application.workflows.database_workflow import DatabaseWorkflow
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from app.shared.infrastructure.database.session.context import session_context
 from app.shared.domain.repositories.discord.category_repository import CategoryRepository
 from app.shared.infrastructure.repositories.discord import CategoryRepositoryImpl

@@ -4,7 +4,7 @@ import logging
 import asyncio
 from datetime import datetime
 
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 logger = get_bot_logger()
 
 # TODO: Need access to ComponentRegistry, potentially passed during initialization or via bot

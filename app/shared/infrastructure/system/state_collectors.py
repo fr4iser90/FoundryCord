@@ -4,7 +4,7 @@ State collector functions for system information.
 from typing import Dict, Any
 import platform
 import os
-from app.shared.interface.logging.api import get_shared_logger
+from app.shared.interfaces.logging.api import get_shared_logger
 
 logger = get_shared_logger()
 

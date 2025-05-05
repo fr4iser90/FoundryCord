@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import jwt as PyJWT
 import os
 from typing import Optional, Dict, Any
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
 from app.shared.infrastructure.models.auth import AppUserEntity, AppRoleEntity, SessionEntity
 from app.shared.infrastructure.repositories.auth.user_repository_impl import UserRepositoryImpl

@@ -1,6 +1,6 @@
 import asyncio
 from typing import Any
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from app.shared.infrastructure.repositories.discord.guild_config_repository_impl import GuildConfigRepositoryImpl
 from app.shared.infrastructure.database.session.context import session_context
 

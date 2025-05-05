@@ -7,7 +7,7 @@ from nextcord.ext import commands
 import sys
 from typing import Dict, Any, Optional, List
 
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from app.shared.infrastructure.database.service import DatabaseService
 from app.shared.infrastructure.logging.services.logging_service import LoggingService
 

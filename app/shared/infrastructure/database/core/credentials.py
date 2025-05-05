@@ -4,7 +4,7 @@ import logging
 import asyncio
 from typing import Dict, Any, Optional
 
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 # Use impl instead of interface here too
 from app.shared.infrastructure.repositories.auth.key_repository_impl import KeyRepositoryImpl
 logger = get_bot_logger()

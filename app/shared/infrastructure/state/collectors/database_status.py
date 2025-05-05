@@ -2,7 +2,7 @@
 from typing import Dict, Any
 from sqlalchemy import text
 from app.shared.infrastructure.database.api import session_context
-from app.shared.interface.logging.api import get_shared_logger
+from app.shared.interfaces.logging.api import get_shared_logger
 import time
 
 logger = get_shared_logger()

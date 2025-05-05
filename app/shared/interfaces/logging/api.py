@@ -85,7 +85,7 @@ def enable_db_logging(level: str = "WARNING") -> None:
 async def setup_bot_logging(bot) -> LoggingService:
     """Set up bot logging"""
     # Import the factory function only when needed
-    from app.shared.interface.logging.factories import create_bot_logging_service
+    from app.shared.interfaces.logging.factories import create_bot_logging_service
     service = create_bot_logging_service(bot)
     bot.add_cog(service)
     global _bot_service
@@ -95,7 +95,7 @@ async def setup_bot_logging(bot) -> LoggingService:
 def setup_web_logging(app) -> LoggingService:
     """Set up web logging"""
     # Import the factory function only when needed
-    from app.shared.interface.logging.factories import create_web_logging_service
+    from app.shared.interfaces.logging.factories import create_web_logging_service
     service = create_web_logging_service(app)
     service.setup_request_logging()
     global _web_service

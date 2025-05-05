@@ -7,7 +7,7 @@ import time
 import logging
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
-from app.shared.interface.logging.api import get_db_logger
+from app.shared.interfaces.logging.api import get_db_logger
 
 logger = get_db_logger()
 

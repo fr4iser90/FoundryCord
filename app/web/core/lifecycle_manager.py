@@ -2,7 +2,7 @@ from typing import Dict, List, Any, Optional, Callable
 import asyncio
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
 from app.shared.domain.auth.services import AuthenticationService, AuthorizationService
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 from fastapi import FastAPI
 from app.web.infrastructure.factories.service.web_service_factory import WebServiceFactory
 

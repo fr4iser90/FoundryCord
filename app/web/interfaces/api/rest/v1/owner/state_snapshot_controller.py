@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.shared.infrastructure.state.secure_state_snapshot import get_state_snapshot_service, SecureStateSnapshot
 from app.shared.domain.auth.services import AuthenticationService
 from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user, get_web_db_session
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 from app.web.interfaces.api.rest.v1.base_controller import BaseController
 from app.shared.infrastructure.models.auth import AppUserEntity
 from app.shared.application.services.monitoring.state_snapshot_service import save_snapshot_with_limit, get_snapshot_by_id, list_recent_snapshots, delete_snapshot_by_id

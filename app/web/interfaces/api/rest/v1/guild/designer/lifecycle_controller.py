@@ -9,7 +9,7 @@ from app.shared.infrastructure.models.auth import AppUserEntity
 from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user, get_web_db_session
 from app.web.application.services.template.template_service import GuildTemplateService
 from app.shared.domain.exceptions import TemplateNotFound, PermissionDenied, InvalidOperation, ConfigurationNotFound
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 
 # TODO: Move this schema to the main schemas file eventually
 class GuildTemplateSettingsUpdate(BaseModel):

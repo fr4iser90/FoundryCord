@@ -1,5 +1,5 @@
 import logging
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from app.shared.infrastructure.database.session import session_context
 from app.shared.infrastructure.models.discord.entities import GuildEntity, GuildConfigEntity
 from app.shared.infrastructure.repositories.discord.guild_repository_impl import GuildRepositoryImpl

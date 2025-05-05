@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 from app.shared.infrastructure.models import MetricModel
 from app.shared.domain.monitoring.collectors import SystemCollectorInterface
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 logger = get_bot_logger()
 from .components.base import collect_system_data
 

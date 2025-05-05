@@ -1,7 +1,7 @@
 """Database session management."""
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from app.shared.interface.logging.api import get_db_logger
+from app.shared.interfaces.logging.api import get_db_logger
 from app.shared.infrastructure.database.core.config import get_database_url
 from typing import AsyncGenerator
 

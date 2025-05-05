@@ -2,7 +2,7 @@
 import asyncio
 import traceback
 import sys
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 from app.shared.infrastructure.startup.bootstrap import ApplicationBootstrap
 
 logger = get_bot_logger()

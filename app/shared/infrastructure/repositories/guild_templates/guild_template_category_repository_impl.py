@@ -5,7 +5,7 @@ from sqlalchemy.future import select
 from app.shared.domain.repositories.guild_templates import GuildTemplateCategoryRepository
 from app.shared.infrastructure.models.guild_templates import GuildTemplateCategoryEntity
 from app.shared.infrastructure.repositories.base_repository_impl import BaseRepositoryImpl
-from app.shared.interface.logging.api import get_db_logger
+from app.shared.interfaces.logging.api import get_db_logger
 
 logger = get_db_logger()
 

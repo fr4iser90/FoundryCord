@@ -3,7 +3,7 @@ import asyncio
 import logging
 from typing import List, Optional, Dict, Any, Callable
 from app.bot.interfaces.dashboards.controller import DashboardController
-from app.shared.interface.logging.api import get_bot_logger
+from app.shared.interfaces.logging.api import get_bot_logger
 logger = get_bot_logger()
 from app.shared.infrastructure.models import DashboardMessage
 from app.shared.infrastructure.database.core.connection import get_session

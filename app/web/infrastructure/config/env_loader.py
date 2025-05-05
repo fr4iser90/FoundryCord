@@ -7,7 +7,7 @@ from app.shared.infrastructure.config.env_loader import (
     load_env_var, load_required_env_var, load_int_env_var, 
     load_bool_env_var, load_list_env_var, load_user_groups
 )
-from app.shared.interface.logging.api import get_web_logger
+from app.shared.interfaces.logging.api import get_web_logger
 logger = get_web_logger()
 
 def ensure_web_env_loaded() -> bool:
