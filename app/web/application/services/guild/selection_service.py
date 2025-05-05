@@ -17,7 +17,7 @@ class GuildSelectionService:
 
     def __init__(self):
         """Initialize GuildSelectionService."""
-        logger.info("GuildSelectionService initialized.")
+        logger.debug("GuildSelectionService initialized.")
 
     async def get_current_guild(self, request: Request, user: AppUserEntity) -> Optional[GuildEntity]:
         """Get the currently selected guild from the user's session or last selection."""

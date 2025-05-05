@@ -35,7 +35,7 @@ class TemplateStructureService:
 
     def __init__(self):
         """Initialize TemplateStructureService."""
-        logger.info("TemplateStructureService initialized.")
+        logger.debug("TemplateStructureService initialized.")
         # Repositories are typically instantiated per request/session
 
     async def update_template_structure(

@@ -18,7 +18,7 @@ class GuildQueryService:
     def __init__(self):
         """Initialize GuildQueryService."""
         # Dependencies like repositories would be injected here in a full implementation
-        logger.info("GuildQueryService initialized.")
+        logger.debug("GuildQueryService initialized.")
 
     async def get_available_guilds(self, user: AppUserEntity) -> List[GuildEntity]:
         """Get list of guilds the user has access to (approved status)."""

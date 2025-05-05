@@ -43,7 +43,7 @@ class SecureStateSnapshot:
             description: Human-readable description of what this collector captures
         """
         if name in self.registered_collectors:
-            logger.warning(f"Overwriting existing state collector: {name}")
+            logger.debug(f"Overwriting existing state collector: {name}")
             
         self.registered_collectors[name] = {
             "function": collector_fn,

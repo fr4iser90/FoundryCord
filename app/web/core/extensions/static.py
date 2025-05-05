@@ -46,7 +46,7 @@ class StaticExtension:
             # Default to web/static directory
             self._static_dir = Path(__file__).parent.parent.parent / "static"
             
-        logger.info(f"Static directory absolute path: {self._static_dir.absolute()}")
+        logger.debug(f"Static directory absolute path: {self._static_dir}")
         
         self._initialize_static()
         
@@ -72,7 +72,7 @@ class StaticExtension:
         for name, path in paths_to_check.items():
             exists = path.exists()
             results[name] = exists
-            logger.info(f"{name}: {path} exists: {exists}")
+            logger.debug(f"{name}: {path} exists: {exists}")
             
         return results
         

@@ -167,3 +167,11 @@ class WebLifecycleManager:
         except Exception as e:
             logger.error(f"Failed during web application shutdown: {e}")
             raise
+
+    async def cleanup_services(self):
+        """Placeholder method to be called on shutdown to satisfy the main application's lifecycle call."""
+        logger.info("WebLifecycleManager: cleanup_services called (currently placeholder).")
+        # Add actual cleanup logic here if needed in the future, e.g.:
+        # if self.service_factory and hasattr(self.service_factory, 'cleanup'):
+        #     await self.service_factory.cleanup()
+        pass

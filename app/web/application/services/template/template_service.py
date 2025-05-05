@@ -30,7 +30,7 @@ class GuildTemplateService:
         self._structure_service = TemplateStructureService()
         self._management_service = TemplateManagementService()
         self._sharing_service = TemplateSharingService()
-        logger.info("GuildTemplateService Facade initialized, delegating to specific template services.")
+        logger.debug("GuildTemplateService Facade initialized, delegating to specific template services.")
 
     # --- Query Methods Delegation --- 
 

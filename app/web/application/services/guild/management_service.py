@@ -17,7 +17,7 @@ class GuildManagementService:
 
     def __init__(self):
         """Initialize GuildManagementService."""
-        logger.info("GuildManagementService initialized.")
+        logger.debug("GuildManagementService initialized.")
 
     async def update_guild_access_status(self, guild_id: str, new_status: str, reviewed_by_user_id: int) -> GuildEntity:
         """Updates the access status of a specific guild and triggers bot action if approved."""

@@ -32,7 +32,7 @@ class TemplatesExtension:
             # Default to web/templates directory
             self._templates_dir = Path(__file__).parent.parent.parent / "templates"
             
-        logger.info(f"Templates directory: {self._templates_dir}")
+        logger.debug(f"Templates directory: {self._templates_dir}")
         
         self._initialize_templates()
         

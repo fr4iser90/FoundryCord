@@ -36,7 +36,7 @@ class TemplateSharingService:
 
     def __init__(self):
         """Initialize TemplateSharingService."""
-        logger.info("TemplateSharingService initialized.")
+        logger.debug("TemplateSharingService initialized.")
 
     async def list_shared_templates(self) -> List[Dict[str, Any]]:
         """Lists basic information about publicly shared guild templates. (Copied from OLD.py)"""

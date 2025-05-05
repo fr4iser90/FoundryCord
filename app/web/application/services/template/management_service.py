@@ -38,7 +38,7 @@ class TemplateManagementService:
 
     def __init__(self):
         """Initialize TemplateManagementService."""
-        logger.info("TemplateManagementService initialized.")
+        logger.debug("TemplateManagementService initialized.")
         # Repositories are typically instantiated per request/session
 
     async def delete_template(self, template_id: int) -> bool:

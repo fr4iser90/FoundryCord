@@ -75,7 +75,7 @@ class WebWorkflowManager:
     def set_initialization_order(self, order: List[str]):
         """Set explicit initialization order for workflows"""
         self.initialization_order = [name for name in order if name in self.workflows]
-        logger.info(f"Set initialization order: {self.initialization_order}")
+        logger.debug(f"Set initialization order: {self.initialization_order}")
     
     async def initialize_workflow(self, name: str) -> bool:
         """Initialize a single workflow and its dependencies"""

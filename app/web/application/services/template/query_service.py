@@ -31,7 +31,7 @@ class TemplateQueryService:
 
     def __init__(self):
         """Initialize TemplateQueryService."""
-        logger.info("TemplateQueryService initialized.")
+        logger.debug("TemplateQueryService initialized.")
         # Repositories are typically instantiated per request/session
 
     async def get_template_by_guild(self, guild_id: str) -> Optional[Dict[str, Any]]:
