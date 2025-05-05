@@ -38,7 +38,7 @@ class WebServiceFactory(BaseFactory):
             services['authz_service'] = authz_service
             services['guild_service'] = guild_service
             
-            logger.info("Web services created successfully")
+            logger.debug("Web services created successfully")
             return services
         except Exception as e:
             logger.error(f"Failed to create web services: {e}")

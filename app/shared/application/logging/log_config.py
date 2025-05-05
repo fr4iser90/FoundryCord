@@ -43,6 +43,8 @@ class LoggingConfig:
         # --- Suppress DEBUG logs from noisy libraries ---
         logging.getLogger("docker").setLevel(logging.WARNING)
         logging.getLogger("urllib3").setLevel(logging.WARNING)
+        logging.getLogger("httpx").setLevel(logging.WARNING)
+        logging.getLogger("httpcore").setLevel(logging.WARNING)
         # Add other noisy libraries here if needed, e.g.:
         # logging.getLogger("discord").setLevel(logging.INFO) # Example: If discord.py is too noisy at DEBUG
 
@@ -88,7 +90,7 @@ class LoggingConfig:
             root_logger.addHandler(handler)
             
         # --- MODIFICATION 5: Update final log message ---
-        logging.debug(f"Logging configured with handlers: {[h.__class__.__name__ for h in configured_handlers]}, root level: {logging.getLevelName(root_logger.level)}")
+        logging.info(f"Logging configured with handlers: {[h.__class__.__name__ for h in configured_handlers]}. Console level: {self.console_level}")
         
     def update(self, config: Dict[str, Any]) -> None:
         """Update configuration with provided values"""

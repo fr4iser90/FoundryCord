@@ -31,7 +31,7 @@ class GuildService:
         self._query_service = GuildQueryService()
         self._selection_service = GuildSelectionService()
         self._management_service = GuildManagementService()
-        logger.info("GuildService Facade initialized, delegating to Query, Selection, and Management services.")
+        logger.debug("GuildService Facade initialized, delegating to Query, Selection, and Management services.")
 
     # --- Query Methods --- 
     async def get_available_guilds(self, user: AppUserEntity) -> List[GuildEntity]:

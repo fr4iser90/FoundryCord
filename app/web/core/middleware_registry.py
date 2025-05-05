@@ -50,6 +50,6 @@ def register_core_middleware(app: FastAPI):
     # 4. Request Tracking Middleware
     app.add_middleware(RequestTrackingMiddleware)
 
-    logger.info("Core middleware registered successfully via Middleware Registry.")
+    logger.debug("Core middleware registered successfully via Middleware Registry.")
 
 __all__ = ["register_core_middleware"] 

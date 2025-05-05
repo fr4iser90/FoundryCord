@@ -1,5 +1,5 @@
 """Security bootstrapper for generating and managing security keys."""
-import logging
+import logging # Keep standard logging for potential fallback if needed, but prioritize service
 import base64
 import os
 import traceback
@@ -7,8 +7,11 @@ from cryptography.fernet import Fernet
 from sqlalchemy.exc import SQLAlchemyError
 from app.shared.infrastructure.database.session.context import session_context
 from app.shared.infrastructure.repositories.auth.key_repository_impl import KeyRepositoryImpl
+# Import the shared logger API
+from app.shared.interfaces.logging.api import get_shared_logger
 
-logger = logging.getLogger("homelab.bot")
+# Use the shared logger service instead of standard logging directly
+logger = get_shared_logger()
 
 class SecurityBootstrapper:
     """Handles security initialization and key bootstrapping"""

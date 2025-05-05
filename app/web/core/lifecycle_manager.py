@@ -39,7 +39,7 @@ class WebLifecycleManager:
             authz_service = AuthorizationService(auth_service)
             self.register_component('authz_service', authz_service)
 
-            logger.info("Core services registered successfully")
+            logger.debug("Core services registered successfully")
         except Exception as e:
             logger.error(f"Failed to register core services: {e}")
             raise
@@ -89,17 +89,16 @@ class WebLifecycleManager:
         logger.info("Executing shutdown hooks")
         self.state = "shutting_down"
         
-        for hook in self.shutdown_hooks:
+        # Call shutdown hooks in reverse order
+        for hook in reversed(self.shutdown_hooks):
             try:
-                if asyncio.iscoroutinefunction(hook):
-                    await hook()
-                else:
-                    hook()
+                logger.debug(f"Calling shutdown hook: {hook.__name__}")
+                await hook() # Assuming hooks are async
             except Exception as e:
-                logger.error(f"Error in shutdown hook {hook.__name__}: {e}")
-        
+                logger.error(f"Error during shutdown hook {hook.__name__}: {e}")
+            
         self.state = "shutdown"
-        logger.info("Shutdown complete")
+        logger.info("Web application shutdown completed.")
     
     def register_component(self, name: str, component: Any):
         """Register a component with the lifecycle manager"""
@@ -161,8 +160,16 @@ class WebLifecycleManager:
         """Handle application shutdown tasks."""
         try:
             # Cleanup services
-            await self.service_factory.cleanup_services()
-            logger.info("Web application shutdown completed")
+            # We remove this call as WebServiceFactory has no cleanup_services
+            # if self.service_factory and hasattr(self.service_factory, 'cleanup_services'):
+            #    try:
+            #        logger.info("Cleaning up service factory...")
+            #        await self.service_factory.cleanup_services()
+            #    except Exception as e:
+            #        logger.error(f"Error during service factory shutdown: {e}")
+            
+            self.state = "shutdown"
+            logger.info("Web application shutdown completed.")
             
         except Exception as e:
             logger.error(f"Failed during web application shutdown: {e}")

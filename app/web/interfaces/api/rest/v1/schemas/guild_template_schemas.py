@@ -234,7 +234,7 @@ class PermissionResponseSchema(BaseModel):
 
     class Config:
         from_attributes = True
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 class CategoryResponseSchema(BaseModel):
@@ -246,7 +246,7 @@ class CategoryResponseSchema(BaseModel):
 
     class Config:
         from_attributes = True
-        allow_population_by_field_name = True # Allows using db column names
+        populate_by_name = True
 
 class ChannelResponseSchema(BaseModel):
     channel_id: int # Renamed from id for clarity
@@ -265,7 +265,7 @@ class ChannelResponseSchema(BaseModel):
 
     class Config:
         from_attributes = True
-        allow_population_by_field_name = True # Allows using db column names
+        populate_by_name = True
 
 class GuildTemplateResponseSchema(BaseModel):
     template_id: int
@@ -279,7 +279,7 @@ class GuildTemplateResponseSchema(BaseModel):
 
     class Config:
         from_attributes = True
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 # For listing multiple templates (simplified view)
 class BasicGuildTemplateInfo(BaseModel):
@@ -294,6 +294,6 @@ class GuildTemplateListResponseSchema(BaseModel):
 
     class Config:
         from_attributes = True
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 # Ensure all models are loaded 

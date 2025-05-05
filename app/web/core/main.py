@@ -144,8 +144,10 @@ async def main():
             "app.web.core.main:app", 
             host="0.0.0.0", 
             port=8000, 
-            reload=True, # Ensure reload is as desired
-            log_config=None 
+            reload=False, # Set reload to False for production explicitly
+            log_config=None, # Use our custom config
+            # Enable access logs only in development environment
+            access_log=os.getenv('ENVIRONMENT', 'production').lower() == 'development' 
         )
         server = uvicorn.Server(config)
         await server.serve()

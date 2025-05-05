@@ -15,7 +15,7 @@ class BotLoggerController(BaseController):
         super().__init__(prefix="/owner/bot/logger", tags=["Bot Logger"])
         self.http_client = httpx.AsyncClient(timeout=10.0)
         self._register_routes()
-        logger.info("BotLoggerController initialized for internal API calls.")
+        logger.debug("BotLoggerController initialized for internal API calls.")
 
     def _register_routes(self):
         """Register all routes for this controller"""

@@ -57,7 +57,7 @@ class ComponentDefinitionSchema(BaseModel):
     preview_hints: Optional[PreviewHintsSchema] = Field(None, description="Hints for rendering the preview")
 
     class Config:
-        orm_mode = True # Enable reading data directly from ORM models
+        from_attributes = True # Replaces orm_mode
 
 # --- Response Schema --- 
 

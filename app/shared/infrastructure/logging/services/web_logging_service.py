@@ -14,18 +14,18 @@ class WebLoggingService(BaseLoggingService):
         self.app.add_middleware(BaseHTTPMiddleware, dispatch=self.log_request_info)
     
     async def log_request_info(self, request: Request, call_next):
-        """Log the request information"""
-        self.debug(f"Processing request: {request.method} {request.url.path}",
-                 method=request.method, path=request.url.path)
-        
-        self.info(f"Web request: {request.method} {request.url.path}",
-                 method=request.method, path=request.url.path, 
-                 client=request.client.host if request.client else "unknown")
+        """Log the request information using DEBUG level"""
+        client_host = request.client.host if request.client else "unknown"
+        self.debug(f"Request started: {request.method} {request.url.path}",
+                 method=request.method, path=request.url.path,
+                 client=client_host)
         
         response = await call_next(request)
         
-        self.info(f"Response: {response.status_code}",
-                status_code=response.status_code)
+        self.debug(f"Request completed: {request.method} {request.url.path} -> {response.status_code}",
+                status_code=response.status_code,
+                method=request.method, path=request.url.path,
+                client=client_host)
         return response 
 
     # Add explicit delegate method for clarity

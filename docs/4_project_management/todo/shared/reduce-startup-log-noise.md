@@ -63,15 +63,54 @@
 
 ## Phase 4: Verification
 
-*   [ ] **Task 4.1:** Restart applications and capture new startup logs.
-    *   Action: `docker restart foundrycord-bot foundrycord-web`
-    *   Action: `docker logs foundrycord-bot | cat > bot_startup_logs_v2.txt`
-    *   Action: `docker logs foundrycord-web | cat > web_startup_logs_v2.txt`
-*   [ ] **Task 4.2:** Review new logs (`bot_startup_logs_v2.txt`, `web_startup_logs_v2.txt`).
+*   [x] **Task 4.2:** Review new logs (`bot_startup_logs_v2.txt`, `web_startup_logs_v2.txt`).
     *   Confirm that the adjusted logs no longer appear at `INFO` or `WARNING` level.
     *   Confirm that essential startup information is still present at `INFO`.
     *   Confirm that the shutdown error in the web logs is gone.
-*   [ ] **Task 4.3:** Mark TODO as complete or identify further adjustments.
+*   [ ] **Task 4.3:** Evaluate overall log output against guidelines.
+    *   **Outcome:** INFO/WARNING noise reduced as planned. Shutdown error fixed. However, overall log volume (INFO + DEBUG) remains high (~400+ lines for web) due to verbose DEBUG messages from KeyManagementService, SecurityBootstrapper, and potentially HTTPX. The duplicate INFO log for "Core services" also persists.
+    *   **Decision:** Proceed to Phase 5 to further optimize DEBUG logs and address remaining issues for a truly clean startup log according to `logging_guidelines.md` (Target: ~15-25 INFO lines, significantly fewer DEBUG lines).
+
+## Phase 5: DEBUG Log Optimization & Remaining Issues
+
+*   [ ] **Task 5.1:** Consolidate KeyManagementService DEBUG logs.
+    *   Goal: Replace individual `DEBUG: Loaded [KEY_TYPE] from database` logs with a single summary DEBUG message (e.g., "Keys loaded: AES, ENCRYPTION, JWT").
+    *   Affected Files:
+        *   `app/shared/infrastructure/encryption/key_management_service.py`
+*   [x] **Task 5.2:** Review and reduce SecurityBootstrapper DEBUG logs.
+    *   Goal: Evaluate if the DEBUG logs in `SecurityBootstrapper` are necessary for normal startup or can be removed/changed to only log on error/higher level.
+    *   **Action:** Changed `SecurityBootstrapper` to use `get_shared_logger()`. Its `debug` calls now respect the `ENVIRONMENT` variable check in `BaseLoggingService`.
+    *   Affected Files:
+        *   `app/shared/infrastructure/security/security_bootstrapper.py`
+*   [x] **Task 5.3:** Suppress library DEBUG logs (e.g., HTTPX).
+    *   Goal: Prevent DEBUG logs from underlying libraries like `httpx` (seen as `load_ssl_context`, `load_verify_locations`) from appearing during standard startup.
+    *   Action: Modified logging configuration to set the log level for `httpx` and `httpcore` loggers to `WARNING`.
+    *   Affected Files:
+        *   `app/shared/application/logging/log_config.py`
+*   [x] **Task 5.4:** Address duplicate "Core services registered successfully" INFO log.
+    *   Goal: Remove the redundant INFO log entry.
+    *   Option 1: Investigate source of the second call (after state collectors) and remove it.
+    *   Option 2 (Easier): Change the *first* instance of the log in `WebLifecycleManager._register_core_services` to `DEBUG`.
+    *   **Action:** Option 2 implemented. Changed the first log instance to DEBUG.
+    *   Affected Files:
+        *   `app/web/core/lifecycle_manager.py`
+*   [ ] **Task 5.5:** (Optional) Investigate multiple `GuildTemplateService` Facade initializations.
+    *   Goal: Understand why the facade `__init__` (and its DEBUG log) appears multiple times, even if it doesn't impact functionality directly.
+    *   Action: Trace where `GuildTemplateService` is instantiated.
+    *   Affected Files: Potentially many, start search from `WebServiceFactory` or where `GuildTemplateService` is used.
+    *   **Decision:** Skipping this optional task for now.
+
+## Phase 6: Final Verification
+
+*   [x] **Task 6.1:** Restart applications and capture final startup logs.
+    *   Action: `docker restart foundrycord-bot foundrycord-web`
+    *   Action: `docker logs foundrycord-web | cat` (Display directly)
+*   [x] **Task 6.2:** Review final logs.
+    *   Confirm `INFO` log provides a concise overview (~15-25 lines).
+    *   Confirm `DEBUG` log is significantly less verbose.
+    *   Confirm duplicate INFO log is resolved (either removed or changed to DEBUG).
+    *   Confirm Pydantic warnings are gone.
+*   [x] **Task 6.3:** Mark TODO as complete.
 
 ## General Notes / Future Considerations
 
