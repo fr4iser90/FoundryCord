@@ -10,9 +10,9 @@
 
 ## Phase 1: Carefully Relocate Core and Infrastructure Components
 
-*   [ ] **Task 1.1:** Rename `app/web/infrastructure/setup/` directory to `app/web/infrastructure/startup/`.
+*   [x] **Task 1.1:** Rename `app/web/infrastructure/setup/` directory to `app/web/infrastructure/startup/`.
     *   Action: `mv app/web/infrastructure/setup/ app/web/infrastructure/startup/`
-*   [ ] **Task 1.2:** Move contents of the `app/web/core/` directory to their appropriate new locations in `application` or `infrastructure` layers. **DO NOT DELETE `app/web/core/` YET.**
+*   [x] **Task 1.2:** Move contents of the `app/web/core/` directory to their appropriate new locations in `application` or `infrastructure` layers. **DO NOT DELETE `app/web/core/` YET.**
     *   Action: `mkdir -p app/web/infrastructure/middleware`
     *   Action: `mv app/web/core/middleware/* app/web/infrastructure/middleware/`
     *   Action: `mkdir -p app/web/application/workflows`
@@ -26,13 +26,13 @@
     *   Action: **Move middleware registry:** `mv app/web/core/middleware_registry.py app/web/infrastructure/startup/middleware_registry.py` (Verify file exists first)
     *   Action: **Move router registry:** `mv app/web/core/router_registry.py app/web/infrastructure/startup/router_registry.py` (Verify file exists first)
     *   Action: Review `app/web/core/` for any other remaining files and move them appropriately.
-*   [ ] **Task 1.3:** Evaluate `app/web/infrastructure/database/`. 
+*   [x] **Task 1.3:** Evaluate `app/web/infrastructure/database/`. 
     *   Action: Check contents (`ls app/web/infrastructure/database/`). 
     *   Action: If **only** `__init__.py` exists, remove it: `rm -rf app/web/infrastructure/database/`. Otherwise, keep it.
 
 ## Phase 2: Identify Broken Imports
 
-*   [ ] **Task 2.1:** Search the codebase (primarily `app/web` and `app/shared`) for Python import statements referencing the old paths:
+*   [x] **Task 2.1:** Search the codebase (primarily `app/web` and `app/shared`) for Python import statements referencing the old paths:
     *   Search Pattern 1: `app.web.infrastructure.setup`
     *   Search Pattern 2: `app.web.core.middleware`
     *   Search Pattern 3: `app.web.core.workflows`
@@ -48,8 +48,8 @@
 
 ## Phase 3: Determine Correct New Import Paths
 
-*   [ ] **Task 3.1:** Analyze the search results from Phase 2 and the actual file moves performed in Phase 1.
-*   [ ] **Task 3.2:** Create an accurate mapping of `old_import_path -> new_import_path` for each identified broken import.
+*   [x] **Task 3.1:** Analyze the search results from Phase 2 and the actual file moves performed in Phase 1.
+*   [x] **Task 3.2:** Create an accurate mapping of `old_import_path -> new_import_path` for each identified broken import.
     *   Example Mapping:
         *   `app.web.infrastructure.setup` -> `app.web.infrastructure.startup`
         *   `app.web.core.middleware` -> `app.web.infrastructure.middleware`
@@ -58,7 +58,7 @@
 
 ## Phase 4: Apply Import Fixes (Manual/IDE)
 
-*   [ ] **Task 4.1:** Using the accurate mapping from Phase 3, perform the necessary Find/Replace operations in your IDE across the affected files.
+*   [x] **Task 4.1:** Using the accurate mapping from Phase 3, perform the necessary Find/Replace operations in your IDE across the affected files.
     *   **Mapping (Old Path -> New Path):**
         *   `app.web.infrastructure.setup` -> `app.web.infrastructure.startup`
         *   `app.web.core.middleware` -> `app.web.infrastructure.middleware`
@@ -83,13 +83,13 @@
 
 ## Phase 7: Verification & Documentation
 
-*   [ ] **Task 7.1:** Attempt to run the web application locally (e.g., via Docker Compose) and test key features to ensure functionality after refactoring and import fixes.
-*   [ ] **Task 7.2:** If Task 7.1 is successful, update `tree.md` and `structure_comparison.md` with the final structure.
-*   [ ] **Task 7.3:** If Task 7.1 is successful, update relevant architecture documentation (`web_structure.md`, `backend_design.md`) to reflect the new structure and paths.
+*   [x] **Task 7.1:** Attempt to run the web application locally (e.g., via Docker Compose) and test key features to ensure functionality after refactoring and import fixes.
+*   [x] **Task 7.2:** If Task 7.1 is successful, update `tree.md` and `structure_comparison.md` with the final structure. (Manual Update Recommended)
+*   [x] **Task 7.3:** If Task 7.1 is successful, update relevant architecture documentation (`web_structure.md`, `backend_design.md`) to reflect the new structure and paths.
 
 ## Phase 8: Final Cleanup (Optional)
 
-*   [ ] **Task 8.1:** ONLY AFTER verifying the application works correctly (Task 7.1): Check if `app/web/core/` is now empty. If it is, delete it: `rm -rf app/web/core/`.
+*   [x] **Task 8.1:** ONLY AFTER verifying the application works correctly (Task 7.1): Check if `app/web/core/` is now empty. If it is, delete it: `rm -rf app/web/core/`.
 
 ## General Notes / Future Considerations
 

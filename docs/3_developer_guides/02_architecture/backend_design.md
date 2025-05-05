@@ -52,10 +52,10 @@ Describe the responsibilities of each layer:
 
 ## Error Handling
 
-*   **Controllers:** Catch specific exceptions from services/repositories and map them to appropriate `fastapi.HTTPException` responses with correct status codes and detail messages. Global exception handlers (`app/web/core/exception_handlers.py`) might exist for common error types (e.g., 404, 500).
+*   **Controllers:** Catch specific exceptions from services/repositories and map them to appropriate `fastapi.HTTPException` responses with correct status codes and detail messages. Global exception handlers (defined in `app/web/infrastructure/startup/exception_handlers.py`) might exist for common error types (e.g., 404, 500).
 *   **Services/Repositories:** Raise custom exceptions (defined possibly in `app/shared/domain/exceptions.py`) to indicate specific business rule violations or data access issues. Avoid leaking implementation details.
 
 ## Authentication & Authorization
 
-*   **Authentication:** Handled via FastAPI middleware (`app/web/core/middleware/authentication.py`) likely inspecting session cookies or Authorization headers (e.g., JWT). Relies on shared services like `AuthenticationService` (`app/shared/domain/services/auth/authentication_service.py`) and `SessionRepository` (`app/shared/infrastructure/repositories/auth/session_repository_impl.py`).
+*   **Authentication:** Handled via FastAPI middleware (e.g., `app/web/infrastructure/middleware/authentication.py`) likely inspecting session cookies or Authorization headers (e.g., JWT). Relies on shared services like `AuthenticationService` (`app/shared/domain/services/auth/authentication_service.py`) and `SessionRepository` (`app/shared/infrastructure/repositories/auth/session_repository_impl.py`).
 *   **Authorization:** Permissions and role checks are likely performed using FastAPI dependencies (`app/web/interfaces/api/rest/dependencies/auth_dependencies.py`) which utilize services like `AuthorizationService` (`app/shared/domain/services/auth/authorization_service.py`) to verify user permissions against required roles or resource ownership. 

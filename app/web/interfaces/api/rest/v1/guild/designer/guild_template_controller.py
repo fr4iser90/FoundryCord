@@ -38,8 +38,7 @@ import httpx
 from app.shared.interfaces.logging.api import get_web_logger
 logger = get_web_logger()
 # -------------------------------------------------------------------
-# --- NEW: Import settings if available --- 
-# from app.web.core.config import settings # Example, adjust path as needed
+
 INTERNAL_API_BASE_URL = "http://foundrycord-bot:9090" # Use container name, GET FROM CONFIG ideally
 # ----------------------------------------
 

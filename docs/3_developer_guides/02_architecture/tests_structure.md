@@ -1,28 +1,26 @@
 ```tree
-tests
+app/tests
 ├── conftest.py
-├── functional
-│   ├── __init__.py
-│   └── test_user_flow.py
 ├── __init__.py
 ├── integration
-│   ├── caching
-│   │   └── __init__.py
-│   ├── __init__.py
-│   ├── test_caching.py
-│   └── web
-│       └── __init__.py
-├── performance
-│   ├── __init__.py
-│   └── test_response_times.py
+│   ├── bot
+│   │   └── __init__.py
+│   └── __init__.py
 ├── pytest.ini
 ├── README.md
+├── test-results
 ├── unit
-│   ├── auth
-│   │   ├── __init__.py
-│   │   ├── test_auth.py
-│   │   ├── test_key_management.py
-│   │   └── test_key_repository.py
-│   └── __init__.py
+│   ├── bot
+│   │   ├── application
+│   │   │   └── services
+│   │   │       └── dashboard
+│   │   ├── __init__.py
+│   │   └── interfaces
+│   │       └── dashboards
+│   │           └── controller
+│   │               └── test_dashboard_controller.py
+│   └── __init__.py
 └── utils.py
-``` 
+
+12 directories, 10 files
+```
