@@ -4,8 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 # Corrected imports for middleware classes within the registry context
-from app.web.core.middleware.request_tracking import RequestTrackingMiddleware 
-from app.web.core.middleware.authentication import AuthenticationMiddleware
+from app.web.infrastructure.middleware.request_tracking import RequestTrackingMiddleware 
+from app.web.infrastructure.middleware.authentication import AuthenticationMiddleware
 from app.shared.infrastructure.security import get_security_bootstrapper
 
 logger = logging.getLogger(__name__)

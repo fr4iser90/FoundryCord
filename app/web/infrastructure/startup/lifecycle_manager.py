@@ -132,11 +132,11 @@ class WebLifecycleManager:
             )
             
             # Setup session middleware
-            from app.web.core.middleware import setup_session_middleware
+            from app.web.infrastructure.middleware import setup_session_middleware
             await setup_session_middleware(self.app)
             
             # Register routers
-            from app.web.core.router_registry import register_routers
+            from app.web.infrastructure.startup.router_registry import register_routers
             register_routers(self.app)
             
             logger.info("Web infrastructure setup completed")

@@ -3,7 +3,7 @@ from app.shared.infrastructure.models.auth import AppUserEntity
 from app.web.interfaces.api.rest.dependencies.auth_dependencies import get_current_user
 import psutil
 from app.shared.interfaces.logging.api import get_web_logger
-from app.web.core.extensions import templates_extension
+from app.web.infrastructure.extensions import templates_extension
 router = APIRouter()
 logger = get_web_logger()
 

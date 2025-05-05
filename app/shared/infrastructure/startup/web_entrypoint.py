@@ -23,7 +23,7 @@ async def start_web():
         
         # Import and run main after successful bootstrap
         try:
-            from app.web.core.main import main
+            from app.web.infrastructure.startup.main_app import main
             await main()
             return True
         except ImportError as ie:

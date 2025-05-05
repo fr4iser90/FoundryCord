@@ -19,6 +19,7 @@ from app.shared.infrastructure.repositories.guild_templates.guild_template_categ
 from app.shared.infrastructure.repositories.guild_templates.guild_template_channel_repository_impl import GuildTemplateChannelRepositoryImpl
 from app.shared.infrastructure.repositories.guild_templates.guild_template_category_permission_repository_impl import GuildTemplateCategoryPermissionRepositoryImpl
 from app.shared.infrastructure.repositories.guild_templates.guild_template_channel_permission_repository_impl import GuildTemplateChannelPermissionRepositoryImpl
+from app.shared.infrastructure.repositories.dashboards.dashboard_configuration_repository_impl import DashboardConfigurationRepositoryImpl
 from app.bot.application.services.discord.discord_query_service import DiscordQueryService
 from app.bot.application.services.dashboard.dashboard_lifecycle_service import DashboardLifecycleService # Import Lifecycle Service
 
@@ -40,6 +41,7 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
         chan_repo = GuildTemplateChannelRepositoryImpl(session)
         cat_perm_repo = GuildTemplateCategoryPermissionRepositoryImpl(session)
         chan_perm_repo = GuildTemplateChannelPermissionRepositoryImpl(session)
+        dashboard_config_repo = DashboardConfigurationRepositoryImpl(session)
         discord_query_service = DiscordQueryService(self.bot)
 
         # --- Retrieve DashboardLifecycleService via DashboardWorkflow attribute ---
@@ -336,10 +338,36 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
                             logger.info(f"[GuildWorkflow] [Guild:{guild_id}]     Dashboard enabled for '{discord_channel_object_to_use.name}'. Syncing from snapshot...")
                             try:
                                 # Assuming sync_dashboard_from_snapshot exists on lifecycle_service
+                                # --- MODIFIED LOGIC TO FETCH FULL CONFIG --- #
+                                snapshot_data = template_chan.dashboard_config_snapshot
+                                config_name = snapshot_data.get('name') if isinstance(snapshot_data, dict) else None
+                                
+                                if not config_name:
+                                    logger.error(f"[GuildWorkflow] [Guild:{guild_id}]     Snapshot data for dashboard in channel '{template_chan.channel_name}' is invalid or missing 'name'. Cannot sync.")
+                                    continue # Skip this dashboard
+                                    
+                                logger.debug(f"[GuildWorkflow] [Guild:{guild_id}]     Fetching full config for dashboard '{config_name}'...")
+                                config_entity = await dashboard_config_repo.find_by_name(config_name)
+                                
+                                if not config_entity or not config_entity.config:
+                                    logger.error(f"[GuildWorkflow] [Guild:{guild_id}]     Full dashboard configuration '{config_name}' not found in database or its config field is empty. Cannot sync dashboard for '{discord_channel_object_to_use.name}'.")
+                                    continue # Skip this dashboard
+                                    
+                                # --- Extract necessary info for the new signature --- #
+                                dashboard_name_for_sync = config_entity.name
+                                dashboard_type_for_sync = config_entity.dashboard_type
+                                full_config_data_for_sync = config_entity.config
+                                # --- End Extraction --- #
+                                
+                                # --- MODIFIED CALL with new arguments --- #
                                 await lifecycle_service.sync_dashboard_from_snapshot(
-                                    channel=discord_channel_object_to_use, 
-                                    config_json=template_chan.dashboard_config_snapshot
+                                    channel=discord_channel_object_to_use,
+                                    config_name=dashboard_name_for_sync,      # Pass Name
+                                    dashboard_type=dashboard_type_for_sync,  # Pass Type
+                                    config_data=full_config_data_for_sync    # Pass Config Dict
                                 )
+                                # --- END MODIFIED CALL --- #
+
                                 logger.info(f"[GuildWorkflow] [Guild:{guild_id}]       Successfully synced dashboard for '{discord_channel_object_to_use.name}' using snapshot.")
                             except AttributeError:
                                  logger.error(f"[GuildWorkflow] [Guild:{guild_id}]     LifecycleService does not have method 'sync_dashboard_from_snapshot'. Cannot sync dashboard for '{discord_channel_object_to_use.name}'.")

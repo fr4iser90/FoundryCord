@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
-from app.web.core.extensions import templates_extension
+from app.web.infrastructure.extensions import templates_extension
 
 router = APIRouter(tags=["Main"])
 

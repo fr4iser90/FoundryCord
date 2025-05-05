@@ -8,15 +8,15 @@ from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from app.shared.interfaces.logging.api import get_web_logger
-from app.web.core.middleware_registry import register_core_middleware
-from app.web.core.extensions import init_extensions
-from app.web.core.router_registry import register_routers
-from app.web.core.lifecycle_manager import WebLifecycleManager
-from app.web.core.workflow_manager import WebWorkflowManager
+from app.web.infrastructure.startup.middleware_registry import register_core_middleware
+from app.web.infrastructure.extensions import init_extensions
+from app.web.infrastructure.startup.router_registry import register_routers
+from app.web.infrastructure.startup.lifecycle_manager import WebLifecycleManager
+from app.web.application.workflow_manager import WebWorkflowManager
 from app.web.infrastructure.factories.service.web_service_factory import WebServiceFactory
 from contextlib import asynccontextmanager
 from app.shared.infrastructure.encryption.key_management_service import KeyManagementService
-from app.web.core.exception_handlers import http_exception_handler, generic_exception_handler
+from app.web.infrastructure.startup.exception_handlers import http_exception_handler, generic_exception_handler
 # Import the state collector initializer
 from app.shared.initializers.state_collectors import register_all_state_collectors
 
@@ -141,7 +141,7 @@ async def main():
         # Start uvicorn server
         # Pass log_config=None to disable default Uvicorn logging
         config = uvicorn.Config(
-            "app.web.core.main:app", 
+            "app.web.infrastructure.startup.main_app:app", 
             host="0.0.0.0", 
             port=8000, 
             reload=False, # Set reload to False for production explicitly

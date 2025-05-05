@@ -11,7 +11,7 @@ from app.shared.infrastructure.encryption.key_management_service import KeyManag
 from app.shared.interfaces.logging.api import get_web_logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import AsyncGenerator # Import AsyncGenerator for session dependency
-from app.web.core.lifecycle_manager import WebLifecycleManager
+from app.web.infrastructure.startup.lifecycle_manager import WebLifecycleManager
 
 logger = get_web_logger()
 

@@ -33,17 +33,17 @@
 ## Phase 2: Identify Broken Imports
 
 *   [ ] **Task 2.1:** Search the codebase (primarily `app/web` and `app/shared`) for Python import statements referencing the old paths:
-    *   Search Pattern 1: `app\.web\.infrastructure\.setup`
-    *   Search Pattern 2: `app\.web\.core\.middleware`
-    *   Search Pattern 3: `app\.web\.core\.workflows`
-    *   Search Pattern 4: `app\.web\.core\.extensions`
-    *   Search Pattern 5: `app\.web\.core\.main`
-    *   Search Pattern 6: `app\.web\.core\.lifecycle_manager`
-    *   Search Pattern 7: `app\.web\.core\.workflow_manager`
-    *   Search Pattern 8: `app\.web\.core\.exception_handlers`
-    *   Search Pattern 9: `app\.web\.core\.middleware_registry`
-    *   Search Pattern 10: `app\.web\.core\.router_registry`
-    *   Search Pattern 11: `app\.web\.infrastructure\.database` (If removed in 1.3)
+    *   Search Pattern 1: `app.web.infrastructure.setup`
+    *   Search Pattern 2: `app.web.core.middleware`
+    *   Search Pattern 3: `app.web.core.workflows`
+    *   Search Pattern 4: `app.web.core.extensions`
+    *   Search Pattern 5: `app.web.core.main`
+    *   Search Pattern 6: `app.web.core.lifecycle_manager`
+    *   Search Pattern 7: `app.web.core.workflow_manager`
+    *   Search Pattern 8: `app.web.core.exception_handlers`
+    *   Search Pattern 9: `app.web.infrastructure.middleware_registry`
+    *   Search Pattern 10: `app.web.core.router_registry`
+    *   Search Pattern 11: `app.web.infrastructure.database` (If removed in 1.3)
     *   Action: List all files containing these imports.
 
 ## Phase 3: Determine Correct New Import Paths
@@ -59,6 +59,17 @@
 ## Phase 4: Apply Import Fixes (Manual/IDE)
 
 *   [ ] **Task 4.1:** Using the accurate mapping from Phase 3, perform the necessary Find/Replace operations in your IDE across the affected files.
+    *   **Mapping (Old Path -> New Path):**
+        *   `app.web.infrastructure.setup` -> `app.web.infrastructure.startup`
+        *   `app.web.core.middleware` -> `app.web.infrastructure.middleware`
+        *   `app.web.infrastructure.middleware_registry` -> `app.web.infrastructure.startup.middleware_registry`
+        *   `app.web.core.workflows` -> `app.web.application.workflows`
+        *   `app.web.core.extensions` -> `app.web.infrastructure.extensions`
+        *   `app.web.core.main` -> `app.web.infrastructure.startup.main_app`
+        *   `app.web.core.lifecycle_manager` -> `app.web.infrastructure.startup.lifecycle_manager`
+        *   `app.web.core.workflow_manager` -> `app.web.application.workflow_manager`
+        *   `app.web.core.exception_handlers` -> `app.web.infrastructure.startup.exception_handlers`
+        *   `app.web.core.router_registry` -> `app.web.infrastructure.startup.router_registry`
 
 ## Phase 5: Standardize Interface Layer (Review Only)
 

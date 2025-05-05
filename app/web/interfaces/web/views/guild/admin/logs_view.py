@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, status
-from app.web.core.extensions import templates_extension
+from app.web.infrastructure.extensions import templates_extension
 from app.shared.infrastructure.database.session import session_context
 from app.shared.infrastructure.models import AppUserEntity, DiscordGuildUserEntity, GuildEntity
 from sqlalchemy import select

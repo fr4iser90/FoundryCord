@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse
-from app.web.core.extensions import templates_extension
+from app.web.infrastructure.extensions import templates_extension
 from app.shared.infrastructure.models.auth import AppUserEntity, AppRoleEntity
 from app.shared.domain.auth.services import AuthenticationService, AuthorizationService
 from app.shared.domain.auth.policies import is_authorized, is_bot_owner, is_admin, is_moderator, is_user, is_guest

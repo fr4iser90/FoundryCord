@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional
-from app.web.core.workflows.base_workflow import BaseWorkflow
+from app.web.application.workflows.base_workflow import BaseWorkflow
 from app.shared.interfaces.logging.api import get_web_logger
 from app.web.infrastructure.factories.service.web_service_factory import WebServiceFactory
 
@@ -23,7 +23,7 @@ class WebWorkflowManager:
         """Initialize all workflows."""
         try:
             # Hier könnten wir default-Workflows registrieren
-            from app.web.core.workflows.service_workflow import WebServiceWorkflow
+            from app.web.application.workflows.service_workflow import WebServiceWorkflow
             self.register_workflow(WebServiceWorkflow(), "service_workflow", [])
             
             # Setze eine Standard-Initialisierungsreihenfolge
