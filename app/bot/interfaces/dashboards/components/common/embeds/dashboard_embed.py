@@ -57,7 +57,7 @@ def format_string(template_string: Optional[str], data: Dict[str, Any]) -> str:
         return formatted_string
     except Exception as e:
         logger.error(f"Error formatting string '{template_string[:50]}...' with dict data: {e}", exc_info=True)
-        return template_string 
+        return template_string # Return original on error
 
 class DashboardEmbed(BaseComponent):
     """Main dashboard embed for displaying dashboard content."""
@@ -122,19 +122,27 @@ class DashboardEmbed(BaseComponent):
                                 if field_value_template == '{{projects}}' and 'projects' in data and isinstance(data.get('projects'), list):
                                     project_list = data.get('projects', [])
                                     if project_list:
-                                        formatted_lines = [f"- {p.get('name', 'N/A')} ({p.get('status', 'N/A')})" for p in project_list]
+                                        # Ensure project items are dictionaries before accessing .get()
+                                        formatted_lines = []
+                                        for p in project_list:
+                                            if isinstance(p, dict):
+                                                name = p.get('name', 'N/A')
+                                                status = p.get('status', 'N/A')
+                                                formatted_lines.append(f"- {name} ({status})")
+                                            else:
+                                                # Handle cases where items in the list might not be dicts
+                                                formatted_lines.append(f"- {str(p)}") 
                                         formatted_field_value = "\\n".join(formatted_lines)
                                     else:
                                         formatted_field_value = "No projects found."
                                     logger.debug(f"[{instance_id}] Field '{field_name}' formatted as project list: {formatted_field_value[:50]}...")
-                                # --- START: Python formatting for 'server_status_summary' ---
+                                # --- START: Python formatting for 'server_status_summary' (Keep this too) ---
                                 elif field_value_template == '{{server_status_summary}}' and 'services' in data and isinstance(data.get('services'), dict):
                                     service_statuses = data.get('services', {})
                                     online_count = 0
                                     offline_count = 0
                                     other_count = 0
                                     for status in service_statuses.values():
-                                        # Basic check, might need refinement based on actual status strings
                                         if isinstance(status, str):
                                             if 'online' in status.lower():
                                                 online_count += 1
@@ -142,7 +150,7 @@ class DashboardEmbed(BaseComponent):
                                                 offline_count += 1
                                             else:
                                                 other_count += 1
-                                        else: # Handle unexpected status types
+                                        else: 
                                             other_count += 1
                                             
                                     summary_parts = []
@@ -156,14 +164,14 @@ class DashboardEmbed(BaseComponent):
                                     formatted_field_value = " | ".join(summary_parts) if summary_parts else "N/A"
                                     logger.debug(f"[{instance_id}] Field '{field_name}' formatted as server status summary: {formatted_field_value}")
                                 else:
-                                    # --- ELSE: Fallback to generic format_string (CORRECTED CALL) ---
+                                    # --- ELSE: Fallback to generic format_string ---
                                     try:
                                         formatted_field_value = format_string(field_value_template, data)
-                                        logger.debug(f"[{instance_id}] Field '{field_name}' processed using format_string. Result: {formatted_field_value[:100]}...") # Log first 100 chars
+                                        logger.debug(f"[{instance_id}] Field '{field_name}' processed using format_string. Result: {formatted_field_value[:100]}...") 
                                     except Exception as fmt_e:
                                         logger.warning(f"[{instance_id}] Failed to format field '{field_name}' with template '{field_value_template}' using format_string: {fmt_e}", exc_info=False)
                                         formatted_field_value = f"Error formatting field '{field_name}'"
-                                # --- END: Python formatting for 'projects' list ---
+                                # --- END: Python formatting blocks ---
                             # --- END ELSE ---
                             
                             else: # Fallback if data is not dict or list, or if template didn't match list pattern
