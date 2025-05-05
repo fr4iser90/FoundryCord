@@ -62,7 +62,7 @@ class GuildTemplateWorkflow(BaseWorkflow):
     async def initialize(self) -> bool:
         """Initialize the workflow globally."""
         # Repositories are session-scoped, so no global initialization needed here.
-        logger.info("Guild Template Workflow initialized.")
+        logger.info("[GuildTemplateWorkflow] Initialized successfully.")
         return True
 
     async def create_template_for_guild(self, 
@@ -78,7 +78,7 @@ class GuildTemplateWorkflow(BaseWorkflow):
                         If None, a new session context will be created.
         """
         guild_id_str = str(guild.id)
-        logger.info(f"Attempting to create structure template for guild: {guild.name} ({guild_id_str})")
+        logger.info(f"[GuildTemplateWorkflow] [Guild:{guild_id_str}] Starting template creation for guild '{guild.name}'...")
 
         # Determine if we need to create a session context or use the provided one
         if db_session:
@@ -88,7 +88,7 @@ class GuildTemplateWorkflow(BaseWorkflow):
                 async with session_context() as session:
                     return await self._create_template_with_session(guild, guild_id_str, guild_config, session)
             except Exception as e:
-                logger.error(f"An error occurred during template creation for guild {guild_id_str} (within session context): {e}", exc_info=True)
+                logger.error(f"[GuildTemplateWorkflow] [Guild:{guild_id_str}] Error during template creation (outer scope): {e}", exc_info=True)
                 return False
 
     async def _create_template_with_session(self, 
@@ -107,9 +107,9 @@ class GuildTemplateWorkflow(BaseWorkflow):
 
             existing_template = await template_repo.get_by_guild_id(guild_id_str)
             if existing_template:
-                logger.info(f"Template already exists for guild {guild_id_str}. Checking active status.")
+                logger.info(f"[GuildTemplateWorkflow] [Guild:{guild_id_str}] Template already exists for guild. Checking active status.")
                 template_db_id = existing_template.id
-                logger.debug(f"Existing template found ID: {template_db_id}")
+                logger.debug(f"[GuildTemplateWorkflow] [Guild:{guild_id_str}] Existing template found ID: {template_db_id}")
             else:
                 template_name = f"Initial Snapshot - {guild.name} - {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}"
                 template_record = await template_repo.create(
@@ -120,31 +120,31 @@ class GuildTemplateWorkflow(BaseWorkflow):
                     logger.error(f"Failed to create main template record for guild {guild_id_str}")
                     return False
                 template_db_id = template_record.id
-                logger.debug(f"Created main template record ID: {template_db_id} for guild {guild_id_str}")
+                logger.debug(f"[GuildTemplateWorkflow] [Guild:{guild_id_str}] Created main template record ID: {template_db_id}")
             
             # --- Update GuildConfig ---
             try:
                 # Directly use the passed guild_config object
                 if guild_config.active_template_id != template_db_id:
-                    logger.info(f"Setting active_template_id to {template_db_id} on passed GuildConfig object for guild {guild_id_str}")
+                    logger.info(f"[GuildTemplateWorkflow] [Guild:{guild_id_str}] Setting active_template_id to {template_db_id} on passed GuildConfig object")
                     guild_config.active_template_id = template_db_id
                     # The change to guild_config will be committed by the caller (GuildWorkflow)
-                    logger.info(f"Successfully set active_template_id on GuildConfig object for guild {guild_id_str}.")
+                    logger.info(f"[GuildTemplateWorkflow] [Guild:{guild_id_str}] Successfully set active_template_id on GuildConfig object.")
                 else:
-                    logger.info(f"Template {template_db_id} is already active on passed GuildConfig object for guild {guild_id_str}. No change needed.")
+                    logger.info(f"[GuildTemplateWorkflow] [Guild:{guild_id_str}] Template {template_db_id} is already active on passed GuildConfig object. No change needed.")
                 
             except AttributeError as attr_err:
-                logger.error(f"AttributeError working with passed GuildConfig object for guild {guild_id_str}: {attr_err}", exc_info=True)
+                logger.error(f"[GuildTemplateWorkflow] [Guild:{guild_id_str}] AttributeError working with passed GuildConfig object: {attr_err}", exc_info=True)
                 return False # Critical error
             except Exception as config_err:
-                 logger.error(f"Error updating passed GuildConfig object for guild {guild_id_str}: {config_err}", exc_info=True)
+                 logger.error(f"[GuildTemplateWorkflow] [Guild:{guild_id_str}] Error updating passed GuildConfig object: {config_err}", exc_info=True)
                  return False # Critical error
             # --- End Update GuildConfig ---
 
             if existing_template:
                 # If the template already existed, we only needed to ensure it's set as active.
                 # We don't need to re-process the guild structure.
-                logger.debug("Skipping structure processing as template already existed.")
+                logger.debug("[GuildTemplateWorkflow] Skipping structure processing as template already existed.")
                 return True
 
             # --- Process Guild Structure --- 
@@ -187,7 +187,7 @@ class GuildTemplateWorkflow(BaseWorkflow):
             # Process channels (including those without categories)
             all_channels = sorted(
                  [ch for ch in guild.channels if isinstance(ch, (nextcord.TextChannel, nextcord.VoiceChannel, nextcord.StageChannel, nextcord.ForumChannel))],
-                 key=lambda c: c.position
+                 key=lambda c: c.position # Keep debug logs concise for now, prefix optional
              )
             for channel in all_channels:
                  logger.debug(f"Processing channel: {channel.name} (Type: {channel.type}, Pos: {channel.position})")
@@ -226,14 +226,14 @@ class GuildTemplateWorkflow(BaseWorkflow):
                          logger.debug(f"      Created channel permission record ID: {perm_record.id}")
                          chan_perm_count += 1
             logger.info(
-                f"Successfully created template structure for guild {guild.name} ({guild_id_str}) within session: "
+                f"[GuildTemplateWorkflow] [Guild:{guild_id_str}] Template creation successful: "
                 f"{category_count} categories, {channel_count} channels, "
                 f"{cat_perm_count} category permissions, {chan_perm_count} channel permissions."
             )
             return True
 
         except Exception as e:
-            logger.error(f"An error occurred during template creation for guild {guild_id_str} (within _create_template_with_session): {e}", exc_info=True)
+            logger.error(f"[GuildTemplateWorkflow] [Guild:{guild_id_str}] Error during template creation (inner scope): {e}", exc_info=True)
             # Rollback is handled by the session_context manager
             return False
 
@@ -245,7 +245,7 @@ class GuildTemplateWorkflow(BaseWorkflow):
         return True
 
     async def cleanup(self) -> None:
-        logger.info("Cleaning up Guild Template Workflow.")
+        logger.info("[GuildTemplateWorkflow] Cleanup successful.")
         await super().cleanup()
 
     async def cleanup_guild(self, guild_id: str) -> None:

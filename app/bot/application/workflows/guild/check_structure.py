@@ -34,26 +34,26 @@ async def check_and_create_category(
     category_with_same_name = nextcord.utils.get(discord_guild.categories, name=template_cat.category_name)
 
     if category_with_same_name:
-        logger.warning(f"      Category '{template_cat.category_name}' already exists on server (ID: {category_with_same_name.id}). Template likely out of sync. Skipping creation to avoid duplicate.")
+        logger.warning(f"[GuildWorkflow]       Category '{template_cat.category_name}' already exists on server (ID: {category_with_same_name.id}). Template likely out of sync. Skipping creation to avoid duplicate.")
         return None # Skip creation
 
     # --- Proceed with Creation Logic ---
-    logger.info(f"    Category '{template_cat.category_name}' does not appear to exist by name server-wide. Proceeding with creation...")
+    logger.info(f"[GuildWorkflow]     Category '{template_cat.category_name}' does not appear to exist by name server-wide. Proceeding with creation...")
     try:
         new_discord_cat = await discord_guild.create_category(
             name=template_cat.category_name,
             overwrites=creation_overwrites,
             reason=f"Applying template: {template_name}"
         )
-        logger.info(f"      Successfully created category '{new_discord_cat.name}' (ID: {new_discord_cat.id}) at position {new_discord_cat.position}")
+        logger.info(f"[GuildWorkflow]       Successfully created category '{new_discord_cat.name}' (ID: {new_discord_cat.id}) at position {new_discord_cat.position}")
         return new_discord_cat
 
     except nextcord.Forbidden:
-        logger.error(f"      PERMISSION ERROR: Cannot create category '{template_cat.category_name}'. Check bot permissions.")
+        logger.error(f"[GuildWorkflow]       PERMISSION ERROR: Cannot create category '{template_cat.category_name}'. Check bot permissions.")
     except nextcord.HTTPException as http_err:
-        logger.error(f"      HTTP ERROR creating category '{template_cat.category_name}': {http_err}")
+        logger.error(f"[GuildWorkflow]       HTTP ERROR creating category '{template_cat.category_name}': {http_err}")
     except Exception as creation_err:
-        logger.error(f"      UNEXPECTED ERROR creating category '{template_cat.category_name}': {creation_err}", exc_info=True)
+        logger.error(f"[GuildWorkflow]       UNEXPECTED ERROR creating category '{template_cat.category_name}': {creation_err}", exc_info=True)
 
     return None # Return None if creation failed
 
@@ -82,13 +82,13 @@ async def check_and_create_channel(
     channel_with_same_name = nextcord.utils.get(discord_guild.channels, name=template_chan.channel_name)
 
     if channel_with_same_name:
-        logger.warning(f"      Channel '{template_chan.channel_name}' already exists on server (ID: {channel_with_same_name.id}, Category: {channel_with_same_name.category}). Template likely out of sync. Skipping creation to avoid duplicate.")
+        logger.warning(f"[GuildWorkflow]       Channel '{template_chan.channel_name}' already exists on server (ID: {channel_with_same_name.id}, Category: {channel_with_same_name.category}). Template likely out of sync. Skipping creation to avoid duplicate.")
         # Optionally link existing channel ID back to template_chan in DB here if needed
         # template_chan.discord_channel_id = str(channel_with_same_name.id)
         return None # Skip creation
 
     # --- Proceed with Creation Logic (moved from apply_template) ---
-    logger.info(f"    Channel '{template_chan.channel_name}' does not appear to exist by name server-wide. Proceeding with creation...")
+    logger.info(f"[GuildWorkflow]     Channel '{template_chan.channel_name}' does not appear to exist by name server-wide. Proceeding with creation...")
 
     creation_kwargs = {
         'name': template_chan.channel_name,
@@ -126,20 +126,20 @@ async def check_and_create_channel(
         })
         channel_creator = discord_guild.create_forum
     else:
-        logger.error(f"      Unsupported channel type '{template_chan.channel_type}' in template. Cannot create.")
+        logger.error(f"[GuildWorkflow]       Unsupported channel type '{template_chan.channel_type}' in template. Cannot create.")
         return None # Skip this channel
 
     # Create the channel
     try:
         new_discord_chan = await channel_creator(**creation_kwargs)
-        logger.info(f"      Successfully created {template_chan.channel_type} channel '{new_discord_chan.name}' (ID: {new_discord_chan.id})")
+        logger.info(f"[GuildWorkflow]       Successfully created {template_chan.channel_type} channel '{new_discord_chan.name}' (ID: {new_discord_chan.id})")
         return new_discord_chan # Return the created channel object
 
     except nextcord.Forbidden:
-        logger.error(f"      PERMISSION ERROR: Cannot create {template_chan.channel_type} channel '{template_chan.channel_name}'. Check bot permissions.")
+        logger.error(f"[GuildWorkflow]       PERMISSION ERROR: Cannot create {template_chan.channel_type} channel '{template_chan.channel_name}'. Check bot permissions.")
     except nextcord.HTTPException as http_err:
-        logger.error(f"      HTTP ERROR creating {template_chan.channel_type} channel '{template_chan.channel_name}': {http_err}")
+        logger.error(f"[GuildWorkflow]       HTTP ERROR creating {template_chan.channel_type} channel '{template_chan.channel_name}': {http_err}")
     except Exception as creation_err:
-        logger.error(f"      UNEXPECTED ERROR creating {template_chan.channel_type} channel '{template_chan.channel_name}': {creation_err}", exc_info=True)
+        logger.error(f"[GuildWorkflow]       UNEXPECTED ERROR creating {template_chan.channel_type} channel '{template_chan.channel_name}': {creation_err}", exc_info=True)
 
     return None # Return None if creation failed

@@ -40,10 +40,10 @@
 - [ ] **Task 2.3: Implement Standardized Workflow Logging (Partial)**
     - **Description:** Implement consistent logging patterns for key workflows (e.g., dashboard activation, command execution, user synchronization). Log start, key steps, success, and failure points with clear, standardized messages.
     - **Affected Files:** Workflow implementation files (`app/bot/application/workflows/`).
-    - **Action:** Standardized logging for User Sync workflow (`user_workflow.py`). Other workflows pending.
+    - **Action:** Standardized logging for User Sync, Database, Guild Template, and Guild workflows (including sub-modules like sync, approval, template application). Other workflows (e.g., Commands, Dashboard) may need review.
 
 - [x] ~~**Task 2.4: Review and Adjust Configuration**~~
-    - ~~**Description:** Review the logging configuration (`log_config.py`?) to ensure appropriate default levels, handler settings (e.g., DB handler queue size, file rotation), and formatter settings align with the new standards. Adjust as needed.~~
+    - ~~**Description:** Review the logging configuration (`log_config.py`?) to ensure appropriate default levels, formatters, and handler settings (e.g., memory buffer flush level).~~
     - ~~**Affected Files:** `app/shared/application/logging/log_config.py` (or equivalent), `db_handler.py`.~~
     - ~~**Action:** Reviewed `log_config.py`. Set root logger level to DEBUG, removed unused variable, and changed memory handler flush level to ERROR for better debug/error visibility.~~
 

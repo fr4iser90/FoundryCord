@@ -38,72 +38,73 @@ class DashboardWorkflow(BaseWorkflow):
         """Initialize dashboard workflow globally and trigger lifecycle service."""
         try:
             self.bot = bot
-            logger.info("Initializing dashboard workflow (state management).")
+            logger.info("[DashboardWorkflow] Starting initialization...")
             
             if not self.bot:
-                 logger.error("Bot instance not provided to DashboardWorkflow initialize. Cannot start LifecycleService.")
+                 logger.error("[DashboardWorkflow] Bot instance not provided. Cannot start LifecycleService.")
                  return False
                  
             bot_id = getattr(self.bot.user, 'id', 'N/A')
             has_factory = hasattr(self.bot, 'service_factory')
             factory_type = type(getattr(self.bot, 'service_factory', None)).__name__
-            logger.info(f"[DEBUG dashboard_workflow.initialize] Received bot. Bot ID: {bot_id}, Has service_factory: {has_factory}, Factory Type: {factory_type}")
+            logger.debug(f"[DashboardWorkflow] Bot Info: ID={bot_id}, HasFactory={has_factory}, FactoryType={factory_type}")
             
-            logger.info("Instantiating DashboardLifecycleService...")
+            logger.info("[DashboardWorkflow] Instantiating DashboardLifecycleService...")
             self.lifecycle_service = DashboardLifecycleService(self.bot)
             init_success = await self.lifecycle_service.initialize() # This calls activate_db_configured_dashboards
             
             if not init_success:
-                 logger.error("DashboardLifecycleService initialization failed.")
+                 logger.error("[DashboardWorkflow] DashboardLifecycleService initialization failed.")
                  return False
                  
-            logger.info("Dashboard workflow and LifecycleService initialized successfully.")
+            logger.info("[DashboardWorkflow] Initialization successful (LifecycleService started).")
             return True
             
         except Exception as e:
-            logger.error(f"Dashboard workflow initialization failed: {e}", exc_info=True)
+            logger.error(f"[DashboardWorkflow] Initialization failed: {e}", exc_info=True)
             return False
             
     async def initialize_for_guild(self, guild_id: str, bot) -> bool:
         """Initialize workflow state for a specific guild"""
+        logger.info(f"[DashboardWorkflow] [Guild:{guild_id}] Initializing for guild...")
         try:
             # Update status to initializing
             self.guild_status[guild_id] = WorkflowStatus.INITIALIZING
             
             # Get the guild (basic check)
             if not bot:
-                logger.error("Bot instance not available for DashboardWorkflow")
+                logger.error("[DashboardWorkflow] Bot instance not available")
                 self.guild_status[guild_id] = WorkflowStatus.FAILED
                 return False
                 
             guild = bot.get_guild(int(guild_id))
             if not guild:
-                logger.error(f"Could not find guild {guild_id} in DashboardWorkflow")
+                logger.error(f"[DashboardWorkflow] [Guild:{guild_id}] Could not find guild object")
                 self.guild_status[guild_id] = WorkflowStatus.FAILED
                 return False
             
             # Mark as active (workflow state is ready, actual dashboards handled by LifecycleService)
-            logger.info(f"DashboardWorkflow state set to ACTIVE for guild {guild_id}. LifecycleService handles activation.")
+            logger.info(f"[DashboardWorkflow] [Guild:{guild_id}] State set to ACTIVE. LifecycleService handles activation.")
             self.guild_status[guild_id] = WorkflowStatus.ACTIVE
             return True
             
         except Exception as e:
-            logger.error(f"Error initializing dashboard workflow for guild {guild_id}: {e}", exc_info=True)
+            logger.error(f"[DashboardWorkflow] [Guild:{guild_id}] Error initializing for guild: {e}", exc_info=True)
             self.guild_status[guild_id] = WorkflowStatus.FAILED
             return False
     
     async def cleanup(self) -> None:
         """Cleanup workflow resources, including the lifecycle service."""
-        logger.info("Cleaning up dashboard workflow resources.")
+        logger.info("[DashboardWorkflow] Starting cleanup...")
         if self.lifecycle_service and hasattr(self.lifecycle_service, 'shutdown'):
-            logger.info("Shutting down DashboardLifecycleService...")
+            logger.info("[DashboardWorkflow] Shutting down DashboardLifecycleService...")
             try:
                 await self.lifecycle_service.shutdown()
             except Exception as e:
-                logger.error(f"Error shutting down DashboardLifecycleService: {e}", exc_info=True)
+                logger.error(f"[DashboardWorkflow] Error shutting down DashboardLifecycleService: {e}", exc_info=True)
         
         await super().cleanup()
-        logger.info("Dashboard workflow cleanup complete.")
+        logger.info("[DashboardWorkflow] Cleanup complete.")
     
     async def load_dashboards(self, repo: Optional[ActiveDashboardRepositoryImpl] = None) -> List: # Accept optional repo
         """Load all dashboards from the repository."""
@@ -116,24 +117,24 @@ class DashboardWorkflow(BaseWorkflow):
                     repo_instance = ActiveDashboardRepositoryImpl(session)
                     dashboards = await repo_instance.get_all_dashboards()
                     
-            logger.info(f"Loaded {len(dashboards)} dashboards from repository")
+            logger.info(f"[DashboardWorkflow] Loaded {len(dashboards)} dashboards from repository")
             return dashboards
         except Exception as e:
             # Handle specific error if table doesn't exist
             if "relation" in str(e).lower() and "does not exist" in str(e).lower():
-                 logger.warning("Dashboard tables don't exist yet, skipping dashboard load.")
+                 logger.warning("[DashboardWorkflow] Dashboard tables don't exist yet, skipping dashboard load.")
             else:
-                logger.error(f"Error retrieving dashboards: {e}", exc_info=True)
+                logger.error(f"[DashboardWorkflow] Error retrieving dashboards: {e}", exc_info=True)
             return [] # Return empty list on error
 
     async def start_background_tasks(self):
         """Start background tasks for dashboards."""
-        logger.info("Starting dashboard background tasks")
+        logger.info("[DashboardWorkflow] Starting dashboard background tasks (Not Implemented)")
         # We'll implement dashboard update tasks here
         
     async def cleanup_guild(self, guild_id: str) -> None:
         """Cleanup resources for a specific guild"""
-        logger.info(f"Cleaning up dashboard workflow for guild {guild_id}")
+        logger.info(f"[DashboardWorkflow] [Guild:{guild_id}] Cleaning up guild-specific state...")
         await super().cleanup_guild(guild_id)
         
         # Remove any dashboards for this guild using session context
@@ -142,10 +143,10 @@ class DashboardWorkflow(BaseWorkflow):
                 repo = ActiveDashboardRepositoryImpl(session)
                 dashboards = await repo.get_dashboards_by_guild(guild_id)
                 if dashboards:
-                     logger.info(f"Deleting {len(dashboards)} dashboards for guild {guild_id}")
+                     logger.info(f"[DashboardWorkflow] [Guild:{guild_id}] Deleting {len(dashboards)} dashboards...")
                      for dashboard in dashboards:
                         # Assuming delete_dashboard expects the entity object
                         await repo.delete_dashboard(dashboard) 
-                     logger.info(f"Finished deleting dashboards for guild {guild_id}")
+                     logger.info(f"[DashboardWorkflow] [Guild:{guild_id}] Finished deleting dashboards.")
         except Exception as e:
-            logger.error(f"Error cleaning up dashboards for guild {guild_id}: {e}", exc_info=True)
+            logger.error(f"[DashboardWorkflow] [Guild:{guild_id}] Error cleaning up dashboards: {e}", exc_info=True)

@@ -11,23 +11,23 @@ logger = get_bot_logger()
 
 async def initialize(self) -> bool:
     """Global initialization - minimal setup for all guilds"""
-    logger.info("[Initialize] Initializing guild workflow")
+    logger.info("[GuildWorkflow] Starting initialization...")
     try:
         async with session_context() as session:
             guild_repo = GuildRepositoryImpl(session)
             guild_config_repo = GuildConfigRepositoryImpl(session)
             
             guilds = await guild_repo.get_all()
-            logger.info(f"[Initialize] Found {len(guilds)} guilds in database")
+            logger.info(f"[GuildWorkflow] Found {len(guilds)} guilds in database")
             
             if not guilds and self.bot:
-                logger.info("[Initialize] No guilds in database, creating from Discord source...")
+                logger.info("[GuildWorkflow] No guilds in database, creating from Discord source...")
                 discord_guilds_list = self.bot.guilds
-                logger.info(f"[Initialize] Found {len(discord_guilds_list)} guilds from Discord API.")
+                logger.info(f"[GuildWorkflow] Found {len(discord_guilds_list)} guilds from Discord API.")
                 
                 for discord_guild in discord_guilds_list:
                     guild_id_str = str(discord_guild.id)
-                    logger.info(f"[Initialize] Processing discovered guild: {discord_guild.name} ({guild_id_str}) status: PENDING")
+                    logger.info(f"[GuildWorkflow] [Guild:{guild_id_str}] Processing discovered guild: {discord_guild.name} status: PENDING")
                     
                     guild_entity = await guild_repo.create_or_update(
                         guild_id=guild_id_str,
@@ -38,10 +38,10 @@ async def initialize(self) -> bool:
                         owner_id=str(discord_guild.owner_id) if discord_guild.owner_id else None
                     )
                     if not guild_entity:
-                        logger.error(f"[Initialize] Failed to create GuildEntity for {guild_id_str}. Skipping this guild.")
+                        logger.error(f"[GuildWorkflow] [Guild:{guild_id_str}] Failed to create GuildEntity. Skipping this guild.")
                         continue
                     
-                    logger.info(f"[Initialize] Creating default GuildConfigEntity for {guild_id_str}...")
+                    logger.info(f"[GuildWorkflow] [Guild:{guild_id_str}] Creating default GuildConfigEntity...")
                     config_entity = await guild_config_repo.create_or_update(
                         guild_id=guild_id_str,
                         guild_name=discord_guild.name,
@@ -50,42 +50,42 @@ async def initialize(self) -> bool:
                         template_delete_unmanaged=False
                     )
                     if not config_entity:
-                        logger.error(f"[Initialize] Failed to create GuildConfigEntity for {guild_id_str}. Approval might fail later!")
+                        logger.error(f"[GuildWorkflow] [Guild:{guild_id_str}] Failed to create GuildConfigEntity. Approval might fail later!")
                     else:
-                        logger.info(f"[Initialize] Default GuildConfigEntity created for {guild_id_str}.")
+                        logger.info(f"[GuildWorkflow] [Guild:{guild_id_str}] Default GuildConfigEntity created.")
                         
                     guilds.append(guild_entity)
 
-                logger.info(f"[Initialize] Finished processing {len(discord_guilds_list)} discovered guilds.")
+                logger.info(f"[GuildWorkflow] Finished processing {len(discord_guilds_list)} discovered guilds.")
             
             for guild in guilds:
                 guild_id_str = guild.guild_id
-                logger.info(f"[Initialize] Processing status for guild {guild.name} ({guild_id_str}) - DB Status: {guild.access_status}")
+                logger.info(f"[GuildWorkflow] [Guild:{guild_id_str}] Processing status - DB Status: {guild.access_status}")
                 current_status = guild.access_status or ACCESS_PENDING
                 self._guild_access_statuses[guild_id_str] = current_status
                 
                 if current_status == ACCESS_APPROVED:
                     self._guild_statuses[guild_id_str] = WorkflowStatus.ACTIVE
-                    logger.info(f"[Initialize] Guild {guild_id_str} is already APPROVED.")
+                    logger.info(f"[GuildWorkflow] [Guild:{guild_id_str}] Status: APPROVED.")
                     config = await guild_config_repo.get_by_guild_id(guild_id_str)
                     if not config:
-                         logger.error(f"[Initialize] CRITICAL: GuildConfigEntity missing for APPROVED guild {guild_id_str}! Database state inconsistent.")
+                         logger.error(f"[GuildWorkflow] [Guild:{guild_id_str}] CRITICAL: GuildConfigEntity missing for APPROVED guild! Database state inconsistent.")
                          await guild_config_repo.create_or_update(guild_id=guild_id_str, guild_name=guild.name) # Attempt recovery
                 elif current_status == ACCESS_REJECTED:
                     self._guild_statuses[guild_id_str] = WorkflowStatus.UNAUTHORIZED
-                    logger.info(f"[Initialize] Guild {guild_id_str} is REJECTED.")
+                    logger.info(f"[GuildWorkflow] [Guild:{guild_id_str}] Status: REJECTED.")
                 elif current_status == ACCESS_SUSPENDED:
                     self._guild_statuses[guild_id_str] = WorkflowStatus.UNAUTHORIZED
-                    logger.info(f"[Initialize] Guild {guild_id_str} is SUSPENDED.")
+                    logger.info(f"[GuildWorkflow] [Guild:{guild_id_str}] Status: SUSPENDED.")
                 else: # PENDING
                     self._guild_statuses[guild_id_str] = WorkflowStatus.PENDING
                     if guild.access_status != ACCESS_PENDING:
-                        logger.warning(f"[Initialize] Guild {guild_id_str} has unexpected status '{guild.access_status}'. Setting to PENDING.")
+                        logger.warning(f"[GuildWorkflow] [Guild:{guild_id_str}] Unexpected DB status '{guild.access_status}'. Setting to PENDING.")
                         await guild_repo.update_access_status(guild_id_str, ACCESS_PENDING)
-                    logger.info(f"[Initialize] Guild {guild_id_str} is PENDING approval.")
+                    logger.info(f"[GuildWorkflow] [Guild:{guild_id_str}] Status: PENDING approval.")
                 
-        logger.info("[Initialize] Guild workflow initialization complete.")
+        logger.info("[GuildWorkflow] Initialization complete.")
         return True
     except Exception as e:
-        logger.error(f"[Initialize] Error during guild workflow initialization: {e}", exc_info=True)
+        logger.error(f"[GuildWorkflow] Error during initialization: {e}", exc_info=True)
         return False

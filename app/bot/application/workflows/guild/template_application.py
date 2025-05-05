@@ -26,10 +26,10 @@ logger = get_bot_logger()
 
 async def apply_template(self, guild_id: str, config: GuildConfigEntity, session: AsyncSession) -> bool:
     """Applies the stored template structure to the Discord guild using the provided session and config."""
-    logger.info(f"[apply_template] Applying template for guild {guild_id} using provided session and config.")
+    logger.info(f"[GuildWorkflow] [Guild:{guild_id}] Starting template application...")
     discord_guild = self.bot.get_guild(int(guild_id))
     if not discord_guild:
-        logger.error(f"[apply_template] Could not find Discord guild {guild_id}")
+        logger.error(f"[GuildWorkflow] [Guild:{guild_id}] Could not find Discord guild object")
         return False
 
     try:
@@ -48,27 +48,27 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
             if hasattr(self.bot.dashboard_workflow, 'lifecycle_service'):
                 lifecycle_service = self.bot.dashboard_workflow.lifecycle_service
                 if lifecycle_service:
-                    logger.info("[apply_template] Successfully retrieved DashboardLifecycleService.")
+                    logger.info(f"[GuildWorkflow] [Guild:{guild_id}] Successfully retrieved DashboardLifecycleService.")
                 else:
-                    logger.warning("[apply_template] DashboardWorkflow has lifecycle_service attribute, but it's None.")
+                    logger.warning(f"[GuildWorkflow] [Guild:{guild_id}] DashboardWorkflow has lifecycle_service attribute, but it's None.")
             else:
-                logger.error("[apply_template] DashboardWorkflow exists, but does not have a 'lifecycle_service' attribute.")
+                logger.error(f"[GuildWorkflow] [Guild:{guild_id}] DashboardWorkflow exists, but does not have a 'lifecycle_service' attribute.")
         else:
-            logger.warning("[apply_template] DashboardWorkflow not found on bot instance. Cannot process dashboards.")
+            logger.warning(f"[GuildWorkflow] [Guild:{guild_id}] DashboardWorkflow not found on bot instance. Cannot process dashboards.")
         # -------------------------------------------------------------------------
 
         # 1. Load Template Data (using active_template_id from passed config)
-        logger.debug(f"[apply_template] Using active_template_id from passed GuildConfig.")
+        logger.debug(f"[GuildWorkflow] [Guild:{guild_id}] Using active_template_id from passed GuildConfig.")
         if not config or config.active_template_id is None:
-            logger.error(f"[apply_template] CRITICAL: Passed GuildConfig has no active_template_id.")
+            logger.error(f"[GuildWorkflow] [Guild:{guild_id}] CRITICAL: Passed GuildConfig has no active_template_id.")
             return False
 
         active_template_id = config.active_template_id
-        logger.info(f"[apply_template] Applying template ID: {active_template_id}")
+        logger.info(f"[GuildWorkflow] [Guild:{guild_id}] Applying template ID: {active_template_id}")
 
         template = await template_repo.get_by_id(active_template_id)
         if not template:
-            logger.error(f"[apply_template] Active template ID {active_template_id} not found.")
+            logger.error(f"[GuildWorkflow] [Guild:{guild_id}] Active template ID {active_template_id} not found.")
             return False
 
         # Fetch template structure using repositories (already loads needed attributes)
@@ -76,8 +76,8 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
         template_channels = await chan_repo.get_by_template_id(template.id)
         # Permissions will be fetched later as needed by helpers
 
-        logger.info(f"[apply_template] Loaded active template '{template.template_name}' (ID: {template.id}) for guild {guild_id}")
-        logger.debug(f"  Template contains {len(template_categories)} categories and {len(template_channels)} channels.")
+        logger.info(f"[GuildWorkflow] [Guild:{guild_id}] Loaded active template '{template.template_name}' (ID: {template.id})")
+        logger.debug(f"[GuildWorkflow] [Guild:{guild_id}]   Template contains {len(template_categories)} categories and {len(template_channels)} channels.")
 
         # ----------------------------------------------------------
         # 2. Get Current Discord State (using the new service)
@@ -92,7 +92,7 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
         # Map Discord category name -> Discord category ID (using live data)
         discord_categories_by_name = {cat_data['name']: cat_id for cat_id, cat_data in live_categories.items()}
 
-        logger.debug(f"  Found {len(live_categories)} categories currently on Discord.")
+        logger.debug(f"[GuildWorkflow] [Guild:{guild_id}]   Found {len(live_categories)} categories currently on Discord.")
 
         # ----------------------------------------------------------
         # 3. Process Categories (Create/Update on Discord based on Template)
@@ -104,7 +104,7 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
         sorted_template_categories = sorted(template_categories, key=lambda c: c.position)
 
         for template_cat in sorted_template_categories:
-            logger.debug(f"  Processing template category: '{template_cat.category_name}' (Pos: {template_cat.position})")
+            logger.debug(f"[GuildWorkflow] [Guild:{guild_id}]   Processing template category: '{template_cat.category_name}' (Pos: {template_cat.position})")
         
             existing_discord_cat_id = discord_categories_by_name.get(template_cat.category_name)
             existing_discord_cat_object = None
@@ -113,7 +113,7 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
                     existing_discord_cat_object = discord_guild.get_channel(existing_discord_cat_id) 
 
             if existing_discord_cat_object and isinstance(existing_discord_cat_object, nextcord.CategoryChannel): 
-                logger.info(f"    Category '{template_cat.category_name}' already exists on Discord (ID: {existing_discord_cat_object.id}).")
+                logger.info(f"[GuildWorkflow] [Guild:{guild_id}]     Category '{template_cat.category_name}' already exists on Discord (ID: {existing_discord_cat_object.id}).")
                 
                 # --- Check for updates ---
                 updates_needed = {}
@@ -122,19 +122,20 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
                 
                 if updates_needed:
                     try:
-                        logger.info(f"      Updating category '{existing_discord_cat_object.name}' ({existing_discord_cat_object.id}) with changes: {updates_needed}")
+                        logger.info(f"[GuildWorkflow] [Guild:{guild_id}]       Updating category '{existing_discord_cat_object.name}' ({existing_discord_cat_object.id}) with changes: {updates_needed}")
                         await existing_discord_cat_object.edit(**updates_needed, reason="Applying template updates")
-                        logger.debug(f"        Successfully updated category.")
+                        logger.debug(f"[GuildWorkflow] [Guild:{guild_id}]         Successfully updated category.")
                     except nextcord.Forbidden:
-                        logger.error(f"        PERMISSION ERROR updating category '{existing_discord_cat_object.name}'.")
+                        logger.error(f"[GuildWorkflow] [Guild:{guild_id}]         PERMISSION ERROR updating category '{existing_discord_cat_object.name}'.")
                     except nextcord.HTTPException as http_err:
-                        logger.error(f"        HTTP ERROR updating category '{existing_discord_cat_object.name}': {http_err}")
+                        logger.error(f"[GuildWorkflow] [Guild:{guild_id}]         HTTP ERROR updating category '{existing_discord_cat_object.name}': {http_err}")
                     except Exception as update_err:
-                        logger.error(f"        UNEXPECTED ERROR updating category '{existing_discord_cat_object.name}': {update_err}", exc_info=True)
+                        logger.error(f"[GuildWorkflow] [Guild:{guild_id}]         UNEXPECTED ERROR updating category '{existing_discord_cat_object.name}': {update_err}", exc_info=True)
                 else:
-                    logger.debug("      No attribute updates needed for existing category.")
+                    logger.debug("[GuildWorkflow] [Guild:{guild_id}]       No attribute updates needed for existing category.")
 
                 # Apply permissions 
+                logger.debug(f"[GuildWorkflow] [Guild:{guild_id}]     Applying permissions to existing category '{existing_discord_cat_object.name}'...")
                 await self._apply_category_permissions(existing_discord_cat_object, template_cat.id, cat_perm_repo)
                 
                 # Store mapping and mark as processed
@@ -142,7 +143,7 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
                 processed_live_category_ids.add(existing_discord_cat_object.id) 
 
             else:
-                logger.info(f"    Category '{template_cat.category_name}' does not exist or is wrong type. Creating...")
+                logger.info(f"[GuildWorkflow] [Guild:{guild_id}]     Category '{template_cat.category_name}' does not exist or is wrong type. Creating...")
                 try:
                     # Apply permissions during creation using overwrites parameter
                     creation_overwrites = await self._prepare_permission_overwrites(
@@ -162,20 +163,20 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
                     )
                     
                     if new_discord_cat:
-                        logger.debug(f"      Successfully created category via helper function")
+                        logger.debug(f"[GuildWorkflow] [Guild:{guild_id}]       Successfully created category via helper function")
                         # Store mapping and mark as processed
                         created_or_found_discord_categories[template_cat.id] = new_discord_cat
                         processed_live_category_ids.add(new_discord_cat.id)
                     else:
-                        logger.warning(f"      Failed to create category '{template_cat.category_name}' via helper function")
+                        logger.warning(f"[GuildWorkflow] [Guild:{guild_id}]       Failed to create category '{template_cat.category_name}' via helper function")
 
                 except Exception as creation_err:
-                    logger.error(f"      UNEXPECTED ERROR during category creation process for '{template_cat.category_name}': {creation_err}", exc_info=True)
+                    logger.error(f"[GuildWorkflow] [Guild:{guild_id}]       UNEXPECTED ERROR during category creation process for '{template_cat.category_name}': {creation_err}", exc_info=True)
 
         # ----------------------------------------------------------
         # 4. Process Channels (Create/Update/Delete)
         # ----------------------------------------------------------
-        logger.info("[apply_template] Processing channels...")
+        logger.info(f"[GuildWorkflow] [Guild:{guild_id}] Processing channels...")
         
         # --- Create Lookups ---
         # Map template channel ID -> template channel entity
@@ -195,14 +196,14 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
         sorted_template_channels = sorted(template_channels, key=lambda c: c.position)
 
         for template_chan in sorted_template_channels:
-            logger.debug(f"  Processing template channel: '{template_chan.channel_name}' (Type: {template_chan.channel_type}, Pos: {template_chan.position}, DB_ID: {template_chan.id})")
+            logger.debug(f"[GuildWorkflow] [Guild:{guild_id}]   Processing template channel: '{template_chan.channel_name}' (Type: {template_chan.channel_type}, Pos: {template_chan.position}, DB_ID: {template_chan.id})")
 
             target_discord_category = None
             if template_chan.parent_category_template_id:
                 # Use the map we built during category processing
                 target_discord_category = created_or_found_discord_categories.get(template_chan.parent_category_template_id)
                 if not target_discord_category:
-                    logger.warning(f"    Parent category (Template ID: {template_chan.parent_category_template_id}) specified in template was not found or created on Discord for channel '{template_chan.channel_name}'. Will create channel without parent.")
+                    logger.warning(f"[GuildWorkflow] [Guild:{guild_id}]     Parent category (Template ID: {template_chan.parent_category_template_id}) specified in template was not found or created on Discord for channel '{template_chan.channel_name}'. Will create channel without parent.")
             
             target_parent_discord_id = target_discord_category.id if target_discord_category else None
 
@@ -215,9 +216,9 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
                     # Verify it's the correct type (or handle type changes?)
                     if potential_match and str(potential_match.type) == template_chan.channel_type:
                         existing_discord_chan_object = potential_match
-                        logger.debug(f"    Found potential match by DB discord_channel_id: {existing_discord_chan_object.name} ({existing_discord_chan_object.id})")
+                        logger.debug(f"[GuildWorkflow] [Guild:{guild_id}]     Found potential match by DB discord_channel_id: {existing_discord_chan_object.name} ({existing_discord_chan_object.id})")
                     else:
-                            logger.warning(f"    DB discord_channel_id {template_chan.discord_channel_id} for '{template_chan.channel_name}' points to a non-existent channel or channel of wrong type ({potential_match.type if potential_match else 'None'}). Ignoring ID and trying name match.")
+                            logger.warning(f"[GuildWorkflow] [Guild:{guild_id}]     DB discord_channel_id {template_chan.discord_channel_id} for '{template_chan.channel_name}' points to a non-existent channel or channel of wrong type ({potential_match.type if potential_match else 'None'}). Ignoring ID and trying name match.")
                             # Reset the ID in DB? For now, just proceed to name matching.
                             # await chan_repo.update(template_chan, discord_channel_id=None) # Example
 
@@ -233,26 +234,26 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
                             potential_match = discord_guild.get_channel(discord_chan_id)
                             if potential_match and str(potential_match.type) == template_chan.channel_type:
                                 existing_discord_chan_object = potential_match
-                                logger.debug(f"    Found potential match by name and parent: {existing_discord_chan_object.name} ({existing_discord_chan_object.id})")
+                                logger.debug(f"[GuildWorkflow] [Guild:{guild_id}]     Found potential match by name and parent: {existing_discord_chan_object.name} ({existing_discord_chan_object.id})")
                                 # --- Update DB discord_channel_id (since we found it by name) ---
                                 if template_chan.discord_channel_id != str(existing_discord_chan_object.id):
-                                    logger.info(f"      Updating DB discord_id for template channel {template_chan.id} from {template_chan.discord_channel_id} to {existing_discord_chan_object.id}")
+                                    logger.info(f"[GuildWorkflow] [Guild:{guild_id}]       Updating DB discord_id for template channel {template_chan.id} from {template_chan.discord_channel_id} to {existing_discord_chan_object.id}")
                                     template_chan.discord_channel_id = str(existing_discord_chan_object.id)
                                     # Mark session dirty? Changes to template_chan might need commit?
                                     # Or rely on the main session commit at the end?
                                     # Session commit will handle saving this change later
                                 # -------------------------------------
                             else:
-                                logger.warning(f"    Name match found for '{template_chan.channel_name}' but type is wrong ({potential_match.type if potential_match else 'None'}) vs template ({template_chan.channel_type}). Treating as non-existent.")
+                                logger.warning(f"[GuildWorkflow] [Guild:{guild_id}]     Name match found for '{template_chan.channel_name}' but type is wrong ({potential_match.type if potential_match else 'None'}) vs template ({template_chan.channel_type}). Treating as non-existent.")
                         except Exception as get_chan_err_name:
-                            logger.error(f"    Error getting channel object by name: {get_chan_err_name}", exc_info=True)
+                            logger.error(f"[GuildWorkflow] [Guild:{guild_id}]     Error getting channel object by name: {get_chan_err_name}", exc_info=True)
                     else:
-                            logger.error(f"    Live channel data found for name/parent match of '{template_chan.channel_name}' but is missing 'id'. Data inconsistency from query service?")
+                            logger.error(f"[GuildWorkflow] [Guild:{guild_id}]     Live channel data found for name/parent match of '{template_chan.channel_name}' but is missing 'id'. Data inconsistency from query service?")
 
             # --- Update or Create Channel ---
             if existing_discord_chan_object:
                 processed_live_channel_ids.add(existing_discord_chan_object.id)
-                logger.info(f"    Channel '{template_chan.channel_name}' already exists (ID: {existing_discord_chan_object.id}). Checking for updates...")
+                logger.info(f"[GuildWorkflow] [Guild:{guild_id}]     Channel '{template_chan.channel_name}' already exists (ID: {existing_discord_chan_object.id}). Checking for updates...")
                 
                 # --- Store the channel object for dashboard logic ---
                 discord_channel_object_to_use = existing_discord_chan_object
@@ -280,24 +281,24 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
 
                 if updates_needed:
                     try:
-                        logger.info(f"      Updating channel '{existing_discord_chan_object.name}' ({existing_discord_chan_object.id}) with changes: {list(updates_needed.keys())}") # Log keys only for brevity
+                        logger.info(f"[GuildWorkflow] [Guild:{guild_id}]       Updating channel '{existing_discord_chan_object.name}' ({existing_discord_chan_object.id}) with changes: {list(updates_needed.keys())}") # Log keys only for brevity
                         await existing_discord_chan_object.edit(**updates_needed, reason="Applying template updates")
-                        logger.debug(f"        Successfully updated channel.")
+                        logger.debug(f"[GuildWorkflow] [Guild:{guild_id}]         Successfully updated channel.")
                     except nextcord.Forbidden:
-                        logger.error(f"        PERMISSION ERROR updating channel '{existing_discord_chan_object.name}'.")
+                        logger.error(f"[GuildWorkflow] [Guild:{guild_id}]         PERMISSION ERROR updating channel '{existing_discord_chan_object.name}'.")
                     except nextcord.HTTPException as http_err:
-                        logger.error(f"        HTTP ERROR updating channel '{existing_discord_chan_object.name}': {http_err}")
+                        logger.error(f"[GuildWorkflow] [Guild:{guild_id}]         HTTP ERROR updating channel '{existing_discord_chan_object.name}': {http_err}")
                     except Exception as update_err:
-                        logger.error(f"        UNEXPECTED ERROR updating channel '{existing_discord_chan_object.name}': {update_err}", exc_info=True)
+                        logger.error(f"[GuildWorkflow] [Guild:{guild_id}]         UNEXPECTED ERROR updating channel '{existing_discord_chan_object.name}': {update_err}", exc_info=True)
                 else:
-                        logger.debug("      No attribute updates needed.")
+                        logger.debug(f"[GuildWorkflow] [Guild:{guild_id}]       No attribute updates needed for existing channel.")
 
                 # Always apply permissions (overwrite mode)
                 await self._apply_channel_permissions(discord_channel_object_to_use, template_chan.id, chan_perm_repo)
 
             else:
                 # --- Create Channel using Helper ---
-                logger.info(f"    Channel '{template_chan.channel_name}' not found by template ID or name+parent match. Attempting check & create...")
+                logger.info(f"[GuildWorkflow] [Guild:{guild_id}]     Channel '{template_chan.channel_name}' not found by template ID or name+parent match. Attempting check & create...")
                 
                 # Prepare overwrites BEFORE creation check
                 creation_overwrites = await self._prepare_permission_overwrites(
@@ -322,32 +323,32 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
                     # --- Store the channel object for dashboard logic ---
                     discord_channel_object_to_use = new_discord_chan
                     # -------------------------------------------------
-                    logger.info(f"      Successfully created channel '{new_discord_chan.name}' (ID: {new_discord_chan.id})")
+                    logger.info(f"[GuildWorkflow] [Guild:{guild_id}]       Successfully created channel '{new_discord_chan.name}' (ID: {new_discord_chan.id})")
                     processed_live_channel_ids.add(new_discord_chan.id) # Track newly created channel ID
                 else:
-                    logger.warning(f"      Failed to create channel '{template_chan.channel_name}'")
+                    logger.warning(f"[GuildWorkflow] [Guild:{guild_id}]       Failed to create channel '{template_chan.channel_name}'")
                     discord_channel_object_to_use = None # Ensure it's None if creation failed
 
                 # --- >> ADDED: Dashboard Snapshot Logic << ---
                 if discord_channel_object_to_use and isinstance(discord_channel_object_to_use, nextcord.TextChannel): # Only text channels can have dashboards?
                     if template_chan.is_dashboard_enabled and template_chan.dashboard_config_snapshot:
                         if lifecycle_service: # Check for lifecycle_service now
-                            logger.info(f"    Dashboard enabled for '{discord_channel_object_to_use.name}'. Syncing from snapshot...")
+                            logger.info(f"[GuildWorkflow] [Guild:{guild_id}]     Dashboard enabled for '{discord_channel_object_to_use.name}'. Syncing from snapshot...")
                             try:
                                 # Assuming sync_dashboard_from_snapshot exists on lifecycle_service
                                 await lifecycle_service.sync_dashboard_from_snapshot(
                                     channel=discord_channel_object_to_use, 
                                     config_json=template_chan.dashboard_config_snapshot
                                 )
-                                logger.info(f"      Successfully synced dashboard for '{discord_channel_object_to_use.name}' using snapshot.")
+                                logger.info(f"[GuildWorkflow] [Guild:{guild_id}]       Successfully synced dashboard for '{discord_channel_object_to_use.name}' using snapshot.")
                             except AttributeError:
-                                 logger.error(f"    LifecycleService does not have method 'sync_dashboard_from_snapshot'. Cannot sync dashboard for '{discord_channel_object_to_use.name}'.")
+                                 logger.error(f"[GuildWorkflow] [Guild:{guild_id}]     LifecycleService does not have method 'sync_dashboard_from_snapshot'. Cannot sync dashboard for '{discord_channel_object_to_use.name}'.")
                             except Exception as sync_err:
-                                 logger.error(f"    Error syncing dashboard from snapshot for '{discord_channel_object_to_use.name}': {sync_err}", exc_info=True)
+                                 logger.error(f"[GuildWorkflow] [Guild:{guild_id}]     Error syncing dashboard from snapshot for '{discord_channel_object_to_use.name}': {sync_err}", exc_info=True)
                         else:
-                             logger.warning(f"    Dashboard enabled for '{discord_channel_object_to_use.name}' but DashboardLifecycleService is unavailable. Skipping snapshot sync.")
+                             logger.warning(f"[GuildWorkflow] [Guild:{guild_id}]     Dashboard enabled for '{discord_channel_object_to_use.name}' but DashboardLifecycleService is unavailable. Skipping snapshot sync.")
                     elif template_chan.is_dashboard_enabled:
-                         logger.warning(f"    Dashboard is enabled for '{discord_channel_object_to_use.name}' but dashboard_config_snapshot is NULL in the template. Skipping.")
+                         logger.warning(f"[GuildWorkflow] [Guild:{guild_id}]     Dashboard is enabled for '{discord_channel_object_to_use.name}' but dashboard_config_snapshot is NULL in the template. Skipping.")
                     else:
                         logger.debug(f"    Dashboard is not enabled for '{discord_channel_object_to_use.name}' in template.")
                         # Optional TODO: Add logic here to deactivate/delete dashboard if needed
@@ -362,13 +363,13 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
         # ----------------------------------------------------------
         # Read the flag from the loaded guild configuration
         delete_unmanaged_channels = config.template_delete_unmanaged
-        logger.info(f"  Configuration for deleting unmanaged items: {delete_unmanaged_channels}")
+        logger.info(f"[GuildWorkflow] [Guild:{guild_id}]   Configuration for deleting unmanaged items: {delete_unmanaged_channels}")
 
         if delete_unmanaged_channels:
-            logger.info("  Checking for Discord channels not present in the template...")
+            logger.info(f"[GuildWorkflow] [Guild:{guild_id}]   Checking for Discord channels not present in the template...")
             # Find Discord channel IDs present on the server but NOT processed (i.e., not matched or created from template)
             channels_to_delete_ids = set(live_channels.keys()) - processed_live_channel_ids
-            logger.debug(f"    Found {len(channels_to_delete_ids)} live channel IDs not processed (candidates for deletion): {channels_to_delete_ids}")
+            logger.debug(f"[GuildWorkflow] [Guild:{guild_id}]     Found {len(channels_to_delete_ids)} live channel IDs not processed (candidates for deletion): {channels_to_delete_ids}")
             
             for discord_chan_id in channels_to_delete_ids:
                 # Fetch the actual channel object
@@ -377,23 +378,23 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
                 chan_name_for_log = live_chan_data['name'] if live_chan_data else f"ID {discord_chan_id}"
 
                 if channel_to_delete and not isinstance(channel_to_delete, nextcord.CategoryChannel): # Make sure not to delete categories here
-                    logger.warning(f"    Discord channel '{chan_name_for_log}' (ID: {discord_chan_id}, Type: {channel_to_delete.type}) is not in the template. Deleting...")
+                    logger.warning(f"[GuildWorkflow] [Guild:{guild_id}]     Discord channel '{chan_name_for_log}' (ID: {discord_chan_id}, Type: {channel_to_delete.type}) is not in the template. Deleting...")
                     try:
                         await channel_to_delete.delete(reason="Removing channel not defined in template")
-                        logger.info(f"      Successfully deleted channel '{chan_name_for_log}'.")
+                        logger.info(f"[GuildWorkflow] [Guild:{guild_id}]       Successfully deleted channel '{chan_name_for_log}'.")
                     except nextcord.Forbidden:
-                        logger.error(f"      PERMISSION ERROR: Cannot delete channel '{chan_name_for_log}'.")
+                        logger.error(f"[GuildWorkflow] [Guild:{guild_id}]       PERMISSION ERROR: Cannot delete channel '{chan_name_for_log}'.")
                     except nextcord.NotFound:
-                            logger.warning(f"      Channel '{chan_name_for_log}' (ID: {discord_chan_id}) was already deleted.")
+                            logger.warning(f"[GuildWorkflow] [Guild:{guild_id}]       Channel '{chan_name_for_log}' (ID: {discord_chan_id}) was already deleted.")
                     except nextcord.HTTPException as http_err:
-                        logger.error(f"      HTTP ERROR deleting channel '{chan_name_for_log}': {http_err}")
+                        logger.error(f"[GuildWorkflow] [Guild:{guild_id}]       HTTP ERROR deleting channel '{chan_name_for_log}': {http_err}")
                     except Exception as deletion_err:
-                        logger.error(f"      UNEXPECTED ERROR deleting channel '{chan_name_for_log}': {deletion_err}", exc_info=True)
+                        logger.error(f"[GuildWorkflow] [Guild:{guild_id}]       UNEXPECTED ERROR deleting channel '{chan_name_for_log}': {deletion_err}", exc_info=True)
                 elif channel_to_delete and isinstance(channel_to_delete, nextcord.CategoryChannel):
-                        logger.debug(f"    Skipping category '{chan_name_for_log}' during channel deletion phase.")
+                        logger.debug(f"[GuildWorkflow] [Guild:{guild_id}]     Skipping category '{chan_name_for_log}' during channel deletion phase.")
                 else:
                     # This case might happen if a channel was deleted manually during the sync
-                    logger.warning(f"    Could not find Discord channel object with ID {discord_chan_id} ('{chan_name_for_log}') to delete. Already deleted?")
+                    logger.warning(f"[GuildWorkflow] [Guild:{guild_id}]     Could not find Discord channel object with ID {discord_chan_id} ('{chan_name_for_log}') to delete. Already deleted?")
         # else: # Already logged above
             # logger.debug("  Deletion of unmanaged channels is disabled.")
 
@@ -402,10 +403,10 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
             # ----------------------------------------------------------
         # Use the same flag as for channels
         if delete_unmanaged_channels:
-            logger.info("  Checking for Discord categories not present in the template...")
+            logger.info(f"[GuildWorkflow] [Guild:{guild_id}]   Checking for Discord categories not present in the template...")
             # Compare all live category IDs with the ones we processed (found/created from template)
             categories_to_delete_ids = set(live_categories.keys()) - processed_live_category_ids
-            logger.debug(f"    Found {len(categories_to_delete_ids)} live category IDs not processed (candidates for deletion): {categories_to_delete_ids}")
+            logger.debug(f"[GuildWorkflow] [Guild:{guild_id}]     Found {len(categories_to_delete_ids)} live category IDs not processed (candidates for deletion): {categories_to_delete_ids}")
 
             for discord_cat_id in categories_to_delete_ids:
                 # Fetch the actual category object
@@ -416,37 +417,37 @@ async def apply_template(self, guild_id: str, config: GuildConfigEntity, session
                 if category_to_delete and isinstance(category_to_delete, nextcord.CategoryChannel):
                     # Check if category is empty FIRST
                     if not category_to_delete.channels: 
-                        logger.warning(f"    Discord category '{cat_name_for_log}' (ID: {discord_cat_id}) is not in the template and is empty. Deleting...")
+                        logger.warning(f"[GuildWorkflow] [Guild:{guild_id}]     Discord category '{cat_name_for_log}' (ID: {discord_cat_id}) is not in the template and is empty. Deleting...")
                         try:
                             await category_to_delete.delete(reason="Removing category not defined in template")
-                            logger.info(f"      Successfully deleted category '{cat_name_for_log}'.")
+                            logger.info(f"[GuildWorkflow] [Guild:{guild_id}]       Successfully deleted category '{cat_name_for_log}'.")
                         except nextcord.Forbidden:
-                            logger.error(f"      PERMISSION ERROR: Cannot delete category '{cat_name_for_log}'.")
+                            logger.error(f"[GuildWorkflow] [Guild:{guild_id}]       PERMISSION ERROR: Cannot delete category '{cat_name_for_log}'.")
                         except nextcord.NotFound:
-                            logger.warning(f"      Category '{cat_name_for_log}' (ID: {discord_cat_id}) was already deleted.")
+                            logger.warning(f"[GuildWorkflow] [Guild:{guild_id}]       Category '{cat_name_for_log}' (ID: {discord_cat_id}) was already deleted.")
                         except nextcord.HTTPException as http_err:
-                            logger.error(f"      HTTP ERROR deleting category '{cat_name_for_log}': {http_err}")
+                            logger.error(f"[GuildWorkflow] [Guild:{guild_id}]       HTTP ERROR deleting category '{cat_name_for_log}': {http_err}")
                         except Exception as deletion_err:
-                            logger.error(f"      UNEXPECTED ERROR deleting category '{cat_name_for_log}': {deletion_err}", exc_info=True)
+                            logger.error(f"[GuildWorkflow] [Guild:{guild_id}]       UNEXPECTED ERROR deleting category '{cat_name_for_log}': {deletion_err}", exc_info=True)
                     else:
-                            logger.warning(f"    Discord category '{cat_name_for_log}' (ID: {discord_cat_id}) is not in the template BUT is NOT EMPTY. Skipping deletion.")
+                            logger.warning(f"[GuildWorkflow] [Guild:{guild_id}]     Discord category '{cat_name_for_log}' (ID: {discord_cat_id}) is not in the template BUT is NOT EMPTY. Skipping deletion.")
                             logger.debug(f"     Category '{cat_name_for_log}' contains channels: {[ch.name for ch in category_to_delete.channels]}")
 
                 elif category_to_delete: 
-                    logger.warning(f"    Found object for ID {discord_cat_id} ('{cat_name_for_log}') but it's not a CategoryChannel (Type: {type(category_to_delete)}). Skipping deletion.")
+                    logger.warning(f"[GuildWorkflow] [Guild:{guild_id}]     Found object for ID {discord_cat_id} ('{cat_name_for_log}') but it's not a CategoryChannel (Type: {type(category_to_delete)}). Skipping deletion.")
                 else:
-                    logger.warning(f"    Could not find Discord category object with ID {discord_cat_id} ('{cat_name_for_log}') to delete. Already deleted?")
+                    logger.warning(f"[GuildWorkflow] [Guild:{guild_id}]     Could not find Discord category object with ID {discord_cat_id} ('{cat_name_for_log}') to delete. Already deleted?")
 
 
-        logger.info(f"[apply_template] Channel and Category Create/Update/Delete/Reorder logic complete. DB updates applied via session commit. Guild: {guild_id}.")
+        logger.info(f"[GuildWorkflow] [Guild:{guild_id}] Channel/Category Create/Update/Delete logic complete.")
 
         # If we reach here without fatal errors, consider it successful
         # The session commit happens when the context manager in approve_guild exits.
-        logger.info(f"[apply_template] Successfully applied template changes for guild {guild_id}.")
+        logger.info(f"[GuildWorkflow] [Guild:{guild_id}] Template application process completed successfully.")
         return True
 
     except Exception as e:
-        logger.error(f"[apply_template] Error applying template for guild {guild_id}: {e}", exc_info=True)
+        logger.error(f"[GuildWorkflow] [Guild:{guild_id}] UNEXPECTED error during template application: {e}", exc_info=True)
         # Rollback will be handled by the session_context in the caller (approve_guild)
         return False
 
@@ -461,9 +462,12 @@ async def _prepare_permission_overwrites(
     """Fetches template permissions and prepares the overwrites dict for Discord API calls."""
     overwrites = {}
     try:
+        # --- MODIFICATION: Standardize prefix ---
+        logger.debug(f"{log_prefix}[GuildWorkflow] Preparing permission overwrites for template element ID: {template_element_id}")
         template_perms = await template_perms_getter(template_element_id)
         if not template_perms:
-            logger.debug(f"{log_prefix} No specific permissions found in template for element ID {template_element_id}.")
+            # --- MODIFICATION: Standardize prefix ---
+            logger.debug(f"{log_prefix}[GuildWorkflow] No specific permissions found in template for element ID {template_element_id}.")
             return overwrites # Return empty dict
 
         # Create a lookup for guild roles by name for efficiency
@@ -472,7 +476,8 @@ async def _prepare_permission_overwrites(
         for perm in template_perms:
             role = guild_roles_by_name.get(perm.role_name)
             if not role:
-                logger.warning(f"{log_prefix} Role '{perm.role_name}' defined in template permissions not found on guild. Skipping permission.")
+                # --- MODIFICATION: Standardize prefix ---
+                logger.warning(f"{log_prefix}[GuildWorkflow] Role '{perm.role_name}' defined in template permissions not found on guild. Skipping permission.")
                 continue
 
             # Create PermissionOverwrite object
@@ -482,12 +487,15 @@ async def _prepare_permission_overwrites(
             allow_perms = nextcord.Permissions(allow_value)
             deny_perms = nextcord.Permissions(deny_value)
             overwrites[role] = nextcord.PermissionOverwrite.from_pair(allow_perms, deny_perms)
-            logger.debug(f"{log_prefix}  Prepared overwrite for role '{role.name}': Allow={allow_perms.value}, Deny={deny_perms.value}")
+            # --- MODIFICATION: Standardize prefix ---
+            logger.debug(f"{log_prefix}[GuildWorkflow]  Prepared overwrite for role '{role.name}': Allow={allow_perms.value}, Deny={deny_perms.value}")
 
-        logger.debug(f"{log_prefix} Prepared {len(overwrites)} permission overwrites for element ID {template_element_id}.")
+        # --- MODIFICATION: Standardize prefix ---
+        logger.debug(f"{log_prefix}[GuildWorkflow] Prepared {len(overwrites)} permission overwrites for element ID {template_element_id}.")
 
     except Exception as prep_err:
-            logger.error(f"{log_prefix} UNEXPECTED ERROR preparing permissions for element ID {template_element_id}: {prep_err}", exc_info=True)
+            # --- MODIFICATION: Standardize prefix ---
+            logger.error(f"{log_prefix}[GuildWorkflow] UNEXPECTED ERROR preparing permissions for element ID {template_element_id}: {prep_err}", exc_info=True)
             # Return empty dict on error to avoid applying partial/incorrect permissions
             return {}
             
@@ -497,7 +505,8 @@ async def _prepare_permission_overwrites(
 async def _apply_category_permissions(self, discord_category: nextcord.CategoryChannel, template_category_id: int, cat_perm_repo: GuildTemplateCategoryPermissionRepository) -> None:
     """Helper to apply permissions stored in the template to an existing Discord category."""
     log_prefix="    [Edit Cat]"
-    logger.debug(f"{log_prefix} Applying permissions for category '{discord_category.name}' (Template ID: {template_category_id})")
+    # --- MODIFICATION: Standardize prefix ---
+    logger.debug(f"{log_prefix}[GuildWorkflow] Applying permissions for category '{discord_category.name}' (Template ID: {template_category_id})")
     try:
         # Prepare overwrites using the helper
         overwrites_to_apply = await self._prepare_permission_overwrites(
@@ -511,18 +520,24 @@ async def _apply_category_permissions(self, discord_category: nextcord.CategoryC
         # current_overwrites = discord_category.overwrites
 
         if overwrites_to_apply: # Only edit if there are permissions to apply
-                logger.info(f"{log_prefix} Setting {len(overwrites_to_apply)} permission overwrites for category '{discord_category.name}'")
+                # --- MODIFICATION: Standardize prefix ---
+                logger.info(f"{log_prefix}[GuildWorkflow] Setting {len(overwrites_to_apply)} permission overwrites for category '{discord_category.name}'")
                 await discord_category.edit(overwrites=overwrites_to_apply, reason="Applying template permissions")
-                logger.debug(f"{log_prefix}  Successfully applied permissions to category '{discord_category.name}'.")
+                # --- MODIFICATION: Standardize prefix ---
+                logger.debug(f"{log_prefix}[GuildWorkflow]  Successfully applied permissions to category '{discord_category.name}'.")
         # else: # Already logged by helper
-            # logger.debug(f"{log_prefix} No valid permissions found/prepared for category '{discord_category.name}'. No changes made.")
+            # --- MODIFICATION: Standardize prefix ---
+            # logger.debug(f"{log_prefix}[GuildWorkflow] No valid permissions found/prepared for category '{discord_category.name}'. No changes made.")
 
     except nextcord.Forbidden:
-        logger.error(f"{log_prefix} PERMISSION ERROR: Cannot apply permissions to category '{discord_category.name}'. Check bot permissions.")
+        # --- MODIFICATION: Standardize prefix ---
+        logger.error(f"{log_prefix}[GuildWorkflow] PERMISSION ERROR: Cannot apply permissions to category '{discord_category.name}'. Check bot permissions.")
     except nextcord.HTTPException as http_err:
-        logger.error(f"{log_prefix} HTTP ERROR applying permissions to category '{discord_category.name}': {http_err}")
+        # --- MODIFICATION: Standardize prefix ---
+        logger.error(f"{log_prefix}[GuildWorkflow] HTTP ERROR applying permissions to category '{discord_category.name}': {http_err}")
     except Exception as perm_err:
-        logger.error(f"{log_prefix} UNEXPECTED ERROR applying permissions to category '{discord_category.name}': {perm_err}", exc_info=True)
+        # --- MODIFICATION: Standardize prefix ---
+        logger.error(f"{log_prefix}[GuildWorkflow] UNEXPECTED ERROR applying permissions to category '{discord_category.name}': {perm_err}", exc_info=True)
 
 async def _apply_channel_permissions(
     self, # Added self back
@@ -532,7 +547,8 @@ async def _apply_channel_permissions(
 ) -> None:
     """Helper to apply permissions stored in the template to an existing Discord channel."""
     log_prefix="    [Edit Chan]"
-    logger.debug(f"{log_prefix} Applying permissions for channel '{discord_channel.name}' (Template ID: {template_channel_id})")
+    # --- MODIFICATION: Standardize prefix ---
+    logger.debug(f"{log_prefix}[GuildWorkflow] Applying permissions for channel '{discord_channel.name}' (Template ID: {template_channel_id})")
     try:
         # Prepare overwrites using the helper
         overwrites_to_apply = await self._prepare_permission_overwrites(
@@ -545,18 +561,24 @@ async def _apply_channel_permissions(
         # current_overwrites = discord_channel.overwrites # For comparison if needed
 
         if overwrites_to_apply:
-                logger.info(f"{log_prefix} Setting {len(overwrites_to_apply)} permission overwrites for channel '{discord_channel.name}'")
+                # --- MODIFICATION: Standardize prefix ---
+                logger.info(f"{log_prefix}[GuildWorkflow] Setting {len(overwrites_to_apply)} permission overwrites for channel '{discord_channel.name}'")
                 await discord_channel.edit(overwrites=overwrites_to_apply, reason="Applying template permissions")
-                logger.debug(f"{log_prefix} Successfully applied permissions to channel '{discord_channel.name}'.")
+                # --- MODIFICATION: Standardize prefix ---
+                logger.debug(f"{log_prefix}[GuildWorkflow] Successfully applied permissions to channel '{discord_channel.name}'.")
         # else: # Logged by helper
-            # logger.debug(f"{log_prefix} No valid permissions found/prepared for channel '{discord_channel.name}'. No changes made.")
+            # --- MODIFICATION: Standardize prefix ---
+            # logger.debug(f"{log_prefix}[GuildWorkflow] No valid permissions found/prepared for channel '{discord_channel.name}'. No changes made.")
 
     except nextcord.Forbidden:
-        logger.error(f"{log_prefix} PERMISSION ERROR: Cannot apply permissions to channel '{discord_channel.name}'. Check bot permissions.")
+        # --- MODIFICATION: Standardize prefix ---
+        logger.error(f"{log_prefix}[GuildWorkflow] PERMISSION ERROR: Cannot apply permissions to channel '{discord_channel.name}'. Check bot permissions.")
     except nextcord.HTTPException as http_err:
-        logger.error(f"{log_prefix} HTTP ERROR applying permissions to channel '{discord_channel.name}': {http_err}")
+        # --- MODIFICATION: Standardize prefix ---
+        logger.error(f"{log_prefix}[GuildWorkflow] HTTP ERROR applying permissions to channel '{discord_channel.name}': {http_err}")
     except Exception as perm_err:
-        logger.error(f"{log_prefix} UNEXPECTED ERROR applying permissions to channel '{discord_channel.name}': {perm_err}", exc_info=True)
+        # --- MODIFICATION: Standardize prefix ---
+        logger.error(f"{log_prefix}[GuildWorkflow] UNEXPECTED ERROR applying permissions to channel '{discord_channel.name}': {perm_err}", exc_info=True)
 # --- END HELPER FUNCTIONS ---
 
 # Removed duplicate _check_and_create_channel - now using the implementation from check_structure.py

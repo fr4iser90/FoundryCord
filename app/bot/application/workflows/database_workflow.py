@@ -26,6 +26,7 @@ class DatabaseWorkflow(BaseWorkflow):
     
     async def initialize(self) -> bool:
         """Initialize the database workflow globally"""
+        logger.info("[DatabaseWorkflow] Starting initialization...")
         try:
             # Important: Initialize the db_service without passing session
             from app.shared.infrastructure.database.service import DatabaseService
@@ -37,10 +38,10 @@ class DatabaseWorkflow(BaseWorkflow):
                 for guild in self.bot.guilds:
                     self.guild_status[str(guild.id)] = WorkflowStatus.ACTIVE
             
-            logger.info("Database verification successful")
+            logger.info("[DatabaseWorkflow] Initialized successfully.")
             return True
         except Exception as e:
-            logger.error(f"Database verification failed: {e}")
+            logger.error(f"[DatabaseWorkflow] Initialization failed: {e}", exc_info=True)
             return False
             
     async def initialize_for_guild(self, guild_id: str) -> bool:
@@ -51,17 +52,17 @@ class DatabaseWorkflow(BaseWorkflow):
     
     async def cleanup(self) -> None:
         """Cleanup database resources"""
-        logger.info("Cleaning up database resources")
+        logger.info("[DatabaseWorkflow] Starting cleanup...")
         
         try:
             if self.db_service:
                 await self.db_service.close()
                 
             await super().cleanup()
-            logger.info("Database resources cleaned up")
+            logger.info("[DatabaseWorkflow] Cleanup successful.")
             
         except Exception as e:
-            logger.error(f"Error cleaning up database resources: {e}")
+            logger.error(f"[DatabaseWorkflow] Error during cleanup: {e}", exc_info=True)
     
     def get_db_service(self):
         """Get the database service"""

@@ -11,7 +11,7 @@ logger = get_bot_logger()
 
 async def on_guild_join(self, guild_id: str) -> bool:
     """Handle new guild joins"""
-    logger.info(f"[on_guild_join] Processing new guild join: {guild_id}")
+    logger.info(f"[GuildWorkflow] [Guild:{guild_id}] Processing new guild join...")
     try:
         async with session_context() as session:
             guild_repo = GuildRepositoryImpl(session)
@@ -19,10 +19,10 @@ async def on_guild_join(self, guild_id: str) -> bool:
             
             discord_guild = self.bot.get_guild(int(guild_id))
             if not discord_guild:
-                logger.error(f"[on_guild_join] Could not find Discord guild object for {guild_id}")
+                logger.error(f"[GuildWorkflow] [Guild:{guild_id}] Could not find Discord guild object")
                 return False
             
-            logger.info(f"[on_guild_join] Creating/updating GuildEntity for {guild_id}...")
+            logger.info(f"[GuildWorkflow] [Guild:{guild_id}] Creating/updating GuildEntity...")
             guild = await guild_repo.create_or_update(
                 guild_id=guild_id,
                 name=discord_guild.name,
@@ -32,11 +32,11 @@ async def on_guild_join(self, guild_id: str) -> bool:
                 owner_id=str(discord_guild.owner_id) if discord_guild.owner_id else None
             )
             if not guild:
-                 logger.error(f"[on_guild_join] Failed to create/update GuildEntity for {guild_id}.")
+                 logger.error(f"[GuildWorkflow] [Guild:{guild_id}] Failed to create/update GuildEntity.")
                  return False
-            logger.info(f"[on_guild_join] GuildEntity created/updated successfully for {guild_id}.")
+            logger.info(f"[GuildWorkflow] [Guild:{guild_id}] GuildEntity created/updated successfully.")
             
-            logger.info(f"[on_guild_join] Attempting to create/update GuildConfigEntity for {guild_id}...")
+            logger.info(f"[GuildWorkflow] [Guild:{guild_id}] Attempting to create/update GuildConfigEntity...")
             config_result = await guild_config_repo.create_or_update(
                 guild_id=guild_id,
                 guild_name=discord_guild.name,
@@ -49,23 +49,23 @@ async def on_guild_join(self, guild_id: str) -> bool:
                 template_delete_unmanaged=False
             )
             if not config_result:
-                logger.error(f"[on_guild_join] Failed to create/update GuildConfigEntity for {guild_id}.")
+                logger.error(f"[GuildWorkflow] [Guild:{guild_id}] Failed to create/update GuildConfigEntity.")
                 # This is a significant issue, might warrant returning False
             else:
-                logger.info(f"[on_guild_join] GuildConfigEntity create/update call completed successfully for {guild_id}.")
+                logger.info(f"[GuildWorkflow] [Guild:{guild_id}] GuildConfigEntity create/update call completed successfully.")
             
             self._guild_access_statuses[guild_id] = ACCESS_PENDING
             self._guild_statuses[guild_id] = WorkflowStatus.PENDING
             
-            logger.info(f"[on_guild_join] Finished processing join for {guild_id}. Status set to PENDING.")
+            logger.info(f"[GuildWorkflow] [Guild:{guild_id}] Finished processing join. Status set to PENDING.")
             return True
     except Exception as e:
-        logger.error(f"[on_guild_join] Error handling guild join for {guild_id}: {e}", exc_info=True) 
+        logger.error(f"[GuildWorkflow] [Guild:{guild_id}] Error handling guild join: {e}", exc_info=True) 
         return False
 
 async def initialize_for_guild(self, guild_id: str) -> bool:
     """Initialize workflow for a specific guild"""
-    logger.info(f"Initializing guild workflow for guild {guild_id}")
+    logger.info(f"[GuildWorkflow] [Guild:{guild_id}] Initializing for guild...")
     
     try:
         # Update status to initializing
@@ -79,7 +79,7 @@ async def initialize_for_guild(self, guild_id: str) -> bool:
             
             if not guild:
                 # Log the error accurately
-                logger.error(f"GuildEntity for {guild_id} not found in database")
+                logger.error(f"[GuildWorkflow] [Guild:{guild_id}] GuildEntity not found in database")
                 self._guild_statuses[guild_id] = WorkflowStatus.FAILED
                 return False
                 
@@ -87,18 +87,18 @@ async def initialize_for_guild(self, guild_id: str) -> bool:
             self._guild_access_statuses[guild_id] = guild.access_status
             
             if guild.access_status == ACCESS_REJECTED:
-                logger.warning(f"Guild {guild_id} is REJECTED access")
+                logger.warning(f"[GuildWorkflow] [Guild:{guild_id}] Guild is REJECTED access")
                 self._guild_statuses[guild_id] = WorkflowStatus.UNAUTHORIZED
                 await self.enforce_access_control(guild)
                 return False
                 
             if guild.access_status != ACCESS_APPROVED:
-                logger.warning(f"Guild {guild_id} is PENDING approval")
+                logger.warning(f"[GuildWorkflow] [Guild:{guild_id}] Guild is PENDING approval")
                 self._guild_statuses[guild_id] = WorkflowStatus.PENDING
                 return False
                 
             # Perform full guild sync for approved guilds
-            logger.info(f"Guild {guild_id} is APPROVED, performing full sync")
+            logger.info(f"[GuildWorkflow] [Guild:{guild_id}] Guild is APPROVED, performing full sync")
             success = await self.sync_guild(guild_id, sync_members_only=False)
             if not success:
                 self._guild_statuses[guild_id] = WorkflowStatus.FAILED
@@ -106,27 +106,28 @@ async def initialize_for_guild(self, guild_id: str) -> bool:
                 
             # Mark as active if everything succeeded
             self._guild_statuses[guild_id] = WorkflowStatus.ACTIVE
+            logger.info(f"[GuildWorkflow] [Guild:{guild_id}] Initialization successful. Status: ACTIVE")
             return True
         
     except Exception as e:
-        logger.error(f"Error initializing guild {guild_id}: {e}")
+        logger.error(f"[GuildWorkflow] [Guild:{guild_id}] Error initializing: {e}", exc_info=True)
         self._guild_statuses[guild_id] = WorkflowStatus.FAILED
         return False
 
 async def sync_guild(self, guild_id: str, sync_members_only: bool = True) -> bool:
     """Synchronize guild data with Discord"""
-    logger.info(f"Syncing guild {guild_id} (members_only={sync_members_only})")
+    logger.info(f"[GuildWorkflow] [Guild:{guild_id}] Starting sync (members_only={sync_members_only})...")
     try:
         discord_guild = self.bot.get_guild(int(guild_id))
         if not discord_guild:
-            logger.error(f"Could not find Discord guild {guild_id}")
+            logger.error(f"[GuildWorkflow] [Guild:{guild_id}] Could not find Discord guild object")
             return False
             
         async with session_context() as session:
             guild_repo = GuildRepositoryImpl(session) 
             db_guild = await guild_repo.get_by_id(guild_id)
             if not db_guild:
-                logger.error(f"Could not find GuildEntity {guild_id} in database") 
+                logger.error(f"[GuildWorkflow] [Guild:{guild_id}] Could not find GuildEntity in database") 
                 return False
                 
             if not sync_members_only:
@@ -135,15 +136,18 @@ async def sync_guild(self, guild_id: str, sync_members_only: bool = True) -> boo
                 db_guild.member_count = discord_guild.member_count
                 db_guild.owner_id = str(discord_guild.owner_id) if discord_guild.owner_id else None 
                 await guild_repo.update(db_guild) # Use update for existing entity
-                logger.info(f"Updated guild metadata for {guild_id}")
+                logger.info(f"[GuildWorkflow] [Guild:{guild_id}] Updated guild metadata.")
                 
             # Sync members if user_workflow exists
             user_workflow = self.bot.workflow_manager.get_workflow("user")
             if user_workflow:
+                logger.debug(f"[GuildWorkflow] [Guild:{guild_id}] Calling UserWorkflow.sync_guild_members...")
                 await user_workflow.sync_guild_members(discord_guild)
+                logger.debug(f"[GuildWorkflow] [Guild:{guild_id}] UserWorkflow.sync_guild_members finished.")
             else:
-                logger.warning("User workflow not available for member sync")
+                logger.warning(f"[GuildWorkflow] [Guild:{guild_id}] User workflow not available for member sync")
+            logger.info(f"[GuildWorkflow] [Guild:{guild_id}] Sync successful (members_only={sync_members_only}).")
             return True
     except Exception as e:
-        logger.error(f"Error syncing guild {guild_id}: {e}")
+        logger.error(f"[GuildWorkflow] [Guild:{guild_id}] Error syncing guild: {e}", exc_info=True)
         return False
