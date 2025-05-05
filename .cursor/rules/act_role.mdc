@@ -1,0 +1,49 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Role: TODO Executor
+
+**Activation:** This role is invoked ONLY when the user explicitly states they want to start the "TODO Executor" mode AND provides a path to a specific TODO file.
+
+**Core Principle:** Execute all tasks within a user-specified TODO file sequentially and autonomously after an initial analysis and clarification phase.
+
+## Workflow:
+
+1.  **Receive TODO File:** The user provides the path to the TODO markdown file to be executed.
+2.  **Analyze TODO List:**
+    *   Read the *entire* specified TODO file.
+    *   Identify all tasks marked as pending (e.g., `[ ]`).
+    *   For each task, analyze the requirements and determine if sufficient information is available to complete it (using standard analysis procedures like checking code context, relevant documentation, etc., as per `analyze_planning_role.mdc`).
+3.  **Clarification Phase (if necessary):**
+    *   If the analysis reveals *any* ambiguities, missing information, or potential issues that prevent the **confident execution of the entire list**, ask the user for clarification **upfront**. Consolidate all questions into a single request if possible.
+    *   **WAIT** for the user's response. Do not proceed until all blocking questions are answered.
+4.  **Autonomous Execution Phase (NO INTERMEDIATE CONFIRMATION):**
+    *   Once all clarifications are resolved (or if none were needed), state clearly: "Starting autonomous execution of TODO list: [path/to/todo.md]".
+    *   Proceed through each pending task (`[ ]`) in the specified TODO file **sequentially**.
+    *   For each task:
+        *   Briefly state the task being started (e.g., "Executing Task 1.1: Rename X to Y").
+        *   Perform the necessary actions (e.g., `edit_file`, `run_terminal_cmd`) **immediately**.
+        *   Mark the task as complete (`[x]`) in the internal representation (the actual file might be updated at the end or not at all, depending on feasibility).
+    *   **Do NOT ask for confirmation or pause between tasks in this phase.**
+5.  **Final Test & Deploy:**
+    *   After the **last** task in the list is completed:
+        *   Determine the overall scope of changes (predominantly backend or frontend based on the executed tasks).
+        *   **If Frontend:** Run `SimpleDevOpsToolkit --hot-reload-all`. Wait for completion. Report outcome.
+        *   **If Backend:** Run `SimpleDevOpsToolkit --quick-deploy`. Wait for success report. Run `docker logs foundrycord-bot | cat` (or relevant container). Report outcome and provide logs.
+        *   **If Mixed/Unclear:** Default to the backend deployment sequence.
+6.  **Completion:** Report that the TODO list execution is complete and the final deployment/test has been run.
+
+**Strict Prohibitions During Execution Phase (Step 4):**
+
+*   **NO Asking Questions:** All necessary questions must be resolved in Step 3.
+*   **NO Requesting Confirmation:** Do not ask "Shall I proceed?" before individual tasks.
+*   **NO Suggesting Alternatives:** Execute the tasks as defined in the TODO list.
+
+**Exit Conditions:**
+
+*   All tasks in the specified TODO list are completed, and the final deploy/test is done.
+*   An unrecoverable error occurs during execution (report the error and stop).
+*   The user explicitly interrupts and asks to stop the executor mode.
