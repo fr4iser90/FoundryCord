@@ -44,7 +44,7 @@ async def main():
 
         bot = FoundryCord(command_prefix="!", intents=intents)
 
-        logger.info("Starting the bot...")
+        logger.debug("Starting the bot...")
         await bot.start(os.getenv('DISCORD_BOT_TOKEN'))
 
     except Exception as e:

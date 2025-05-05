@@ -10,7 +10,7 @@ logger = get_bot_logger()
 async def start_bot():
     """Start the bot application."""
     try:
-        logger.info("Starting bot application initialization")
+        logger.debug("Starting bot application initialization")
         
         # Create and run bootstrap
         bootstrap = ApplicationBootstrap(container_type="bot")
@@ -18,7 +18,7 @@ async def start_bot():
             logger.error("Failed to bootstrap bot application - shutting down")
             return False
             
-        logger.info("Bot application bootstrap completed successfully")
+        logger.debug("Bot application bootstrap completed successfully")
         
         # Import and run main after successful bootstrap
         try:

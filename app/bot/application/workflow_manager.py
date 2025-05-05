@@ -106,7 +106,7 @@ class BotWorkflowManager:
         factory_type_at_start = type(getattr(bot, 'service_factory', None)).__name__
         logger.debug(f"[DIAGNOSTIC WorkflowManager.initialize_all] START: Received bot.service_factory type is {factory_type_at_start}")
         
-        logger.info("Initializing all bot workflows")
+        logger.debug("Initializing all bot workflows")
         
         all_initialized = True
         failed = []

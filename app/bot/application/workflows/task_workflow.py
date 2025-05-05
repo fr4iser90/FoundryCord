@@ -35,7 +35,7 @@ class TaskWorkflow(BaseWorkflow):
             # Register background tasks
             self.register_background_tasks()
             
-            logger.info("Task workflow initialized successfully")
+            logger.debug("Task workflow initialized successfully")
             return True
             
         except Exception as e:

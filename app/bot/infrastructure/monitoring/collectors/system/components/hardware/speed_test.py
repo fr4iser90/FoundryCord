@@ -28,7 +28,7 @@ class SpeedTestManager:
     async def perform_speed_test(self) -> Dict[str, float]:
         """Performs a full speed test or returns placeholder values if skipping is enabled"""
         if self.skip_test:
-            logger.info("Speed test skipped (skip_test=True), returning placeholder values")
+            logger.debug("Speed test skipped (skip_test=True), returning placeholder values")
             results = DEFAULT_PLACEHOLDER_RESULTS.copy()
             results["timestamp"] = datetime.now().isoformat()
             await self._save_results(results)
@@ -99,7 +99,7 @@ class SpeedTestManager:
     async def get_speed_info(self) -> Dict[str, float]:
         """Retrieves speed test results (cached or new)"""
         if self.skip_test:
-            logger.info("Speed test skipped (skip_test=True), returning placeholder values")
+            logger.debug("Speed test skipped (skip_test=True), returning placeholder values")
             results = DEFAULT_PLACEHOLDER_RESULTS.copy()
             results["timestamp"] = datetime.now().isoformat()
             return results

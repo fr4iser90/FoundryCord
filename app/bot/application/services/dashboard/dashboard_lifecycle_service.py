@@ -167,7 +167,7 @@ class DashboardLifecycleService:
             else:
                 logger.error(f"[DashboardLifecycleService] Failed to activate DB configured dashboards: {e}", exc_info=True)
             
-        logger.info(f"[DashboardLifecycleService] Finished DB dashboard activation. Activated/Updated in Registry: {count}, Failed Registry Activation: {failed_count}")
+        logger.debug(f"[DashboardLifecycleService] Finished DB dashboard activation. Activated/Updated in Registry: {count}, Failed Registry Activation: {failed_count}")
 
     async def sync_dashboard_from_snapshot(self, channel: nextcord.TextChannel, config_json: Dict[str, Any]) -> bool:
         """

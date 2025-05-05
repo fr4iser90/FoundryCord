@@ -85,17 +85,10 @@ class FoundryCord(commands.Bot):
              initialization_success = False # Ensure it's marked as failed
 
         if initialization_success:
-            logger.info("Core initialization (Workflows & Services) completed successfully.")
-            # --- ADD DELAY (Keep commented out for now, re-enable if needed) ---
-            # wait_seconds = 5 # Wait 5 seconds
-            # logger.info(f"Waiting {wait_seconds}s before activating DB dashboards...")
-            # await asyncio.sleep(wait_seconds)
-            # logger.info("Wait finished. Proceeding with DB dashboard activation.")
-            # --- END DELAY ---
-
+            logger.debug("Core initialization (Workflows & Services) completed successfully.")
             # --- Activate DB Dashboards AFTER workflows AND services are initialized ---
             if hasattr(self, 'dashboard_workflow') and self.dashboard_workflow and hasattr(self.dashboard_workflow, 'lifecycle_service') and self.dashboard_workflow.lifecycle_service:
-                 logger.info("on_ready: Triggering activation of DB-configured dashboards...")
+                 logger.debug("on_ready: Triggering activation of DB-configured dashboards...")
                  try:
                      # This call now happens after services (like ComponentRegistry) are initialized
                      await self.dashboard_workflow.lifecycle_service.activate_db_configured_dashboards()

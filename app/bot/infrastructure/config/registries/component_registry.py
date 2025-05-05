@@ -81,7 +81,7 @@ class ComponentRegistry:
                          logger.error(f"Error processing definition for component key '{definition_entity.component_key}': {parse_err}", exc_info=True)
 
             self._db_definitions_loaded = True
-            logger.info(f"Successfully loaded {loaded_count} component definitions from database.")
+            logger.debug(f"Successfully loaded {loaded_count} component definitions from database.")
             return True
         except Exception as e:
             logger.error(f"Failed to load component definitions from database: {e}", exc_info=True)
@@ -106,7 +106,7 @@ class ComponentRegistry:
             description=description,
             default_config=default_config or {}
         )
-        logger.info(f"Registered component implementation class for type: {component_type} -> {component_class.__name__}")
+        logger.debug(f"Registered component implementation class for type: {component_type} -> {component_class.__name__}")
     
     def get_component_class(self, component_type: str) -> Optional[Type[BaseComponent]]:
         """Get a component's implementation class by its type."""

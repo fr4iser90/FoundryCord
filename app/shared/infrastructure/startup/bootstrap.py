@@ -28,7 +28,7 @@ class ApplicationBootstrap:
                 self.logger.error("Database migrations failed")
                 return False
 
-            self.logger.info("Database initialization completed")
+            self.logger.debug("Database initialization completed")
             return True
         except Exception as e:
             self.logger.error(f"Database initialization failed: {e}")
@@ -48,7 +48,7 @@ class ApplicationBootstrap:
                 self.logger.error("Failed to get security bootstrapper")
                 return False
                 
-            self.logger.info("Security components initialized successfully")
+            self.logger.debug("Security components initialized successfully")
             return True
         except Exception as e:
             self.logger.error(f"Security initialization failed: {e}")
@@ -73,7 +73,7 @@ class ApplicationBootstrap:
                 self.logger.error("Security initialization failed")
                 return False
 
-            self.logger.info("Application bootstrap completed successfully")
+            self.logger.debug("Application bootstrap completed successfully")
             return True
             
         except Exception as e:

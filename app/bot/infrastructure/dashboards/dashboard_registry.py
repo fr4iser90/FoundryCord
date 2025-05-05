@@ -16,12 +16,12 @@ class DashboardRegistry:
     
     def __init__(self, bot):
         self.bot = bot
-        # --- ADD DEBUG LOG ---
+        # --- Corrected DEBUG LOG ---
         bot_id = getattr(bot.user, 'id', 'N/A')
         has_factory = hasattr(bot, 'service_factory')
         factory_type = type(getattr(bot, 'service_factory', None)).__name__
-        logger.info(f"[DEBUG registry.__init__] Received bot. Bot ID: {bot_id}, Has service_factory: {has_factory}, Factory Type: {factory_type}")
-        # ---------------------
+        logger.debug(f"[DEBUG registry.__init__] Received bot. Bot ID: {bot_id}, Has service_factory: {has_factory}, Factory Type: {factory_type}")
+        # -------------------------
         self.active_dashboards: Dict[int, DashboardController] = {}  # channel_id -> dashboard controller
         self.dashboard_types: Dict[str, Type[DashboardController]] = {}  # Maps type string to controller class (adjust if needed)
         self.component_registry = None  # Will be fetched
@@ -34,7 +34,7 @@ class DashboardRegistry:
         try:
             # Activation logic moved to DashboardLifecycleService
             self.active_dashboards = {}
-            self.logger.info(f"Dashboard registry initialized (Activation handled externally). ")
+            self.logger.debug(f"Dashboard registry initialized (Activation handled externally). ")
             return True
         except Exception as e:
             self.logger.error(f"Error initializing dashboard registry: {e}")
@@ -92,12 +92,12 @@ class DashboardRegistry:
         """Ensures a dashboard controller is active for the channel, using the provided configuration."""
 
         logger.debug(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Ensuring controller is active for type '{dashboard_type}'.")
-        # --- ADD DEBUG LOG ---
+        # --- Corrected DEBUG LOG ---
         bot_id = getattr(self.bot.user, 'id', 'N/A')
         has_factory = hasattr(self.bot, 'service_factory')
         factory_type = type(getattr(self.bot, 'service_factory', None)).__name__
-        logger.info(f"[DEBUG registry.activate] Using self.bot. Bot ID: {bot_id}, Has service_factory: {has_factory}, Factory Type: {factory_type}")
-        # ---------------------
+        logger.debug(f"[DEBUG registry.activate] Using self.bot. Bot ID: {bot_id}, Has service_factory: {has_factory}, Factory Type: {factory_type}")
+        # -------------------------
 
         # Check if channel exists on Discord
         channel = self.bot.get_channel(channel_id)
@@ -125,7 +125,7 @@ class DashboardRegistry:
 
                 # Trigger a redisplay which should use the latest config/data
                 await existing_controller.display_dashboard()
-                logger.info(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Successfully updated and redisplayed dashboard.")
+                logger.debug(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Successfully updated and redisplayed dashboard.")
                 return True
             except Exception as e:
                 logger.error(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Error updating existing controller: {e}", exc_info=True)
@@ -172,7 +172,7 @@ class DashboardRegistry:
 
                 # Register in active dashboards
                 self.active_dashboards[channel_id] = controller
-                logger.info(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Activated '{dashboard_type}' dashboard.")
+                logger.debug(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Activated '{dashboard_type}' dashboard.")
                 return True
 
             except Exception as e:
@@ -219,4 +219,4 @@ class DashboardRegistry:
     async def before_refresh_loop(self):
         """Wait until the bot is ready before starting the loop."""
         await self.bot.wait_until_ready()
-        logger.info("DashboardRegistry refresh loop is ready and starting.")
+        logger.debug("DashboardRegistry refresh loop is ready and starting.")

@@ -26,7 +26,7 @@ class DatabaseWorkflow(BaseWorkflow):
     
     async def initialize(self) -> bool:
         """Initialize the database workflow globally"""
-        logger.info("[DatabaseWorkflow] Starting initialization...")
+        logger.debug("[DatabaseWorkflow] Starting initialization...")
         try:
             # Important: Initialize the db_service without passing session
             from app.shared.infrastructure.database.service import DatabaseService
@@ -38,7 +38,7 @@ class DatabaseWorkflow(BaseWorkflow):
                 for guild in self.bot.guilds:
                     self.guild_status[str(guild.id)] = WorkflowStatus.ACTIVE
             
-            logger.info("[DatabaseWorkflow] Initialized successfully.")
+            logger.debug("[DatabaseWorkflow] Initialized successfully.")
             return True
         except Exception as e:
             logger.error(f"[DatabaseWorkflow] Initialization failed: {e}", exc_info=True)

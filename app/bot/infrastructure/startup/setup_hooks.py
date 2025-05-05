@@ -51,7 +51,7 @@ logger = get_bot_logger()
 
 def register_state_collectors(bot):
     """Registers bot state collectors directly with the snapshot service."""
-    logger.info("Registering bot state collectors...")
+    logger.debug("Registering bot state collectors...")
     snapshot_service = get_state_snapshot_service()
     
     # Helper to create partial functions for collectors needing the bot instance
@@ -139,7 +139,7 @@ def register_state_collectors(bot):
             scope="bot",
             description="Status of loaded cogs/extensions"
         )
-        logger.info("Bot state collectors registered successfully.")
+        logger.debug("Bot state collectors registered successfully.")
         return True
     except Exception as e:
         logger.error(f"Failed to register bot state collectors: {e}", exc_info=True)
@@ -147,7 +147,7 @@ def register_state_collectors(bot):
 
 def setup_core_components(bot):
     """Initializes core managers, registries, factories, and other essential components."""
-    logger.info("Setting up core components...")
+    logger.debug("Setting up core components...")
     try:
         bot.lifecycle = BotLifecycleManager()
         bot.workflow_manager = BotWorkflowManager()
@@ -157,7 +157,7 @@ def setup_core_components(bot):
         bot.control_service = BotControlService(bot)
         bot.internal_api_server = InternalAPIServer(bot)
         bot._default_components_registered = False
-        logger.info("Core components setup complete (incl. DataSourceRegistry).")
+        logger.debug("Core components setup complete (incl. DataSourceRegistry).")
     except Exception as e:
         logger.critical(f"Failed to setup core components: {e}", exc_info=True)
         raise
@@ -168,7 +168,7 @@ def register_workflows(bot):
         logger.critical("WorkflowManager not initialized before register_workflows call.")
         return
 
-    logger.info("Setting up and registering workflows...")
+    logger.debug("Setting up and registering workflows...")
     try:
         # Create workflow instances (some require other workflows/bot)
         # Ensure dependencies like database_workflow are created first if needed by others
@@ -207,7 +207,7 @@ def register_workflows(bot):
             'database', 'guild', 'guild_template', 'category', 'channel',
             'dashboard', 'task', 'user'
         ])
-        logger.info("Workflows registered and order set.")
+        logger.debug("Workflows registered and order set.")
     except Exception as e:
         logger.critical(f"Failed to register workflows: {e}", exc_info=True)
 
@@ -220,7 +220,7 @@ def register_default_components(bot):
         logger.debug("Default components already registered.")
         return
 
-    logger.info("Registering default and generic components...")
+    logger.debug("Registering default and generic components...")
     try:
         # CORE EMBED COMPONENTS
         bot.component_registry.register_component(
@@ -280,14 +280,15 @@ def register_default_components(bot):
         logger.error(f"Error registering default/generic components: {e}", exc_info=True)
 
 def register_core_services(service_factory: ServiceFactory, bot):
-    """Registers essential services with the ServiceFactory SYNCHRONOUSLY."""
-    if not service_factory:
-        logger.error("Service Factory is None. Cannot register core services.")
-        return
+    """Synchronously register essential core services needed early.
 
-    logger.info("Registering core services with Service Factory (synchronous)...")
+    Args:
+        service_factory (ServiceFactory): The factory instance.
+        bot: The bot instance.
+    """
+    logger.debug("Registering core services with Service Factory (synchronous)...")
     try:
-        # 1. Register ComponentRegistry
+        # Register Component Registry instance (already created)
         if hasattr(bot, 'component_registry') and bot.component_registry:
             if hasattr(service_factory, 'register_service'):
                 service_factory.register_service(
@@ -366,21 +367,30 @@ def register_core_services(service_factory: ServiceFactory, bot):
         register_state_collectors(bot) # Call the new registration function
 
     except Exception as e:
-        logger.error(f"Error during synchronous core service registration: {e}", exc_info=True)
+        logger.critical(f"CRITICAL ERROR DURING CORE SERVICE REGISTRATION: {e}", exc_info=True)
+        # Potentially re-raise or handle appropriately
 
 def setup_service_factory_and_register_core_services(bot):
-    """Initializes the ServiceFactory and registers core services SYNCHRONOUSLY."""
-    logger.info("Setting up Service Factory and registering core services in __init__...")
+    """Sets up the Service Factory and registers core services."""
+    logger.debug("Setting up Service Factory and registering core services in __init__...")
     try:
-        # Create factory first
-        bot.service_factory = ServiceFactory(bot)
-        logger.debug(f"ServiceFactory instantiated in __init__: {type(bot.service_factory).__name__}")
-        # Then register services using the created factory
-        register_core_services(bot.service_factory, bot)
-        logger.info("Service Factory setup and core service registration complete.")
+        if not bot.service_factory:
+            # Pass bot instance to the factory constructor
+            bot.service_factory = ServiceFactory(bot)
+            logger.debug(f"ServiceFactory instantiated in __init__: {bot.service_factory}")
+            # Register core services immediately after factory creation
+            register_core_services(bot.service_factory, bot)
+            # Register state collectors AFTER factory is created but before full init
+            register_state_collectors(bot) # Assuming bot instance is needed
+        else:
+            logger.warning("ServiceFactory already exists.")
+
+        logger.debug("Service Factory setup and core service registration complete.")
     except Exception as e:
-        logger.critical(f"CRITICAL FAILURE during Service Factory setup in __init__: {e}", exc_info=True)
-        raise RuntimeError("Failed to initialize core Service Factory") from e
+        logger.critical(f"Failed to setup Service Factory or register core services: {e}", exc_info=True)
+        bot.service_factory = None # Ensure it's None if setup fails
+        # Re-raise or handle as appropriate for critical setup failure
+        raise
 
 async def setup_hook(bot):
     """

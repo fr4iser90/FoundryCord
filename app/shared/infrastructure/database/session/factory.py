@@ -26,7 +26,7 @@ class SessionFactory:
             # Create engine
             database_url = get_database_url()
             # Log the URL being used
-            logger.info(f"Attempting to initialize SessionFactory with database URL: {database_url}") 
+            logger.debug(f"Attempting to initialize SessionFactory with database URL: {database_url}") 
             self._engine = create_async_engine(
                 database_url,
                 echo=False,
@@ -46,7 +46,7 @@ class SessionFactory:
                 await conn.run_sync(lambda _: None)
             
             self._initialized = True
-            logger.info("Session factory initialized successfully")
+            logger.debug("Session factory initialized successfully")
             return True
             
         except Exception as e:

@@ -82,7 +82,7 @@ class LoggingConfig:
             root_logger.addHandler(handler)
             
         # --- MODIFICATION 5: Update final log message ---
-        logging.info(f"Logging configured with handlers: {[h.__class__.__name__ for h in configured_handlers]}, root level: {logging.getLevelName(root_logger.level)}")
+        logging.debug(f"Logging configured with handlers: {[h.__class__.__name__ for h in configured_handlers]}, root level: {logging.getLevelName(root_logger.level)}")
         
     def update(self, config: Dict[str, Any]) -> None:
         """Update configuration with provided values"""

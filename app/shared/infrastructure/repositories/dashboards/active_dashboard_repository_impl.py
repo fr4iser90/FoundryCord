@@ -176,7 +176,7 @@ class ActiveDashboardRepositoryImpl(BaseRepositoryImpl[ActiveDashboardEntity], A
         )
         await self.session.flush()
         if result.rowcount > 0:
-            logger.info(f"Repository: Successfully updated message_id for instance {instance_id}")
+            logger.debug(f"Repository: Successfully updated message_id for instance {instance_id}")
             return True
         else:
             logger.warning(f"Repository: Failed to update message_id for instance {instance_id} (not found or no change)")

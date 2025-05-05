@@ -62,7 +62,7 @@ class GuildTemplateWorkflow(BaseWorkflow):
     async def initialize(self) -> bool:
         """Initialize the workflow globally."""
         # Repositories are session-scoped, so no global initialization needed here.
-        logger.info("[GuildTemplateWorkflow] Initialized successfully.")
+        logger.debug("[GuildTemplateWorkflow] Initialized successfully.")
         return True
 
     async def create_template_for_guild(self, 

@@ -52,7 +52,7 @@ class SecureStateSnapshot:
             "description": description or f"State collector for {name}",
             "registered_at": time.time()
         }
-        logger.info(f"Registered state collector: {name} (scope: {scope})")
+        logger.debug(f"Registered state collector: {name} (scope: {scope})")
         
     def approve_collector(self, name: str, user_id: str = None) -> bool:
         """

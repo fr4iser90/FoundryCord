@@ -38,7 +38,7 @@ class DashboardWorkflow(BaseWorkflow):
         """Initialize dashboard workflow globally and trigger lifecycle service."""
         try:
             self.bot = bot
-            logger.info("[DashboardWorkflow] Starting initialization...")
+            logger.debug("[DashboardWorkflow] Starting initialization...")
             
             if not self.bot:
                  logger.error("[DashboardWorkflow] Bot instance not provided. Cannot start LifecycleService.")
@@ -49,7 +49,7 @@ class DashboardWorkflow(BaseWorkflow):
             factory_type = type(getattr(self.bot, 'service_factory', None)).__name__
             logger.debug(f"[DashboardWorkflow] Bot Info: ID={bot_id}, HasFactory={has_factory}, FactoryType={factory_type}")
             
-            logger.info("[DashboardWorkflow] Instantiating DashboardLifecycleService...")
+            logger.debug("[DashboardWorkflow] Instantiating DashboardLifecycleService...")
             self.lifecycle_service = DashboardLifecycleService(self.bot)
             init_success = await self.lifecycle_service.initialize() # This calls activate_db_configured_dashboards
             

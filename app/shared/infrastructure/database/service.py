@@ -32,7 +32,7 @@ class DatabaseService:
                 return True
 
             # First wait for PostgreSQL to be available
-            logger.info("Waiting for PostgreSQL to be available...")
+            logger.debug("Waiting for PostgreSQL to be available...")
             if not await wait_for_postgres():
                 logger.error("PostgreSQL is not available after maximum retries")
                 return False
@@ -55,7 +55,7 @@ class DatabaseService:
                 await conn.run_sync(lambda _: None)
             
             self._initialized = True
-            logger.info("Database service initialized successfully")
+            logger.debug("Database service initialized successfully")
             return True
             
         except Exception as e:
@@ -96,7 +96,7 @@ class DatabaseService:
             await self._engine.dispose()
             self._engine = None
         self._initialized = False
-        logger.info("Database connections closed")
+        logger.debug("Database connections closed")
     
     @property
     def engine(self) -> Optional[AsyncEngine]:
