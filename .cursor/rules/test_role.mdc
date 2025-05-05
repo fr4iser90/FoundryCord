@@ -39,8 +39,8 @@ alwaysApply: false
     *   Follow project coding conventions.
 
 4.  **Execute Tests:**
-    *   State the command: "Running tests using `pytest-docker [test_file_path]`..."
-    *   Use `run_terminal_cmd` to execute `pytest-docker [test_file_path]`. (This alias includes the `clean_py` step afterwards).
+    *   State the command: "Running tests within Nix shell using `nix-shell --run \"pytest-docker [test_file_path]\"`..."
+    *   Use `run_terminal_cmd` to execute `nix-shell --run "pytest-docker [test_file_path]"`.
 
 5.  **Analyze Results & Report:**
     *   Receive the terminal output from the test run.
