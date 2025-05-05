@@ -16,13 +16,13 @@ class ServiceFactory:
         """Initialize the ServiceFactory."""
         # --- ADD DEBUG LOG ---
         bot_id = getattr(bot.user, 'id', 'N/A') if bot and hasattr(bot, 'user') else 'Bot Invalid'
-        logger.info(f"[DEBUG ServiceFactory.__init__ SIMPLIFIED] Initializing with bot ID: {bot_id}")
+        logger.debug(f"[DEBUG ServiceFactory.__init__ SIMPLIFIED] Initializing with bot ID: {bot_id}")
         # --- END DEBUG LOG ---
         self.bot = bot
         # --- Use simple dictionary for storage ---
         self._services: Dict[str, Any] = {} 
         self._creators: Dict[str, Callable] = {} 
-        logger.info(f"[DEBUG ServiceFactory.__init__ SIMPLIFIED] Initialization complete. Bot ID: {bot_id}")
+        logger.debug(f"[DEBUG ServiceFactory.__init__ SIMPLIFIED] Initialization complete. Bot ID: {bot_id}")
 
     def register_service_creator(self, name: str, creator: Callable, overwrite: bool = False):
         """Registers a function that creates a service instance (lazy loading)."""
@@ -38,7 +38,7 @@ class ServiceFactory:
              logger.warning(f"Service instance '{name}' already registered. Set overwrite=True to replace.")
              return
         self._services[name] = instance
-        logger.info(f"Registered service instance '{name}' of type {type(instance).__name__}.")
+        logger.debug(f"Registered service instance '{name}' of type {type(instance).__name__}.")
 
     def get_service(self, name: str) -> Optional[Any]:
         """Gets a service instance, creating it if necessary using a registered creator."""
@@ -53,7 +53,7 @@ class ServiceFactory:
                 # You might need a more sophisticated way to pass arguments if creators vary
                 instance = creator_func(self.bot)
                 if instance:
-                    logger.info(f"Successfully created service '{name}' via creator. Type: {type(instance).__name__}")
+                    logger.debug(f"Successfully created service '{name}' via creator. Type: {type(instance).__name__}")
                     self._services[name] = instance # Cache the created instance
                     return instance
                 else:
@@ -72,7 +72,7 @@ class ServiceFactory:
 
     async def initialize_services(self):
         """Initialize registered services that have an initialize method."""
-        logger.info("Initializing registered services...")
+        logger.debug("Initializing registered services...")
         overall_success = True
 
         # --- Ensure ComponentRegistry is initialized first ---
@@ -124,7 +124,7 @@ class ServiceFactory:
                     logger.error(f"Error initializing service {name}: {e}", exc_info=True)
                     overall_success = False
 
-        logger.info(f"Service initialization process completed. Overall success: {overall_success}")
+        logger.debug(f"Service initialization process completed. Overall success: {overall_success}")
         return overall_success
     
     def create(self, service_type: str, *args, **kwargs) -> Optional[Any]:

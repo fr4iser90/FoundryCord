@@ -57,7 +57,7 @@ class DashboardWorkflow(BaseWorkflow):
                  logger.error("[DashboardWorkflow] DashboardLifecycleService initialization failed.")
                  return False
                  
-            logger.info("[DashboardWorkflow] Initialization successful (LifecycleService started).")
+            logger.debug("[DashboardWorkflow] Initialization successful (LifecycleService started).")
             return True
             
         except Exception as e:

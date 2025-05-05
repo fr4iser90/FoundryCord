@@ -45,9 +45,9 @@ class ChannelWorkflow(BaseWorkflow):
     async def initialize(self) -> bool:
         """Initialize the channel workflow globally"""
         try:
-            logger.info("Initializing channel workflow")
+            logger.debug("Initializing channel workflow")
             
-            logger.info("Channel workflow initialized globally (no services/repos stored).")
+            logger.debug("Channel workflow initialized globally (no services/repos stored).")
             return True # Return True outside the try/except for session
             
         except Exception as e:

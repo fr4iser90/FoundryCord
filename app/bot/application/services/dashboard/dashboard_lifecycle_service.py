@@ -41,12 +41,12 @@ class DashboardLifecycleService:
         # await self.activate_db_configured_dashboards() 
         # --- END REMOVE ---
 
-        logger.info("[DashboardLifecycleService] Initialized (DB activation deferred to on_ready).")
+        logger.debug("[DashboardLifecycleService] Initialized (DB activation deferred to on_ready).")
         return True
     
     async def activate_db_configured_dashboards(self):
         """Loads active dashboards from DB and activates/updates them in the registry."""
-        logger.info("[DashboardLifecycleService] Attempting to activate dashboards configured in the database...")
+        logger.debug("[DashboardLifecycleService] Attempting to activate dashboards configured in the database...")
         count = 0
         failed_count = 0
         activated_ids_to_update: Dict[int, Dict[str, Any]] = {} # Store IDs and new message IDs needing update
@@ -56,7 +56,7 @@ class DashboardLifecycleService:
             async with session_context() as initial_session:
                 repo = ActiveDashboardRepositoryImpl(initial_session)
                 active_dashboards: List[ActiveDashboardEntity] = await repo.list_all_active()
-                logger.info(f"[DashboardLifecycleService] Found {len(active_dashboards)} active dashboard instances in the database.")
+                logger.debug(f"[DashboardLifecycleService] Found {len(active_dashboards)} active dashboard instances in the database.")
 
                 for active_dashboard in active_dashboards:
                     try:
@@ -109,7 +109,7 @@ class DashboardLifecycleService:
 
                                  # Compare and queue for update
                                  if updated_message_id and updated_message_id != original_message_id:
-                                     logger.info(f"[DashboardLifecycleService] ActiveDashboard {active_dashboard.id}: Message ID changed from '{original_message_id}' to '{updated_message_id}'. Queuing for DB update.")
+                                     logger.debug(f"[DashboardLifecycleService] ActiveDashboard {active_dashboard.id}: Message ID changed from '{original_message_id}' to '{updated_message_id}'. Queuing for DB update.")
                                      activated_ids_to_update[active_dashboard.id] = {
                                          'message_id': updated_message_id,
                                          'channel_id': channel_id_int
@@ -134,7 +134,7 @@ class DashboardLifecycleService:
 
             # --- Separate Session for Updates ---
             if activated_ids_to_update:
-                logger.info(f"[DashboardLifecycleService] Persisting {len(activated_ids_to_update)} updated message IDs to the database...")
+                logger.debug(f"[DashboardLifecycleService] Persisting {len(activated_ids_to_update)} updated message IDs to the database...")
                 async with session_context() as update_session:
                     update_repo = ActiveDashboardRepositoryImpl(update_session)
                     updated_count = 0
@@ -153,9 +153,9 @@ class DashboardLifecycleService:
                         except Exception as persist_err:
                             logger.error(f"[DashboardLifecycleService] Error persisting message_id for ActiveDashboard {db_id} (Channel: {ch_id}): {persist_err}", exc_info=True)
                             update_failed_count += 1
-                logger.info(f"[DashboardLifecycleService] Finished persisting message IDs. Successful: {updated_count}, Failed: {update_failed_count}")
+                logger.debug(f"[DashboardLifecycleService] Finished persisting message IDs. Successful: {updated_count}, Failed: {update_failed_count}")
             else:
-                 logger.info("[DashboardLifecycleService] No message IDs needed database persistence after activation.")
+                 logger.debug("[DashboardLifecycleService] No message IDs needed database persistence after activation.")
             # --- End Separate Update Session ---
 
         except Exception as e:
@@ -175,7 +175,7 @@ class DashboardLifecycleService:
         and ensures the corresponding dashboard is active and up-to-date.
         The snapshot is expected to be a dictionary already parsed from JSON.
         """
-        logger.info(f"[DashboardLifecycleService] Received sync_dashboard_from_snapshot for channel {channel.id}.")
+        logger.debug(f"[DashboardLifecycleService] Received sync_dashboard_from_snapshot for channel {channel.id}.")
 
         if not config_json:
             logger.error(f"[DashboardLifecycleService] Received empty config_json dict for channel {channel.id}. Cannot sync.")
@@ -229,17 +229,17 @@ class DashboardLifecycleService:
                     # Check if linked configuration changed
                     if active_dashboard_entity.dashboard_configuration_id != configuration_entity.id:
                         update_data['dashboard_configuration_id'] = configuration_entity.id
-                        logger.info(f"[DashboardLifecycleService] ActiveDashboard {active_dashboard_id} needs config ID update ({active_dashboard_entity.dashboard_configuration_id} -> {configuration_entity.id})")
+                        logger.debug(f"[DashboardLifecycleService] ActiveDashboard {active_dashboard_id} needs config ID update ({active_dashboard_entity.dashboard_configuration_id} -> {configuration_entity.id})")
                     
                     # Check if it needs to be reactivated (if somehow deactivated)
                     if not active_dashboard_entity.is_active:
                          update_data['is_active'] = True
-                         logger.info(f"[DashboardLifecycleService] ActiveDashboard {active_dashboard_id} needs reactivation.")
+                         logger.debug(f"[DashboardLifecycleService] ActiveDashboard {active_dashboard_id} needs reactivation.")
                          
                     # TODO: Add check for config_override changes if implemented
 
                     if update_data:
-                        logger.info(f"[DashboardLifecycleService] Updating ActiveDashboard {active_dashboard_id}...")
+                        logger.debug(f"[DashboardLifecycleService] Updating ActiveDashboard {active_dashboard_id}...")
                         updated_entity = await active_repo.update(active_dashboard_id, update_data)
                         if not updated_entity:
                              logger.error(f"[DashboardLifecycleService] Failed to update ActiveDashboard {active_dashboard_id}.")
@@ -252,7 +252,7 @@ class DashboardLifecycleService:
                     # --- End Instance Update Check ---
                 else:
                     # --- Instance Does Not Exist: Create it ---
-                    logger.info(f"[DashboardLifecycleService] No existing ActiveDashboard found for channel {channel.id}. Creating new one linked to config '{config_name}' (ID: {configuration_entity.id}).")
+                    logger.debug(f"[DashboardLifecycleService] No existing ActiveDashboard found for channel {channel.id}. Creating new one linked to config '{config_name}' (ID: {configuration_entity.id}).")
                     create_data = {
                         'guild_id': str(channel.guild.id),
                         'channel_id': str(channel.id),

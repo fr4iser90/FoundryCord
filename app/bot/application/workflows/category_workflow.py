@@ -37,9 +37,9 @@ class CategoryWorkflow(BaseWorkflow):
     async def initialize(self) -> bool:
         """Initialize the category workflow globally"""
         try:
-            # No global service instantiation needed anymore. 
+            # No global service instantiation needed anymore.
             # Services are instantiated temporarily when needed or managed elsewhere.
-            logger.info("Category workflow initialized globally (stateless).")
+            logger.debug("Category workflow initialized globally (stateless).")
             return True
 
         except Exception as e:

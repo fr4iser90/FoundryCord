@@ -57,20 +57,19 @@ class FoundryCord(commands.Bot):
         # Now that service factory likely exists, setup things depending on it
         # Example: Setup global check (if it needs services)
         self.add_check(check_guild_approval) # Assuming this check might use services later
-        logger.info("Registered global check for guild approval on all commands.")
+        logger.debug("Registered global check for guild approval on all commands.")
 
         # Example: Initialize Internal API Server (if it needs services)
         if hasattr(self, 'internal_api_server') and self.internal_api_server and self.service_factory:
              # Re-initialize or pass factory if needed.
              # Assuming InternalAPIServer's constructor takes bot, and can access bot.service_factory
-             logger.info("Internal API Server setup linked with Service Factory.")
+             logger.debug("Internal API Server setup linked with Service Factory.")
         elif not hasattr(self, 'internal_api_server'):
              logger.warning("Internal API Server component not setup.")
         else: # Service factory failed
              logger.error("Cannot finish Internal API Server setup - Service Factory failed to initialize.")
 
-
-        logger.info("FoundryCord __init__ complete.")
+        logger.debug("FoundryCord __init__ complete.")
 
 
     async def on_ready(self):
@@ -117,10 +116,10 @@ class FoundryCord(commands.Bot):
 
     async def start_initialization(self, bot_instance):
         """Initializes workflows and then core services."""
-        logger.info("Starting bot core initialization...")
+        logger.debug("Starting bot core initialization...")
 
         # 1. Initialize Workflows
-        logger.info("Initializing workflows...")
+        logger.debug("Initializing workflows...")
         if not hasattr(self, 'workflow_manager') or not self.workflow_manager:
              logger.error("Workflow manager not initialized. Cannot start initialization.")
              return False
@@ -132,10 +131,10 @@ class FoundryCord(commands.Bot):
         if not workflow_success:
             logger.error("Workflow initialization failed.")
             return False
-        logger.info("Workflow initialization completed successfully.")
+        logger.debug("Workflow initialization completed successfully.")
 
         # 2. Initialize Services (after workflows)
-        logger.info("Initializing core services via ServiceFactory...")
+        logger.debug("Initializing core services via ServiceFactory...")
         service_init_success = False
         try:
             # Call initialize_services on the factory instance
@@ -145,12 +144,12 @@ class FoundryCord(commands.Bot):
                  # Decide if this is critical. For now, let's say it is.
                  return False
             else:
-                 logger.info("Core service initialization completed successfully.")
+                 logger.debug("Core service initialization completed successfully.")
         except Exception as service_err:
             logger.error(f"An exception occurred during service initialization: {service_err}", exc_info=True)
             return False # Treat exceptions during service init as critical failure
 
-        logger.info("Bot core initialization completed successfully.")
+        logger.debug("Bot core initialization completed successfully.")
         return True # Return True only if both workflow and service init succeed
 
     async def cleanup(self):

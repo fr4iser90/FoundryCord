@@ -1,82 +1,116 @@
-# Refactor Bot Logging TODO
+# Reduce Startup Log Noise TODO (Revised)
 
-**Goal:** Refactor bot logging for improved clarity, usefulness, and reduced noise, focusing on critical information, errors, and key workflow steps.
-
----
-
-## Phase 1: Analysis & Strategy Definition
-
-- [x] ~~**Task 1.1: Analyze Current Logging Output & Identify Issues**~~
-    - ~~**Description:** Review recent bot logs (`docker logs foundrycord-bot | cat`) to identify:~~
-        - ~~Areas with excessive INFO/DEBUG noise (e.g., repetitive messages, overly verbose loops).~~
-        - ~~Missing critical information (e.g., lack of context in error messages, unclear workflow transitions).~~
-        - ~~Inconsistent formatting or log levels across modules.~~
-    - ~~**Affected Files (Initial):**~~
-        - ~~`app/shared/infrastructure/logging/services/base_logging_service.py`~~
-        - ~~`app/shared/infrastructure/logging/services/bot_logging_service.py`~~
-        - ~~`app/shared/application/logging/log_config.py` (To be investigated)~~
-        - ~~Modules currently generating noise (e.g., `dashboard_controller`, `dashboard_registry`, `system_collector`)~~
-    - ~~**Action:** Logs reviewed. Initial noise reduction implemented by changing INFO -> DEBUG for repetitive tasks.~~
-
-- [x] ~~**Task 1.2: Define Logging Strategy & Standards**~~
-    - ~~**Description:** Based on the analysis, define clear standards for log levels (when to use DEBUG, INFO, WARNING, ERROR, CRITICAL), message formatting (e.g., including relevant IDs, workflow steps), and context data. Document these standards (e.g., in `docs/3_developer_guides/01_getting_started/coding_conventions.md` or a new logging guide).~~
-    - ~~**Affected Files:** Documentation files, potentially `log_config.py`.~~
-    - ~~**Action:** Created `docs/3_developer_guides/01_getting_started/logging_guidelines.md` with the defined strategy.~~
+**Goal:** **MINIMIEREN** der Anzahl von `INFO`-Log-Meldungen während des Bot-Starts, um eine saubere Konsolenausgabe zu erreichen. Ändern fast aller detaillierten Startup-Schritte auf `DEBUG`, sodass `INFO` nur noch **absolute Top-Level-Meilensteine** (z.B. "Bot gestartet", kritische Fehler) oder explizit gewünschte Betriebs-Infos anzeigt.
 
 ---
 
-## Phase 2: Implementation
+## Phase 1: Initial Analysis & Refactor (Workflow/Service Init)
 
-- [x] **Task 2.1: Refactor Noisy Modules**
-    - **Description:** Identify the modules producing the most DEBUG/INFO noise and refactor their logging calls according to the new standards. Reduce verbosity where appropriate, ensuring essential information remains.
-    - **Affected Files:** Modules identified in Task 1.1.
-    - **Action:** Initial refactoring done by changing repetitive INFO logs to DEBUG in key modules (`dashboard_controller`, `dashboard_registry`, `system_collector`). Further review can be done if needed.
+- [x] ~~**Task 1.1: Locate and refactor startup logs in `app/bot/infrastructure/startup/bot.py` (or equivalent)**~~
+    - ~~**Description:** Finde die Haupt-Startsequenz des Bots. Ändere detaillierte `logger.info`-Aufrufe auf `logger.debug`.~~
+    - ~~**Action:** Done.~~
 
-- [x] ~~**Task 2.2: Enhance Error Logging Context**~~
-    - ~~**Description:** Review error handling (`try...except` blocks) and `logger.error`/`logger.exception`/`logger.critical` calls. Ensure sufficient context (e.g., relevant variables, user IDs, guild IDs, operation being attempted) is included in error messages or context dictionary.~~
-    - ~~**Affected Files:** Various modules, `base_logging_service.py`.~~
-    - ~~**Action:** Reviewed `DashboardController` (`initialize` logs further refined), `DashboardLifecycleService`, and monitoring hardware collectors (`system/components/hardware/`). Added missing context (IDs) and ensured `exc_info=True` where appropriate. Other modules may still need review.~~
+- [x] ~~**Task 1.2: Refactor specific Workflow initialization logs (Example: GuildWorkflow)**~~
+    - ~~**Description:** Untersuche exemplarisch Workflows. Ändere interne `logger.info`-Aufrufe auf `logger.debug`.~~
+    - ~~**Action:** Done (Implizit durch spätere Schritte).~~
 
-- [ ] **Task 2.3: Implement Standardized Workflow Logging (Partial)**
-    - **Description:** Implement consistent logging patterns for key workflows (e.g., dashboard activation, command execution, user synchronization). Log start, key steps, success, and failure points with clear, standardized messages.
-    - **Affected Files:** Workflow implementation files (`app/bot/application/workflows/`).
-    - **Action:** Standardized logging for User Sync, Database, Guild Template, and Guild workflows (including sub-modules like sync, approval, template application). Other workflows (e.g., Commands, Dashboard) may need review.
+## Phase 2: Analyze & Refactor Service Factory / Core Service Logs
 
-- [x] ~~**Task 2.4: Review and Adjust Configuration**~~
-    - ~~**Description:** Review the logging configuration (`log_config.py`?) to ensure appropriate default levels, formatters, and handler settings (e.g., memory buffer flush level).~~
-    - ~~**Affected Files:** `app/shared/application/logging/log_config.py` (or equivalent), `db_handler.py`.~~
-    - ~~**Action:** Reviewed `log_config.py`. Set root logger level to DEBUG, removed unused variable, and changed memory handler flush level to ERROR for better debug/error visibility.~~
+- [x] ~~**Task 2.1: Refactor Service Factory logs**~~
+    - ~~**Description:** Überprüfe die `ServiceFactory`. Stufe zu detaillierte `INFO`-Meldungen auf `logger.debug` herab.~~
+    - ~~**Action:** Done.~~
 
----
+## Phase 3: Analyze & Refactor Dashboard Startup Logs
 
-## Phase 3: Testing & Verification
+- [x] ~~**Task 3.1: Refactor Dashboard Lifecycle / Controller logs**~~
+    - ~~**Description:** Untersuche `DashboardLifecycleService` und `DashboardController`. Stufe Ablauf-Meldungen auf `logger.debug` herab.~~
+    - ~~**Action:** Done.~~
 
-- [x] ~~**Task 3.1: Test Logging Output**~~
-    - ~~**Description:** Deploy the changes and observe the bot's log output (using `docker logs foundrycord-bot | cat`). Verify:~~
-        - ~~Reduced noise at INFO level.~~
-        - ~~Key workflow steps logged appropriately.~~
-        - ~~Errors (if any) provide sufficient context and traceback.~~
-        - ~~Consistent formatting.~~
-    - ~~**Action:** Deployed and verified. INFO level is much cleaner. Key events are logged. Error context improvements applied but not tested under error conditions. Formatting is consistent.~~
+## Phase 4: Verification (Intermediate - FAILED)
 
-- [ ] **Task 3.2: Final Review & Documentation Update**
-    - **Description:** Ensure any new or updated logging standards are fully documented for developers.
-    - **Affected Files:** Documentation files.
+- [x] ~~**Task 4.1: Deploy and Verify Log Reduction**~~
+    - ~~**Action:** Configure, Deploy, Verify Logs. (**Ziel noch NICHT erreicht.** Logs immer noch zu laut).~~
+
+## Phase 5: Fine-Tune Setup & Basic Workflow Init Logs
+
+- [x] ~~**Task 5.1: Refactor `setup_hooks.py` Logs**~~
+    - ~~**Description:** Überprüfe `setup_hooks.py` auf `logger.info`-Aufrufe in Schleifen oder für jeden Registrierungsschritt. Ändere auf `logger.debug`.~~
+    - ~~**Action:** Done.~~
+
+- [x] ~~**Task 5.2: Refactor Workflow Manager / Basic Initialization Logs**~~
+    - ~~**Description:** Finde `Initializing workflow: ...` und `Workflow ... initialized successfully`. Ändere auf `logger.debug`. Behalte übergeordnete `INFO`-Meldung.~~
+    - ~~**Action:** Done (in `workflow_manager.py`, `category_workflow.py`, `channel_workflow.py`, `user_workflow.py`, `dashboard_workflow.py`, `guild_template_workflow.py`, `database_workflow.py`, `guild/initialization.py`).~~
+
+- [x] ~~**Task 5.3: Final Review `bot.py` Startup Logs**~~
+    - ~~**Description:** Gehe `app/bot/infrastructure/startup/bot.py` durch. Stelle sicher, dass `INFO` nur Top-Level-Phasen markiert.~~
+    - ~~**Action:** Done.~~
+
+## Phase 6: Aggressive INFO Reduction (NEW)**
+
+- [ ] **Task 6.1: Refactor GuildWorkflow Initialization Details**
+    - **Description:** Ändere die `INFO`-Logs in `app/bot/application/workflows/guild/initialization.py` für "Found X guilds", "Processing status", "Status: APPROVED/SUSPENDED", "Initialization complete" auf `DEBUG`.
+    - **Affected Files:**
+        - `app/bot/application/workflows/guild/initialization.py`
+    - **Action:** Modify code to change log levels.
+
+- [ ] **Task 6.2: Refactor Remaining Workflow Init Start Messages**
+    - **Description:** Ändere die verbleibenden `INFO`-Logs, die nur den Start eines Workflows anzeigen (z.B. `Initializing channel workflow`, `Initializing task workflow`, `Initializing user workflow`) auf `DEBUG`. Das eigentliche "initialized successfully" ist bereits DEBUG.
+    - **Affected Files:**
+        - `app/bot/application/workflows/channel_workflow.py`
+        - `app/bot/application/workflows/task_workflow.py`
+        - `app/bot/application/workflows/user_workflow.py`
+    - **Action:** Modify code to change log levels.
+
+- [ ] **Task 6.3: Refactor User Sync Details**
+    - **Description:** Ändere die `INFO`-Logs in `app/bot/application/workflows/user_workflow.py` für die User-Sync-Statistiken (`Synchronized guild...`, `Starting sync of...`, `Guild sync complete:`, `Total members processed`, `Successfully synced`, `Skipped`, `Errors`) auf `DEBUG`.
+    - **Affected Files:**
+        - `app/bot/application/workflows/user_workflow.py`
+    - **Action:** Modify code to change log levels.
+
+- [ ] **Task 6.4: Refactor Component Loading Logs**
+    - **Description:** Ändere die `INFO`-Logs in `app/bot/infrastructure/startup/bot.py` (oder wo `load_component_definitions` aufgerufen wird) für "Loading component definitions..." und "Successfully loaded..." auf `DEBUG`.
+    - **Affected Files:**
+        - `app/bot/infrastructure/startup/bot.py` (vermutlich in `on_ready` oder Service Init)
+        - Evtl. `app/bot/application/services/component/component_loader_service.py` oder `app/bot/infrastructure/config/registries/component_registry.py`
+    - **Action:** Modify code to change log levels.
+
+- [ ] **Task 6.5: Refactor Dashboard Data Service Init Log**
+    - **Description:** Ändere das `INFO`-Log "Dashboard Data Service initialized..." auf `DEBUG`.
+    - **Affected Files:**
+        - `app/bot/application/services/dashboard/dashboard_data_service.py` (oder wo es initialisiert wird, z.B. `setup_hooks.py`)
+    - **Action:** Modify code to change log levels.
+
+- [ ] **Task 6.6: Refactor Internal API Setup Logs**
+    - **Description:** Ändere die `INFO`-Logs für "Setting up internal API routes...", "Internal API routes added...", "Internal API server started..." auf `DEBUG`. Behalte nur `ERROR`-Logs für Fehler.
+    - **Affected Files:**
+        - `app/bot/infrastructure/startup/bot.py` (vermutlich in `setup_internal_api`)
+        - `app/bot/interfaces/api/internal/server.py`
+    - **Action:** Modify code to change log levels.
+
+- [ ] **Task 6.7: Refactor Dashboard Activation Logs**
+    - **Description:** Ändere die `INFO`-Logs in `DashboardLifecycleService` und `DashboardRegistry` für die Aktivierungsschritte (`Ensuring controller is active...`, `Activated '...' dashboard.`) auf `DEBUG`. Behalte nur die abschließende Meldung der `activate_db_configured_dashboards` auf `INFO` (oder ändere sie auch, je nach gewünschtem Detailgrad).
+    - **Affected Files:**
+        - `app/bot/application/services/dashboard/dashboard_lifecycle_service.py`
+        - `app/bot/infrastructure/dashboards/dashboard_registry.py`
+    - **Action:** Modify code to change log levels.
+
+## Phase 7: Final Verification (NEW)**
+
+- [ ] **Task 7.1: Deploy and Verify Minimal Log Output**
+    - **Description:** Nach Abschluss von Phase 6, setze die Logging-Konfiguration (`log_config.py`) auf `console_level: INFO`. Führe ein Deployment durch und überprüfe die `docker logs foundrycord-bot`. Die Ausgabe sollte **extrem** knapp sein und fast nur noch den "Bot started" / "Logged in as" Log und eventuelle `WARNING`/`ERROR`/`CRITICAL`-Meldungen enthalten.
+    - **Affected Files:**
+        - `app/shared/application/logging/log_config.py`
+    - **Action:** Configure, Deploy, Verify Logs.
 
 ---
 
 ## Related Documentation
 
--   `app/shared/infrastructure/logging/services/base_logging_service.py`
--   `app/shared/infrastructure/logging/services/bot_logging_service.py`
--   `app/shared/infrastructure/logging/handlers/db_handler.py`
+- `docs/3_developer_guides/01_getting_started/logging_guidelines.md`
 
 ---
 
 ## General Notes / Future Considerations
 
--   Focus on reducing DEBUG noise.
--   Improve error context (e.g., ensure relevant variables, IDs are included).
--   Standardize log messages, potentially on a per-workflow or per-module basis.
--   Consider log aggregation/analysis tools in the future.
--   Evaluate performance impact of DB logging, potentially adjusting sampling or queueing.
+- **NEUES ZIEL:** Startup auf `INFO`-Level soll fast lautlos sein. `DEBUG` enthält weiterhin alle Details.
+- Änderungen sollten weiterhin *nur* das Loglevel betreffen (`logger.info` -> `logger.debug`).

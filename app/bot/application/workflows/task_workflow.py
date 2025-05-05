@@ -28,7 +28,7 @@ class TaskWorkflow(BaseWorkflow):
     async def initialize(self) -> bool:
         """Initialize the task workflow globally"""
         try:
-            logger.info("Initializing task workflow")
+            logger.debug("Initializing task workflow")
             
             self.running = True
             

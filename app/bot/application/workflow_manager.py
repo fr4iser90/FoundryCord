@@ -69,7 +69,7 @@ class BotWorkflowManager:
                 return False
         
         # Now initialize the workflow itself
-        logger.info(f"Initializing workflow: {name}")
+        logger.debug(f"Initializing workflow: {name}")
         try:
             # --- CHANGE LOG LEVEL ---
             bot_id_before = getattr(bot.user, 'id', 'N/A') if bot and hasattr(bot, 'user') else 'Bot Invalid'
@@ -92,7 +92,7 @@ class BotWorkflowManager:
                  
             if success:
                 workflow_data['initialized'] = True
-                logger.info(f"Workflow {name} initialized successfully")
+                logger.debug(f"Workflow {name} initialized successfully")
                 return True
             else:
                 logger.error(f"Workflow {name} initialization returned False")

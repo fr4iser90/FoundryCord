@@ -67,7 +67,7 @@ class InternalAPIServer:
         
         try:
             await self.site.start()
-            logger.info(f"Internal API server started successfully on http://{self.host}:{self.port}")
+            logger.debug(f"Internal API server started successfully on http://{self.host}:{self.port}")
             # Start the server's main loop in a background task
             self._server_task = asyncio.create_task(self._run_server_loop())
         except OSError as e:

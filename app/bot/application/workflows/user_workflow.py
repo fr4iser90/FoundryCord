@@ -27,7 +27,7 @@ class UserWorkflow(BaseWorkflow):
     
     async def initialize(self) -> bool:
         """Initialize the user workflow globally"""
-        logger.info("Initializing user workflow")
+        logger.debug("Initializing user workflow")
         
         try:
             # Mark all guilds as pending initially
@@ -37,7 +37,7 @@ class UserWorkflow(BaseWorkflow):
                     # Sync users immediately for all guilds
                     await self.sync_guild_members(guild)
             
-            logger.info("User workflow initialized successfully")
+            logger.debug("User workflow initialized successfully")
             return True
             
         except Exception as e:
@@ -105,7 +105,7 @@ class UserWorkflow(BaseWorkflow):
                     session.add(guild_entity)
                 
                 await session.commit()
-                logger.info(f"Synchronized guild {guild.name} to database")
+                logger.debug(f"Synchronized guild {guild.name} to database")
         except Exception as e:
             logger.error(f"Error synchronizing guild {guild.name} to database: {e}")
 
@@ -116,7 +116,7 @@ class UserWorkflow(BaseWorkflow):
             await self.sync_guild_to_database(guild)
             
             members = guild.members
-            logger.info(f"[Guild:{guild.id}] Starting sync of {len(members)} members from guild {guild.name}")
+            logger.debug(f"[Guild:{guild.id}] Starting sync of {len(members)} members from guild {guild.name}")
             
             synced_count = 0
             skipped_count = 0
@@ -151,11 +151,11 @@ class UserWorkflow(BaseWorkflow):
                          continue
             
             # Log final statistics
-            logger.info(f"[Guild:{guild.id}] Guild {guild.name} sync complete:")
-            logger.info(f"[Guild:{guild.id}] - Total members processed: {len(members)}")
-            logger.info(f"[Guild:{guild.id}] - Successfully synced: {synced_count}")
-            logger.info(f"[Guild:{guild.id}] - Skipped (bots): {skipped_count}")
-            logger.info(f"[Guild:{guild.id}] - Errors: {error_count}")
+            logger.debug(f"[Guild:{guild.id}] Guild {guild.name} sync complete:")
+            logger.debug(f"[Guild:{guild.id}] - Total members processed: {len(members)}")
+            logger.debug(f"[Guild:{guild.id}] - Successfully synced: {synced_count}")
+            logger.debug(f"[Guild:{guild.id}] - Skipped (bots): {skipped_count}")
+            logger.debug(f"[Guild:{guild.id}] - Errors: {error_count}")
             
         except Exception as e:
             logger.error(f"[Guild:{guild.id}] Failed to sync members for guild {guild.name}: {e}", exc_info=True)

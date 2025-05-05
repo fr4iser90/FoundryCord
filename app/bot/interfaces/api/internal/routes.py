@@ -170,7 +170,7 @@ async def handle_apply_guild_template(request: web.Request):
 def setup_internal_routes(app: web.Application):
     """Add routes to the internal API application."""
     router = app.router
-    logger.info("Setting up internal API routes...")
+    logger.debug("Setting up internal API routes...")
     router.add_post('/internal/trigger/approve_guild/{guild_id}', handle_trigger_approve_guild)
     router.add_get('/internal/ping', handle_ping)
     router.add_get('/internal/logs', handle_get_logs)
@@ -187,6 +187,6 @@ def setup_internal_routes(app: web.Application):
              route_details.append(f"  - {route}")
              
     if route_details:
-        logger.info("Internal API routes added:\n" + "\n".join(route_details))
+        logger.debug("Internal API routes added:\n" + "\n".join(route_details))
     else:
-         logger.info("Internal API routes added: No routes found.") 
+        logger.debug("Internal API routes added: No routes found.") 

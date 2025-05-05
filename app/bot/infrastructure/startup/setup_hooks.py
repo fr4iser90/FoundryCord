@@ -246,7 +246,7 @@ def register_default_components(bot):
         )
 
         # Register IMPLEMENTATIONS FOR GENERIC DB TYPES
-        logger.info("Registering implementation classes for generic database component types...")
+        logger.debug("Registering implementation classes for generic database component types...")
 
         # Register 'embed' type -> Use the existing DashboardEmbed class
         bot.component_registry.register_component(
@@ -254,7 +254,7 @@ def register_default_components(bot):
             component_class=DashboardEmbed,
             description="Generic embed component implementation (uses DashboardEmbed)"
         )
-        logger.info("Registered 'embed' type to use DashboardEmbed class.")
+        logger.debug("Registered 'embed' type to use DashboardEmbed class.")
 
         # Register 'button' type -> Use the new GenericButtonComponent class
         bot.component_registry.register_component(
@@ -262,7 +262,7 @@ def register_default_components(bot):
             component_class=GenericButtonComponent,
             description="Generic button component implementation"
         )
-        logger.info("Registered 'button' type to use GenericButtonComponent class.")
+        logger.debug("Registered 'button' type to use GenericButtonComponent class.")
 
         # Register 'selector' type -> Use the new GenericSelectorComponent class
         bot.component_registry.register_component(
@@ -270,10 +270,10 @@ def register_default_components(bot):
             component_class=GenericSelectorComponent,
             description="Generic selector component implementation"
         )
-        logger.info("Registered 'selector' type to use GenericSelectorComponent class.")
+        logger.debug("Registered 'selector' type to use GenericSelectorComponent class.")
 
         bot._default_components_registered = True
-        logger.info(f"Finished registering default/generic components. Total implementation types registered: {len(bot.component_registry.get_all_component_types())}")
+        logger.debug(f"Finished registering default/generic components. Total implementation types registered: {len(bot.component_registry.get_all_component_types())}")
     except NameError as ne:
         logger.error(f"Failed to register a component - Class not found (NameError): {ne}. Ensure component classes are imported.", exc_info=True)
     except Exception as e:
@@ -295,7 +295,7 @@ def register_core_services(service_factory: ServiceFactory, bot):
                     bot.component_registry,
                     overwrite=True
                 )
-                logger.info("Registered service: component_registry")
+                logger.debug("Registered service: component_registry")
             else:
                 logger.error("service_factory is missing register_service method (ComponentRegistry).")
         else:
@@ -311,7 +311,7 @@ def register_core_services(service_factory: ServiceFactory, bot):
                     system_collector_instance,
                     overwrite=True # Allow overwrite if somehow registered elsewhere
                 )
-                logger.info("Registered service: system_collector")
+                logger.debug("Registered service: system_collector")
             else:
                 logger.info("SystemCollector already registered.")
         else:
@@ -327,7 +327,7 @@ def register_core_services(service_factory: ServiceFactory, bot):
                     service_collector_instance,
                     overwrite=True
                 )
-                logger.info("Registered service: service_collector")
+                logger.debug("Registered service: service_collector")
             else:
                 logger.info("ServiceCollector already registered.")
         else:
@@ -342,7 +342,7 @@ def register_core_services(service_factory: ServiceFactory, bot):
                 dashboard_data_service_instance,
                 overwrite=True
             )
-            logger.info("Registered service: dashboard_data_service")
+            logger.debug("Registered service: dashboard_data_service")
         else:
             logger.error("service_factory is missing register_service method (DashboardDataService).")
 
@@ -356,7 +356,7 @@ def register_core_services(service_factory: ServiceFactory, bot):
                     component_loader_instance,
                     overwrite=True
                 )
-                logger.info("Registered service: component_loader")
+                logger.debug("Registered service: component_loader")
             else:
                 logger.info("ComponentLoaderService already registered.")
         else:
@@ -374,7 +374,7 @@ def setup_service_factory_and_register_core_services(bot):
     try:
         # Create factory first
         bot.service_factory = ServiceFactory(bot)
-        logger.info(f"ServiceFactory instantiated in __init__: {type(bot.service_factory).__name__}")
+        logger.debug(f"ServiceFactory instantiated in __init__: {type(bot.service_factory).__name__}")
         # Then register services using the created factory
         register_core_services(bot.service_factory, bot)
         logger.info("Service Factory setup and core service registration complete.")

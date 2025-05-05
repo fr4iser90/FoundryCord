@@ -50,7 +50,7 @@ class ComponentRegistry:
              logger.debug("Database component definitions already loaded.")
              return True
 
-        logger.info("Loading component definitions from database...")
+        logger.debug("Loading component definitions from database...")
         loaded_count = 0
         try:
             async with session_context() as session:

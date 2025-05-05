@@ -10,7 +10,7 @@ class LoggingConfig:
     format: str = "%(asctime)s [%(levelname).1s] %(message)s"  # Kürzeres Format mit Level als Buchstabe
     date_format: str = "%H:%M:%S"  # Nur Zeit, kein Datum
     
-    # Level configuration
+ 
     console_level: str = "INFO"
     file_level: str = "INFO" # Keep for potential future use
     

@@ -13,6 +13,7 @@ alwaysApply: true
 - **Acknowledge Reverts:** If the user rejects an edit or mentions reverting changes, **explicitly acknowledge** this reset and **wait for confirmation** on the next step.
 - **Clarify Ambiguity:** If instructions are unclear, conflicting, or seem incorrect (e.g., based on file context or previous steps), **STOP immediately** and ask for clarification. Do **NOT** proceed with assumptions.
 - **Avoid Sidetracking:** Focus solely on the user's current request. Do not suggest unrelated changes or get stuck on previous incorrect paths.
+- **NEW RULE (Large File Edits):** If proposing an edit (`edit_file`) to a large file (e.g., > 300 lines), **split the changes** into smaller, logically coherent blocks (e.g., one function, one specific section). Apply these smaller edits sequentially to minimize the risk of the apply model making unintended changes to unrelated code.
 
 ## AI Persona / Expected Behavior
 

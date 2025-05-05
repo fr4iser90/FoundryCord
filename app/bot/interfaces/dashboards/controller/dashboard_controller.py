@@ -46,7 +46,7 @@ class DashboardController:
         self.component_registry = None 
         self.data_service = None # Renamed from builder service
         
-        logger.info(f"Initialized dashboard controller for {dashboard_type} dashboard {self.dashboard_id}")
+        logger.debug(f"Initialized dashboard controller for {dashboard_type} dashboard {self.dashboard_id}")
     
     async def initialize(self, bot):
         """Initialize the dashboard controller"""
@@ -56,7 +56,7 @@ class DashboardController:
         has_factory = hasattr(bot, 'service_factory')
         factory_obj = getattr(bot, 'service_factory', None)
         factory_type = type(factory_obj).__name__
-        logger.info(f"[DEBUG controller.initialize] Received bot. Bot ID: {bot_id}, Has service_factory attr: {has_factory}, Factory Object Type: {factory_type}")
+        logger.debug(f"[DEBUG controller.initialize] Received bot. Bot ID: {bot_id}, Has service_factory attr: {has_factory}, Factory Object Type: {factory_type}")
         
 
         # Get Component Registry & Data Service
@@ -107,7 +107,7 @@ class DashboardController:
         self.register_standard_handlers()
         
         self.initialized = True
-        logger.info(f"Dashboard {self.dashboard_id} initialization complete (Services might be missing).") # Adjusted log
+        logger.debug(f"Dashboard {self.dashboard_id} initialization complete (Services might be missing).") # Adjusted log
         return True
     
     

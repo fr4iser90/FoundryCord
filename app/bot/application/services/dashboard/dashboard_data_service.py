@@ -50,7 +50,7 @@ class DashboardDataService:
             #      self.data_source_registry = None
             # --- END REMOVAL ---
 
-            logger.info("Dashboard Data Service initialized (DataSourceRegistry logic removed).")
+            logger.debug("Dashboard Data Service initialized (DataSourceRegistry logic removed).")
             self.initialized = True
             return True
             

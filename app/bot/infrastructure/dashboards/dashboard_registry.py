@@ -91,7 +91,7 @@ class DashboardRegistry:
                                            ) -> bool:
         """Ensures a dashboard controller is active for the channel, using the provided configuration."""
 
-        logger.info(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Ensuring controller is active for type '{dashboard_type}'.")
+        logger.debug(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Ensuring controller is active for type '{dashboard_type}'.")
         # --- ADD DEBUG LOG ---
         bot_id = getattr(self.bot.user, 'id', 'N/A')
         has_factory = hasattr(self.bot, 'service_factory')
