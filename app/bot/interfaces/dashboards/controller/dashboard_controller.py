@@ -230,6 +230,11 @@ class DashboardController:
                      await self._send_or_edit(channel, error_embed, None) # Send error embed, no view
                  return None
             logger.debug(f"[{self.dashboard_id}] display_dashboard: Data fetched successfully.")
+            
+            # --- ADDED DEBUG LOG --- #
+            logger.debug(f"[{self.dashboard_id}] DEBUG DATA BEFORE BUILD: {data}")
+            # --- END DEBUG LOG --- #
+            
             # --- END Data Fetch ---
 
             # Get channel
@@ -238,54 +243,52 @@ class DashboardController:
                 logger.error(f"[{self.dashboard_id}] display_dashboard: Channel {self.channel_id} not found.")
                 return None
 
-            # --- ADD DEBUG LOG ---
+            # --- ADDED DEBUG LOG & TRY/EXCEPT --- #
             logger.debug(f"[{self.dashboard_id}] display_dashboard: Calling build_embed...")
-            # --- END DEBUG LOG ---
-            embed = await self.build_embed(data)
-            # --- ADD DEBUG LOG ---
-            embed_type = type(embed).__name__ if embed else 'None'
-            logger.debug(f"[{self.dashboard_id}] display_dashboard: build_embed returned type: {embed_type}")
-            # --- END DEBUG LOG ---
+            embed = None
+            try:
+                embed = await self.build_embed(data)
+                embed_type = type(embed).__name__ if embed else 'None'
+                logger.debug(f"[{self.dashboard_id}] display_dashboard: build_embed returned type: {embed_type}")
+            except Exception as build_embed_err:
+                logger.error(f"[{self.dashboard_id}] display_dashboard: Error during build_embed: {build_embed_err}", exc_info=True)
+                # Optionally return an error embed here?
+                return None # Abort display if build fails
+            # --- END DEBUG LOG & TRY/EXCEPT ---
 
-            # --- ADD DEBUG LOG ---
+            # --- ADDED DEBUG LOG & TRY/EXCEPT --- #
             logger.debug(f"[{self.dashboard_id}] display_dashboard: Calling build_view...")
-            # --- END DEBUG LOG ---
-            view = await self.build_view(data) # Returns None if no interactive components
-            # --- ADD DEBUG LOG ---
-            view_type = type(view).__name__ if view else 'None'
-            logger.debug(f"[{self.dashboard_id}] display_dashboard: build_view returned type: {view_type}")
-            # --- END DEBUG LOG ---
+            view = None
+            try:
+                view = await self.build_view(data)
+                view_type = type(view).__name__ if view else 'None'
+                logger.debug(f"[{self.dashboard_id}] display_dashboard: build_view returned type: {view_type}")
+            except Exception as build_view_err:
+                 logger.error(f"[{self.dashboard_id}] display_dashboard: Error during build_view: {build_view_err}", exc_info=True)
+                 # If embed exists but view fails, should we still send the embed?
+                 # For now, let's abort if view build fails.
+                 return None # Abort display if build fails
+            # --- END DEBUG LOG & TRY/EXCEPT ---
 
-            # Update existing message or send new one
-            # --- ADD DEBUG LOG ---
+            # --- Send or Edit Message --- #
             logger.debug(f"[{self.dashboard_id}] display_dashboard: Calling _send_or_edit...")
-            # --- END DEBUG LOG ---
-            self.message = await self._send_or_edit(channel, embed, view)
-            # --- ADD DEBUG LOG ---
-            msg_id = self.message.id if self.message else 'None'
-            logger.debug(f"[{self.dashboard_id}] display_dashboard: _send_or_edit returned message with ID: {msg_id}")
-            # --- END DEBUG LOG ---
+            message_object = await self._send_or_edit(channel, embed, view)
+            # --- END Send or Edit ---
 
-            if self.message:
-                 self.message_id = str(self.message.id)
-                 logger.debug(f"[{self.dashboard_id}] Dashboard displayed/updated. Message ID: {self.message_id}")
+            if message_object:
+                # Update internal message ID if changed/set
+                if self.message_id != str(message_object.id):
+                    logger.debug(f"[{self.dashboard_id}] display_dashboard: Updating internal message ID to {message_object.id}")
+                    self.message_id = str(message_object.id)
+                
+                logger.debug(f"[{self.dashboard_id}] Dashboard displayed/updated. Message ID: {self.message_id}")
+                return message_object # Return the message object
             else:
-                 logger.error(f"[{self.dashboard_id}] Failed to send or edit dashboard message.")
-                 self.message_id = None # Ensure message_id is None if sending failed
-
-            # Return the message object (or None if failed)
-            return self.message
+                logger.error(f"[{self.dashboard_id}] display_dashboard: _send_or_edit failed to return a message object.")
+                return None
 
         except Exception as e:
-            logger.error(f"[{self.dashboard_id}] Error in display_dashboard: {e}", exc_info=True)
-            # Try to display error embed
-            try:
-                channel = await self.get_channel()
-                if channel:
-                    error_embed = self.create_error_embed(f"An unexpected error occurred: {e}", title="Display Error")
-                    await self._send_or_edit(channel, error_embed, None)
-            except Exception as inner_e:
-                 logger.error(f"[{self.dashboard_id}] Failed to display error embed after another error: {inner_e}")
+            logger.error(f"[{self.dashboard_id}] display_dashboard: UNEXPECTED error: {e}", exc_info=True)
             return None
 
     # Helper for sending/editing message
