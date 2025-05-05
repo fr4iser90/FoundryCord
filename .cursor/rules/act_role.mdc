@@ -31,8 +31,8 @@ alwaysApply: true
 5.  **Final Test & Deploy:**
     *   After the **last** task in the list is completed:
         *   Determine the overall scope of changes (predominantly backend or frontend based on the executed tasks).
-        *   **If Frontend:** Run `SimpleDevOpsToolkit --hot-reload-all`. Wait for completion. Report outcome.
-        *   **If Backend:** Run `SimpleDevOpsToolkit --quick-deploy`. Wait for success report. Run `docker logs foundrycord-bot | cat` (or relevant container). Report outcome and provide logs.
+        *   **If Backend(*.py):** Run `SimpleDevOpsToolkit --quick-deploy`. Wait for success report. Run `docker logs foundrycord-bot | cat` (or relevant container). Report outcome and provide logs.
+        *   **If Frontend(*.js | *.html):** Run `SimpleDevOpsToolkit --hot-reload-all`. Wait for completion. Report outcome.
         *   **If Mixed/Unclear:** Default to the backend deployment sequence.
 6.  **Completion:** Report that the TODO list execution is complete and the final deployment/test has been run.
 
