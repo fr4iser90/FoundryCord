@@ -1,62 +1,52 @@
- fr4iser@Gaming  ~/Documents/Git/FoundryCord/app  ↱ main ±  tree bot 
-bot
+# Combined Directory Trees
+
+## `app/bot/`
+
+```
+app/bot/
 ├── application
-│   ├── decorators
-│   │   ├── auth.py
-│   │   └── respond.py
-│   ├── process
-│   │   ├── cleanup_dm_task.py
-│   │   ├── cleanup_task.py
-│   │   └── security_tasks.py
-│   └── services
-│       ├── auth
-│       │   ├── __init__.py
-│       │   └── OLD.py
-│       ├── bot_control_service.py
-│       ├── category
-│       │   ├── category_builder.py
-│       │   ├── category_setup_service.py
-│       │   └── __init__.py
-│       ├── channel
-│       │   ├── channel_builder.py
-│       │   ├── channel_factory.py
-│       │   ├── channel_setup_service.py
-│       │   ├── game_server_channel_service.py
-│       │   └── __init__.py
-│       ├── config
-│       │   ├── config_service.py
-│       │   └── __init__.py
-│       ├── dashboard
-│       │   ├── component_loader_service.py
-│       │   ├── dashboard_builder.py
-│       │   ├── dashboard_data_service.py
-│       │   ├── dashboard_lifecycle_service.py
-│       │   └── __init__.py
-│       ├── discord
-│       │   ├── discord_query_service.py
-│       │   └── __init__.py
-│       ├── __init__.py
-│       ├── monitoring
-│       │   └── system_monitoring.py
-│       ├── project_management
-│       │   ├── __init__.py
-│       │   ├── project_service.py
-│       │   └── task_service.py
-│       ├── system_metrics
-│       │   ├── __init__.py
-│       │   └── system_metrics_service.py
-│       └── wireguard
-│           ├── __init__.py
-│           └── wireguard_service.py
-├── config
-├── core
-│   ├── checks.py
-│   ├── extensions.py
-│   ├── __init__.py
-│   ├── lifecycle_manager.py
-│   ├── main.py
-│   ├── setup_hooks.py
-│   ├── shutdown_handler.py
+│   ├── services
+│   │   ├── bot_control_service.py
+│   │   ├── category
+│   │   │   ├── category_builder.py
+│   │   │   ├── category_setup_service.py
+│   │   │   └── __init__.py
+│   │   ├── channel
+│   │   │   ├── channel_builder.py
+│   │   │   ├── channel_factory.py
+│   │   │   ├── channel_setup_service.py
+│   │   │   ├── game_server_channel_service.py
+│   │   │   └── __init__.py
+│   │   ├── config
+│   │   │   ├── config_service.py
+│   │   │   └── __init__.py
+│   │   ├── dashboard
+│   │   │   ├── component_loader_service.py
+│   │   │   ├── dashboard_data_service.py
+│   │   │   ├── dashboard_lifecycle_service.py
+│   │   │   ├── dashboard_manager.py
+│   │   │   └── __init__.py
+│   │   ├── discord
+│   │   │   ├── discord_query_service.py
+│   │   │   └── __init__.py
+│   │   ├── __init__.py
+│   │   ├── monitoring
+│   │   │   └── system_monitoring.py
+│   │   ├── project_management
+│   │   │   ├── __init__.py
+│   │   │   ├── project_service.py
+│   │   │   └── task_service.py
+│   │   ├── system_metrics
+│   │   │   ├── __init__.py
+│   │   │   └── system_metrics_service.py
+│   │   └── wireguard
+│   │       ├── __init__.py
+│   │       └── wireguard_service.py
+│   ├── tasks
+│   │   └── process
+│   │       ├── cleanup_dm_task.py
+│   │       ├── cleanup_task.py
+│   │       └── security_tasks.py
 │   ├── workflow_manager.py
 │   └── workflows
 │       ├── base_workflow.py
@@ -92,35 +82,30 @@ bot
 │       ├── user_workflow.py
 │       ├── webinterface
 │       └── webinterface_workflow.py
-├── database
-│   └── wireguard
+├── domain
 ├── infrastructure
-│   ├── component
-│   │   ├── factory.py
-│   │   ├── __init__.py
-│   │   └── registry.py
 │   ├── config
 │   │   ├── command_config.py
 │   │   ├── constants
 │   │   │   ├── role_constants.py
 │   │   │   └── user_config.py
+│   │   ├── constants.py
 │   │   ├── dashboard_config.py
 │   │   ├── feature_flags.py
 │   │   ├── __init__.py
+│   │   ├── registries
+│   │   │   └── component_registry.py
 │   │   ├── service_config.py
 │   │   ├── services
 │   │   └── task_config.py
 │   ├── dashboards
 │   │   ├── dashboard_registry.py
 │   │   └── __init__.py
-│   ├── data
-│   │   ├── data_source_registry.py
-│   │   └── __init__.py
-│   ├── data_sources
-│   │   ├── __init__.py
-│   │   └── system_metrics_source.py
 │   ├── discord
 │   │   ├── command_sync_service.py
+│   │   ├── factories
+│   │   │   ├── channel_factory.py
+│   │   │   └── thread_factory.py
 │   │   ├── game_server_channels.py
 │   │   └── role_mapper.py
 │   ├── factories
@@ -128,34 +113,24 @@ bot
 │   │   │   ├── base_factory.py
 │   │   │   └── __init__.py
 │   │   ├── component_factory.py
-│   │   ├── component_registry.py
 │   │   ├── composite
 │   │   │   ├── bot_factory.py
 │   │   │   ├── __init__.py
 │   │   │   └── workflow_factory.py
-│   │   ├── data_source_registry.py
-│   │   ├── discord
-│   │   │   ├── channel_factory.py
-│   │   │   ├── __init__.py
-│   │   │   └── thread_factory.py
 │   │   ├── __init__.py
-│   │   ├── service
-│   │   │   ├── __init__.py
-│   │   │   ├── service_resolver.py
-│   │   │   └── task_factory.py
 │   │   ├── service_factory.py
 │   │   └── task_factory.py
 │   ├── __init__.py
-│   ├── internal_api
-│   │   ├── routes.py
-│   │   └── server.py
-│   ├── managers
-│   │   └── dashboard_manager.py
 │   ├── messaging
 │   │   ├── chunk_manager.py
 │   │   ├── http_client.py
 │   │   ├── message_sender.py
 │   │   └── response_mode.py
+│   ├── middleware
+│   │   └── rate_limiting
+│   │       ├── __init__.py
+│   │       ├── rate_limiting_middleware.py
+│   │       └── rate_limiting_service.py
 │   ├── monitoring
 │   │   ├── checkers
 │   │   │   ├── docker_utils.py
@@ -200,27 +175,38 @@ bot
 │   │   │       ├── impl.py
 │   │   │       └── __init__.py
 │   │   └── __init__.py
-│   ├── rate_limiting
-│   │   ├── __init__.py
-│   │   ├── rate_limiting_middleware.py
-│   │   └── rate_limiting_service.py
-│   └── state
-│       ├── bot_state_collectors.py
-│       └── collectors
-│           ├── basic_info.py
-│           ├── cog_status.py
-│           ├── database_status.py
-│           ├── discord_api.py
-│           ├── listeners.py
-│           └── performance.py
+│   ├── startup
+│   │   ├── bot.py
+│   │   ├── lifecycle_manager.py
+│   │   ├── main.py
+│   │   ├── setup_hooks.py
+│   │   └── shutdown_handler.py
+│   ├── state
+│   │   └── collectors
+│   │       ├── basic_info.py
+│   │       ├── bot_status.py
+│   │       ├── cog_status.py
+│   │       ├── database_status.py
+│   │       ├── discord_api.py
+│   │       ├── listeners.py
+│   │       └── performance.py
+│   └── wireguard
 ├── __init__.py
 ├── interfaces
+│   ├── api
+│   │   └── internal
+│   │       ├── routes.py
+│   │       └── server.py
 │   ├── commands
 │   │   ├── auth
 │   │   │   ├── auth_commands.py
 │   │   │   └── __init__.py
+│   │   ├── checks.py
 │   │   ├── dashboard
 │   │   │   └── dashboard_command.py
+│   │   ├── decorators
+│   │   │   ├── auth.py
+│   │   │   └── respond.py
 │   │   ├── monitoring
 │   │   │   ├── __init__.py
 │   │   │   └── system_monitoring_commands.py
@@ -265,15 +251,13 @@ bot
 │       │   ├── dashboard_controller.py
 │       │   └── __init__.py
 │       └── __init__.py
-├── requirements.txt
-├── state_collectors.py
-└── utils
-    └── vars.py
+└── requirements.txt
+```
 
-76 directories, 194 files
+## `app/web/`
 
-
-web
+```
+app/web/
 ├── application
 │   ├── dtos
 │   ├── __init__.py
@@ -664,8 +648,12 @@ web
             ├── monitor
             ├── permissions
             └── state-monitor.html
+```
 
-shared
+## `app/shared/`
+
+```
+app/shared/
 ├── application
 │   ├── logging
 │   │   ├── formatters.py
@@ -920,9 +908,9 @@ shared
 │   │   │   └── state_snapshot.py
 │   │   ├── project
 │   │   │   ├── __init__.py
+│   │   │   ├── project_entity.py
 │   │   │   ├── project_member.py
-│   │   │   ├── project.py
-│   │   │   └── task.py
+│   │   │   └── task_entity.py
 │   │   └── ui
 │   │       ├── __init__.py
 │   │       └── ui_layout_entity.py
@@ -995,3 +983,4 @@ shared
 └── test
     └── infrastructure
         └── test_entrypoint.py
+```

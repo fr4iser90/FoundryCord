@@ -13,7 +13,7 @@ from app.bot import debug_component_registry, debug_component_factory
 
 # Import application services
 from app.bot.application.services.config import BotConfigService
-from app.bot.application.services.auth import AuthService
+from app.shared.domain.auth.services import AuthenticationService
 from app.bot.application.services.project_management import ProjectManagementService
 from app.bot.infrastructure.config.registries.component_registry import ComponentRegistry
 from app.bot.interfaces.api.internal.websocket_manager import WebsocketManager

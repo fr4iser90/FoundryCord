@@ -29,9 +29,12 @@ class AuthenticationService:
         self.jwt_secret = await self.key_service.get_jwt_secret_key()
         
         if not self.jwt_secret:
-            logger.warning("JWT secret key not available! Using fallback secret (not recommended for production)")
-            self.jwt_secret = "fallback_secret_key"  # Only for development
-            
+            logger.critical("CRITICAL: AuthenticationService could not retrieve JWT secret key from KeyManagementService.")
+            # Depending on application design, you might want to raise an exception here
+            # to prevent the service from being used in an insecure state.
+            # raise ValueError("JWT Secret Key is essential for AuthenticationService.")
+            return # Or handle initialization failure appropriately
+        
         # Initialize database and repository
         await self.db_service.initialize()
         # Get session from database service

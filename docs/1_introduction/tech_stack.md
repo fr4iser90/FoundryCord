@@ -38,6 +38,7 @@ List the core technologies, languages, frameworks, and significant libraries use
 
 *   **Language:** Python (Specify version, likely same as backend)
 *   **Library:** nextcord (v2.6.0)
+*   **Voice Support:** PyNaCl
 *   **Database:** SQLAlchemy, asyncpg (Shared with Backend)
 *   **HTTP Client:** requests, aiohttp
 *   **System Monitoring:** psutil, py-cpuinfo, etc. (Shared with Backend)

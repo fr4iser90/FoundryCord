@@ -37,8 +37,8 @@ class KeyManagementService:
                 self.encryption_key = await self.key_repository.get_encryption_key()
                 
                 if not self.jwt_secret:
-                    logger.warning("JWT secret key not available! Using fallback secret (not recommended for production)")
-                    self.jwt_secret = "fallback_secret_key"  # Only for development
+                    logger.critical("CRITICAL: JWT secret key not found in database after key repository load.")
+                    return False
                     
                 self.initialized = True
                 return True

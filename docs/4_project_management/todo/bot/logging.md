@@ -87,7 +87,7 @@
 ## Phase 4: Verification
 
 - [ ] **Task 4.1: Deploy and Verify Minimal Log Output**
-    - **Description:** After completing Phases 1-3, ensure `console_level: INFO` is set. Deploy and verify `docker logs foundrycord-bot` shows *minimal* output (ideally just "Logged in as...", maybe "Logging configured...", and warnings/errors).
+    - **Description:** After completing Phases 1-3, ensure `console_level: INFO` is set. Deploy and verify `docker logs foundrycord-bot` shows *minimal* output (ideally just "Bot logged in as...", maybe "Logging configured...", and warnings/errors).
     - **Affected Files:**
         - `app/shared/application/logging/log_config.py`
     - **Action:** Configure, Deploy, Verify Logs. **FAILED** (Several unexpected INFO logs remain).
@@ -135,7 +135,7 @@
 ## Phase 6: Final Verification (Round 2)
 
 - [x] ~~**Task 6.1: Deploy and Verify Minimal Log Output (Again)**~~
-    - ~~**Description:** After completing Phase 5, ensure `console_level: INFO` is set. Deploy and verify `docker logs foundrycord-bot` shows *minimal* output (ONLY "Logged in as..." and warnings/errors).~~
+    - ~~**Description:** After completing Phase 5, ensure `console_level: INFO` is set. Deploy and verify `docker logs foundrycord-bot` shows *minimal* output (ONLY "Bot logged in as..." and warnings/errors).~~
     - ~~**Affected Files:**~~
         - ~~`app/shared/application/logging/log_config.py`~~
     - ~~**Action:** Configure, Deploy, Verify Logs.~~ PASSED.

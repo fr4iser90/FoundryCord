@@ -16,14 +16,11 @@ def setup(bot):
 async def setup_async(bot):
     """Central initialization of the Auth commands"""
     try:
-        # Check if authentication and authorization services are already initialized
-        if not hasattr(bot, 'authentication') or not hasattr(bot, 'authorization'):
-            logger.warning("Auth services not found on bot instance. They should be initialized before commands.")
-            # Initialize them if needed (fallback, not ideal for DDD)
-            from app.shared.domain.auth import setup as setup_services
-            await setup_services(bot)
-        
         # Add commands as cog
+        if not hasattr(bot, 'authentication') or not hasattr(bot, 'authorization'):
+            logger.critical("CRITICAL: Auth services MISSING on bot instance during AuthCommands setup! Startup sequence error?")
+            raise RuntimeError("Authentication or Authorization service not initialized before command setup.")
+            
         commands = AuthCommands(bot, bot.authentication, bot.authorization)
         
         # Use the lifecycle manager if available

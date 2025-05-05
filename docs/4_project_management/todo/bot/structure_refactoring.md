@@ -225,7 +225,7 @@
 
 ## Phase 4: Specific Implementation Tasks (Added during Phase 3)
 
-*   [ ] **Task 4.1:** Refactor `FoundryCord` class out of `main.py`.
+*   [x] **Task 4.1:** Refactor `FoundryCord` class out of `main.py`.
     *   Created `app/bot/infrastructure/startup/bot.py`.
     *   Moved `FoundryCord` class definition from `main.py` to `bot.py`.
     *   Updated `main.py` to import `FoundryCord` from `bot.py`.

@@ -74,7 +74,7 @@ class FoundryCord(commands.Bot):
 
     async def on_ready(self):
         """Called when the bot is ready"""
-        logger.info(f"Logged in as {self.user.name} (ID: {self.user.id})")
+        logger.info(f"Bot logged in as {self.user.name} (ID: {self.user.id})")
 
         # --- Start workflow and service initialization ---
         initialization_success = False
