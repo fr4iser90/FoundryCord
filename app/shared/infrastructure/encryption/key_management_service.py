@@ -68,9 +68,8 @@ class KeyManagementService:
                 if not self.encryption_key:
                     logger.warning("[KMS] Encryption key not found in database. Generating a new one...")
                     try:
-                        # Assuming Fernet key is suitable for 'encryption_key' based on EncryptionService usage
-                        new_encryption_key = Fernet.generate_key().decode() 
-                        await self.key_repository.save_encryption_key(new_encryption_key) # Assuming this method exists
+                        new_encryption_key = Fernet.generate_key().decode()
+                        await self.key_repository.save_encryption_keys(new_encryption_key, None)
                         self.encryption_key = new_encryption_key # Use the newly generated key
                         logger.info("[KMS] Successfully generated and saved new encryption key.")
                     except Exception as gen_exc:
