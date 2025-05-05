@@ -13,8 +13,13 @@ alwaysApply: true
 
 1.  **Identify Template:** The standard template is located at `docs/4_project_management/todo/template_todo_file.md`. Read this template file first to ensure the correct structure is used.
 2.  **Gather Information & Propose Initial Structure (Interactive):**
-    *   Ask the user for the **Feature/Refactor Name**. This will be used for the main heading (`# [Feature Name] TODO`).
-    *   Suggest a filename based on the feature name (e.g., `docs/4_project_management/todo/feature_name_todo.md`) and ask the user to confirm or provide a different name.
+    *   Ask the user for the **Feature/Refactor Name/Goal**. This will be used for the main heading (`# [Name] TODO`) and potentially the filename.
+    *   Ask the user which **primary area** the task belongs to (e.g., `bot`, `web`, `shared`, `logging`, `testing`). This determines the subdirectory where the file will be placed.
+    *   Based on the Goal, suggest a filename following the convention `[short-description-of-goal-with-hyphens].md`.
+        *   Explain the convention: All lowercase, hyphens `-` separate words within the goal description. The file's *area* is determined by the subdirectory it resides in.
+        *   Example suggestion: If the area is `bot` and the goal is "Improve Error Handling", suggest placing a file named `improve-error-handling.md` inside `docs/4_project_management/todo/bot/`.
+        *   Mention that the file should always reside in a subdirectory corresponding to its primary area (e.g., `bot/`, `shared/`, `web/`) within the main `docs/4_project_management/todo/` directory.
+        *   Ask the user to confirm the suggested path and filename or provide a different one.
     *   Ask the user for the main **Goal** description to fill in the `**Goal:**` section.
     *   **Propose** an initial **Phase 1** name and at least one initial **Task** description for that phase, based on the goal and available context (like related files or analysis). Ask the user to confirm or modify the proposal.
     *   (Optional) Ask the user if they know any specific **Affected Files** for the initial task(s) they provided/confirmed.

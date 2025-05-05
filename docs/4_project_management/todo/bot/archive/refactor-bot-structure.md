@@ -218,10 +218,6 @@
     *   Added missing import for `BotWorkflowManager` in `setup_hooks.py`.
     *   Added `critical` method to logging services and updated `LogEntry.is_error`.
     *   Removed `DataSourceRegistry` dependency from `DashboardDataService`.
-*   [ ] **Task 3.3:** Execute tests (automated if available, otherwise manual functional tests) covering core bot functionality (commands, dashboards, monitoring, internal API) to verify behavior after structural changes.
-    *   *(Note: Unit tests for `DashboardController` were run and fixed. Comprehensive functional tests still pending).* 
-*   [ ] **Task 3.4:** Address issues identified in Tasks 3.1-3.3 and perform further refinement (e.g., refactor `ServiceFactory.create`, potentially simplify/remove `BotComponentFactory`).
-*   [ ] **Task 3.5:** Update architecture documentation (`structure.md`, `overview.md`, etc.) to reflect the new `app/bot` structure.
 
 ## Phase 4: Specific Implementation Tasks (Added during Phase 3)
 
@@ -236,5 +232,4 @@
         *   `app/bot/infrastructure/config/registries/component_registry.py` (Edited)
         *   `app/bot/infrastructure/factories/composite/bot_factory.py` (Edited)
         *   `app/bot/interfaces/dashboards/components/common/selectors/generic_selector.py` (Edited)
-        *   `app/bot/interfaces/dashboards/components/common/embeds/dashboard_embed.py` (Edited)
-*   [ ] **Task 4.2:** Final documentation update (if needed) and cleanup. 
+        *   `app/bot/interfaces/dashboards/components/common/embeds/dashboard_embed.py` (Edited) 

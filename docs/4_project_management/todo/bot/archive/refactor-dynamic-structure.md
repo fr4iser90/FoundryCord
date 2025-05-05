@@ -24,9 +24,6 @@
 *   [x] **Revise/Remove `ChannelConfig` Functions:** Methods like `get_channel_factory_config`, `repair_channel_mapping`, `validate_channels` using old constants must be removed or fundamentally revised.
     *   **Affected Files:**
         *   ~~`app/bot/infrastructure/config/channel_config.py`~~ (Deleted)
-*   [ ] **Revise `GameServerChannelService` (Deferred):** Must be revised to create channels based on dynamic configs instead of `GameServerChannelConfig`.
-    *   **Affected Files:**
-        *   `app/bot/application/services/channel/game_server_channel_service.py`
 
 ## Phase 2: Dashboard Management (Focus: Decoupling)
 
@@ -66,7 +63,4 @@
 
 *   **Note:** The items previously listed under "Specific Checklist" and "Comments Removed/Updated" have been integrated into the tasks in Phase 1 and Phase 2 or marked as complete/deleted there. This section is kept for reference but ideally, these specific file checks should be part of the main task verification.
 
-## General Notes / Future Considerations
 
-*   [ ] Minor TODOs added during refactoring (e.g., error handling, specific implementation details like data fetching in `DashboardController`) should be reviewed and prioritized separately.
-*   **`DashboardDataService` `fetch_data` method was re-implemented** to use the `SystemCollector` (via ServiceFactory) and transform `MetricModel` data. Placeholders for other data source types (DB, ServiceCollector) exist.
