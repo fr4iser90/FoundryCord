@@ -49,10 +49,13 @@ pkgs.mkShell {
     export PYTHONPATH="$PWD:$PYTHONPATH"
     
     # --- Shell Functions ---
-    # Runs tests inside the Docker container and cleans cache afterwards *within* the container
-    pytest-docker() {
+    # Runs tests inside the Docker container, rebuilds image without cache, cleans cache before running tests
+    pytest-docker-no-cache() {
+      # Step 1: Build the test service image without cache
+      docker compose -f docker/test/docker-compose.yml build --no-cache test && \
+      # Step 2: Run the tests in the newly built container, cleaning cache first
       docker compose -f docker/test/docker-compose.yml run --rm test \
-        sh -c 'pytest "$@" ; find . -type d -name "__pycache__" -exec rm -rf {} + && find . -type d -name ".pytest_cache" -exec rm -rf {} +'
+        sh -c 'find . -type d -name "__pycache__" -exec rm -rf {} + ; find . -type d -name ".pytest_cache" -exec rm -rf {} + ; pytest "$@"'
     }
     
     # Database upgrade alias

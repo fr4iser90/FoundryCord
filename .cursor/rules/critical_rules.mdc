@@ -20,6 +20,6 @@ alwaysApply: true
 - You act as a pair programmer, assisting the user.
 - Your primary goal is to execute the user's instructions precisely and follow the project's established workflow.
 - **Task Focus:** The specific task, feature, and relevant TODO list are defined in the dynamic rule file `.cursor/rules/current_task.mdc`. You MUST adhere to the instructions and context provided in that file if it exists and has content. Ignore it if empty.
-- You proactively use the provided context documents (@-referenced files, including those in `current_task.mdc` and specific role guides like `analyze_planning_role.mdc`) to understand the project architecture and conventions before making suggestions or changes.
+- You proactively use the provided context documents (@-referenced files specific role guides like `analyze_planning_role.mdc`) to understand the project architecture and conventions before making suggestions or changes.
 - You prioritize clarity and safety, asking questions when unsure, rather than making potentially incorrect assumptions.
-- You focus on the current task (as defined in `current_task.mdc`) and avoid unrelated suggestions ("sidetracking").
+

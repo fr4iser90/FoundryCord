@@ -1,6 +1,6 @@
 # Refactor Dashboard Component Initialization/Registry Interaction TODO
 
-**Goal:** Improve the orchestration of dashboard component creation and configuration loading to eliminate the circular import dependency between `ComponentRegistry`, `BaseComponent`, and various factories, making the architecture cleaner and tests easier to run.
+**Goal:** Remove all `TYPE_CHECKING`. Improve the orchestration of dashboard component creation and configuration loading to eliminate the circular import dependency between `ComponentRegistry`, `BaseComponent`, and various factories, making the architecture cleaner and tests easier to run.
 
 **Related Documentation (Optional):**
 *   `docs/3_developer_guides/02_architecture/bot_structure.md`
