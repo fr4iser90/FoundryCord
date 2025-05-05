@@ -24,28 +24,85 @@ class KeyManagementService:
         self.session_factory = session_factory or get_session
     
     async def initialize(self):
-        """Initialize the key management service"""
+        """Initialize the key management service, generating keys if not found."""
+        logger.info("[KMS] Attempting to initialize KeyManagementService...")
+        # Reset initialized flag at the start of initialization attempt
+        self.initialized = False 
+        
         try:
-            # Get session from database service
+            logger.info("[KMS] Getting session factory...")
             session_gen = self.session_factory()
+            logger.info(f"[KMS] Obtained session generator: {session_gen}")
+            
             async for session in session_gen:
+                logger.info(f"[KMS] Obtained session: {session} (Active: {session.is_active if session else 'N/A'})")
+                if not session or not session.is_active:
+                    logger.error("[KMS] Invalid or inactive session obtained. Cannot proceed.")
+                    return False # Cannot initialize without a valid session
+                    
                 # Initialize key repository with session
                 self.key_repository = KeyRepositoryImpl(session)
-                
-                # Load keys
+                logger.info(f"[KMS] KeyRepositoryImpl initialized with session.")
+
+                # --- Load or Generate JWT Secret Key ---
+                logger.info("[KMS] Attempting to load JWT secret key...")
                 self.jwt_secret = await self.key_repository.get_jwt_secret_key()
-                self.encryption_key = await self.key_repository.get_encryption_key()
-                
+
                 if not self.jwt_secret:
-                    logger.critical("CRITICAL: JWT secret key not found in database after key repository load.")
-                    return False
-                    
-                self.initialized = True
-                return True
+                    logger.warning("[KMS] JWT secret key not found in database. Generating a new one...")
+                    try:
+                        new_jwt_secret = base64.urlsafe_b64encode(os.urandom(24)).decode()
+                        await self.key_repository.save_jwt_secret_key(new_jwt_secret)
+                        self.jwt_secret = new_jwt_secret # Use the newly generated key
+                        logger.info("[KMS] Successfully generated and saved new JWT secret key.")
+                    except Exception as gen_exc:
+                        logger.error(f"[KMS] Failed to generate or save new JWT secret key: {gen_exc}")
+                        # Continue to check encryption key, but initialization will likely fail overall
+                else:
+                     logger.info(f"[KMS] JWT secret key loaded from DB: {'********'}")
+
+                # --- Load or Generate Encryption Key ---
+                logger.info("[KMS] Attempting to load encryption key...")
+                self.encryption_key = await self.key_repository.get_encryption_key()
+
+                if not self.encryption_key:
+                    logger.warning("[KMS] Encryption key not found in database. Generating a new one...")
+                    try:
+                        # Assuming Fernet key is suitable for 'encryption_key' based on EncryptionService usage
+                        new_encryption_key = Fernet.generate_key().decode() 
+                        await self.key_repository.save_encryption_key(new_encryption_key) # Assuming this method exists
+                        self.encryption_key = new_encryption_key # Use the newly generated key
+                        logger.info("[KMS] Successfully generated and saved new encryption key.")
+                    except Exception as gen_exc:
+                         logger.error(f"[KMS] Failed to generate or save new encryption key: {gen_exc}")
+                         # If this fails, initialization should likely fail overall
+                else:
+                    logger.info(f"[KMS] Encryption key loaded from DB: {'********'}")
+
+                # --- Final Verification ---
+                if not self.jwt_secret or not self.encryption_key:
+                    logger.critical("[KMS] CRITICAL: One or more keys are still missing after load/generation attempts. Initialization failed.")
+                    # Keep self.initialized = False
+                    return False # Indicate failure clearly
                 
-        except Exception as e:
-            logger.error(f"Failed to initialize key repository: {e}")
+                # If we reach here, both keys are available (either loaded or generated)
+                self.initialized = True
+                logger.info("[KMS] KeyManagementService initialized successfully (keys loaded or generated).")
+                return True # Indicate success
+
+            # If the loop finishes without yielding a session (shouldn't happen with factory pattern)
+            logger.error("[KMS] Session factory did not yield a session.")
             return False
+
+        except Exception as e:
+            logger.error(f"[KMS] Unexpected error during KeyManagementService initialization: {e}")
+            logger.exception("[KMS] Exception details:", exc_info=e)
+            # Ensure initialized is False on any exception
+            self.initialized = False 
+            return False
+        finally:
+             # Log final state, initialized flag should be correctly set by return paths
+            logger.info(f"[KMS] Exiting initialize method. Final Initialized flag: {self.initialized}")
         
     async def _load_keys(self):
         """Load keys from database, generating if needed"""

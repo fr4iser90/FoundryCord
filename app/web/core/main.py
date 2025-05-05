@@ -129,6 +129,8 @@ class WebApplication:
 # Create and initialize the application
 web_app = WebApplication()
 app = web_app.app
+# Store the lifecycle manager instance on the app state for dependency access
+app.state.lifecycle_manager = web_app.lifecycle_manager
 
 async def main():
     """Main entry point for web application"""

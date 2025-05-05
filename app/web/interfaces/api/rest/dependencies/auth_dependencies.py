@@ -11,6 +11,7 @@ from app.shared.infrastructure.encryption.key_management_service import KeyManag
 from app.shared.interfaces.logging.api import get_web_logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import AsyncGenerator # Import AsyncGenerator for session dependency
+from app.web.core.lifecycle_manager import WebLifecycleManager
 
 logger = get_web_logger()
 
@@ -69,14 +70,42 @@ async def get_current_user(request: Request, user_repo: UserRepository = Depends
             detail="Error processing user data"
         )
 
-async def get_key_service() -> KeyManagementService:
-    """Get the key management service"""
-    return KeyManagementService()
+async def get_lifecycle_manager(request: Request) -> WebLifecycleManager:
+    """Dependency to get the WebLifecycleManager instance from app state."""
+    manager = getattr(request.app.state, 'lifecycle_manager', None)
+    if not manager:
+        logger.error("WebLifecycleManager not found in app state!")
+        raise HTTPException(status_code=500, detail="Internal server error: Lifecycle manager unavailable")
+    return manager
 
-async def get_auth_service(key_service: KeyManagementService = Depends(get_key_service)) -> AuthenticationService:
-    """Get the authentication service"""
-    return AuthenticationService(key_service)
+async def get_key_service(manager: WebLifecycleManager = Depends(get_lifecycle_manager)) -> KeyManagementService:
+    """Get the managed key management service instance."""
+    key_service = manager.get_component('key_service')
+    if not key_service:
+        logger.error("KeyManagementService not found in lifecycle manager components!")
+        raise HTTPException(status_code=500, detail="Internal server error: Key service unavailable")
+    if not key_service.initialized:
+         logger.warning("KeyManagementService accessed via dependency before initialization completed!")
+         # Optionally wait or raise, depending on desired behavior
+         # await asyncio.sleep(0.1) # Simple wait, might not be robust
+         # raise HTTPException(status_code=503, detail="Service not ready") 
+    return key_service
 
-async def get_authz_service(auth_service: AuthenticationService = Depends(get_auth_service)) -> AuthorizationService:
-    """Get the authorization service"""
-    return AuthorizationService(auth_service) 
+async def get_auth_service(manager: WebLifecycleManager = Depends(get_lifecycle_manager)) -> AuthenticationService:
+    """Get the managed authentication service instance."""
+    auth_service = manager.get_component('auth_service')
+    if not auth_service:
+        logger.error("AuthenticationService not found in lifecycle manager components!")
+        raise HTTPException(status_code=500, detail="Internal server error: Auth service unavailable")
+    if not hasattr(auth_service, 'key_service') or not auth_service.key_service.initialized:
+        logger.warning("AuthenticationService or its KeyService accessed via dependency before initialization completed!")
+    return auth_service
+
+async def get_authz_service(manager: WebLifecycleManager = Depends(get_lifecycle_manager)) -> AuthorizationService:
+    """Get the managed authorization service instance."""
+    authz_service = manager.get_component('authz_service')
+    if not authz_service:
+        logger.error("AuthorizationService not found in lifecycle manager components!")
+        raise HTTPException(status_code=500, detail="Internal server error: Authz service unavailable")
+    # Add similar initialization checks if needed
+    return authz_service 

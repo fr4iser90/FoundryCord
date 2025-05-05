@@ -149,9 +149,9 @@ class WebLifecycleManager:
     async def startup(self):
         """Handle application startup tasks."""
         try:
-            # Initialize services
-            await self.service_factory.initialize_services()
-            logger.info("Web application startup completed")
+            # Initialize services by calling the on_startup hook manager
+            await self.on_startup()
+            logger.info("Web application startup via LifecycleManager completed")
             
         except Exception as e:
             logger.error(f"Failed during web application startup: {e}")
