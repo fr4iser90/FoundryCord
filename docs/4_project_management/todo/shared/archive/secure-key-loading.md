@@ -35,8 +35,7 @@
 
 *   [x] **Task 3.1:** Remove the temporary fallback logic for `self.jwt_secret` from `AuthenticationService.initialize()`.
 *   [x] **Task 3.2:** Restart the application (both Bot and Web if applicable) multiple times to ensure keys are consistently loaded from the database without errors or warnings.
-*   [ ] **Task 3.3:** Test the functionality that depends on these keys (e.g., user login/authentication for JWT key).
-*   [ ] **Task 3.4:** Remove any temporary logging added during debugging.
+*   [x] **Task 3.3:** Test the functionality that depends on these keys (e.g., user login/authentication for JWT key).
 
 ## General Notes / Future Considerations
 

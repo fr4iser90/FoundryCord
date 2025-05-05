@@ -51,4 +51,64 @@ Use the standard Python logging levels with the following semantics:
 
 -   Leverage the shared logging service (`app.shared.interface.logging.api.get_bot_logger`).
 -   Consider adding context automatically via LogRecord attributes or Filters if feasible.
--   Review `app/shared/application/logging/log_config.py` (or equivalent) to set appropriate default levels for handlers (e.g., StreamHandler at INFO, FileHandler/DBHandler potentially at DEBUG initially, adjustable via config). 
+-   Review `app/shared/application/logging/log_config.py` (or equivalent) to set appropriate default levels for handlers (e.g., StreamHandler at INFO, FileHandler/DBHandler potentially at DEBUG initially, adjustable via config).
+
+---
+
+# Web Application Logging Guidelines
+
+**Goal:** Ensure consistent, useful, and appropriately detailed logging across the web application (`app/web`), complementing the bot guidelines.
+
+---
+
+## Logging Levels (Web Context)
+
+Use the standard Python logging levels with the following semantics specific to the web application:
+
+-   **`DEBUG`:** Detailed information for diagnosing specific web requests or internal processes.
+    -   *Web Examples:* Request received with headers (sanitized), response details (status code, key headers), entering/exiting specific middleware steps, detailed database query parameters/results (sanitized), arguments passed to service methods called by API endpoints, intermediate results in complex endpoint logic.
+    -   *Goal:* Provide fine-grained tracing for web request handling and background tasks triggered via web, filtered out in production by default.
+
+-   **`INFO`:** High-level information about the web server's operation and key events.
+    -   *Web Examples:* Web server started/stopped, successful user authentication/login/logout, significant user actions completed via API (e.g., "Dashboard config saved by User 123 for Guild 456", "Template X applied by User 123"), critical service initialization (e.g., LifecycleManager stages), successful completion of background tasks initiated via web (if applicable). *Maybe* log successful request completion (e.g., `Request completed: GET /path -> 200`) but consider sampling or using DEBUG for high-volume endpoints in production.
+    -   *Goal:* Provide an overview of server state, user activity, and major API interactions.
+
+-   **`WARNING`:** Indicates potential issues or expected client-side errors that don't indicate a server failure.
+    -   *Web Examples:* Authentication required/failed (401/403 responses), resource not found (404 responses triggered by client request), request validation errors (400/422 responses), rate limiting triggered for an IP/user, failed optional external API calls handled gracefully, usage of deprecated API endpoints.
+    -   *Goal:* Alert to expected error conditions (often client-induced), non-critical deviations, or potential misuse.
+
+-   **`ERROR`:** An error occurred on the server-side that prevented a specific request from completing successfully (typically leading to a 5xx response).
+    -   *Web Examples:* Unhandled exception within an API endpoint handler, failed critical database operation needed for the request, failed required external API call, errors during background task processing initiated by the web.
+    -   *Goal:* Indicate specific server-side failures for requests that need investigation.
+
+-   **`CRITICAL`:** A severe error occurred threatening the web server's stability or core functionality.
+    -   *Web Examples:* Failure during critical web server startup (DB connection, LifecycleManager init), unrecoverable error in core middleware affecting all requests, critical resource exhaustion (DB connections, memory), uncaught exceptions in the main web server process.
+    -   *Goal:* Indicate serious problems requiring immediate attention to the web service.
+
+---
+
+## Message Formatting & Context (Web)
+
+-   **Standard Prefix:** Include relevant context for web requests. If a request correlation ID mechanism is implemented (e.g., via middleware), include it. Always include User ID (if authenticated) and relevant entity IDs.
+    -   *Examples:* `[Req:abc123] [User:123] GET /api/v1/guilds/456/config`, `[User:123] Authentication successful`, `[Guild:456] [Dashboard:789] Update failed`
+    -   *Implementation:* Use FastAPI dependencies or middleware to access request state and user information.
+
+-   **Clarity:** Same as bot: concise, clear English messages.
+
+-   **Error Context (5xx):** `ERROR` and `CRITICAL` level logs for server errors **MUST** include context.
+    -   Use `logger.exception(...)` or `exc_info=True` for tracebacks.
+    -   Include: Request method, request path, User ID (if available), relevant entity IDs from the path/payload, potentially *sanitized* headers or query parameters.
+    -   **DO NOT LOG SENSITIVE DATA:** Raw Authorization headers (Bearer tokens), passwords from request bodies, full cookies, API keys, full sensitive request bodies.
+
+-   **Client Error Context (4xx):** `WARNING` or `INFO` logs for client errors should include enough context to understand the client's mistake (e.g., path requested for 404, validation error details for 422).
+
+-   **Request Lifecycle Logging:** Consider logging request start (`DEBUG` or `INFO`) and finish (`DEBUG` for success, `INFO`/`WARNING` for 4xx, `ERROR`/`CRITICAL` for 5xx).
+
+---
+
+## Implementation Notes (Web)
+
+-   Leverage the shared logging service (`app.shared.interface.logging.api.get_web_logger`).
+-   Implement FastAPI middleware to inject request IDs and potentially user context into logs automatically.
+-   Configure Uvicorn access logs separately if needed, focusing application logs on business logic and errors.
+-   Review logging configuration to set appropriate levels (e.g., `INFO` for console in production, potentially `DEBUG` to a file/database). 
