@@ -14,7 +14,7 @@ class ComponentFactory:
     
     def __init__(self, component_registry: ComponentRegistry):
         self.registry = component_registry
-        logger.info("Component factory initialized with registry")
+        logger.debug("Component factory initialized with registry")
     
     async def create(self, component_type: str, **kwargs):
         """

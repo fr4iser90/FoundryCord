@@ -41,7 +41,7 @@ class ComponentRegistry:
         self._definitions_by_key: Dict[str, Dict[str, Any]] = {}
         self.bot: Optional['FoundryCord'] = None
         self._db_definitions_loaded = False
-        logger.info("Component registry initialized")
+        logger.debug("Component registry initialized")
         
     async def initialize(self, bot: 'FoundryCord'):
         """Loads component definitions from the database."""

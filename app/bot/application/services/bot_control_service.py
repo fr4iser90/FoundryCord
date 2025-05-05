@@ -17,7 +17,7 @@ class BotControlService:
             bot: The instance of the main bot application (e.g., FoundryCord).
         """
         self.bot = bot
-        logger.info("BotControlService initialized.")
+        logger.debug("BotControlService initialized.")
 
     async def trigger_approve_guild(self, guild_id: str) -> bool:
         """

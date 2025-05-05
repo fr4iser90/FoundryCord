@@ -42,7 +42,7 @@ class BotWorkflowManager:
                 
         # Set the order, but only for registered workflows
         self.initialization_order = [name for name in order if name in self.workflows]
-        logger.info(f"Set initialization order: {self.initialization_order}")
+        logger.debug(f"Set initialization order: {self.initialization_order}")
     
     async def initialize_workflow(self, name: str, bot) -> bool:
         """Initialize a single workflow globally, passing the bot instance if needed."""

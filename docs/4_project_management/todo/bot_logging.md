@@ -109,23 +109,26 @@
         - ~~`app/shared/infrastructure/database/session/factory.py`~~ ~~(likely)~~ (Found others)
     - ~~**Action:**~~ Done.
 
-- [x] **Task 5.3: Refactor Security Component Logs**
-    - **Description:** Change INFO log for "Security components initialized successfully" to DEBUG.
-    - **Affected Files:**
-        - `app/shared/infrastructure/security/setup.py` (likely, or bootstrap)
+- [x] ~~**Task 5.3: Refactor Security Component Logs**~~
+    - ~~**Description:** Change INFO log for "Security components initialized successfully" to DEBUG.~~ (Handled in Task 5.1 via `bootstrap.py`)
+    - ~~**Affected Files:**~~
+        - ~~`app/shared/infrastructure/security/setup.py`~~ ~~(likely, or bootstrap)~~ -> `bootstrap.py`
+    - ~~**Action:**~~ Done.
 
-- [ ] **Task 5.4: Refactor Core Bot Component Init Logs**
-    - **Description:** Change INFO logs in the `__init__` methods for "Component registry initialized", "Component factory initialized with registry", "Shutdown handler initialized", "BotControlService initialized." to DEBUG.
-    - **Affected Files:**
-        - `app/bot/infrastructure/config/registries/component_registry.py`
-        - `app/bot/infrastructure/factories/component_factory.py`
-        - `app/bot/infrastructure/startup/shutdown_handler.py`
-        - `app/bot/application/services/bot_control_service.py`
+- [x] ~~**Task 5.4: Refactor Core Bot Component Init Logs**~~
+    - ~~**Description:** Change INFO logs in the `__init__` methods for "Component registry initialized", "Component factory initialized with registry", "Shutdown handler initialized", "BotControlService initialized." to DEBUG.~~
+    - ~~**Affected Files:**~~
+        - ~~`app/bot/infrastructure/config/registries/component_registry.py`~~
+        - ~~`app/bot/infrastructure/factories/component_factory.py`~~
+        - ~~`app/bot/infrastructure/startup/shutdown_handler.py`~~
+        - ~~`app/bot/application/services/bot_control_service.py`~~
+    - ~~**Action:**~~ Done.
 
-- [ ] **Task 5.5: Refactor Workflow Manager Order Log**
-    - **Description:** Change INFO log for "Set initialization order: [...]" to DEBUG.
-    - **Affected Files:**
-        - `app/bot/application/workflow_manager.py` (`set_initialization_order` method)
+- [x] ~~**Task 5.5: Refactor Workflow Manager Order Log**~~
+    - ~~**Description:** Change INFO log for "Set initialization order: [...]" to DEBUG.~~
+    - ~~**Affected Files:**~~
+        - ~~`app/bot/application/workflow_manager.py` (`set_initialization_order` method)~~
+    - ~~**Action:**~~ Done.
 
 ---
 

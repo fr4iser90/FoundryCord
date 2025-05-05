@@ -22,7 +22,7 @@ class ShutdownHandler:
         # Allow for graceful shutdown
         bot.loop.set_exception_handler(self._handle_loop_exception)
         
-        logger.info("Shutdown handler initialized")
+        logger.debug("Shutdown handler initialized")
     
     def _handle_sigint(self, sig, frame):
         """Handle SIGINT (Ctrl+C)"""
