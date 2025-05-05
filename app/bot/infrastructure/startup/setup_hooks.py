@@ -51,6 +51,10 @@ logger = get_bot_logger()
 
 def register_state_collectors(bot):
     """Registers bot state collectors directly with the snapshot service."""
+    if getattr(bot, '_state_collectors_registered', False):
+        logger.debug("Bot state collectors already registered.")
+        return True # Indicate already done
+
     logger.debug("Registering bot state collectors...")
     snapshot_service = get_state_snapshot_service()
     
@@ -140,6 +144,8 @@ def register_state_collectors(bot):
             description="Status of loaded cogs/extensions"
         )
         logger.debug("Bot state collectors registered successfully.")
+        # --- Set Flag ---
+        bot._state_collectors_registered = True 
         return True
     except Exception as e:
         logger.error(f"Failed to register bot state collectors: {e}", exc_info=True)
@@ -157,6 +163,8 @@ def setup_core_components(bot):
         bot.control_service = BotControlService(bot)
         bot.internal_api_server = InternalAPIServer(bot)
         bot._default_components_registered = False
+        # --- Add Flag Initialization ---
+        bot._state_collectors_registered = False
         logger.debug("Core components setup complete (incl. DataSourceRegistry).")
     except Exception as e:
         logger.critical(f"Failed to setup core components: {e}", exc_info=True)

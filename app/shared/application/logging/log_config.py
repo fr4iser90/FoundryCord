@@ -40,6 +40,12 @@ class LoggingConfig:
         # Handlers themselves will filter based on their own configured levels.
         root_logger.setLevel(logging.DEBUG)
 
+        # --- Suppress DEBUG logs from noisy libraries ---
+        logging.getLogger("docker").setLevel(logging.WARNING)
+        logging.getLogger("urllib3").setLevel(logging.WARNING)
+        # Add other noisy libraries here if needed, e.g.:
+        # logging.getLogger("discord").setLevel(logging.INFO) # Example: If discord.py is too noisy at DEBUG
+
         configured_handlers: List[logging.Handler] = [] 
 
         # --- Setup Console Handler (always needed as target for memory) ---

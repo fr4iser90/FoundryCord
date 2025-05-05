@@ -26,7 +26,7 @@ async def get_ssh_attempts():
         attempts = subprocess.check_output(cmd, shell=True).decode('utf-8').strip()
         
         # Use raw string for the regex pattern to avoid invalid escape sequence warning
-        ip_cmd = f"grep 'Failed password' {log_file} | tail -1 | grep -oE r'([0-9]{{1,3}}\.?){{4}}'"
+        ip_cmd = fr"grep 'Failed password' {log_file} | tail -1 | grep -oE r'([0-9]{{1,3}}\.?){{4}}'"
         try:
             last_ip = subprocess.check_output(ip_cmd, shell=True).decode('utf-8').strip()
         except subprocess.CalledProcessError:
