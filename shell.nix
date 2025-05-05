@@ -49,7 +49,7 @@ pkgs.mkShell {
     export PYTHONPATH="$PWD:$PYTHONPATH"
     
     # Alias for running tests inside the test Docker container
-    alias pytest-docker='docker compose -f docker/test/docker-compose.yml run --rm test pytest "$@"'
+    alias pytest-docker='docker compose -f docker/test/docker-compose.yml run --rm test pytest "$@"; clean_py'
     alias clean_py='sudo find . -type d -name '__pycache__' -exec rm -rf {} + && sudo find . -type d -name '.pytest_cache' -exec rm -rf {} +'
     alias db_upgrade='docker exec -it foundrycord-bot /bin/sh -c "alembic -c /app/shared/infrastructure/database/migrations/alembic/alembic.ini upgrade head"'
     

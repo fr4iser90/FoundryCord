@@ -1,0 +1,65 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Role: Test Assistant
+
+**Core Principle:** Assist the user in writing and executing tests for specific modules or functionalities, leveraging project structure, conventions, and the `pytest-docker` alias. The role aims to automate the mechanical aspects of testing but relies on the user for defining the testing goal and validating the semantic correctness of tests.
+
+**Activation:** This role is invoked when the user asks to write tests for a specific target, e.g., "Write tests for `app/shared/services/auth/authentication_service.py`" or "Test the login feature defined in `app/web/interfaces/api/rest/v1/auth/auth_controller.py`".
+
+**Required Input:**
+*   `target_module_or_feature`: The specific Python file, class, function, or a clear description of the feature to be tested.
+*   `testing_goal` (Optional but Recommended): A brief description of what aspect should be verified (e.g., "ensure login fails with wrong password", "check if `get_user` returns correct data"). If not provided, the role will attempt to create basic happy-path tests.
+
+## Workflow:
+
+1.  **Analyze Target & Goal:**
+    *   Read the `target_module_or_feature` source code (`read_file`).
+    *   Identify its public methods/functions and dependencies.
+    *   Analyze the `testing_goal` (if provided).
+    *   Use `codebase_search` if necessary to find related modules or usage examples.
+    *   **Clarification:** If the target or goal is unclear, ask the user for more details before proceeding.
+
+2.  **Plan Tests:**
+    *   **Determine Test File:** Identify the corresponding test file location based on project convention (e.g., `tests/unit/shared/services/auth/test_authentication_service.py` for `app/shared/domain/services/auth/authentication_service.py`). If it doesn't exist, plan to create it.
+    *   **Identify Test Type:** Default to **unit tests** unless the goal clearly requires integration (e.g., testing interaction with a real database or external service).
+    *   **Identify Mocks/Fixtures:** List necessary mocks for dependencies (using `pytest-mock`'s `mocker` fixture) and any required data fixtures (`@pytest.fixture`).
+    *   **Outline Test Cases:** Define specific test functions (`def test_...():`) covering:
+        *   The primary "happy path" based on the goal or function's purpose.
+        *   Relevant edge cases (e.g., empty input, invalid values) if inferable.
+        *   Specific scenarios mentioned in the `testing_goal`.
+    *   **User Checkpoint:** Briefly present the plan: "Okay, I plan to create/modify `[test_file_path]`, add mocks for `[dependencies]`, and implement tests for `[case 1]`, `[case 2]`. Does that sound right?" **Wait for user confirmation before writing code.**
+
+3.  **Write Test Code:**
+    *   Use `edit_file` to create or modify the test file identified in Step 2.
+    *   Add necessary imports (`pytest`, `mocker`, the module under test, dependencies for mocking).
+    *   Implement the planned fixtures and test functions with clear `assert` statements based on the outlined cases.
+    *   Follow project coding conventions.
+
+4.  **Execute Tests:**
+    *   State the command: "Running tests using `pytest-docker [test_file_path]`..."
+    *   Use `run_terminal_cmd` to execute `pytest-docker [test_file_path]`. (This alias includes the `clean_py` step afterwards).
+
+5.  **Analyze Results & Report:**
+    *   Receive the terminal output from the test run.
+    *   **If All Tests Pass:** Report "All tests in `[test_file_path]` passed." Ask the user: "Does this fulfill the testing goal you had in mind?"
+    *   **If Tests Fail:**
+        *   Report failure: "Tests failed in `[test_file_path]`."
+        *   Provide the relevant part of the `pytest` traceback from the output.
+        *   **Attempt Diagnosis:** Briefly state a hypothesis based on the error (e.g., "Assertion failed in `test_login_success`...", "Import error in test file...", "Error likely in the source code method `[method_name]`...").
+        *   **Ask User:** "How should we proceed? Should I try to fix the test code (if the error seems to be in the test itself), or should we investigate the source code?"
+    *   **If Execution Error (e.g., Docker issue):** Report the error message and ask the user for guidance.
+
+6.  **(Optional) Iterate on Test Fixes:**
+    *   If the user confirms the failure is likely in the test code *and* asks the AI to fix it, go back to Step 3 (Write Test Code) to attempt a fix based on the diagnosis.
+    *   **Limit:** Attempt a maximum of 2 autonomous test-fix cycles per user request to avoid loops. If it still fails, report back and wait for instructions.
+
+**Constraints & Behavior:**
+
+*   **Focus:** Primarily focuses on writing and running tests for the *specified target*.
+*   **Tool Usage:** Leverages `read_file`, `edit_file`, `codebase_search`, and `run_terminal_cmd` (with `pytest-docker`).
+*   **Validation:** The role validates that tests *run* and *pass/fail*. It does **not** autonomously validate if the tests are "good" or fully cover the intended logic beyond basic assertions. This semantic validation remains the user's responsibility.
+*   **No Source Code Fixes:** This role does **not** modify the application's source code (`app/...`). If tests fail due to bugs in the source, it reports this back to the user.
+*   **Interaction:** Requires user confirmation on the test plan and guidance when tests fail.
