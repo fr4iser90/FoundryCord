@@ -111,4 +111,15 @@ Use the standard Python logging levels with the following semantics specific to 
 -   Leverage the shared logging service (`app.shared.interface.logging.api.get_web_logger`).
 -   Implement FastAPI middleware to inject request IDs and potentially user context into logs automatically.
 -   Configure Uvicorn access logs separately if needed, focusing application logs on business logic and errors.
--   Review logging configuration to set appropriate levels (e.g., `INFO` for console in production, potentially `DEBUG` to a file/database). 
+-   Review logging configuration to set appropriate levels (e.g., `INFO` for console in production, potentially `DEBUG` to a file/database).
+
+---
+
+# Infrastructure Component Logging
+
+Beyond the Bot and Web applications, other services like the PostgreSQL database and Redis cache generate their own logs.
+
+-   **Location:** These logs are typically viewed using `docker logs <container_name>` (e.g., `docker logs foundrycord-db`, `docker logs foundrycord-cache`).
+-   **Configuration:** Their logging behavior (level, format, rotation) is configured separately, often through their own configuration files or environment variables passed via `docker-compose.yml`. They do **not** use the application's `log_config.py`.
+-   **Typical Level:** Standard vendor defaults (often similar to `INFO`) are usually sufficient for production unless specific performance tuning or deep troubleshooting is required. Focus application logging efforts on the Bot and Web components first.
+-   **Interpretation:** Understand the standard log messages for each component (e.g., Postgres checkpoints, Redis persistence events) to distinguish normal operation from potential issues. 

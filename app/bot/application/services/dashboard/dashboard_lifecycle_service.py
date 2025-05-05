@@ -258,11 +258,9 @@ class DashboardLifecycleService:
                         'channel_id': str(channel.id),
                         'dashboard_configuration_id': configuration_entity.id,
                         'message_id': None, # Will be populated by registry activation
-                        'is_active': True,
-                        'last_updated': datetime.utcnow(),
-                        'config_override': None
+                        'is_active': True
                     }
-                    created_entity = await active_repo.add(create_data)
+                    created_entity = await active_repo.create(**create_data)
                     if not created_entity:
                         logger.error(f"[DashboardLifecycleService] Failed to create new ActiveDashboard for channel {channel.id} linked to config '{config_name}'.")
                         return False
@@ -284,6 +282,9 @@ class DashboardLifecycleService:
              return False
              
         logger.debug(f"[DashboardLifecycleService] Proceeding to activate/update registry for channel {channel.id} (ActiveDB ID: {active_dashboard_id}).")
+        # --- ADDED DEBUG LOG --- #
+        logger.debug(f"[DIAGNOSTIC LIFECYCLE] config_data passed to registry for channel {channel.id}: {config_data}")
+        # --- END DEBUG LOG --- #
         try:
             registry_success = await self.registry.activate_or_update_dashboard(
                 channel_id=channel.id,

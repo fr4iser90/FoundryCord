@@ -25,7 +25,7 @@
 
 ## Phase 2: Update Logging Guidelines
 
-*   [ ] **Task 2.1:** Add Infrastructure Logging section to Guidelines.
+*   [x] **Task 2.1:** Add Infrastructure Logging section to Guidelines.
     *   Action: Propose an edit to `docs/3_developer_guides/01_getting_started/logging_guidelines.md`.
     *   Action: Add a new section explaining where to find logs for components like Postgres, Redis, etc., and their typical logging levels/purpose (often standard vendor defaults unless specific issues arise). Mention that they are configured separately from the application logging.
     *   **Affected Files:**
@@ -33,7 +33,7 @@
 
 ## Phase 3: Final Review & Cleanup
 
-*   [ ] **Task 3.1:** Review changes and mark TODO as complete.
+*   [x] **Task 3.1:** Review changes and mark TODO as complete.
 
 ## General Notes / Future Considerations
 
