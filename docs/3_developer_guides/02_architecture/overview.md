@@ -19,7 +19,6 @@ Below is a C4-style Container diagram illustrating how these components interact
 
 ```mermaid
 graph LR
-actor User
 subgraph External_Systems ["External Systems"]
     DiscordAPI["Discord API"]
 end
