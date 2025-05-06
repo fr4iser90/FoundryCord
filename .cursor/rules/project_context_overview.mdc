@@ -1,0 +1,24 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Project Context Overview
+
+This document provides central references to key project documentation regarding architecture, technology, and overarching guidelines.
+
+## Core Architecture & Design
+*   **System Architecture Overview:** See @docs/3_developer_guides/02_architecture/overview.md
+*   **API Specification:** See @docs/3_developer_guides/02_architecture/api_specification.md
+*   **Architectural Decision Records (ADR) Log:** See @docs/4_project_management/adr/README.md
+*   **Technology Stack:** See @docs/1_introduction/tech_stack.md
+
+## Development Standards & Process Guides
+*   **Coding Conventions:** See @docs/3_developer_guides/01_getting_started/coding_conventions.md
+*   **Deployment Guidelines:** See @docs/3_developer_guides/05_deployment/README.md
+*   **Rules Strategy & Philosophy:** See @guide_rules_strategy_and_philosophy.mdc
+
+## Domain-Specific Development Guidelines
+*   **Backend/Bot Development Guidelines:** See @dev_backend_bot_guidelines.mdc
+*   **Database Development Guidelines:** See @dev_database_guidelines.mdc
+*   **Frontend Development Guidelines:** See @dev_frontend_guidelines.mdc

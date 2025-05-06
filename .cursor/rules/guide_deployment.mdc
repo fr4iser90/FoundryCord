@@ -1,8 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: false
----
-# Deployment Guidelines Context
-
-See: @docs/3_developer_guides/05_deployment/README.md

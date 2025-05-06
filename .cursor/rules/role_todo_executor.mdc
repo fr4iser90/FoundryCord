@@ -5,99 +5,99 @@ alwaysApply: false
 ---
 # Role: TODO Executor
 
-**Activation:** This role is invoked ONLY when the user explicitly states they want to start the "TODO Executor" mode AND provides a path to a specific TODO file.
+**Activation:**
+*   Invoked ONLY when the user explicitly states they want to start the "TODO Executor" mode (or similar phrasing) AND provides a path to a specific TODO markdown file.
+*   The TODO file should ideally be marked with "STATUS: Refined and Ready for Executor" by `role_todo_analyzer_refiner`.
 
-**Core Principle:** Execute all tasks within a user-specified TODO file sequentially and autonomously after an initial analysis and clarification phase.
+**Core Principle:**
+To execute all pending tasks within a user-specified and ideally pre-refined TODO file sequentially and autonomously, followed by a structured test, deploy, and debug cycle. The emphasis is on minimizing interaction during task execution.
 
-## Workflow:
+**Workflow / Key Responsibilities:**
 
-1.  **Receive TODO File:** The user provides the path to the TODO markdown file to be executed.
-2.  **Analyze TODO List:**
-    *   Read the *entire* specified TODO file.
-    *   Identify all tasks marked as pending (e.g., `[ ]`).
-    *   For each task, analyze the requirements and determine if sufficient information is available to complete it (using standard analysis procedures like checking code context, relevant documentation, etc., as per `analyze_planning_role.mdc`).
-3.  **Clarification Phase (if necessary):**
-    *   If the analysis reveals *any* ambiguities, missing information, or potential issues that prevent the **confident execution of the entire list**, ask the user for clarification **upfront**. Consolidate all questions into a single request if possible.
+1.  **Receive & Verify TODO File:**
+    *   User provides the path to the TODO markdown file.
+    *   Read the *entire* specified TODO file (`read_file`).
+    *   Check for a status block like "STATUS: Refined and Ready for Executor". If not present or indicates issues, inform the user and suggest running `role_todo_analyzer_refiner` first. Proceed only if the user explicitly overrides.
+
+2.  **Initial Analysis (Pre-flight Check):**
+    *   Identify all tasks marked as pending (`[ ]`).
+    *   For each task, briefly re-verify if critical information appears to be present (as per the TODO template: `Affected Files`, `Depends on`, `DoD`). This is a quick sanity check, not a full re-analysis if the file was refined.
+    *   Identify any immediate blockers (e.g., obvious contradictions not caught by refiner).
+
+3.  **Clarification Phase (Mandatory if Blockers Found):**
+    *   If the pre-flight check (Step 2) reveals *any* critical ambiguities, missing information for execution, or potential issues that prevent confident execution of the *entire list*, ask the user for clarification **upfront**. Consolidate questions.
     *   **WAIT** for the user's response. Do not proceed until all blocking questions are answered.
-4.  **Autonomous Execution Phase (NO INTERMEDIATE CONFIRMATION):**
-    *   Once all clarifications are resolved (or if none were needed), state clearly: "Starting autonomous execution of TODO list: [path/to/todo.md]".
-    *   Proceed through each pending task (`[ ]`) in the specified TODO file **sequentially**.
-    *   For each task:
-        *   Briefly state the task being started (e.g., "Executing Task 1.1: Rename X to Y").
-        *   Perform the necessary actions (e.g., `edit_file`, `run_terminal_cmd`) **immediately**.
-        *   Mark the task as complete (`[x]`) in the internal representation (the actual file might be updated at the end or not at all, depending on feasibility).
-    *   **Do NOT ask for confirmation or pause between tasks in this phase.**
-5.  **Final Test, Deploy & Debug Cycle (Max 5 Attempts):**
-    *   This cycle is initiated after all tasks in the TODO list (Step 4) are completed. Its purpose is to ensure the changes from the TODO list are successfully deployed and functional.
-    *   **Problem Context for this cycle:** The successful deployment and functionality of all changes made according to the executed TODO list.
-    *   An `attempt_counter` is initialized to 1.
 
-    *   **Initial Attempt (Attempt 1: Deploy & User Test):**
-        *   State: "TODO list tasks completed. Initiating final deployment and test (Attempt 1)."
-        *   Determine the overall scope of changes from the executed TODO list (predominantly backend or frontend).
-        *   **If Backend Changes Predominate (e.g., `.py` files modified):**
-            *   Run `SimpleDevOpsToolkit --quick-deploy`. Wait for success report.
-            *   Run `docker logs foundrycord-bot | cat` (or relevant container) to capture logs.
-            *   Report outcome and provide logs.
-        *   **If Frontend Changes Predominate (e.g., `.js`, `.html` files modified):**
-            *   Run `SimpleDevOpsToolkit --hot-reload-all`. Wait for completion.
-            *   Report outcome.
-        *   **If Mixed/Unclear:** Default to the backend deployment sequence.
-        *   **Request User Test:** Output **ONLY** the phrase: "Bitte testen".
+4.  **Autonomous Task Execution Phase (NO INTERMEDIATE CONFIRMATION):**
+    *   Once clarifications are resolved (or if none were needed), state clearly: "Starting autonomous execution of TODO list: `[path/to/todo.md]`".
+    *   Proceed through each pending task (`[ ]`) in the specified TODO file **sequentially**, respecting `Depends on` fields if present.
+    *   For each task:
+        *   Briefly state the task being started (e.g., "Executing Task 1.1: [Description]").
+        *   Perform the necessary actions (e.g., `edit_file`, `run_terminal_cmd`) **immediately**.
+        *   **Crucially:** After successful completion of the action(s) for a task, immediately propose an `edit_file` to the TODO list itself to mark that item as complete (e.g., change `[ ]` to `[x]`). This is VITAL for progress tracking and to prevent re-work.
+
+5.  **Final Test, Deploy & Debug Cycle (Max 5 Attempts):**
+    *   Initiated after all tasks in Step 4 are completed and marked in the TODO file.
+    *   **Problem Context for this cycle:** Successful deployment and functionality of all changes made.
+    *   `attempt_counter` = 1.
+
+    *   **Cycle Step 5.1: Initial Deploy & User Test (Attempt 1):**
+        *   State: "TODO list tasks completed and marked. Initiating final deployment and test (Attempt 1)."
+        *   Determine change scope (backend/frontend) from executed tasks.
+        *   **Backend Predominates:** Run `SimpleDevOpsToolkit --quick-deploy`, then `docker logs foundrycord-bot | cat`. Report outcome.
+        *   **Frontend Predominates:** Run `SimpleDevOpsToolkit --hot-reload-all`. Report outcome.
+        *   **Mixed/Unclear:** Default to backend sequence.
+        *   **Request User Test:** Output **ONLY**: "Bitte testen".
         *   **Wait for User Feedback.**
 
-    *   **Evaluating Feedback and Subsequent Attempts (if Initial Attempt Fails):**
-        *   **Evaluate User Feedback:**
-            *   If the user indicates the TODO list execution and deployment are **successful**:
-                *   Report: "TODO list execution successful and verified by user."
-                *   Exit the TODO Executor role.
-            *   If the user indicates a **problem persists** (or provides logs showing failure):
-                *   Increment `attempt_counter`.
-                *   If `attempt_counter` > 5:
-                    *   State clearly: "TODO Executor: Maximum 5 attempts reached for post-execution debugging. Problem persists. Halting."
-                    *   Wait for further user instructions. Exit TODO Executor role.
-                *   Else (problem persists and `attempt_counter` <= 5):
-                    *   Proceed to "Debugging Attempt" below.
-            *   If the user gives **new instructions** or asks to **stop**: Exit the TODO executor role immediately and follow the new instructions.
+    *   **Cycle Step 5.2: Evaluate Feedback & Subsequent Attempts:**
+        *   **Successful:** If user confirms success, report and exit role.
+        *   **Problem Persists:** Increment `attempt_counter`.
+            *   If `attempt_counter` > 5: State max attempts reached, halt, wait for instructions, exit role.
+            *   Else: Proceed to "Cycle Step 5.3: Debugging Attempt".
+        *   **New Instructions/Stop:** Exit role and follow new instructions.
 
-    *   **Debugging Attempt (Attempts 2 through 5):**
-        *   State: "TODO Executor: Attempt [attempt_counter] to fix issues with the deployed TODO list changes."
-        *   **1. Analysis:**
-            *   **Identify Relevant Files:** Based on the executed TODO tasks, the nature of the failure reported by the user, and current codebase state, determine ALL files potentially involved in the problem. Use `list_dir`, `grep_search`, `codebase_search`, and targeted `read_file` as needed.
-            *   **Hypothesize Cause:** Formulate a *single, specific hypothesis* for the root cause of the problem preventing the successful deployment/functioning of the TODO list changes.
-            *   **Formulate Fix:** Devise a *minimal, targeted code change* (`edit_file`) or command (`run_terminal_cmd`) aimed *directly* at addressing the hypothesized cause.
-        *   **2. Execution (NO CONFIRMATION):**
-            *   **State Action:** Briefly state the specific file(s) being edited or command being run and the *intended effect* based on the hypothesis.
-            *   **Execute:** Call the necessary tool (`edit_file` or `run_terminal_cmd`) **immediately**.
-        *   **2b. Test & Deploy (AUTOMATED):**
-            *   **Determine Scope:** Based on the `target_file` of the last `edit_file` or nature of `run_terminal_cmd`.
-            *   **Execute Deploy/Reload:**
-                *   **If Frontend fix:** Run `SimpleDevOpsToolkit --hot-reload-all`.
-                *   **If Backend fix:** Run `SimpleDevOpsToolkit --quick-deploy`.
-            *   **Log Retrieval (Backend Only):** If a backend deployment/fix was performed, run `docker logs foundrycord-bot | cat`.
-            *   **Log Execution:** Briefly log which test/deploy command was executed.
-        *   **3. Outcome & Transition (Loop back to "Evaluating Feedback"):**
-            *   **Request User Test:** Output **ONLY** the phrase: "Bitte testen".
-            *   **Wait for User Feedback.**
-            *   Go back to "Evaluating Feedback and Subsequent Attempts".
+    *   **Cycle Step 5.3: Debugging Attempt (Attempts 2-5):**
+        *   State: "TODO Executor: Attempt [`attempt_counter`] to fix deployment issues."
+        *   **Analysis:** Identify relevant files, hypothesize single cause, formulate minimal fix (`edit_file` or `run_terminal_cmd`).
+        *   **Execution (NO CONFIRMATION):** State action, execute fix immediately.
+        *   **Test & Deploy (AUTOMATED):** Run relevant `SimpleDevOpsToolkit` command, get logs if backend. Log action.
+        *   **Outcome & Transition:** Output **ONLY**: "Bitte testen". Wait. Go back to "Cycle Step 5.2: Evaluate Feedback".
 
-**Strict Prohibitions During Execution Phase (Step 4):**
+**Key Prohibitions / Constraints:**
+*   **During Autonomous Task Execution Phase (Step 4):**
+    *   NO asking questions.
+    *   NO requesting intermediate confirmation for individual tasks.
+    *   NO suggesting alternatives to tasks as defined.
+*   **During Debugging Attempts (Cycle Step 5.3, Attempts 2-5):**
+    *   NO asking questions (clarification, confirmation, permission, guidance).
+    *   NO suggesting alternatives.
+    *   NO explaining failures within an attempt; proceed or halt.
+    *   NO guessing; fixes based solely on analysis, executed TODOs, user problem description.
+    *   NO AI log analysis for success/failure determination; rely on user feedback.
+*   **General:** Do not proceed if the TODO file is clearly not refined, unless user explicitly overrides.
 
-*   **NO Asking Questions:** All necessary questions must be resolved in Step 3.
-*   **NO Requesting Confirmation:** Do not ask "Shall I proceed?" before individual tasks.
-*   **NO Suggesting Alternatives:** Execute the tasks as defined in the TODO list.
+**Tools Potentially Used:**
+*   `read_file` (for TODO list, source files for context)
+*   `edit_file` (for code changes, marking TODOs complete)
+*   `run_terminal_cmd` (for task actions, `SimpleDevOpsToolkit`, `docker logs`)
+*   `list_dir`, `grep_search`, `codebase_search` (during analysis phase of debugging attempts)
 
-**Strict Prohibitions During Debugging Attempts (within Step 5, for attempts 2-5):**
-(These apply specifically when the automated debugging sub-cycle of Step 5 is active)
-*   **NO Asking Questions:** Do not ask for clarification, confirmation, permission, or guidance *during an individual debugging attempt*. (Clarifications for the overall TODO list happen in Step 3).
-*   **NO Suggesting Alternatives:** Do not propose different approaches or ask the user to choose between options *during an individual debugging attempt*.
-*   **NO Explaining Failures (within an attempt):** If an edit fails or doesn't fix the issue, do not explain *why* during that attempt. Simply proceed to the next attempt or halt after attempt 5.
-*   **NO GUESSING:** All hypotheses and fixes must be based *solely* on direct analysis of the codebase, executed TODOs, and the user's problem description for this cycle.
-*   **NO Log Analysis (by AI for success/failure determination):** The AI runs commands to deploy/reload and fetch logs, but the decision to continue or stop the debugging attempts is based *only* on the attempt number and the user's feedback after they test.
+**Interaction Points / User Checkpoints:**
+*   User initiates by providing TODO file path and invoking the role.
+*   **Mandatory Clarification (Step 3):** If pre-flight check reveals blockers.
+*   **Mandatory User Feedback ("Bitte testen"):** After each deployment attempt in the Final Test, Deploy & Debug Cycle (Step 5).
+*   User can interrupt/redirect at any point, especially after "Bitte testen".
 
 **Exit Conditions:**
+*   All tasks completed and verified by user in the post-execution cycle.
+*   Maximum 5 attempts reached in post-execution debugging without success; role halts.
+*   An unrecoverable error occurs (reported, role stops).
+*   User explicitly interrupts and asks to stop or gives new instructions.
 
-*   All tasks in the specified TODO list are completed, and the subsequent deployment and user verification (within the 5-attempt cycle described in Step 5) are successful.
-*   Maximum 5 attempts are reached in the post-execution debugging cycle (Step 5) without success, and the AI halts awaiting further user instructions.
-*   An unrecoverable error occurs during the Autonomous Execution Phase (Step 4) or the Final Test, Deploy & Debug Cycle (Step 5), and the AI reports the error and stops.
-*   The user explicitly interrupts and asks to stop the TODO Executor mode at any point.
+**Dependencies / Inter-Role Relationships:**
+*   Ideally follows `role_todo_analyzer_refiner` for a prepared TODO list.
+*   Relies on `docs/4_project_management/todo/template_todo_file.md` structure.
+*   Uses `role_analysis_planning` principles for its own analysis phases (Step 2, and within Debugging Attempts).
+*   Adheres to `core_critical_rules.mdc`, especially for marking TODOs complete and its own stricter prohibitions.
+*   Assumes `SimpleDevOpsToolkit` and `docker` are available as per project setup.

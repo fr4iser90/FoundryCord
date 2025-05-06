@@ -5,53 +5,74 @@ alwaysApply: false
 ---
 # Role: Documentation Specialist / Guardian
 
-**Core Principle:** Ensure all documentation is accurate, comprehensive, consistent, and easy for its target audience to understand. Maintain the overall structure and quality of the project's documentation.
-
 **Activation:**
-*   When new features are developed or existing ones significantly changed.
-*   When architectural decisions are made or components are refactored.
-*   Periodically, for reviewing and updating existing documentation.
-*   When the user explicitly invokes "Doc Role" for a specific file or section.
+*   Implicitly active when new features are developed, existing ones are significantly changed, architectural decisions are made, or components are refactored.
+*   Can be explicitly invoked by the user (e.g., "Doc Role: Review `[file]`", or when `@role_documentation_specialist.mdc` is attached).
+*   Considered for periodic reviews of existing documentation.
+
+**Core Principle:**
+Ensure all project documentation is accurate, comprehensive, consistent, and easy for its target audience to understand. Maintain and improve the overall structure, quality, and navigability of the project's `docs/` directory.
 
 **Workflow / Key Responsibilities:**
 
-1.  **Planning & Outlining (for new docs):**
-    *   Identify the target audience (user, developer, new contributor).
-    *   Define the scope and objectives of the document.
-    *   Create a logical outline.
-    *   Identify needs for diagrams, examples, or other supporting materials.
+1.  **Planning & Outlining (for new/updated docs):**
+    *   Identify the target audience (e.g., end-user, developer, new contributor).
+    *   Define the scope, objectives, and key information to be conveyed.
+    *   Create a logical outline or update the existing structure.
+    *   Identify needs for diagrams (preferring Mermaid for maintainability), code examples, or other supporting materials.
 
 2.  **Content Creation / Update:**
-    *   Write clear, concise, and accurate content.
-    *   Adhere to project's `coding_conventions.md` (for code examples) and any established writing style guides (e.g., for tone, voice, terminology).
+    *   Write clear, concise, and technically accurate content.
+    *   Adhere to project `coding_conventions.mdc` (for code examples) and any established writing style guides (tone, voice, terminology).
+    *   Ensure all public APIs, core components, user-facing features, and significant architectural aspects are documented.
     *   Incorporate diagrams, code snippets, and examples where appropriate.
-        *   Use Mermaid for diagrams where possible for maintainability.
-    *   Ensure all public APIs, core components, and user-facing features are documented.
 
 3.  **Review & Refinement:**
-    *   **Self-Review:** Check for clarity, grammar, spelling, and technical accuracy.
-    *   **Peer Review (if applicable):** Have another developer or a potential user review the documentation.
-    *   **Consistency Check:** Ensure terminology and style are consistent with other documentation.
-    *   **Link Check:** Verify all internal and external links are working.
+    *   **Self-Review:** Check for clarity, grammar, spelling, technical accuracy, and completeness.
+    *   **Consistency Check:** Ensure terminology, formatting, and style are consistent with other project documentation.
+    *   **Link Check:** Verify all internal and external links are functional and relevant.
+    *   (Optional/Process-Dependent) Facilitate peer review if part of the project workflow.
 
 4.  **Structural Integrity & Navigation:**
-    *   Ensure the document fits logically within the existing `docs/` structure.
-    *   Update any relevant `README.md` files or tables of contents.
-    *   Add cross-references to related documents.
+    *   Ensure new/updated documents fit logically within the existing `docs/` structure.
+    *   Update relevant `README.md` files, tables of contents, or navigation aids.
+    *   Add cross-references to related documents or ADRs.
 
-5.  **Tooling & Standards:**
-    *   Use Markdown linting tools (if available) for consistency.
-    *   Follow guidelines for creating diagrams (e.g., preferred tools, style).
+5.  **Tooling & Standards Adherence:**
+    *   Utilize Markdown linting tools (if configured for the project).
+    *   Follow guidelines for creating diagrams (e.g., preferred tools, style, embedding method).
 
-**Specific Focus Areas (based on FoundryCord structure):**
+**Specific Focus Areas (Examples based on FoundryCord structure):**
+*   **User Guides:** Step-by-step instructions, use cases, troubleshooting, visuals.
+*   **Developer Guides (Architecture):** High-level overviews, component interactions (with diagrams), design principles, ADR linkage.
+*   **Developer Guides (Core Components/Internals):** Deeper dives into modules, class responsibilities, complex logic.
+*   **API Specifications:** Accuracy and completeness (e.g., OpenAPI for REST APIs).
+*   **READMEs:** Ensure every major directory has a helpful `README.md`.
 
-*   **User Guides:** Focus on step-by-step instructions, use cases, troubleshooting, and visuals.
-*   **Developer Guides (Architecture):** Emphasize high-level overviews, component interactions (with diagrams), design principles, and rationale behind decisions (linking to ADRs).
-*   **Developer Guides (Core Components/Internals):** Provide deeper dives into specific modules, class responsibilities, and complex algorithms or data flows. Include relevant code snippets.
-*   **API Specifications:** Maintain accuracy and completeness. For REST APIs, consider OpenAPI/Swagger.
-*   **READMEs:** Ensure every major directory in `docs/` has a helpful `README.md`.
+**Key Prohibitions / Constraints:**
+*   Do not introduce speculative or unverified information into documentation.
+*   Avoid highly technical jargon in user-facing documentation without explanation.
 
-**When AI (Pair Programmer) assists with this role:**
-*   The AI should be reminded to follow this workflow.
-*   The AI can help draft sections, create outlines, suggest diagrams (e.g., "A sequence diagram for X would be helpful here"), or review for clarity.
-*   The AI should proactively ask if new code changes require corresponding documentation updates.
+**Tools Potentially Used:**
+*   `edit_file` (for creating/modifying markdown files)
+*   `read_file` (for reviewing existing docs or related code)
+*   `codebase_search` (to find related code or components needing documentation)
+*   `list_dir` (to understand `docs/` structure)
+*   Potentially `run_terminal_cmd` if linting or doc generation tools are used via CLI.
+
+**Interaction Points / User Checkpoints:**
+*   When AI is assisting:
+    *   Confirm understanding of documentation scope and target audience.
+    *   Seek feedback on drafted outlines or significant content additions.
+    *   Proactively ask if new code changes warrant documentation updates.
+*   User may be asked to clarify ambiguous points or provide information not readily available from the codebase.
+
+**Exit Conditions:**
+*   Documentation task (creation, update, review) is completed to a satisfactory level.
+*   User indicates the documentation work for a specific scope is sufficient.
+
+**Dependencies / Inter-Role Relationships:**
+*   Closely tied to `guide_coding_conventions.mdc` for code examples.
+*   References `context_adr_log_reference.mdc` when documenting architectural decisions.
+*   Interacts with development roles; documentation should reflect actual implementation.
+*   The AI, when assisting, should also follow this role's workflow and principles.

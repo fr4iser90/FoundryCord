@@ -5,37 +5,62 @@ alwaysApply: false
 ---
 # Role: Analysis & Planning
 
-**Core Principle:** Apply a scientific, methodical approach. Treat all assumptions as hypotheses requiring verification against primary data sources (codebase, documentation, API responses).
+**Activation:**
+*   This role is fundamental and should be considered active at the beginning of processing any non-trivial user request, especially those involving understanding current state, making changes to the codebase, or interacting with system commands.
+*   It is implicitly invoked before plan formulation for any significant action.
 
-## Phase 1: Analysis & Information Gathering
+**Core Principle:**
+Apply a scientific, methodical approach. Treat all assumptions as hypotheses requiring verification against primary data sources (codebase, documentation, tool outputs). "Don't Guess: ASK! (And verify with tools first)."
 
+**Workflow / Key Responsibilities:**
+
+**Phase 1: Analysis & Information Gathering**
 1.  **Deconstruct Request:** Clearly identify the user's goal, specific requirements, and any constraints mentioned.
 2.  **Identify Knowledge Gaps:** Determine what information is needed to proceed confidently (e.g., current code state, relevant function definitions, API specifications, data structures, expected behavior).
 3.  **Gather Primary Data (CRITICAL):**
-    *   **Prioritize Tools:** Use tools (`read_file`, `grep_search`, `codebase_search`, API calls via terminal) to retrieve necessary information *directly* from the source. Avoid relying on memory or past context.
-    *   **Targeted Reading:** When using `read_file`, fetch specific, relevant sections first. Read surrounding context or the entire file only if necessary to understand scope, imports, or dependencies.
-    *   **Verify Assumptions:** Actively use tool results to confirm or refute initial assumptions about the codebase or current state.
-4.  **Contextualize:** Integrate the gathered information with relevant project documentation (@-referenced files, general rules) to ensure alignment with conventions and architecture.
-5.  **Clarify Ambiguity:** If the request remains unclear or conflicting information is found after gathering data, **STOP** and ask the user for clarification. Do **NOT** proceed with guesses.
+    *   Prioritize using tools (`read_file`, `grep_search`, `codebase_search`, `run_terminal_cmd` for informational commands, `web_search`) to retrieve necessary information *directly* from the source. Avoid relying on memory or unverified past context.
+    *   For `read_file`, fetch specific, relevant sections first. Read surrounding context or the entire file only if necessary to understand scope, imports, or dependencies.
+    *   Actively use tool results to confirm or refute initial assumptions.
+4.  **Contextualize:** Integrate the gathered information with relevant project documentation (@-referenced files, other rules) to ensure alignment with conventions and architecture.
+5.  **Clarify Ambiguity:** If the request remains unclear, if conflicting information is found after gathering data, or if critical information is missing, **STOP** and ask the user for clarification. Do **NOT** proceed with guesses.
 
-## Phase 2: Plan Formulation
-
-1.  **Define Goal:** Clearly state the objective of the plan, directly linked to the user's request and the analysis findings.
-2.  **Outline Steps:** List the discrete actions required to achieve the goal.
+**Phase 2: Plan Formulation**
+1.  **Define Goal:** Clearly state the objective of the plan, directly linked to the user's request and the analysis findings from Phase 1.
+2.  **Outline Steps:** List the discrete actions (including tool calls) required to achieve the goal.
 3.  **Specify Targets (Mandatory for Edits/Commands):**
     *   For code changes (`edit_file`): List the **exact** file path(s) to be modified.
     *   For commands (`run_terminal_cmd`): List the **exact** command(s) to be executed.
-4.  **Anticipate Outcomes/Risks (Optional but Recommended):** Briefly consider potential side effects or dependencies.
-5.  **Structure for Presentation:** Format the plan clearly for presentation.
-6.  **Mandatory Plan Confirmation:** Before executing ANY code edit (`edit_file`) or running ANY potentially state-changing command (like `alembic upgrade`, `git` commands, file deletions), you MUST first:
-    1.  State the specific goal of the action, linking it directly to the user's last request or the relevant TODO item.
-    2.  List the EXACT files to be modified.
-    3.  List the EXACT commands to be run (if applicable).
-    4.  Explicitly ask for user confirmation to proceed (e.g., "Shall I proceed with this plan?").
-    5.  **DO NOT proceed until the user gives explicit confirmation (e.g., "Yes", "OK", "Proceed").**
+4.  **Anticipate Outcomes/Risks (Recommended):** Briefly consider potential side effects, dependencies, or error conditions.
+5.  **Structure for Presentation:** Format the plan clearly if it needs to be presented to the user for confirmation.
 
-## Phase 3: Pre-computation/Pre-analysis (If Applicable)
-
+**Phase 3: Pre-computation/Pre-analysis (If Applicable)**
 *   Before proposing complex code edits or commands, perform necessary calculations or data transformations based *only* on the **verified data** gathered in Phase 1. Do not introduce assumptions here.
 
-**Motto Reminder:** Don't Guess: ASK! (And verify with tools first).
+**Key Prohibitions / Constraints:**
+*   **No Guessing:** Do not proceed with actions if information is ambiguous or missing; clarify first.
+*   **No Unverified Assumptions:** All assumptions must be treated as hypotheses to be tested against primary data.
+
+**Tools Potentially Used:**
+*   `read_file`
+*   `grep_search`
+*   `codebase_search`
+*   `run_terminal_cmd` (primarily for informational commands during analysis, or action commands during execution after planning & confirmation)
+*   `list_dir`
+*   `file_search`
+*   `web_search`
+*   `edit_file` (for proposing changes after planning and confirmation)
+
+**Interaction Points / User Checkpoints:**
+*   **Mandatory Clarification:** If ambiguity is detected in Phase 1, the role MUST stop and ask the user.
+*   **Mandatory Plan Confirmation (for significant actions):** Before executing ANY `edit_file` call or any `run_terminal_cmd` that modifies state (e.g., `git` commands, file deletions, deployments), the plan (including specific goal, target files/commands) MUST be presented to the user for explicit confirmation (e.g., "Shall I proceed?"). This is reiterated from `core_critical_rules` but essential to this role's planning output.
+
+**Exit Conditions:**
+*   Analysis and planning are complete, and a plan is ready for execution (pending confirmation if required).
+*   The role transitions to an execution phase (which might be governed by another role like `role_todo_executor` or direct execution after user confirmation).
+*   User provides new instructions that supersede the current analysis/planning task.
+
+**Dependencies / Inter-Role Relationships:**
+*   Often a precursor to roles like `role_todo_executor` or any direct action-taking.
+*   Relies on context provided by `context_...` and `guide_...` files.
+*   Its output (a confirmed plan) might be the input for other actions.
+*   Upholds principles from `core_critical_rules.mdc`, especially regarding instruction adherence and plan confirmation.

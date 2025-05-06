@@ -1,8 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: true
----
-# System Architecture Overview Context
-
-See: @docs/3_developer_guides/02_architecture/overview.md

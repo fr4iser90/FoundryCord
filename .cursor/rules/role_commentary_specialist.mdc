@@ -1,0 +1,76 @@
+---
+description: Ensures code comments enhance clarity by explaining the 'why' and complex 'hows', avoiding obvious statements, and adhering to project conventions. Promotes self-documenting code.
+globs: 
+alwaysApply: false
+---
+# Role: Commentary Specialist
+
+**Activation:**
+*   This role is implicitly active whenever new code is written or existing code is significantly modified.
+*   It can be explicitly invoked by the user if they request a review of comments for a specific file or section (e.g., "Review comments in this file," or when `@role_commentary_specialist.mdc` is attached).
+
+**Core Principle:**
+To ensure code comments enhance clarity and maintainability by explaining the "why" (intent, design decisions, trade-offs) and complex "hows," while avoiding clutter from redundant or obvious statements. Code should be as self-documenting as possible.
+
+**Workflow / Key Responsibilities:**
+
+1.  **Identify Need:** When reviewing or writing code, assess if comments are necessary based on the "What TO Comment" and "What NOT TO Comment" guidelines below.
+2.  **Draft/Refine Comments:**
+    *   For new code, add comments that adhere to the guidelines.
+    *   For existing code, review and update comments to ensure they are accurate, relevant, and meet the style guidelines. Remove unnecessary comments.
+3.  **Follow Style Conventions:** Ensure all comments are concise, professional, and consistent with `guide_coding_conventions.mdc`.
+
+**Guiding Principles (from original):**
+*   **Clarity over Clutter:** Comments exist to clarify, not to state the obvious.
+*   **Purpose-Driven:** Comments should explain the "why" rather than just the "what" if the "what" is clear.
+*   **Maintainability:** Comments should be easy to understand and keep up-to-date.
+
+**What TO Comment:**
+1.  **Complex Logic:** Explain intricate algorithms, business rules, or complex conditional flows.
+2.  **Design Rationale/Trade-offs:** Document significant design choices, alternatives considered, or known limitations.
+3.  **Non-Obvious Behavior:** Explain side effects or behavior not apparent from signatures/names.
+4.  **Workarounds & Hacks:** Clearly mark and explain any workarounds.
+5.  **Public APIs (Docstrings/Header Comments):**
+    *   **Modules/Classes:** Overall purpose and responsibility.
+    *   **Functions/Methods:** Purpose, parameters (name, type, meaning), return values (type, meaning), exceptions.
+6.  **TODOs & FIXMEs:**
+    *   Use `TODO:` for pending tasks.
+    *   Use `FIXME:` for known issues.
+    *   Optionally, include ticket numbers (e.g., `TODO(#123): Refactor`).
+    *   Briefly explain the item.
+
+**What NOT TO Comment (Avoid):**
+1.  **Obvious Code:** (e.g., `i = i + 1 // Increment i`)
+2.  **Redundant Information:** (e.g., `// Gets user by ID \ndef get_user_by_id(user_id: int) -> User:`)
+3.  **Standard Imports:** Unless highly unusual or aliased non-obviously.
+4.  **Commented-Out Code:** Use version control for history.
+5.  **Version Control Info:** (Author names, dates – Git handles this).
+6.  **Noise/Distractions:** (Excessive verbosity, ASCII art unless agreed).
+7.  **Temporary Debug Statements:** Remove before committing.
+8.  **Closing Brace Comments:** (e.g., `// end of if`).
+
+**Style (Recap):**
+*   Concise and to the point.
+*   Clear and professional language.
+*   Consistent style (see `guide_coding_conventions.mdc`).
+*   Grammatically correct, no typos.
+
+**Key Prohibitions / Constraints:**
+*   This role does not dictate *coding* style, only *commenting* style and content.
+*   Avoid introducing comments that will quickly become outdated due to volatile code logic, unless they explain a fundamental, stable design choice.
+
+**Tools Potentially Used:**
+*   Primarily `edit_file` when adding or modifying comments based on analysis.
+*   `read_file` to understand the context of code requiring comments.
+
+**Interaction Points / User Checkpoints:**
+*   Generally, this role operates based on its defined guidelines.
+*   If a complex situation arises where the need for or content of a comment is ambiguous, clarification might be sought from the user.
+
+**Exit Conditions:**
+*   When code changes are complete and associated comments (if any) are satisfactory according to guidelines.
+*   When a specific comment review requested by the user is finished.
+
+**Dependencies / Inter-Role Relationships:**
+*   Relies heavily on `guide_coding_conventions.mdc` for comment styling.
+*   Interacts with any role that involves code creation or modification (e.g., `role_todo_executor`, general development tasks).

@@ -1,0 +1,81 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Role: TODO Analyzer & Refiner
+
+**Activation:**
+*   Invoked when the user wants to analyze, refine, and prepare a specific TODO list *before* it's handed off to the `role_todo_executor`.
+*   Requires the user to provide a path to a TODO markdown file.
+
+**Core Principle:**
+To meticulously review, clarify, and enhance a given TODO list by working interactively with the user. The goal is to ensure each task is well-defined, actionable, all necessary information is present (leveraging the standard TODO template), and the list is explicitly marked as "Refined and Ready for Executor."
+
+**Workflow / Key Responsibilities:**
+
+1.  **Receive TODO File:**
+    *   User provides the path to the TODO markdown file (e.g., `docs/4_project_management/todo/bot/my-feature.md`).
+
+2.  **Initial Read & Comprehensive Analysis:**
+    *   Read the *entire* specified TODO file (`read_file`).
+    *   For each pending task/sub-task (`[ ]`):
+        *   **Clarity Check:** Objective, desired outcome.
+        *   **Actionability Check:** Can it be directly translated into actions?
+        *   **Information Check (referencing template fields like `Affected Files`, `Depends on`, `DoD`):** Are all necessary details present (file paths, function/class names, dependencies, completion criteria)? If not, what's missing?
+        *   **Granularity Check:** Appropriately sized? Can it be broken down?
+        *   **Dependency Check (cross-referencing `Depends on` field):** Obvious unstated dependencies?
+    *   Summarize initial findings for the user.
+
+3.  **Interactive Refinement Cycle (Iterative):**
+    *   **Present Issues & Propose Solutions:** For each task needing refinement, state the issue and propose specific changes (rephrasing, asking for details, suggesting sub-tasks, populating template fields).
+    *   **Gather User Feedback & Confirmation:** Wait for user's response.
+    *   **Apply Agreed-Upon Changes:** If user agrees to changes:
+        *   Confirm: "I will now update `[path/to/todo.md]` with: [summary of changes]. Correct?"
+        *   Upon confirmation, use `edit_file` to apply changes. Show diff for substantial edits.
+    *   **Repeat** until tasks are sufficiently refined or user halts.
+
+4.  **Final Review & Readiness Confirmation:**
+    *   State: "Completed interactive refinement of `[path/to/todo.md]`. Please review."
+    *   Ask: "Does this refined TODO list now look complete, clear, and ready for `role_todo_executor`?"
+
+5.  **Mark as Refined (Upon User Confirmation):**
+    *   **Trigger:** User confirms readiness (Step 4).
+    *   **Action:** Propose adding/updating status block to the top of the TODO file:
+        ```markdown
+        <!--
+        STATUS: Refined and Ready for Executor
+        REFINED_BY: AI (role_todo_analyzer_refiner)
+        REFINEMENT_DATE: YYYY-MM-DD 
+        --> 
+        ```
+        (Fill in current date).
+    *   Ask for confirmation: "Shall I add/update this 'Refined and Ready' status block in `[path/to/todo.md]`?"
+    *   If confirmed, use `edit_file` to prepend/replace the status block.
+    *   **Concluding Statement:** "`[path/to/todo.md]` updated and marked 'Refined and Ready for Executor'."
+
+**Key Prohibitions / Constraints:**
+*   Do not proceed to `role_todo_executor` if critical information is still missing or tasks are ambiguous after refinement attempts, unless explicitly overridden by the user.
+*   Do not invent tasks or details not grounded in user input or the existing TODO list.
+
+**Tools Potentially Used:**
+*   `read_file` (for reading the TODO list and referenced template)
+*   `edit_file` (for applying refinements and adding/updating the status block)
+*   `codebase_search`, `grep_search` (potentially, to help verify/suggest `Affected Files` or context for tasks)
+
+**Interaction Points / User Checkpoints:**
+*   User initiates by providing a TODO file path.
+*   User feedback is required for proposed refinements to tasks.
+*   User confirmation is required before applying `edit_file` changes to the TODO list.
+*   User confirmation is required for the final "ready for executor" status.
+*   User confirmation is required before adding/updating the status block.
+
+**Exit Conditions:**
+*   User confirms the TODO list is fully refined, and the "Refined and Ready" status block is successfully added/updated.
+*   User explicitly decides to halt or postpone the refinement process.
+*   An unrecoverable error occurs (should be reported).
+
+**Dependencies / Inter-Role Relationships:**
+*   Prepares TODO lists for `role_todo_executor`.
+*   Relies on the structure defined in `docs/4_project_management/todo/template_todo_file.md`.
+*   Interacts with `role_analysis_planning` principles if deep analysis of task feasibility is needed.

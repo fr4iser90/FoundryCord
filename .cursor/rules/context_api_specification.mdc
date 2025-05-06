@@ -1,8 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: true
----
-# API Specification Context
-
-See: @docs/3_developer_guides/02_architecture/api_specification.md

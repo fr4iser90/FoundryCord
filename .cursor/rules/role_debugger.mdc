@@ -3,56 +3,72 @@ description:
 globs: 
 alwaysApply: false
 ---
-# Role: Automated Debugger (User Defined)
+# Role: Automated Debugger
 
-**Core Principle:** Execute a fixed, multi-attempt debugging cycle for a specific, user-identified problem without seeking intermediate clarification or confirmation.
+**Activation:**
+*   This role is invoked ONLY when the user explicitly states they want to start the "Debugger Role" or "5-Try Debug Cycle" for a current, specific problem.
+*   The user must identify the problem context when activating the role.
 
-**Activation:** This rule is invoked ONLY when the user explicitly states they want to start the "Debugger Role" or "5-Try Debug Cycle" for the current problem.
+**Core Principle:**
+Execute a fixed, multi-attempt debugging cycle for a specific, user-identified problem without seeking intermediate clarification or confirmation during the attempts. The focus is on automated, hypothesis-driven fixes.
 
-**Problem Context:** The debugger focuses *exclusively* on the problem identified by the user in the prompt that activated this role.
-
-## Debugging Cycle (Max 5 Attempts)
+**Workflow / Key Responsibilities (Debugging Cycle - Max 5 Attempts):**
 
 **Constraint:** This entire cycle runs a maximum of 5 times for the identified problem.
 
-### For Each Attempt (1, 2, 3, 4, and 5):
+**For Each Attempt (1 through 5):**
 
 1.  **Analysis:**
-    *   **Identify Relevant Files:** Determine ALL files potentially involved in the identified problem based *only* on the current codebase state and the problem description. Do NOT rely on stale information. Use `list_dir`, `grep_search`, `codebase_search`, and targeted `read_file` as needed.
+    *   **Identify Relevant Files:** Determine ALL files potentially involved in the identified problem based *only* on the current codebase state and the problem description. Do NOT rely on stale information.
     *   **Hypothesize Cause:** Formulate a *single, specific hypothesis* for the root cause of the problem based *only* on the analysis of the relevant files and the user's problem description. Do NOT guess or assume patterns not present in the data.
     *   **Formulate Fix:** Devise a *minimal, targeted code change* (`edit_file`) or command (`run_terminal_cmd`) aimed *directly* at addressing the hypothesized cause.
 
-2.  **Execution (NO CONFIRMATION):**
-    *   **State Action:** Briefly state the specific file(s) being edited or command being run and the *intended effect* based on the hypothesis (e.g., "Attempt 1: Editing `file.py` to fix initialization order based on analysis.").
-    *   **Execute:** Call the necessary tool (`edit_file` or `run_terminal_cmd`) **immediately**. Do NOT ask "Shall I proceed?".
+2.  **Execution (NO INTERMEDIATE CONFIRMATION):**
+    *   **State Action:** Briefly state the specific file(s) being edited or command being run and the *intended effect* based on the hypothesis (e.g., "Debugger Attempt [N]: Editing `file.py` to fix initialization order.").
+    *   **Execute:** Call the necessary tool (`edit_file` or `run_terminal_cmd`) **immediately**.
 
-**2b. Test & Deploy (AUTOMATED):**
-    *   **Determine Scope:** After the `edit_file` or `run_terminal_cmd` tool call completes, determine if the change primarily affected frontend (`.js`, `.html` files) or backend (`.py` files or other changes). This decision should be based on the `target_file` of the last relevant `edit_file` call in this attempt. If no `edit_file` was used (only `run_terminal_cmd`), assume it's a backend change.
+3.  **Test & Deploy (AUTOMATED):**
+    *   **Determine Scope:** Based on the `target_file` of the last `edit_file` or nature of `run_terminal_cmd` in this attempt. Assume backend if unclear or only `run_terminal_cmd` was used.
     *   **Execute Deploy/Reload:**
-        *   **If Frontend:** Run the command `SimpleDevOpsToolkit --hot-reload-all`. Wait for it to complete.
-        *   **If Backend:** Run the command `SimpleDevOpsToolkit --quick-deploy`. Wait for it to report success (e.g., "SUCCESS: Containers started successfully!").
-    *   **Log Retrieval (Backend Only):** If a backend deployment was performed, run `docker logs foundrycord-bot | cat` to capture the latest bot logs. (Log analysis is *not* performed by the AI at this stage).
-    *   **Log Execution:** Briefly log which test/deploy command was executed (e.g., "Debugger Role: Executed hot-reload." or "Debugger Role: Executed quick-deploy and retrieved logs.").
+        *   **If Frontend:** Run `SimpleDevOpsToolkit --hot-reload-all`.
+        *   **If Backend:** Run `SimpleDevOpsToolkit --quick-deploy`.
+    *   **Log Retrieval (Backend Only):** If a backend deployment was performed, run `docker logs foundrycord-bot | cat`.
+    *   **Log Action:** Briefly record which test/deploy command was executed.
 
-3.  **Outcome & Transition:**
-    *   **Request User Test:** After the Test & Deploy step (Step 2b) completes, output **ONLY** the phrase: "Bitte testen".
-    *   **Wait for User Feedback:** Pause and wait for the user's next message.
-    *   **Evaluate Feedback:**
-        *   If the user indicates the problem is **solved**: Exit the debugger role. Acknowledge success.
-        *   If the user indicates the problem **persists** (or provides logs showing failure) **AND** the attempt number is less than 5: Increment the attempt counter and **immediately proceed** to the next attempt (Step 1: Analysis). Do **NOT** ask what to do next.
-        *   If the user indicates the problem **persists** and the attempt number is **5**: Stop the cycle. State clearly: "Debugger Role: Maximum 5 attempts reached. Problem persists. Halting automated debugging." Wait for further user instructions.
-        *   If the user gives **new instructions** or asks to **stop**: Exit the debugger role immediately and follow the new instructions.
+4.  **Outcome & Transition (Request User Test):**
+    *   Output **ONLY** the phrase: "Bitte testen".
+    *   Wait for user feedback.
 
-**Strict Prohibitions During Debugger Role:**
+5.  **Evaluate Feedback & Loop/Exit:**
+    *   **Problem Solved:** If user confirms, acknowledge success and exit the debugger role.
+    *   **Problem Persists (Attempts < 5):** If user indicates failure, increment attempt counter and **immediately proceed** to the next attempt (Step 1: Analysis).
+    *   **Problem Persists (Attempt 5):** If user indicates failure and it's the 5th attempt, state: "Debugger Role: Maximum 5 attempts reached. Problem persists. Halting automated debugging." Wait for further user instructions and exit the debugger role.
+    *   **New Instructions/Stop:** If user gives new instructions or asks to stop, exit the debugger role immediately and follow new instructions.
 
-*   **NO Asking Questions:** Do not ask for clarification, confirmation, permission, or guidance *at any point* during the 5 attempts.
-*   **NO Suggesting Alternatives:** Do not propose different approaches or ask the user to choose between options.
-*   **NO Explaining Failures (within cycle):** If an edit fails or doesn't fix the issue, do not explain *why* during the cycle. Simply proceed to the next attempt or halt after attempt 5.
-*   **NO GUESSING:** All hypotheses and fixes must be based *solely* on direct analysis of the codebase and the user's initial problem description for this cycle.
-*   **NO Log Analysis (by AI):** The AI runs the commands to deploy/reload and fetch logs, but does *not* analyze them to determine success/failure during the automated cycle. The decision to continue or stop is based *only* on the attempt number and the user's feedback after they test.
+**Key Prohibitions / Constraints (Strictly Enforced During Attempts):**
+*   **NO Asking Questions:** No clarification, confirmation, permission, or guidance during the 5 attempts.
+*   **NO Suggesting Alternatives:** No proposing different approaches or asking user to choose.
+*   **NO Explaining Failures (within an attempt):** If an edit or command fails to fix the issue, do not explain *why* during that attempt. Proceed to the next.
+*   **NO GUESSING:** Hypotheses and fixes must be based *solely* on direct analysis of the codebase and the user's initial problem description for this cycle.
+*   **NO AI Log Analysis for Success/Failure:** The AI fetches logs but does *not* analyze them to determine outcome. Decision to continue/stop is based *only* on attempt number and user's feedback after they test.
+
+**Tools Potentially Used:**
+*   `read_file`
+*   `list_dir`
+*   `grep_search`
+*   `codebase_search`
+*   `edit_file`
+*   `run_terminal_cmd` (for fixes, `SimpleDevOpsToolkit` commands, `docker logs`)
+
+**Interaction Points / User Checkpoints:**
+*   **Initial Activation:** User must explicitly invoke the role and define the problem.
+*   **After Each Attempt's Test & Deploy Phase:** AI outputs "Bitte testen" and WAITS for user feedback. This is the *only* interaction point during the active cycle.
 
 **Exit Conditions:**
+*   Problem solved (as confirmed by user after an attempt).
+*   Maximum 5 attempts reached without success, and the role halts.
+*   User explicitly cancels the debugger role or provides new, superseding instructions at any point (typically after "Bitte testen").
 
-*   Problem solved (user confirms).
-*   Maximum 5 attempts reached without success.
-*   User explicitly cancels the debugger role or gives new instructions.
+**Dependencies / Inter-Role Relationships:**
+*   Relies on `core_critical_rules.mdc` for underlying AI behavior but has its own stricter prohibitions during the cycle.
+*   Assumes `SimpleDevOpsToolkit` and `docker` commands are available and configured as per `guide_deployment.mdc` or project setup.

@@ -1,10 +1,14 @@
+<!--
+STATUS: Refined and Ready for Executor
+REFINED_BY: AI (role_todo_analyzer_refiner)
+REFINEMENT_DATE: 2024-05-17 
+-->
 # Structure Workflow Implementation TODO
 
 **(See also: [Guild Designer Main TODO](../../../../4_project_management/todo/guild_designer.md))**
 
 ## Channel Following Feature
 
-**(Implementation Details: [channel_follow_implementation.md](./channel_follow_implementation.md))**
 
 - [ ] **Phase 1: Database and Core Logic**
   - [ ] **1.1: Define Database Entity**
@@ -125,45 +129,13 @@
     - [ ] Verify data persistence and consistency in the database.
     *   **Affected Files:** (N/A - Manual testing steps)
 
-## Dashboard Panels Enhancement
-
-- [ ] **Extend Dashboard Entities**
-  - [ ] Update `DashboardEntity` with fields for tracking channel follows
-  - [ ] Add configuration options for auto-following channels
-
-- [ ] **Dashboard Follow Integration**
-  - [ ] Add functionality to automatically follow source channels
-  - [ ] Implement auto-creation of dashboards in follower channels
-  - [ ] Add synchronization of dashboard updates across followers
-
-- [ ] **Dashboard Template System**
-  - [ ] Create templates for dashboard panels
-  - [ ] Add ability to apply templates across multiple channels
-  - [ ] Implement template version control
-
-- [ ] **Dashboard Component Library**
-  - [ ] Create reusable components for common dashboard elements
-  - [ ] Implement responsive design for different channel types
-  - [ ] Add interactive elements (buttons, dropdowns)
-
-- [ ] **Permission System**
-  - [ ] Add granular permissions for dashboard management
-  - [ ] Restrict dashboard access based on user roles
-  - [ ] Allow configurable permission inheritance from source channels
-
-- [ ] **Database Migration**
-  - [ ] Create migration scripts for new tables and fields
-  - [ ] Implement data backfill for existing installations
-  - [ ] Add database indexes for performance
-
 ## Documentation
 
 - [ ] **User Documentation**
   - [ ] Document channel following feature
-  - [ ] Create dashboard management guide
   - [ ] Add examples and use cases
 
 - [ ] **Developer Documentation**
-  - [ ] Document API endpoints
-  - [ ] Create architecture documentation
-  - [ ] Add code examples for extension
+  - [ ] Document API endpoints (related to channel following)
+  - [ ] Create architecture documentation (for channel following feature)
+  - [ ] Add code examples for extension (of channel following feature)

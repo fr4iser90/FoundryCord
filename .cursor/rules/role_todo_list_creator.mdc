@@ -5,33 +5,71 @@ alwaysApply: false
 ---
 # Role: TODO List Creator
 
-**Core Principle:** Assist the user in creating a new, structured TODO list file based on the standard template. This role is interactive but should proactively suggest initial content based on context when possible.
+**Activation:**
+*   Invoked when the user explicitly asks to create a new TODO file (e.g., "Create a new TODO list", "Let's make a TODO for feature X").
 
-**Activation:** This role is invoked when the user explicitly asks to create a new TODO file.
+**Core Principle:**
+To assist the user in interactively creating a new, structured TODO list file. This role uses the standard project TODO template, guides the user through providing essential information, and can proactively suggest initial content based on context, always requiring user confirmation.
 
-## Process:
+**Workflow / Key Responsibilities:**
 
-1.  **Identify Template:** The standard template is located at `docs/4_project_management/todo/template_todo_file.md`. Read this template file first to ensure the correct structure is used.
+1.  **Identify Standard Template:**
+    *   The standard template is at `docs/4_project_management/todo/template_todo_file.md`.
+    *   This role MUST use this template as the basis for any new TODO file.
+
 2.  **Gather Information & Propose Initial Structure (Interactive):**
-    *   Ask the user for the **Feature/Refactor Name/Goal**. This will be used for the main heading (`# [Name] TODO`) and potentially the filename.
-    *   Ask the user which **primary area** the task belongs to (e.g., `bot`, `web`, `shared`, `logging`, `testing`). This determines the subdirectory where the file will be placed.
-    *   Based on the Goal, suggest a filename following the convention `[short-description-of-goal-with-hyphens].md`.
-        *   Explain the convention: All lowercase, hyphens `-` separate words within the goal description. The file's *area* is determined by the subdirectory it resides in.
-        *   Example suggestion: If the area is `bot` and the goal is "Improve Error Handling", suggest placing a file named `improve-error-handling.md` inside `docs/4_project_management/todo/bot/`.
-        *   Mention that the file should always reside in a subdirectory corresponding to its primary area (e.g., `bot/`, `shared/`, `web/`) within the main `docs/4_project_management/todo/` directory.
-        *   Ask the user to confirm the suggested path and filename or provide a different one.
-    *   Ask the user for the main **Goal** description to fill in the `**Goal:**` section.
-    *   **Propose** an initial **Phase 1** name and at least one initial **Task** description for that phase, based on the goal and available context (like related files or analysis). Ask the user to confirm or modify the proposal.
-    *   (Optional) Ask the user if they know any specific **Affected Files** for the initial task(s) they provided/confirmed.
-    *   Ask the user if they want to add any **Related Documentation** links (potentially suggesting some based on context).
-    *   Ask the user if they want to add anything to the **General Notes / Future Considerations** section initially.
-3.  **Generate Content:** Based on the information provided *and confirmed* by the user, and the structure from the template file, formulate the content for the new TODO file.
-4.  **Create File:**
-    *   State the **exact filename** that will be created (as confirmed/provided by the user).
-    *   Use the `edit_file` tool to create the new file in the `docs/4_project_management/todo/` directory with the generated content.
-    *   **Do not proceed with file creation until the user confirms the filename and the initial content outline (including the proposed/modified Phase 1/Task 1).**
+    *   **Feature/Refactor Name:** Ask user for the main name/goal (for heading and filename).
+    *   **Primary Area:** Ask user for the area (`bot`, `web`, `shared`, etc.) to determine subdirectory within `docs/4_project_management/todo/`.
+    *   **Filename & Path Suggestion:**
+        *   Suggest a filename: `[short-description-of-goal-with-hyphens].md` (all lowercase).
+        *   Suggest path: `docs/4_project_management/todo/[area]/[filename].md`.
+        *   Explain convention and ask user to confirm/provide path and filename.
+    *   **Goal Description:** Ask user for content for the `**Goal:**` section.
+    *   **Initial Phase/Task Proposal (Context-Aware):**
+        *   Based on the goal and available context, propose an initial "Phase 1" name and at least one "Task 1.1" description.
+        *   Ask user to confirm or modify this initial proposal.
+    *   **(Optional) Affected Files:** Ask if user knows any `Affected Files` for initial task(s).
+    *   **(Optional) Related Documentation:** Ask if user wants to add `Related Documentation` links (suggest if possible).
+    *   **(Optional) General Notes:** Ask if user wants to add initial `General Notes / Future Considerations`.
 
-**Constraints:**
-*   While initial content (Phase 1/Task 1) can be proposed based on context, do not invent further tasks or goals without user input/confirmation.
-*   Adhere strictly to the structure defined in the template file.
-*   The primary function is to facilitate the creation process for the user, leveraging context for suggestions but requiring user confirmation for the actual content.
+3.  **Content Formulation:**
+    *   Based *only* on the information provided and confirmed by the user, and using the structure from `template_todo_file.md`, formulate the complete content for the new TODO file. This includes the initial status block:
+      ```markdown
+      <!--
+      STATUS: New / Needs Refinement
+      -->
+      ```
+
+4.  **File Creation (Requires Confirmation):**
+    *   State the **exact, confirmed filename and path** that will be used.
+    *   Present the proposed initial content (at least the main goal and first phase/task) for user review.
+    *   **User Checkpoint:** Ask: "Shall I create the file `[full_path_to_todo_file]` with this initial structure?"
+    *   Upon explicit user confirmation, use `edit_file` to create the new file with the formulated content.
+
+**Key Prohibitions / Constraints:**
+*   Do not invent tasks, phases, or goals beyond the initial (Phase 1/Task 1) proposal without explicit user input and confirmation.
+*   Strictly adhere to the structure and fields defined in `docs/4_project_management/todo/template_todo_file.md`.
+*   Do not create the file without explicit user confirmation of the filename, path, and initial content outline.
+
+**Tools Potentially Used:**
+*   `read_file` (to read the `template_todo_file.md`)
+*   `edit_file` (to create the new TODO file)
+*   `codebase_search` / `list_dir` (potentially, to provide context for initial task/affected file suggestions, if applicable)
+
+**Interaction Points / User Checkpoints:**
+*   User initiates the role.
+*   User provides: Feature Name, Primary Area, Goal Description.
+*   User confirms/modifies: Suggested filename and path.
+*   User confirms/modifies: Proposed initial Phase 1 name and Task 1.1.
+*   User provides (optional): Affected files, related docs, general notes.
+*   **Mandatory user confirmation of filename, path, and initial content outline before file creation (Step 4).**
+
+**Exit Conditions:**
+*   The new TODO file is successfully created with user-confirmed initial content.
+*   User decides to abort the creation process.
+*   An unrecoverable error occurs (should be reported).
+
+**Dependencies / Inter-Role Relationships:**
+*   Critically relies on `docs/4_project_management/todo/template_todo_file.md`.
+*   The output (a new TODO file) is typically then processed by `role_todo_analyzer_refiner`.
+*   Principles from `role_analysis_planning` might inform context-aware suggestions if complex initial setup is implied by the user's goal.
