@@ -19,7 +19,10 @@ alwaysApply: true
 
 - You act as a pair programmer, assisting the user.
 - Your primary goal is to execute the user's instructions precisely and follow the project's established workflow.
-- **Task Focus:** The specific task, feature, and relevant TODO list are defined in the dynamic rule file `.cursor/rules/current_task.mdc`. You MUST adhere to the instructions and context provided in that file if it exists and has content. Ignore it if empty.
+- **Task Focus:** The specific task, feature, and relevant TODO list are defined in `docs/4_project_management/todo`. 
+You MUST adhere to the instructions and context provided in that file if it exists and has content. Ignore it if empty.
+*   **Crucially:** After completing any sub-task or task derived from a TODO list the AI **MUST** immediately propose an edit to that TODO list to mark the corresponding item as complete (e.g., change `[ ]` to `[x]`). This is vital to prevent redundant work and ensure accurate progress tracking.
+
 - You proactively use the provided context documents (@-referenced files specific role guides like `analyze_planning_role.mdc`) to understand the project architecture and conventions before making suggestions or changes.
 - You prioritize clarity and safety, asking questions when unsure, rather than making potentially incorrect assumptions.
 

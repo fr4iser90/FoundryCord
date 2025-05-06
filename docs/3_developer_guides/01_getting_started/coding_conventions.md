@@ -1,11 +1,13 @@
 # 8. Coding Conventions & Patterns
 
+This document outlines the coding style, naming conventions, design patterns, and other best practices to be followed when contributing to the FoundryCord project. Adhering to these conventions ensures code consistency, readability, and maintainability.
+
 ## Code Style
 
-*   **Python:** PEP 8. Enforced by Black (formatting) and Flake8 (linting). Configuration likely standard, check root config files if needed (`pyproject.toml`? `.flake8`?).
-*   **JavaScript:** [Needs Definition - Specify standard, e.g., StandardJS, Airbnb, Prettier defaults]. No explicit linter/formatter configuration found in project structure. Recommend adding Prettier/ESLint.
-*   **CSS:** [Needs Definition - Specify standard, e.g., BEM, stylelint rules]. `kebab-case` seems to be used for class names. Recommend adding stylelint.
-*   **Imports (Python):** Follow standard PEP 8 guidelines. Use of `isort` is recommended but not explicitly configured.
+*   **Python:** [PEP 8](https://www.python.org/dev/peps/pep-0008/) is the standard. Code formatting is strictly enforced by [Black](https://black.readthedocs.io/), and linting by [Flake8](https://flake8.pycqa.org/). Refer to the project\'s `pyproject.toml` (for Black) and `.flake8` (if present, otherwise defaults) for specific configurations.
+*   **JavaScript:** *Currently, no specific linter (e.g., ESLint) or formatter (e.g., Prettier) is formally configured in the project.* If these tools are adopted, this section must be updated with links to their configuration and chosen style guide (e.g., StandardJS, Airbnb).
+*   **CSS:** *Currently, no specific linter (e.g., Stylelint) is formally configured.* If adopted, link to its configuration here. For class names, `kebab-case` is predominantly used (see Naming Conventions).
+*   **Imports (Python):** Follow standard PEP 8 guidelines. The use of [isort](https://pycqa.github.io/isort/) is highly recommended to automatically sort imports, which improves readability and helps prevent merge conflicts. *Currently, `isort` is not explicitly configured in CI/pre-commit hooks.*
 
 ## Naming Conventions
 
@@ -16,8 +18,8 @@
 *   **JavaScript Variables:** `camelCase` (Assumed standard)
 *   **JavaScript Functions:** `camelCase` (Assumed standard)
 *   **JavaScript Classes:** `PascalCase` (Assumed standard)
-*   **JavaScript Modules:** Mixed (`camelCase.js` and `kebab-case.js` observed). [Needs Consistency Definition - Prefer `camelCase.js` or `PascalCase.js`?]
-*   **CSS Classes:** `kebab-case` (e.g., `widget-header`, `btn-primary`).
+*   **JavaScript Modules:** Mixed (`camelCase.js` and `kebab-case.js` observed in some areas). *A consistent standard (e.g., `kebab-case.js` for general modules, `PascalCase.js` if the file primarily exports a class of the same name) should be decided upon and enforced.*
+*   **CSS Classes:** `kebab-case` (e.g., `widget-header`, `btn-primary`). This is the preferred and observed convention.
 *   **Database Tables:** `snake_case`, plural (e.g., `app_users`, `guild_templates`).
 *   **Database Columns:** `snake_case`.
 
@@ -47,10 +49,10 @@ List key design patterns observed or intended in the project:
 
 ## Comments
 
-*   Use comments primarily to explain *why* a piece of code exists or why a complex decision was made, not *what* the code does (unless exceptionally complex).
-*   Use **Docstrings (Google Style)** for all public modules, classes, functions, and methods.
-*   Keep comments up-to-date with code changes.
-*   Avoid commented-out code; use version control (Git) instead.
+*   Use comments primarily to explain **why** a piece of code exists or **why** a complex decision was made, not *what* the code does (unless the code is exceptionally complex and its operation isn\'t obvious from reading it).
+*   **Docstrings (Google Style):** All public modules, classes, functions, and methods **must** have docstrings following the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings).
+*   Keep comments and docstrings **up-to-date** with code changes.
+*   **Avoid commented-out code.** Use version control (Git) to track historical code.
 
 ## Testing
 

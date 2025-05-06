@@ -1,3 +1,9 @@
+# Logging Guidelines
+
+This document provides comprehensive guidelines for implementing logging within the FoundryCord Bot, Web Application, and related infrastructure components. Consistent and effective logging is crucial for development, debugging, monitoring, and auditing the system.
+
+---
+
 # Bot Logging Guidelines
 
 **Goal:** Ensure consistent, useful, and appropriately detailed logging across the bot application.

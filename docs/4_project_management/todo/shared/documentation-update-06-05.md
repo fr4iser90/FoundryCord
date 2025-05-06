@@ -12,7 +12,7 @@
 
 *   [x] **Task 1.1:** Correct outdated links in the main `README.md`.
     *   **Affected Files:** `README.md`
-*   [ ] **Task 1.2:** Enhance `README.md` - Project's "Storefront".
+*   [x] **Task 1.2:** Enhance `README.md` - Project's "Storefront".
     *   **Focus:**
         *   Craft a compelling "Elevator Pitch" / Value Proposition.
         *   Clearly list key features and their primary benefits to the user.
@@ -21,14 +21,14 @@
         *   Hint at 1-2 major planned features (e.g., music bot integration).
         *   Ensure "Quick Setup" is flawless and tested.
     *   **Affected Files:** `README.md`
-*   [ ] **Task 1.3:** Audit and Enhance `docs/1_introduction/`
+*   [x] **Task 1.3:** Audit and Enhance `docs/1_introduction/`
     *   **Sub-Task 1.3.1:** Review `tech_stack.md`.
         *   **Focus:** Accuracy, rationale for choices (briefly), links to official tech docs.
         *   **Affected Files:** `docs/1_introduction/tech_stack.md`
     *   **Sub-Task 1.3.2:** Create `docs/1_introduction/glossary.md`.
         *   **Focus:** Define all project-specific terms, DDD ubiquitous language terms, and potentially technical terms that might be ambiguous. This is a living document to be updated throughout the audit.
         *   **Affected Files:** `docs/1_introduction/glossary.md` (New File)
-*   [ ] **Task 1.4 (CRITICAL):** Audit and Overhaul `docs/3_developer_guides/02_architecture/overview.md`.
+*   [x] **Task 1.4 (CRITICAL):** Audit and Overhaul `docs/3_developer_guides/02_architecture/overview.md`.
     *   **Focus:**
         *   **Clarity:** Is it the absolute best starting point for a new developer?
         *   **Diagrams:**
@@ -40,7 +40,7 @@
 
 ## Phase 2: Developer Guides - Detailed Architecture & Design (Audit & Enhance)
 
-*   [ ] **Task 2.1:** Audit `docs/3_developer_guides/01_getting_started/`.
+*   [x] **Task 2.1:** Audit `docs/3_developer_guides/01_getting_started/`.
     *   **Focus:** Ensure `setup.md` is 100% accurate and tested by a "new user" perspective. Verify `coding_conventions.md`, `contribution.md`, `logging_guidelines.md`, and `testing_guidelines.md` are comprehensive, up-to-date, and actionable.
     *   **Affected Files:** All files in `docs/3_developer_guides/01_getting_started/`
 *   [ ] **Task 2.2:** Deep dive into `docs/3_developer_guides/02_architecture/` (excluding `overview.md`).

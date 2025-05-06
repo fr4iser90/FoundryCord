@@ -23,7 +23,7 @@ FoundryCord empowers Discord server administrators with a powerful suite of tool
 1.  **Prepare Docker Environment:**
     *   Navigate to the `docker/` directory.
     *   Copy the example environment file: `cp .env.example .env`
-    *   Edit the `.env` file to add your `DISCORD_BOT_TOKEN` and set necessary passwords (e.g., `POSTGRES_PASSWORD`, `APP_DB_PASSWORD`). Refer to the main documentation for details on all variables.
+    *   **Crucial:** Edit the `.env` file. You **must** provide your `DISCORD_BOT_TOKEN`. You should also set strong, unique passwords for `POSTGRES_PASSWORD` and `APP_DB_PASSWORD`. Consult the main documentation for details on all available environment variables and their impact.
 
 2.  **Start Services:**
     *   From the project root directory, run:

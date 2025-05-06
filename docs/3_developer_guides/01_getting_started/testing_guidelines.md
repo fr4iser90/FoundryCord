@@ -1,6 +1,8 @@
-# Testing Guidelines (FoundryCord Bot)
+# Testing Guidelines
 
-**Goal:** Ensure code quality, maintainability, and prevent regressions through consistent and effective testing practices.
+This document outlines the philosophy, tools, conventions, and best practices for writing tests within the FoundryCord project. Adhering to these guidelines helps ensure code quality, maintainability, and prevents regressions.
+
+**Goal:** Ensure code quality, maintainability, and prevent regressions through consistent and effective testing practices across all components of FoundryCord (Bot, Web, Shared).
 
 ## Testing Philosophy
 

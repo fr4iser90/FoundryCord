@@ -1,82 +1,238 @@
 # 4. Database Schema
 
+This document provides an overview of the FoundryCord database schema, designed to support its various features for Discord server management, template design, and user interaction. Understanding the schema is crucial for developers working on features that involve data persistence or retrieval.
+
 ## Overview
 
-Provide a high-level overview of the database design.
 *   **Type:** PostgreSQL
 *   **ORM:** SQLAlchemy (v2.x)
-*   **Migration Tool:** Alembic (Located in `app/shared/infrastructure/database/migrations`)
+*   **Migration Tool:** Alembic (Migration scripts located in `app/shared/infrastructure/database/migrations`)
 
 ## Entity Relationship Diagram (ERD)
 
-*Include an image or link to an ERD diagram visualization if possible.* This is the best way to understand the relationships.
+Below is an Entity Relationship Diagram illustrating the key tables and their relationships. Due to the number of tables, this ERD focuses on the core entities and their most significant connections. More detailed relationships are described in the "Key Tables" section.
 
-(Placeholder for ERD image/link)
+```mermaid
+erDiagram
+    APP_USERS {
+        int id PK
+        string discord_id UK "Unique Discord User ID"
+        string username
+        string avatar
+        boolean is_owner
+        datetime created_at
+        datetime updated_at
+    }
 
-## Key Tables
+    APP_ROLES {
+        int id PK
+        string name UK
+        string description
+    }
 
-Describe the purpose and key columns/relationships for important tables (Based on models in `app/shared/infrastructure/models/`):
+    DISCORD_GUILDS {
+        string guild_id PK "Discord Guild ID"
+        string guild_name
+        string icon_hash
+        datetime created_at
+        datetime updated_at
+    }
 
-*   **`app_users`:** (`auth/user_entity.py`)
-    *   Stores application user information, often linked to Discord accounts.
-    *   Key Columns: `id` (PK, Int), `discord_id` (String, unique), `username`, `avatar`, `is_owner` (Boolean).
-    *   Relationships: `guild_roles` (to `discord_guild_users`), `sessions`, `keys`.
-*   **`discord_guilds`:** (`discord/entities/guild_entity.py`)
-    *   Stores basic information about Discord servers (guilds) the bot has interacted with.
-    *   Key Columns: `guild_id` (PK, String), `guild_name`, `icon_hash`.
-    *   Relationships: `user_roles` (to `discord_guild_users`), `config`, `structure_template`.
-*   **`guild_configs`:** (`discord/entities/guild_config_entity.py`)
-    *   Stores bot configuration specific to each guild.
-    *   Key Columns: `id` (PK, Int), `guild_id` (FK to `discord_guilds.guild_id`, unique), `config_data` (JSON), `active_template_id` (FK to `guild_templates.id`, nullable).
-    *   Relationships: `guild`.
-*   **`discord_guild_users`:** (`discord/entities/guild_user_entity.py`)
-    *   Associates application users with guilds and assigns them a role within that guild context.
-    *   Key Columns: `id` (PK, Int), `guild_id` (FK to `discord_guilds.guild_id`), `user_id` (FK to `app_users.id`), `role_id` (FK to `app_roles.id`).
-    *   Constraints: `UniqueConstraint('guild_id', 'user_id')`.
-    *   Relationships: `user`, `role`, `guild`.
-*   **`guild_templates`:** (`guild_templates/guild_template_entity.py`)
-    *   Main table for guild structure templates (user-saved or initial snapshots).
-    *   Key Columns: `id` (PK, Int), `guild_id` (FK to `discord_guilds.guild_id`, nullable, index, ondelete='SET NULL'), `template_name` (String), `template_description` (Text), `creator_user_id` (FK to `app_users.id`, nullable, index, ondelete='SET NULL'), `is_shared` (Boolean), `created_at` (DateTime), `updated_at` (DateTime).
-    *   Note: `is_initial_snapshot` is implied by `creator_user_id IS NULL`.
-    *   Relationships: `categories` (1-M), `channels` (1-M), `guild`, `creator`.
-*   **`guild_template_categories`:** (`guild_templates/guild_template_category_entity.py`)
-    *   Stores categories belonging to a specific template.
-    *   Key Columns: `id` (PK, Int), `guild_template_id` (FK to `guild_templates.id`, index, ondelete='CASCADE'), `category_name` (String), `position` (Int), `metadata_json` (JSON).
-    *   Relationships: `guild_template`, `channels` (1-M), `permissions` (1-M).
-*   **`guild_template_channels`:** (`guild_templates/guild_template_channel_entity.py`)
-    *   Stores channels belonging to a specific template.
-    *   Key Columns: `id` (PK, Int), `guild_template_id` (FK to `guild_templates.id`, index, ondelete='CASCADE'), `channel_name` (String), `channel_type` (String), `position` (Int), `topic` (Text), `is_nsfw` (Boolean), `slowmode_delay` (Int), `parent_category_template_id` (FK to `guild_template_categories.id`, nullable, index, ondelete='SET NULL'), `metadata_json` (JSON).
-    *   Relationships: `guild_template`, `parent_category`, `permissions` (1-M).
-*   **`guild_template_category_permissions`:** (`guild_templates/guild_template_category_permission_entity.py`)
-    *   Stores permission overwrites for a role on a template category.
-    *   Key Columns: `id` (PK, Int), `category_template_id` (FK to `guild_template_categories.id`, index, ondelete='CASCADE'), `role_name` (String), `allow_permissions_bitfield` (BigInt), `deny_permissions_bitfield` (BigInt).
-    *   Relationships: `category_template`.
-*   **`guild_template_channel_permissions`:** (`guild_templates/guild_template_channel_permission_entity.py`)
-    *   Stores permission overwrites for a role on a template channel.
-    *   Key Columns: `id` (PK, Int), `channel_template_id` (FK to `guild_template_channels.id`, index, ondelete='CASCADE'), `role_name` (String), `allow_permissions_bitfield` (BigInt), `deny_permissions_bitfield` (BigInt).
-    *   Relationships: `channel_template`.
-*   **`ui_layouts`:** (`ui/ui_layout_entity.py`)
-    *   Stores user-specific UI layout configurations (e.g., Gridstack positions).
-    *   Key Columns: `id` (PK, Int), `user_id` (FK to `app_users.id`), `page_identifier` (String, index), `layout_data` (JSON), `created_at` (DateTime), `updated_at` (DateTime).
-    *   Constraints: `UniqueConstraint('user_id', 'page_identifier')`.
-    *   Relationships: `user`.
+    DISCORD_GUILD_USERS {
+        int id PK
+        string guild_id FK "References DISCORD_GUILDS"
+        int user_id FK "References APP_USERS"
+        int role_id FK "References APP_ROLES"
+        datetime joined_at
+        string nickname
+    }
 
-*(Add other important tables like `app_roles`, `sessions`, `api_keys` etc. as needed)*
+    GUILD_CONFIGS {
+        int id PK
+        string guild_id FK "References DISCORD_GUILDS, Unique"
+        json config_data
+        int active_template_id FK "References GUILD_TEMPLATES (nullable)"
+        datetime created_at
+        datetime updated_at
+    }
 
-## Relationships
+    GUILD_TEMPLATES {
+        int id PK
+        string guild_id FK "References DISCORD_GUILDS (nullable, for original snapshot)"
+        string template_name
+        text template_description
+        int creator_user_id FK "References APP_USERS (nullable)"
+        boolean is_shared
+        datetime created_at
+        datetime updated_at
+    }
 
-Briefly describe key relationships (See details in table descriptions above):
+    GUILD_TEMPLATE_CATEGORIES {
+        int id PK
+        int guild_template_id FK "References GUILD_TEMPLATES"
+        string category_name
+        int position
+        json metadata_json
+    }
 
-*   One-to-Many: `guild_templates` -> `guild_template_categories`, `guild_template_channels`.
-*   One-to-Many: `guild_template_categories` -> `guild_template_channels` (via `parent_category_template_id`).
-*   One-to-Many: `guild_template_categories` -> `guild_template_category_permissions`.
-*   One-to-Many: `guild_template_channels` -> `guild_template_channel_permissions`.
-*   Many-to-One: `discord_guild_users` -> `app_users`, `discord_guilds`, `app_roles`.
-*   One-to-One (effectively via unique constraint): `discord_guilds` -> `guild_configs`.
-*   One-to-Many: `app_users` -> `ui_layouts`.
+    GUILD_TEMPLATE_CHANNELS {
+        int id PK
+        int guild_template_id FK "References GUILD_TEMPLATES"
+        string channel_name
+        string channel_type
+        int position
+        text topic
+        boolean is_nsfw
+        int slowmode_delay
+        int parent_category_template_id FK "References GUILD_TEMPLATE_CATEGORIES (nullable)"
+        json metadata_json
+    }
+
+    GUILD_TEMPLATE_CATEGORY_PERMISSIONS {
+        int id PK
+        int category_template_id FK "References GUILD_TEMPLATE_CATEGORIES"
+        string role_name "Or FK to a potential app_roles or discord_roles table"
+        bigint allow_permissions_bitfield
+        bigint deny_permissions_bitfield
+    }
+
+    GUILD_TEMPLATE_CHANNEL_PERMISSIONS {
+        int id PK
+        int channel_template_id FK "References GUILD_TEMPLATE_CHANNELS"
+        string role_name "Or FK to a potential app_roles or discord_roles table"
+        bigint allow_permissions_bitfield
+        bigint deny_permissions_bitfield
+    }
+
+    UI_LAYOUTS {
+        int id PK
+        int user_id FK "References APP_USERS"
+        string page_identifier "e.g., 'dashboard_main', 'guild_designer'"
+        json layout_data "Gridstack layout configuration"
+        datetime created_at
+        datetime updated_at
+    }
+
+    SESSIONS {
+        string session_id PK
+        int user_id FK "References APP_USERS"
+        datetime expires_at
+        json data
+    }
+
+    API_KEYS {
+        string key_hash PK
+        int user_id FK "References APP_USERS"
+        string description
+        datetime expires_at
+        datetime created_at
+    }
+
+    AUDIT_LOGS {
+        int id PK
+        int user_id FK "References APP_USERS (nullable, for system actions)"
+        string action
+        json details
+        datetime timestamp
+    }
+
+    APP_USERS ||--o{ DISCORD_GUILD_USERS : "participates_in"
+    DISCORD_GUILDS ||--o{ DISCORD_GUILD_USERS : "has_member"
+    APP_ROLES ||--o{ DISCORD_GUILD_USERS : "assigned_to"
+    DISCORD_GUILDS ||--|| GUILD_CONFIGS : "has_one"
+    DISCORD_GUILDS ||--o{ GUILD_TEMPLATES : "can_have_snapshot_of (original)"
+    APP_USERS ||--o{ GUILD_TEMPLATES : "created_by"
+    GUILD_TEMPLATES ||--o{ GUILD_TEMPLATE_CATEGORIES : "contains"
+    GUILD_TEMPLATES ||--o{ GUILD_TEMPLATE_CHANNELS : "contains (direct or via category)"
+    GUILD_TEMPLATE_CATEGORIES ||--o{ GUILD_TEMPLATE_CHANNELS : "contains"
+    GUILD_TEMPLATE_CATEGORIES ||--o{ GUILD_TEMPLATE_CATEGORY_PERMISSIONS : "has_permissions_for"
+    GUILD_TEMPLATE_CHANNELS ||--o{ GUILD_TEMPLATE_CHANNEL_PERMISSIONS : "has_permissions_for"
+    APP_USERS ||--o{ UI_LAYOUTS : "has_layout_for"
+    APP_USERS ||--o{ SESSIONS : "has"
+    APP_USERS ||--o{ API_KEYS : "owns"
+    APP_USERS ||--o{ AUDIT_LOGS : "performed_by (optional)"
+    GUILD_CONFIGS }o--|| GUILD_TEMPLATES : "activates (optional)"
+
+```
+
+## Key Tables & Domain Meaning
+
+This section describes the purpose of key tables, their domain meaning, and how they relate to DDD concepts like Entities and Aggregates. The table names generally correspond to SQLAlchemy models found in `app/shared/infrastructure/models/`.
+
+*   **`app_users`** (Entity: `AppUser`)
+    *   **Domain Meaning:** Represents a user of the FoundryCord application. This user may or may not be linked to a Discord account initially but often is. This table is central to authentication, authorization, and tracking user-specific configurations (like UI layouts) or actions (audit logs, template creation).
+    *   Key Columns: `id` (PK), `discord_id` (UK, links to Discord identity), `username`, `is_owner`.
+    *   Relationships: Many-to-many with `discord_guilds` via `discord_guild_users`; one-to-many with `sessions`, `api_keys`, `ui_layouts`, `guild_templates` (as creator), `audit_logs`.
+
+*   **`app_roles`** (Entity: `AppRole` - *Assumed, needs model verification*)
+    *   **Domain Meaning:** Defines application-specific roles (e.g., 'Admin', 'Moderator', 'Designer') used for FoundryCord\'s internal permission system, distinct from Discord roles.
+    *   Key Columns: `id` (PK), `name` (UK).
+    *   Relationships: One-to-many with `discord_guild_users` (a user has an app role within a specific guild context for FoundryCord features).
+
+*   **`discord_guilds`** (Entity: `DiscordGuild`)
+    *   **Domain Meaning:** Represents a Discord server (guild) that has been onboarded or interacted with by FoundryCord. It acts as a root for guild-specific configurations and data.
+    *   Key Columns: `guild_id` (PK, Discord snowflake), `guild_name`.
+    *   Relationships: One-to-one with `guild_configs`; one-to-many with `discord_guild_users`, `guild_templates` (for initial snapshots).
+
+*   **`discord_guild_users`** (Association Table)
+    *   **Domain Meaning:** Links an `app_user` to a `discord_guild` and assigns them an `app_role` within the context of that guild for FoundryCord. This defines a user\'s specific permissions/role for FoundryCord features related to a particular guild.
+    *   Key Columns: `guild_id` (FK), `user_id` (FK), `role_id` (FK).
+
+*   **`guild_configs`** (Entity: `GuildConfig`)
+    *   **Domain Meaning:** Stores bot and application configurations specific to a particular `discord_guild`. This includes settings like command prefixes (if any), feature toggles for that guild, and importantly, the `active_template_id` which links to the currently applied guild structure template.
+    *   Key Columns: `guild_id` (FK, UK), `config_data` (JSON), `active_template_id` (FK).
+
+*   **`guild_templates`** (Aggregate Root, Entity: `GuildTemplate`)
+    *   **Domain Meaning:** This is a central entity representing a saved, reusable Discord server structure. It\'s the core of the Guild Designer feature. A template can be an initial snapshot of an existing guild or a user-designed structure.
+    *   **As an Aggregate:** A `GuildTemplate` is the root of an aggregate that includes `GuildTemplateCategories`, `GuildTemplateChannels`, and their respective permission overrides. Changes to the template structure are managed through the `GuildTemplate` root.
+    *   Key Columns: `id` (PK), `template_name`, `creator_user_id` (FK), `is_shared`.
+    *   Relationships: One-to-many with `guild_template_categories` and `guild_template_channels`.
+
+*   **`guild_template_categories`** (Entity: `GuildTemplateCategory`, part of `GuildTemplate` Aggregate)
+    *   **Domain Meaning:** Defines a category within a `guild_template`.
+    *   Key Columns: `guild_template_id` (FK), `category_name`, `position`.
+    *   Relationships: One-to-many with `guild_template_channels` (as parent), one-to-many with `guild_template_category_permissions`.
+
+*   **`guild_template_channels`** (Entity: `GuildTemplateChannel`, part of `GuildTemplate` Aggregate)
+    *   **Domain Meaning:** Defines a channel (text, voice, etc.) within a `guild_template`, optionally parented by a `guild_template_category`.
+    *   Key Columns: `guild_template_id` (FK), `channel_name`, `channel_type`, `parent_category_template_id` (FK).
+    *   Relationships: One-to-many with `guild_template_channel_permissions`.
+
+*   **`guild_template_category_permissions`** / **`guild_template_channel_permissions`** (Value Objects or Entities, part of `GuildTemplate` Aggregate)
+    *   **Domain Meaning:** Define permission overwrites (allow/deny bitfields) for a specific role (identified by `role_name`) on a template category or channel. The `role_name` would ideally map to Discord roles that are expected to exist when the template is applied.
+
+*   **`ui_layouts`** (Entity: `UILayout`)
+    *   **Domain Meaning:** Stores user-specific UI layout customizations, primarily for drag-and-drop dashboards (e.g., Gridstack positions for widgets on a specific page).
+    *   Key Columns: `user_id` (FK), `page_identifier` (UK with user_id), `layout_data` (JSON).
+
+*   **`sessions`** (Entity: `Session`)
+    *   **Domain Meaning:** Manages user sessions for the web application, enabling persistent logins.
+    *   Key Columns: `session_id` (PK), `user_id` (FK), `expires_at`.
+
+*   **`api_keys`** (Entity: `ApiKey`)
+    *   **Domain Meaning:** Stores API keys that can be issued to users for programmatic access to FoundryCord\'s API.
+    *   Key Columns: `key_hash` (PK), `user_id` (FK), `expires_at`.
+
+*   **`audit_logs`** (Entity: `AuditLog`)
+    *   **Domain Meaning:** Records significant actions performed by users or the system for auditing and troubleshooting purposes.
+    *   Key Columns: `user_id` (FK, nullable), `action`, `details` (JSON).
+
+*(This list is not exhaustive but covers the main entities. Other tables like `security_keys`, `log_entries`, `state_snapshots`, etc., support specific infrastructure or operational concerns.)*
+
+## Relationships & Data Integrity
+
+*   **Foreign Keys:** Enforce referential integrity between related tables (e.g., a `guild_config` must belong to an existing `discord_guild`). `ON DELETE` policies (e.g., `CASCADE`, `SET NULL`) are defined in the SQLAlchemy models to manage cascading effects.
+*   **Indexes:** Primary keys are automatically indexed. Foreign keys and frequently queried columns (especially those used in `WHERE` clauses or `JOIN` conditions) are indexed to improve query performance (e.g., `guild_id` on `guild_templates`).
+*   **Unique Constraints:** Ensure data uniqueness where required (e.g., a user can only have one layout for a specific page `(user_id, page_identifier)` in `ui_layouts`; `discord_id` in `app_users`).
 
 ## Indexing Strategy
 
-*   Key indexes are defined on primary keys and foreign keys (see `index=True` in models).
-*   Specific indexes exist on `guild_templates.guild_id`, `guild_templates.creator_user_id`, `ui_layouts.page_identifier`.
-*   Unique constraints enforce data integrity (e.g., `discord_guild_users`, `ui_layouts`). 
+*   Primary keys are automatically indexed.
+*   Foreign keys are generally indexed (as specified by `index=True` in SQLAlchemy models) to optimize join operations.
+*   Specific indexes are created for columns frequently used in lookups or filtering, for example:
+    *   `app_users.discord_id`
+    *   `guild_templates.guild_id`
+    *   `guild_templates.creator_user_id`
+    *   `ui_layouts.page_identifier`
+    *   `guild_configs.active_template_id`
+*   Unique constraints (e.g., on `discord_guild_users (guild_id, user_id)`, `ui_layouts (user_id, page_identifier)`) also create implicit indexes and enforce data integrity. 
