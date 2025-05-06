@@ -1,8 +1,10 @@
-# State Monitor Feature
+# User Guide: State Monitor (Developer & Owner Tool)
 
 ## Purpose
 
-The State Monitor is a developer and owner-facing diagnostic tool designed to capture and display the internal state of both the backend (Python server) and the frontend (browser JavaScript) at a specific point in time. It acts like an X-ray, providing valuable insights for debugging issues, understanding application behavior, and generating context for bug reports. Snapshots can be triggered manually, automatically on frontend errors, or internally by backend processes, and are stored persistently in the database.
+The State Monitor is a powerful diagnostic tool for developers and application owners. It allows you to capture, store, and analyze detailed snapshots of the internal state of both the backend (Python server) and the frontend (browser JavaScript) at specific moments. Think of it as an X-ray for your application, providing invaluable insights for debugging complex issues, understanding application behavior under various conditions, and generating comprehensive context for bug reports.
+
+`[SCREENSHOT: Main State Monitor interface - overall view showing Collectors List, Recent Snapshots, and Main Area with a loaded snapshot]`
 
 ## Key Features
 
@@ -14,38 +16,45 @@ The State Monitor is a developer and owner-facing diagnostic tool designed to ca
     *   **Manual Capture:** Initiate snapshots directly from the UI.
     *   **Automatic on JS Error:** Captures frontend state automatically when a JavaScript error occurs.
     *   **Internal Backend Trigger:** Allows backend systems to capture server state programmatically.
-*   **Interactive JSON Viewer:** State data is presented in a collapsible/expandable tree view.
-    *   **Search/Highlighting:** Filter and highlight specific keys or values.
-*   **Enhanced Browser State Rendering:** Console logs (`consoleLogs`) and JavaScript errors (`javascriptErrors`) are displayed in structured, readable formats.
+*   **Interactive JSON Viewer:** State data (which is often deeply nested JSON) is presented in a user-friendly, collapsible/expandable tree view. `[SCREENSHOT: Interactive JSON viewer showing an expanded section with search/highlighting in use]`
+    *   **Search/Highlighting:** Allows you to quickly filter the JSON tree and highlight specific keys or values.
+*   **Enhanced Browser State Rendering:** Console logs (`consoleLogs`) and JavaScript errors (`javascriptErrors`) captured from the browser are displayed in structured, readable formats within the snapshot details.
 *   **Contextual Information:** Snapshots include metadata about their trigger (`user_capture`, `js_error`, `internal_api`) and context.
 *   **Collector Filtering:** Search bar to filter the list of available collectors.
 *   **`computedStyles` Collector:** Capture computed CSS styles for specific DOM elements.
-*   **UI Panels:**
-    *   **Collectors List (Left):** Select server and browser collectors.
-    *   **Recent Snapshots (Right):** View a list of recently captured snapshots, load them for analysis, or delete them.
-    *   **Main Area (Grid Layout):**
-        *   **Snapshot Summary:** Displays key metadata about the currently loaded snapshot.
-        *   **Snapshot Results:** Shows the detailed snapshot data in tabs (Server, Browser, Combined).
+*   **UI Panels (Main Interface Components):**
+    *   **Collectors List Panel (Typically Left):** Lists available server-side and browser-side state collectors. You can select which ones to include in a manual snapshot. Includes a search bar to filter this list.
+        `[SCREENSHOT: Collectors List Panel, showing server/browser sections and selection checkboxes]`
+    *   **Recent Snapshots Panel (Typically Right):** Displays a list of recently captured snapshots with timestamps and trigger types. From here, you can load snapshots for viewing or delete them.
+        `[SCREENSHOT: Recent Snapshots Panel, with several snapshots listed, highlighting 'Load' and 'Delete' buttons for one entry]`
+    *   **Main Display Area (Central, often with a configurable grid layout):**
+        *   **Snapshot Summary Widget:** Displays key metadata about the currently loaded snapshot (e.g., timestamp, trigger, collectors used).
+        *   **Snapshot Results Widget:** Shows the detailed snapshot data, usually in tabs (e.g., "Server State," "Browser State," "Combined View") utilizing the interactive JSON viewer.
 
 ## Usage Workflow
 
-1.  **Navigation:** Access the tool via `/owner/state-monitor/`.
+1.  **Navigation:** Access the State Monitor tool via the owner-specific section of the web interface, typically at a URL like `/owner/state-monitor/`.
 2.  **View Recent Snapshots (Right Panel):**
-    *   A list of recently captured snapshots is displayed with timestamps and IDs.
-    *   Click **"Load"** to view a specific snapshot's details in the main area (Summary and Results panels).
-    *   Click the **Trash Icon** <i class="fas fa-trash-alt"></i> to delete a snapshot (confirmation required).
-3.  **Capture a New Snapshot (Manual):**
-    *   **Scope Selection (Toolbar):** Optionally filter collectors by "All", "Bot", or "Web".
-    *   **Collector Selection (Left Panel):** Check the desired server and browser collectors. Handle browser collector approval prompts if necessary (using the custom modal).
-    *   **Click "Capture" (Toolbar):** This triggers the capture process, stores the snapshot in the database, and updates the "Recent Snapshots" list. The new snapshot is *not* automatically loaded for viewing.
-4.  **Analyze Loaded Snapshot (Main Area):**
-    *   **Summary Panel:** View timestamp, trigger source, and basic collector info.
-    *   **Results Panel:** Explore the detailed data using the tabs and the interactive JSON viewer (including search).
-5.  **Other Controls (Toolbar):**
-    *   **Refresh:** Reloads collector and recent snapshot lists.
-    *   **Download:** Saves the *currently loaded* snapshot as a JSON file.
-    *   **Copy Snapshot:** Copies the *currently loaded* snapshot JSON to the clipboard.
-    *   **(Layout Controls):** Lock/Unlock and Reset the grid layout of the main area panels.
+    *   The "Recent Snapshots" panel lists previously captured snapshots.
+    *   Click the **"Load"** button next to a snapshot entry to view its details in the Main Display Area.
+    *   Click the **Trash Icon** (`<i class="fas fa-trash-alt"></i>` or similar icon) next to a snapshot to delete it. A confirmation will be required.
+3.  **Capture a New Snapshot Manually:**
+    *   **Optional Scope Filtering (Toolbar):** Use the filter buttons/dropdown in the toolbar (e.g., "All," "Bot-Related," "Web-Related") to narrow down the list of collectors shown in the Collectors List Panel.
+        `[SCREENSHOT: Toolbar showing scope filter options for collectors]`
+    *   **Select Collectors (Left Panel):** In the Collectors List Panel, check the boxes next to the server-side and browser-side collectors whose data you want to include in this snapshot.
+        *   *Browser Collector Approval:* For some browser collectors (especially those accessing potentially sensitive information like DOM details or console logs), you might be prompted by a custom modal or a browser permission dialog to approve their use if it\'s the first time or approval isn\'t persistent. Grant permission if you intend to use them.
+    *   **Click "Capture" Button (Toolbar):** Once collectors are selected, click the main **"Capture"** button, usually prominent in the toolbar.
+        `[SCREENSHOT: Toolbar highlighting the main 'Capture' button]`
+    *   This action triggers the state capture process. The new snapshot is saved to the database and will appear at the top of the "Recent Snapshots" list. *Note: The newly captured snapshot is NOT automatically loaded into the viewer; you need to click "Load" on it from the list.*
+4.  **Analyze a Loaded Snapshot (Main Display Area):**
+    *   **Snapshot Summary Widget:** Review the metadata: When was it captured? What triggered it (manual, JS error, internal)? Which collectors were active?
+    *   **Snapshot Results Widget:** Dive into the data. Use the tabs to switch between Server, Browser, or Combined views. Utilize the interactive JSON viewer to expand/collapse sections and use its search bar to find specific keys or values relevant to your investigation.
+5.  **Other Toolbar Controls:**
+    *   **Refresh:** Click to reload the list of available collectors and the "Recent Snapshots" list from the server.
+    *   **Download:** Saves the JSON data of the *currently loaded* snapshot to a local file (`.json`).
+    *   **Copy Snapshot:** Copies the JSON data of the *currently loaded* snapshot to your clipboard.
+    *   **Layout Controls (e.g., Lock/Unlock Grid, Reset Layout):** If the main display area uses a customizable grid (like Gridstack.js), these controls allow you to rearrange, lock, or reset the layout of the Summary and Results widgets.
+        `[SCREENSHOT: Toolbar showing Refresh, Download, Copy, and Layout control buttons]`
 
 ## Trigger Scenarios & Data Flow
 
@@ -91,13 +100,24 @@ The State Monitor is a developer and owner-facing diagnostic tool designed to ca
 *   **`features` (Scope: browser, Auto-approved):** Detection of browser features like localStorage, WebSockets, etc.
 *   **`domSummary` (Scope: browser, Requires Approval):** Summary of the page structure (element counts, title, body classes). *Does not capture element content.*
 *   **`storageKeys` (Scope: browser, Requires Approval):** Lists the *names* (keys) stored in localStorage and sessionStorage. *Values are redacted for security.*
-*   **`javascriptErrors` (Scope: browser, Requires Approval):** Captures recent JavaScript errors caught by global handlers (`onerror`, `onunhandledrejection`).
-*   **`consoleLogs` (Scope: browser, Requires Approval):** Captures recent messages logged to the browser console (`log`, `warn`, `error`, etc.), including those generated by StateBridge itself.
-*   **`computedStyles` (Scope: browser, Requires Approval):** Captures computed CSS styles for a specified element.
+*   **`javascriptErrors` (Scope: browser, Requires Approval):** Captures recent JavaScript errors caught by global handlers (`onerror`, `onunhandledrejection`). Data is presented in a structured way for readability.
+*   **`consoleLogs` (Scope: browser, Requires Approval):** Captures recent messages logged to the browser console (`log`, `warn`, `error`, etc.), including those generated by StateBridge itself. Data is presented in a structured way.
+*   **`computedStyles` (Scope: browser, Requires Approval):** Captures computed CSS styles for a specified DOM element (you may need to provide a CSS selector when enabling or configuring this collector if it doesn\'t automatically target a specific element).
+
+## Troubleshooting / FAQ
+
+*   **Q: I clicked "Capture" but my new snapshot didn\'t appear in the main viewer.**
+    *   A: Correct. Capturing a snapshot adds it to the "Recent Snapshots" list. You need to click the "Load" button next to it in that list to view its details.
+*   **Q: Why are some browser collector values (like `localStorage` values) redacted or only showing keys?**
+    *   A: This is a security measure. The State Monitor aims to be a diagnostic tool without exposing highly sensitive user data. For example, `storageKeys` only lists the keys in localStorage/sessionStorage, not their actual content.
+*   **Q: The `computedStyles` collector isn\'t showing any data or gives an error.**
+    *   A: This collector typically requires a valid CSS selector for an element currently present on the page. Ensure the element exists and the selector is correct. Some versions might prompt for this selector or have a default target.
+*   **Q: A JavaScript error occurred on a page, but I don\'t see a `js_error` snapshot.**
+    *   A: Automatic snapshots on JS errors are typically only saved if an application owner is currently logged into the FoundryCord web interface. This is a security/privacy measure to prevent arbitrary client-side errors from unknown users from filling up server storage.
 
 ## Future Enhancements (Ideas)
 
-*(Keep existing ideas, remove custom modal as it's done)*
+*(Keep existing ideas, assuming custom modal for collector approval is implemented as per earlier doc notes)*
 *   Add specific collectors for key features/modules as needed.
 *   Implement snapshot comparison functionality.
 *   Implement configurable snapshot limit (N) for storage via UI/config file.

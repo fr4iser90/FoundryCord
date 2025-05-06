@@ -66,32 +66,32 @@
         *   Use sequence diagrams (Mermaid) for complex interaction flows (e.g., user authentication, guild template application, dashboard data retrieval).
         *   Ensure critical algorithms or business logic are clearly explained.
     *   **Affected Files:** All files in `docs/3_developer_guides/03_core_components/`
-*   [ ] **Task 2.4:** Audit `docs/3_developer_guides/04_feature_implementation/`.
+*   [x] **Task 2.4:** Audit `docs/3_developer_guides/04_feature_implementation/`.
     *   **Focus:** Review existing feature docs (e.g., Guild Designer). Are they detailed enough? Do they explain the "why" as well as the "how"? Identify other complex features that warrant such detailed breakdowns.
     *   **Affected Files:** All files in `docs/3_developer_guides/04_feature_implementation/`
-*   [ ] **Task 2.5:** Audit `docs/3_developer_guides/05_deployment/`.
+*   [x] **Task 2.5:** Audit `docs/3_developer_guides/05_deployment/`.
     *   **Focus:** Accuracy of deployment steps for various environments (local Docker, potential staging/production). Configuration variables related to deployment. Troubleshooting common deployment issues.
     *   **Affected Files:** `docs/3_developer_guides/05_deployment/README.md` (and any other files here).
 
 ## Phase 3: User Guides (Audit & Enhance)
 
-*   [ ] **Task 3.1:** Review and enhance all user guides in `docs/2_user_guides/`.
-    *   **Focus:** User's perspective. Clear step-by-step instructions for all functionalities. Completeness of feature coverage. Common use cases and workflows. Troubleshooting tips.
-    *   Add placeholders like `[SCREENSHOT: <description of screenshot>]` or `[GIF: <description of GIF>]` where visuals are essential.
+*   [x] **Task 3.1:** Review and enhance all user guides in `docs/2_user_guides/`.
+    *   **Focus:** User's perspective. Clear step-by-step instructions for all functionalities. Completeness of feature coverage. Common use cases and workflows. Troubleshooting tips. Add placeholders like `[SCREENSHOT: <description of screenshot>]` or `[GIF: <description of GIF>]` where visuals are essential.
     *   **Affected Files:** All files in `docs/2_user_guides/`
 *   [ ] **Task 3.2:** (Self-Assigned by User) Create and add screenshots/GIFs to User Guides as identified in Task 3.1.
 
-## Phase 4: Project Management Documentation (Audit & Review)
+## Phase 4: ADRs & Project Management Docs (Audit & Update Links)
 
-*   [ ] **Task 4.1:** Review `docs/4_project_management/adr/README.md` and existing ADRs.
-    *   **Focus:** Is the ADR process clear? Are ADRs easy to find and understand? Do they capture the context, decision, and consequences adequately?
-    *   **Affected Files:** `docs/4_project_management/adr/README.md` and individual ADR files.
-*   [ ] **Task 4.2:** Review structure and utility of `docs/4_project_management/analysis/` and existing TODOs.
+*   [x] **Task 4.1:** Audit `docs/4_project_management/adr/`.
+    *   **Focus:** Ensure all ADRs are clearly written, state their context, decision, and consequences. Check for a clear status (e.g., Proposed, Accepted, Deprecated, Superseded). Verify `README.md` in this folder explains how to use ADRs and lists them correctly.
+    *   **Affected Files:** All files in `docs/4_project_management/adr/`
+*   [x] **Task 4.2:** Audit `docs/4_project_management/analysis/`.
     *   **Focus:** Is the analysis folder used effectively? Are TODOs clear and actionable? (This task itself is part of that review).
+    *   **Affected Files:** `docs/4_project_management/analysis/README.md` (New File), `docs/4_project_management/todo/README.md` (New File)
 
 ## Phase 5: Structural Integrity, Consistency, & Final Polish (Ongoing & Final Pass)
 
-*   [ ] **Task 5.1:** Create/Update `README.md` files for all major subdirectories within `docs/` that are missing them or have outdated ones (e.g., `docs/1_introduction/README.md`, `docs/2_user_guides/README.md`, etc.).
+*   [x] **Task 5.1:** Create/Update `README.md` files for all major subdirectories within `docs/` that are missing them or have outdated ones (e.g., `docs/1_introduction/README.md`, `docs/2_user_guides/README.md`, etc.).
     *   **Focus:** Each `README.md` should act as a mini table of contents for its section.
 *   [ ] **Task 5.2:** Perform a comprehensive consistency check across all documentation (link to `glossary.md` from Task 1.3.2).
     *   **Focus:** Consistent terminology, writing style, voice, tone, formatting of code blocks, admonitions (notes, warnings), etc.

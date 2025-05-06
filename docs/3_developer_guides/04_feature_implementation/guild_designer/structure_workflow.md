@@ -1,76 +1,87 @@
-# Structure Workflow Documentation
+# Guild Designer: Structure & Template Application Workflows
 
 **(See also: [Guild Designer Main TODO](../../../../4_project_management/todo/guild_designer.md))**
 
 ## Overview
 
-The Structure Workflow is responsible for managing the Discord server structure, including categories, channels, and their relationships. This module handles operations such as:
+This document outlines the key workflows the FoundryCord bot employs to manage Discord server structures (categories, channels, permissions). These workflows are central to the **Guild Designer** feature, particularly when applying saved templates to a server, but also underpin direct structural manipulation commands if implemented.
 
-1. Creating, updating, and deleting categories and channels
-2. Managing permissions for server structure elements
-3. Applying templates to create consistent server layouts
-4. Tracking relationships between channels, including channel follows
-5. Managing dashboards and UI panels within channels
+The primary goals of these workflows are:
+1.  Accurately translating a `GuildTemplate` definition into a live Discord server structure.
+2.  Creating, updating, and deleting categories and channels based on template or direct commands.
+3.  Managing permission overwrites for roles on these structural elements.
+4.  Handling specialized channel features like Channel Following and embedded Dashboard Panels.
 
-## Key Components
+## Key Structural Feature Implementations
 
-### Channel Following
+### 1. Channel Following
+*   **Purpose:** Allows announcement channels to be "followed," automatically crossposting their messages to other designated channels.
+*   **FoundryCord Implementation:** The bot facilitates the setup and tracking of these follow relationships. Discord's underlying mechanism often involves webhooks that Discord itself manages when a follow is initiated via their API.
+*   **Details:** For an in-depth explanation of the entity, repository, services, and workflows involved, see: **[Channel Follow Implementation Details](./channel_follow_implementation.md)**.
 
-Discord offers a feature called "Channel Following" that allows announcement channels (news channels) to be followed by other channels. When a message is posted in the source channel, it's automatically crossposted to all follower channels.
+### 2. Dashboard Panels in Channels
+*   **Purpose:** Enables embedding interactive UI panels (dashboards) directly within Discord channels. These panels can display real-time data, statistics, or provide control interfaces.
+*   **FoundryCord Implementation:**
+    *   Dashboards are constructed as Discord messages with rich embeds and interactive components (buttons, select menus).
+    *   The `DashboardLifecycleService` (in `app/bot/application/services/dashboard/`) manages the creation, updating, and interaction handling for these dashboard messages.
+    *   `DashboardController` (in `app/bot/interfaces/dashboards/controller/`) handles user interactions originating from these components.
+    *   Configurations and content definitions are often stored in the database using entities like `DashboardEntity` and `DashboardComponentEntity` (from `app/shared/`).
+    *   Data displayed is fetched by `DashboardDataService` or similar services.
 
-**(See [Channel Follow Implementation Details](./channel_follow_implementation.md))**
+## Core Workflows for Template Application
 
-**Technical Implementation:**
-- Uses Discord's built-in webhook system to relay messages
-- Only applies to announcement channels (type: news)
-- Messages appear as if they were posted by the original author
+When a `GuildTemplate` is applied to a Discord server, several coordinated workflows are executed. The overall orchestration is typically handled by a `TemplateApplicationWorkflow` (conceptual, likely part of `app/bot/application/workflows/guild/template_application.py`).
 
-### Dashboard Panels
+### 1. Category & Channel Creation/Update Workflow
+*   **Responsibility:** Iterates through category and channel definitions in the `GuildTemplate` and creates or updates them on the target Discord server.
+*   **Process:**
+    1.  The `TemplateApplicationWorkflow` retrieves the `GuildTemplate` with all its child entities (`GuildTemplateCategory`, `GuildTemplateChannel`).
+    2.  For each category in the template: Calls a `CategorySetupService` (or similar in `app/bot/application/services/category/`) which uses a `CategoryBuilder` to prepare parameters and then interacts with a `DiscordInteractionService` (or directly with `nextcord`) to create/update the category on Discord.
+    3.  For each channel in the template: Calls a `ChannelSetupService` (or similar in `app/bot/application/services/channel/`) which uses a `ChannelBuilder` and `ChannelFactory` to prepare parameters (including parent category linkage) and then interacts with `DiscordInteractionService` to create/update the channel.
+    4.  Mappings between template entity IDs and actual Discord entity IDs are maintained during the process for subsequent steps like permission application.
+*   **Key Modules:** `TemplateApplicationWorkflow`, `CategorySetupService`, `ChannelSetupService`, `CategoryBuilder`, `ChannelBuilder`, `DiscordInteractionService`, `GuildTemplateRepository`, `CategoryRepository`, `ChannelRepository`.
+*   *(A sequence diagram for this part of the template application can be found in `docs/3_developer_guides/03_core_components/bot_internals.md`.)*
 
-The bot can create and manage dashboard panels in channels. These panels provide interactive UI elements for server management, statistics, and other features.
+### 2. Permission Application Workflow (Template Context)
+*   **Responsibility:** Applies permission overwrites defined in the `GuildTemplate` to the newly created or existing categories and channels on the target Discord server.
+*   **Process:** (See sequence diagram below)
+    1.  After categories and channels are created/updated, the `TemplateApplicationWorkflow` iterates through `GuildTemplateCategoryPermission` and `GuildTemplateChannelPermission` entities associated with the template.
+    2.  For each permission entity: It resolves the stored `role_name` to an actual `nextcord.Role` object on the target guild (this might involve fetching roles from the guild or assuming roles with specific names exist).
+    3.  It retrieves the actual Discord ID of the category or channel using the mapping created during the creation phase.
+    4.  It constructs a `nextcord.PermissionOverwrite` object using the `allow_permissions_bitfield` and `deny_permissions_bitfield` from the template permission entity.
+    5.  It calls the appropriate `nextcord` method (e.g., `category.set_permissions()` or `channel.set_permissions()`) via a `DiscordInteractionService` to apply the overwrite.
+*   **Key Modules:** `TemplateApplicationWorkflow`, `DiscordInteractionService`, `GuildRepository` (to fetch roles), `GuildTemplateCategoryPermission` / `GuildTemplateChannelPermission` entities.
 
-**Technical Details:**
-- Dashboards are created as messages with embeds and/or components
-- They can include buttons, select menus, and other interactive elements
-- Data is stored in the database to enable persistence and updates
+**Sequence Diagram: Applying Template Permissions**
+```mermaid
+sequenceDiagram
+    participant TplAppWF as TemplateApplicationWorkflow
+    participant DiscService as DiscordInteractionService
+    participant GuildRepo as GuildRepository (Shared)
+    participant DiscordAPI as Discord API
 
-## Database Structure
-
-The module works with these primary database entities:
-
-1. `GuildEntity` - Represents a Discord server/guild
-2. `CategoryEntity` - Represents Discord channel categories
-3. `ChannelEntity` - Represents Discord channels
-4. `ChannelFollowEntity` - Tracks which channels follow other channels
-5. `DashboardEntity` - Represents dashboard panels in channels
-6. `DashboardComponentEntity` - Individual components within dashboards
-
-## Workflows
-
-### Channel Creation Workflow
-
-1. Check if a channel with the same name already exists
-2. If exists, update properties as needed
-3. If doesn't exist, create new channel
-4. Apply appropriate permissions
-
-### Channel Following Workflow
-
-1. Verify source channel is an announcement channel
-2. Verify target channel can receive messages
-3. Create follow relationship using Discord API
-4. Store relationship in database for tracking
-
-### Dashboard Creation Workflow
-
-1. Create dashboard configuration in database
-2. Generate message content based on template
-3. Send message to specified channel
-4. Store message ID for future updates
+    TplAppWF->>TplAppWF: For each Category/Channel Permission in Template
+    TplAppWF->>GuildRepo: get_guild_roles(guild_id)
+    GuildRepo-->>TplAppWF: List of actual_discord_roles
+    TplAppWF->>TplAppWF: Resolve template_permission.role_name to actual_discord_role
+    alt Role not found on Guild
+        TplAppWF->>TplAppWF: Log warning / Handle error (e.g., skip permission)
+        continue
+    end
+    TplAppWF->>TplAppWF: Get mapped_discord_entity_id (Category or Channel)
+    TplAppWF->>DiscService: apply_permission_overwrite(mapped_discord_entity_id, actual_discord_role, allow_bits, deny_bits)
+    DiscService->>+DiscordAPI: Edit Channel Permissions (for Category/Channel)
+    DiscordAPI-->>-DiscService: Success/Failure
+    DiscService-->>TplAppWF: Result
+    TplAppWF->>TplAppWF: Log permission application status
+```
 
 ## Integration Points
 
-- Interacts with Discord API for server structure operations
-- Uses database to persist configuration and state
-- Interfaces with template system for standardized layouts
-- Coordinates with permission system for access control 
+These structure workflows heavily integrate with:
+
+*   **Discord API:** For all direct manipulations of server categories, channels, permissions, and webhooks.
+*   **Shared Repositories (`app/shared/`):** For persisting and retrieving `GuildTemplate` data, `ChannelFollow` records, `DashboardEntity` configurations, and other related entities.
+*   **Shared Domain Services (`app/shared/`):** For core logic like audit logging (`AuditService`).
+*   **Bot Application Services (`app/bot/application/services/`):** Specialized services for category, channel, and dashboard setup and management.
+*   **Bot Infrastructure (`app/bot/infrastructure/`):** Components for Discord interaction, configuration access. 
