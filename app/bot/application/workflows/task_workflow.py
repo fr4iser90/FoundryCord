@@ -40,6 +40,7 @@ class TaskWorkflow(BaseWorkflow):
             
         except Exception as e:
             logger.error(f"Error initializing task workflow: {e}")
+            self.running = False
             import traceback
             logger.error(traceback.format_exc())
             return False

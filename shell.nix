@@ -13,6 +13,7 @@ let
     
     # Monitoring Dependency
     psutil
+    requests
 
     # Database dependencies
     sqlalchemy
@@ -24,6 +25,7 @@ let
     python-dotenv
     py-cpuinfo
     speedtest-cli
+    pyyaml
     
     # Web dependencies
     fastapi
