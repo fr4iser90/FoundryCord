@@ -19,7 +19,6 @@ Below is a C4-style Container diagram illustrating how these components interact
 
 ```mermaid
 graph LR
-%% Define Actors and Systems
 actor User
 subgraph External_Systems ["External Systems"]
     DiscordAPI["Discord API"]
@@ -27,7 +26,6 @@ end
 
 subgraph FoundryCord_System ["FoundryCord System"]
     direction LR
-    %% Define Containers
     User -- "Interacts via Browser" --> WebBrowser["Web Browser (Client-Side UI)"]
     WebBrowser -- "HTTPS (User Actions, API Requests)" --> WebApp["FoundryCord Web App (FastAPI + Jinja2)"]
     WebApp -- "SQL (Data Read/Write via SQLAlchemy)" --> Database["PostgreSQL Database"]
@@ -36,7 +34,6 @@ subgraph FoundryCord_System ["FoundryCord System"]
     DiscordBot -- "HTTPS/WebSocket (Discord Gateway & API)" --> DiscordAPI
 end
 
-%% Style
 classDef default fill:#ECEFF4,stroke:#333,stroke-width:2px,color:#333;
 classDef actor fill:#DAE8FC,stroke:#6C8EBF,stroke-width:2px,color:#333;
 classDef system fill:#FFF2CC,stroke:#D6B656,stroke-width:2px,color:#333;
