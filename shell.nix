@@ -48,19 +48,31 @@ pkgs.mkShell {
     # Set PYTHONPATH to include the project root
     export PYTHONPATH="$PWD:$PYTHONPATH"
     
-    # --- Shell Functions ---
-    # Runs tests inside the Docker container, rebuilds image without cache, cleans cache before running tests
-    pytest-docker-no-cache() {
-      # Step 1: Build the test service image without cache
-      docker compose -f docker/test/docker-compose.yml build --no-cache test && \
-      # Step 2: Run the tests in the newly built container, cleaning cache first
-      docker compose -f docker/test/docker-compose.yml run --rm test \
-        sh -c 'find . -type d -name "__pycache__" -exec rm -rf {} + ; find . -type d -name ".pytest_cache" -exec rm -rf {} + ; pytest "$@"'
+    # --- Cache Cleaning Function ---
+    clean-caches() {
+      echo "Cleaning host caches (__pycache__, .pytest_cache)..."
+      # Use rm -rf for directories found, safer than -delete for non-empty dirs
+      find . \( -path '*/__pycache__' -o -path '*/.pytest_cache' \) -type d -exec rm -rf {} +
+      echo "Host cache cleaning complete."
     }
-    
+
+    # --- Overridden Test Functions with Auto-Cleaning ---
+
+    # Override pytest to clean before and after
+    pytest() {
+      clean-caches
+      echo "Running pytest (locally) with arguments: $@"
+      command pytest "$@" # IMPORTANT: Use 'command' to call the real pytest
+      local exit_code=$?
+      echo "Pytest finished with exit code $exit_code."
+      clean-caches
+      return $exit_code
+    }
+
+    # --- Original Helper Functions (Keep for reference or other scripts if needed) ---
     # Database upgrade alias
     alias db_upgrade='docker exec -it foundrycord-bot /bin/sh -c "alembic -c /app/shared/infrastructure/database/migrations/alembic/alembic.ini upgrade head"'
-    
+
     # --- Function to update a single tree file ---
     _update_tree_file() {
       local target_dir="$1"
@@ -84,10 +96,9 @@ pkgs.mkShell {
     echo "Python development environment activated"
     echo "PYTHONPATH set to: $PYTHONPATH"
     echo "Available commands:"
-    echo "  pytest - Run tests locally (might differ from CI/test env)"
-    echo "  pytest-docker - Run tests inside the Docker test environment (recommended)"
-    echo "     -> Example: pytest-docker tests/unit/bot/" 
-    echo "  pytest --cov=app - Run local tests with coverage report"
-    echo "  update-trees - Update structure markdown files (web, tests, shared, bot)"
+    echo "  pytest              - Run pytest locally (cleans host caches before & after)"
+    echo "  clean-caches        - Manually clean host __pycache__ and .pytest_cache directories"
+    echo "  db_upgrade          - Apply database migrations using Alembic inside the bot container"
+    echo "  update-trees        - Update structure markdown files (web, tests, shared, bot)"
   '';
 } 

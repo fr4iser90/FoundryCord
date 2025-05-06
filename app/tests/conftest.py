@@ -15,7 +15,6 @@ from app.tests.utils import (
     web_request,
     mock_key_service,
     disable_db_logging,
-    fix_container_tmpdir
 )
 import subprocess
 

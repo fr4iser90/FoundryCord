@@ -156,36 +156,8 @@ def run_async(coroutine):
 
 # ===== Container-Specific Utilities =====
 
-def fix_container_tmpdir():
-    """
-    Fix temporary directory issues in Docker container.
-    This helps prevent "Bad file descriptor" errors with pytest.
-    """
-    if IN_CONTAINER:
-        # Ensure clean temp dir
-        import tempfile
-        os.environ['TMPDIR'] = '/tmp'
-        tempfile.tempdir = '/tmp'
-        
-        # Create directory if it doesn't exist and set permissions
-        if not os.path.exists('/tmp'):
-            os.makedirs('/tmp', mode=0o777)
-        else:
-            os.chmod('/tmp', 0o777)
-            
-        # Create a fresh temp file to verify permissions
-        try:
-            with tempfile.NamedTemporaryFile(delete=True) as tmp:
-                tmp.write(b'test')
-            print("Temporary file access verified.")
-        except Exception as e:
-            print(f"Warning: Temporary file verification failed: {e}")
-
-# Apply container fixes
-fix_container_tmpdir()
-
 def async_test(coro):
-    """Decorator for running async test functions."""
+    """Decorator to run async test functions."""
     def wrapper(*args, **kwargs):
         return asyncio.run(coro(*args, **kwargs))
     return wrapper
