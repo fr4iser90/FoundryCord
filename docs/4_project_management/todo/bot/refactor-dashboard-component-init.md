@@ -1,3 +1,5 @@
+**HINWEIS:** Dieses TODO wurde durch `docs/4_project_management/todo/bot/refactor-dependency-injection-interfaces.md` ersetzt, da ein grundlegenderes Refactoring mittels Interfaces und Dependency Injection für eine nachhaltigere Lösung erforderlich ist.\
+\
 # Refactor Dashboard Component Initialization/Registry Interaction TODO
 
 **Goal:** Remove all `TYPE_CHECKING`. Improve the orchestration of dashboard component creation and configuration loading to eliminate the circular import dependency between `ComponentRegistry`, `BaseComponent`, and various factories, making the architecture cleaner and tests easier to run.

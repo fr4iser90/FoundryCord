@@ -41,7 +41,7 @@ alwaysApply: false
 4.  **Execute Tests:**
     *   State the command: "Running tests within Nix shell using `nix-shell --run \"pytest-docker [test_file_path]\"`..."
     *   Use `run_terminal_cmd` to execute `nix-shell --run "pytest-docker [test_file_path]"`.
-
+    *   Use `run_terminal_cmd` to execute `SimpleDevOpsToolkit --quick-deploy` and `docker logs foundrycord-bot`
 5.  **Analyze Results & Report:**
     *   Receive the terminal output from the test run.
     *   **If All Tests Pass:** Report "All tests in `[test_file_path]` passed." Ask the user: "Does this fulfill the testing goal you had in mind?"
