@@ -62,19 +62,19 @@ async def test_initialize_handles_exception_during_registration(task_workflow_in
 async def test_cleanup_cancels_and_clears_tasks(task_workflow_instance, mocker):
     """Test cleanup cancels running tasks and clears the task list."""
     mock_task1 = AsyncMock(spec=asyncio.Task) 
-    mock_task1.done.return_value = False
-    mock_task1.side_effect = async_raiser_cancelled_error_side_effect # Use async helper
-    # Ensure cancel is a mock we can assert on the AsyncMock itself
-    mock_task1.cancel = MagicMock(name="cancel_mock_task1") 
+    mock_task1.done = MagicMock(return_value=False)
+    mock_task1.cancel = MagicMock(name="cancel_mock_task1")
+    # When mock_task1 (the AsyncMock) is awaited, it should raise this.
+    mock_task1.side_effect = asyncio.CancelledError("Task 1 Cancelled")
 
     mock_task2 = AsyncMock(spec=asyncio.Task)
-    mock_task2.done.return_value = False
-    mock_task2.side_effect = async_raiser_cancelled_error_side_effect # Use async helper
+    mock_task2.done = MagicMock(return_value=False)
     mock_task2.cancel = MagicMock(name="cancel_mock_task2")
+    mock_task2.side_effect = asyncio.CancelledError("Task 2 Cancelled")
     
     task_workflow_instance.tasks = [mock_task1, mock_task2]
     task_workflow_instance.running = True
-    
+
     await task_workflow_instance.cleanup()
     
     assert task_workflow_instance.running is False
@@ -85,14 +85,14 @@ async def test_cleanup_cancels_and_clears_tasks(task_workflow_instance, mocker):
 @pytest.mark.asyncio
 async def test_cleanup_handles_already_done_tasks(task_workflow_instance, mocker):
     """Test cleanup doesn't try to cancel tasks that are already done."""
-    mock_task_done = AsyncMock(spec=asyncio.Task) # Was MagicMock, revert to AsyncMock for consistency if it has async methods
-    mock_task_done.done.return_value = True 
+    mock_task_done = AsyncMock(spec=asyncio.Task)
+    mock_task_done.done = MagicMock(return_value=True) 
     mock_task_done.cancel = MagicMock(name="cancel_mock_task_done") 
 
     mock_task_not_done = AsyncMock(spec=asyncio.Task)
-    mock_task_not_done.done.return_value = False
-    mock_task_not_done.side_effect = async_raiser_cancelled_error_side_effect # Use async helper
+    mock_task_not_done.done = MagicMock(return_value=False)
     mock_task_not_done.cancel = MagicMock(name="cancel_mock_task_not_done")
+    mock_task_not_done.side_effect = asyncio.CancelledError("Task Not Done Cancelled")
     
     task_workflow_instance.tasks = [mock_task_done, mock_task_not_done]
     task_workflow_instance.running = True
@@ -109,10 +109,10 @@ async def test_cleanup_handles_exception_during_task_processing(task_workflow_in
     """Test cleanup logs an error if an unexpected exception occurs during task cancellation/awaiting."""
     mock_logger_error = mocker.patch("app.bot.application.workflows.task_workflow.logger.error")
     
-    # Revert to original working AsyncMock for this specific test case for RuntimeError
     mock_task = AsyncMock(spec=asyncio.Task)
-    mock_task.done.return_value = False
-    mock_task.cancel = MagicMock(name="cancel_mock_task_runtime") # Ensure cancel is a mock
+    mock_task.done = MagicMock(return_value=False)
+    mock_task.cancel = MagicMock(name="cancel_mock_task_runtime")
+    # This side_effect (RuntimeError) has been working.
     mock_task.side_effect = RuntimeError("Unexpected error during task await!")
     
     task_workflow_instance.tasks = [mock_task]

@@ -1,0 +1,57 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Role: Documentation Specialist / Guardian
+
+**Core Principle:** Ensure all documentation is accurate, comprehensive, consistent, and easy for its target audience to understand. Maintain the overall structure and quality of the project's documentation.
+
+**Activation:**
+*   When new features are developed or existing ones significantly changed.
+*   When architectural decisions are made or components are refactored.
+*   Periodically, for reviewing and updating existing documentation.
+*   When the user explicitly invokes "Doc Role" for a specific file or section.
+
+**Workflow / Key Responsibilities:**
+
+1.  **Planning & Outlining (for new docs):**
+    *   Identify the target audience (user, developer, new contributor).
+    *   Define the scope and objectives of the document.
+    *   Create a logical outline.
+    *   Identify needs for diagrams, examples, or other supporting materials.
+
+2.  **Content Creation / Update:**
+    *   Write clear, concise, and accurate content.
+    *   Adhere to project's `coding_conventions.md` (for code examples) and any established writing style guides (e.g., for tone, voice, terminology).
+    *   Incorporate diagrams, code snippets, and examples where appropriate.
+        *   Use Mermaid for diagrams where possible for maintainability.
+    *   Ensure all public APIs, core components, and user-facing features are documented.
+
+3.  **Review & Refinement:**
+    *   **Self-Review:** Check for clarity, grammar, spelling, and technical accuracy.
+    *   **Peer Review (if applicable):** Have another developer or a potential user review the documentation.
+    *   **Consistency Check:** Ensure terminology and style are consistent with other documentation.
+    *   **Link Check:** Verify all internal and external links are working.
+
+4.  **Structural Integrity & Navigation:**
+    *   Ensure the document fits logically within the existing `docs/` structure.
+    *   Update any relevant `README.md` files or tables of contents.
+    *   Add cross-references to related documents.
+
+5.  **Tooling & Standards:**
+    *   Use Markdown linting tools (if available) for consistency.
+    *   Follow guidelines for creating diagrams (e.g., preferred tools, style).
+
+**Specific Focus Areas (based on FoundryCord structure):**
+
+*   **User Guides:** Focus on step-by-step instructions, use cases, troubleshooting, and visuals.
+*   **Developer Guides (Architecture):** Emphasize high-level overviews, component interactions (with diagrams), design principles, and rationale behind decisions (linking to ADRs).
+*   **Developer Guides (Core Components/Internals):** Provide deeper dives into specific modules, class responsibilities, and complex algorithms or data flows. Include relevant code snippets.
+*   **API Specifications:** Maintain accuracy and completeness. For REST APIs, consider OpenAPI/Swagger.
+*   **READMEs:** Ensure every major directory in `docs/` has a helpful `README.md`.
+
+**When AI (Pair Programmer) assists with this role:**
+*   The AI should be reminded to follow this workflow.
+*   The AI can help draft sections, create outlines, suggest diagrams (e.g., "A sequence diagram for X would be helpful here"), or review for clarity.
+*   The AI should proactively ask if new code changes require corresponding documentation updates.

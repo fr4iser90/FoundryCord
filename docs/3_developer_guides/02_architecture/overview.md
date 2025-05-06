@@ -15,12 +15,51 @@ Describe the main components of the system and their high-level responsibilities
 
 ## Interactions
 
-Illustrate how these components interact. A C4 Context or Container diagram would be ideal here.
+Below is a C4-style Container diagram illustrating how these components interact.
+
+```mermaid
+graph LR
+    %% Define Actors and Systems
+    actor User
+    subgraph "External Systems"
+        DiscordAPI["Discord API"]
+    end
+
+    subgraph "FoundryCord System"
+        direction LR
+        %% Define Containers
+        User -- "Interacts via Browser" --> WebBrowser["Web Browser (Client-Side UI)"]
+
+        WebBrowser -- "HTTPS (User Actions, API Requests)" --> WebApp["FoundryCord Web App (FastAPI + Jinja2)"]
+        
+        WebApp -- "SQL (Data Read/Write via SQLAlchemy)" --> Database["PostgreSQL Database"]
+        WebApp -- "HTTP (Internal API Calls via httpx)\n[e.g., Trigger Bot Action]" --> DiscordBot["FoundryCord Discord Bot (nextcord)"]
+        
+        DiscordBot -- "SQL (Data Read/Write via SQLAlchemy)" --> Database
+        DiscordBot -- "HTTPS/WebSocket (Discord Gateway & API)" --> DiscordAPI
+    end
+
+    %% Style
+    classDef default fill:#ECEFF4,stroke:#333,stroke-width:2px,color:#333;
+    classDef actor fill:#DAE8FC,stroke:#6C8EBF,stroke-width:2px,color:#333;
+    classDef system fill:#FFF2CC,stroke:#D6B656,stroke-width:2px,color:#333;
+    classDef container fill:#D5E8D4,stroke:#82B366,stroke-width:2px,color:#333;
+    classDef database fill:#FFE6CC,stroke:#D79B00,stroke-width:2px,color:#333;
+
+    class User actor;
+    class DiscordAPI system;
+    class WebBrowser container;
+    class WebApp container;
+    class DiscordBot container;
+    class Database database;
+```
+
+The key interactions are:
 
 *   User's Browser <-> Frontend (HTML/CSS/JS served by Backend)
 *   Frontend (JavaScript) <-> Backend API (via HTTP requests)
 *   Backend API -> Shared Core (Services, Repositories) -> Database
-*   Backend API -> Internal Bot API (via HTTP requests using httpx)
+*   Backend API -> Internal Bot API (via HTTP requests using httpx - for specific, immediate bot actions triggered by the web UI)
 *   Discord Bot -> Shared Core (Services, Repositories) -> Database
 *   Discord Bot <-> Discord API (Gateway events, REST calls)
 *   Discord API -> Discord Bot (Events, Interaction Hooks for commands)
