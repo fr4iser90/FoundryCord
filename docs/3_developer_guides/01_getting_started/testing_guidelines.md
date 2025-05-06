@@ -1,8 +1,8 @@
 # Testing Guidelines
 
-This document outlines the philosophy, tools, conventions, and best practices for writing tests within the [FoundryCord](../../../1_introduction/glossary.md#foundrycord) project. Adhering to these guidelines helps ensure code quality, maintainability, and prevents regressions.
+This document outlines the philosophy, tools, conventions, and best practices for writing tests within the [FoundryCord](docs/1_introduction/glossary.md#foundrycord) project. Adhering to these guidelines helps ensure code quality, maintainability, and prevents regressions.
 
-**Goal:** Ensure code quality, maintainability, and prevent regressions through consistent and effective testing practices across all components of [FoundryCord](../../../1_introduction/glossary.md#foundrycord) (Bot, Web, Shared).
+**Goal:** Ensure code quality, maintainability, and prevent regressions through consistent and effective testing practices across all components of [FoundryCord](docs/1_introduction/glossary.md#foundrycord) (Bot, Web, Shared).
 
 ## Testing Philosophy
 

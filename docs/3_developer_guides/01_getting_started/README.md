@@ -1,6 +1,6 @@
 # Getting Started
 
-This section provides essential information to help new developers get [FoundryCord](../../../1_introduction/glossary.md#foundrycord) up and running and to familiarize them with project standards and contribution processes.
+This section provides essential information to help new developers get [FoundryCord](docs/1_introduction/glossary.md#foundrycord) up and running and to familiarize them with project standards and contribution processes.
 
 ## Documents
 

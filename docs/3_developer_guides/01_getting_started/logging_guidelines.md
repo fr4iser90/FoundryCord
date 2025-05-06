@@ -1,6 +1,6 @@
 # Logging Guidelines
 
-This document provides comprehensive guidelines for implementing logging within the [FoundryCord](../../../1_introduction/glossary.md#foundrycord) Bot, Web Application, and related infrastructure components. Consistent and effective logging is crucial for development, debugging, monitoring, and auditing the system.
+This document provides comprehensive guidelines for implementing logging within the [FoundryCord](docs/1_introduction/glossary.md#foundrycord) Bot, Web Application, and related infrastructure components. Consistent and effective logging is crucial for development, debugging, monitoring, and auditing the system.
 
 ---
 

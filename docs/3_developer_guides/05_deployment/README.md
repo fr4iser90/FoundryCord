@@ -1,6 +1,6 @@
 # Deployment
 
-This document outlines the deployment strategy for the [FoundryCord](../../../1_introduction/glossary.md#foundrycord) application suite (Frontend/Backend API, and Discord Bot). It covers infrastructure, containerization, CI/CD workflow, and considerations for different environments.
+This document outlines the deployment strategy for the [FoundryCord](docs/1_introduction/glossary.md#foundrycord) application suite (Frontend/Backend API, and Discord Bot). It covers infrastructure, containerization, CI/CD workflow, and considerations for different environments.
 
 ## Overview
 

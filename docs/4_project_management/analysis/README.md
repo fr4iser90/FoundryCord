@@ -2,9 +2,9 @@
 
 ## Purpose
 
-This directory (`docs/4_project_management/analysis/`) is intended to store documents related to preliminary analysis, research, brainstorming, and technical investigations conducted during the [FoundryCord](../../../1_introduction/glossary.md#foundrycord) project lifecycle.
+This directory (`docs/4_project_management/analysis/`) is intended to store documents related to preliminary analysis, research, brainstorming, and technical investigations conducted during the [FoundryCord](docs/1_introduction/glossary.md#foundrycord) project lifecycle.
 
-These documents typically precede the creation of more formal artifacts like [Architectural Decision Records (ADRs)](../../../1_introduction/glossary.md#adr-architectural-decision-record) or detailed TODO task lists.
+These documents typically precede the creation of more formal artifacts like [Architectural Decision Records (ADRs)](docs/1_introduction/glossary.md#adr-architectural-decision-record) or detailed TODO task lists.
 
 ## When to Use This Directory
 
@@ -25,7 +25,7 @@ Consider creating documents here for:
 
 ## Relationship to Other Documents
 
-*   **[[ADRs (`../adr/`)](../../../1_introduction/glossary.md#adr-architectural-decision-record)]**: Analysis done here might lead to a formal ADR if a significant architectural decision needs to be made and documented.
+*   **[[ADRs (`../adr/`)](docs/1_introduction/glossary.md#adr-architectural-decision-record)]**: Analysis done here might lead to a formal ADR if a significant architectural decision needs to be made and documented.
 *   **TODOs (`../todo/`):** Once analysis leads to actionable development tasks, these should be broken down and documented in the relevant TODO lists.
 *   **Developer Guides (`../../3_developer_guides/`):** If an investigation leads to a new standard or a detailed understanding of a component, this might eventually be refined and moved into the main developer guides.
 

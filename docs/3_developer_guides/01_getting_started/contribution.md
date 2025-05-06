@@ -1,6 +1,6 @@
 # Contribution Guidelines
 
-Thank you for considering contributing to [FoundryCord](../../../1_introduction/glossary.md#foundrycord)! We welcome contributions from the community to help make this project better. To ensure a smooth and effective collaboration process, please read and follow these guidelines.
+Thank you for considering contributing to [FoundryCord](docs/1_introduction/glossary.md#foundrycord)! We welcome contributions from the community to help make this project better. To ensure a smooth and effective collaboration process, please read and follow these guidelines.
 
 ## Getting Started
 
@@ -46,7 +46,7 @@ Once your changes are ready and tested:
     ```bash
     git push origin feature/your-feature-name
     ```
-2.  **Open a Pull Request** against the `develop` branch of the main [FoundryCord](../../../1_introduction/glossary.md#foundrycord) repository (unless it\'s a hotfix for `main`).
+2.  **Open a Pull Request** against the `develop` branch of the main [FoundryCord](docs/1_introduction/glossary.md#foundrycord) repository (unless it\'s a hotfix for `main`).
 3.  **PR Description:**
     *   Provide a clear and descriptive title for your PR.
     *   In the description, summarize the changes you made.

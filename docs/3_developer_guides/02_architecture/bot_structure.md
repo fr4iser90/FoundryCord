@@ -1,14 +1,14 @@
 # Bot Application Structure (`app/bot`)
 
-This document details the internal structure of the FoundryCord Bot application, located within the `app/bot/` directory. It aims to provide developers with an understanding of how the bot is organized, its architectural layers, key components, and entry points.
+This document details the internal structure of the [FoundryCord](docs/1_introduction/glossary.md#foundrycord) Bot application, located within the `app/bot/` directory. It aims to provide developers with an understanding of how the bot is organized, its architectural layers, key components, and entry points.
 
 ## Architectural Overview
 
-The bot application generally follows a **Layered Architecture**, influenced by principles similar to Clean Architecture or Hexagonal Architecture. This promotes separation of concerns, testability, and maintainability. The main layers are typically:
+The bot application generally follows a **Layered Architecture**, influenced by principles similar to Clean Architecture or Hexagonal Architecture, and concepts from [DDD (Domain-Driven Design)](docs/1_introduction/glossary.md#ddd-domain-driven-design). This promotes separation of concerns, testability, and maintainability. The main layers are typically:
 
-*   **Interfaces:** Defines how the bot interacts with the outside world (e.g., Discord commands, internal APIs, bot-driven dashboard UIs).
+*   **Interfaces:** Defines how the bot interacts with the outside world (e.g., Discord commands, internal APIs, bot-driven [dashboard](../1_introduction/glossary.md#dashboard) UIs).
 *   **Application:** Orchestrates use cases and workflows, containing application-specific business logic. It uses services and domain objects to perform its tasks.
-*   **Domain:** Contains the core business logic and entities specific to the bot\'s domain. *Currently, the `app/bot/domain/` directory appears to be minimal or empty, suggesting that most core domain logic might reside in `app/shared/domain/` to be accessible by both the bot and web applications.*
+*   **Domain:** Contains the core business logic and entities specific to the bot's domain. *Currently, the `app/bot/domain/` directory appears to be minimal or empty, suggesting that most core domain logic might reside in `app/shared/domain/` to be accessible by both the bot and web applications.*
 *   **Infrastructure:** Implements adapters to external systems and tools, such as Discord API interaction, configuration management, database access (via shared repositories), monitoring data collection, and startup/lifecycle management.
 
 ## Key Directory Breakdown
@@ -18,12 +18,12 @@ Below is a description of the primary sub-directories within `app/bot/` and thei
 *   **`app/bot/interfaces/`**: This layer acts as the entry point for all interactions with the bot.
     *   `api/internal/`: Exposes an internal HTTP API (likely using FastAPI or a similar lightweight framework) for the web application (Backend) to communicate with the bot for specific actions (e.g., triggering bot tasks).
     *   `commands/`: Contains the definitions for Discord slash commands, organized by functionality (e.g., `auth/`, `dashboard/`, `monitoring/`). This is where user interactions via Discord commands are handled. Includes decorators for argument parsing, permissions, etc.
-    *   `dashboards/`: Manages the components and controllers for bot-driven interactive dashboards displayed within Discord (e.g., using embeds, buttons, selectors).
+    *   `dashboards/`: Manages the components and controllers for bot-driven interactive [dashboards](../1_introduction/glossary.md#dashboard) displayed within Discord (e.g., using embeds, buttons, selectors).
 
 *   **`app/bot/application/`**: Contains the core application logic, orchestrating actions and workflows.
     *   `services/`: Houses various services that implement specific business functionalities or coordinate tasks (e.g., `DashboardLifecycleService`, `DiscordQueryService`, `SystemMonitoringService`).
     *   `tasks/`: Defines background tasks or scheduled jobs that the bot performs periodically (e.g., `CleanupTask`, `SecurityTasks`). These are often managed by a task scheduler integrated with `nextcord`.
-    *   `workflows/`: Implements more complex, multi-step processes or use cases (e.g., `GuildTemplateWorkflow`, `DashboardWorkflow`). Workflows typically coordinate multiple services and domain objects.
+    *   `workflows/`: Implements more complex, multi-step processes or use cases (e.g., `GuildTemplateWorkflow` related to [Guild Designer](../1_introduction/glossary.md#guild-designer), `DashboardWorkflow`). Workflows typically coordinate multiple services and domain objects.
 
 *   **`app/bot/domain/`**: Intended for bot-specific domain entities, value objects, and domain services that are not shared with the web application. *As noted, if this directory is empty or sparse, it implies heavy reliance on `app/shared/domain/`.*
 
@@ -35,13 +35,13 @@ Below is a description of the primary sub-directories within `app/bot/` and thei
     *   `messaging/`: Utilities for sending messages to Discord, potentially handling message chunking, HTTP client wrappers for bot-specific external calls.
     *   `middleware/`: Contains middleware for bot operations, such as rate limiting for commands or API calls.
     *   `monitoring/`: Includes components for monitoring external services or game servers (`checkers/`) and collecting various metrics (`collectors/`) like system stats, game server data, or internal bot state. These collectors often feed data to dashboards or logging.
-    *   `startup/`: Manages the bot\'s startup sequence, lifecycle events (e.g., `LifecycleManager`), setup hooks, and graceful shutdown. The main entry point for the bot application (`main.py`) is typically located here.
-    *   `state/`: Manages or collects information about the bot\'s internal state, such as cog status, listener counts, or performance metrics.
+    *   `startup/`: Manages the bot's startup sequence, lifecycle events (e.g., `LifecycleManager`), setup hooks, and graceful shutdown. The main entry point for the bot application (`main.py`) is typically located here.
+    *   `state/`: Manages or collects information about the bot's internal state, such as cog status, listener counts, or performance metrics.
     *   `wireguard/`: Contains infrastructure related to WireGuard VPN management, if integrated into the bot.
 
 ## Entry Point
 
-The primary entry point for the bot application is likely **`app/bot/infrastructure/startup/main.py`**. This script would typically initialize the `nextcord.Bot` instance, load configurations, set up logging, register cogs/commands, and start the bot\'s connection to Discord.
+The primary entry point for the bot application is likely **`app/bot/infrastructure/startup/main.py`**. This script would typically initialize the `nextcord.Bot` instance, load configurations, set up logging, register cogs/commands, and start the bot's connection to Discord.
 
 ## Configuration Loading
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This directory (`docs/4_project_management/todo/`) and its subdirectories house all ongoing and archived TODO lists for the [FoundryCord](../../../1_introduction/glossary.md#foundrycord) project. These lists are crucial for tracking development tasks, bug fixes, feature implementations, and other project-related work items.
+This directory (`docs/4_project_management/todo/`) and its subdirectories house all ongoing and archived TODO lists for the [FoundryCord](docs/1_introduction/glossary.md#foundrycord) project. These lists are crucial for tracking development tasks, bug fixes, feature implementations, and other project-related work items.
 
 Maintaining clear and actionable TODO lists helps the team stay organized, prioritize work, and understand the current state of development for different components and initiatives.
 

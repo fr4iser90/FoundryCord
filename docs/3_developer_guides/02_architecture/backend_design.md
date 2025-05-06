@@ -1,6 +1,6 @@
 # 3. Backend Architecture Design
 
-This document outlines the architectural design of the [FoundryCord](../../../1_introduction/glossary.md#foundrycord) backend system, which powers the REST API and serves the web interface. It details the layered approach, key components, design patterns, and communication strategies employed.
+This document outlines the architectural design of the [FoundryCord](docs/1_introduction/glossary.md#foundrycord) backend system, which powers the REST API and serves the web interface. It details the layered approach, key components, design patterns, and communication strategies employed.
 
 ## Overview
 
@@ -8,7 +8,7 @@ Describe the overall approach for the backend API.
 *   **Framework:** FastAPI
 *   **Language:** Python 3.x
 *   **Database ORM:** SQLAlchemy (async with asyncio, v2.x)
-*   **Key Principles:** Layered architecture (Controller -> Application Service -> Domain Service -> Repository), Dependency Injection (FastAPI's `Depends`), Asynchronous operations (`async/await`), extensive use of the Shared Core library (`app/shared/`), adhering to [DDD (Domain-Driven Design)](../../../1_introduction/glossary.md#ddd-domain-driven-design) principles like the [Repository Pattern](../../../1_introduction/glossary.md#ddd-domain-driven-design).
+*   **Key Principles:** Layered architecture (Controller -> Application Service -> Domain Service -> Repository), Dependency Injection (FastAPI's `Depends`), Asynchronous operations (`async/await`), extensive use of the Shared Core library (`app/shared/`), adhering to [DDD (Domain-Driven Design)](docs/1_introduction/glossary.md#ddd-domain-driven-design) principles like the [Repository Pattern](docs/1_introduction/glossary.md#ddd-domain-driven-design).
 
 ## Layers
 
@@ -26,7 +26,7 @@ Describe the responsibilities of each layer:
     *   Handles complex validation rules specific to the API context.
     *   May interact with external services (if any).
 *   **Domain Service Layer (`app/shared/domain/services/`):**
-    *   Contains core, reusable business logic independent of the delivery mechanism (API or Bot) based on [DDD](../../../1_introduction/glossary.md#ddd-domain-driven-design) principles.
+    *   Contains core, reusable business logic independent of the delivery mechanism (API or Bot) based on [DDD](docs/1_introduction/glossary.md#ddd-domain-driven-design) principles.
     *   Examples: `AuthenticationService`, `AuthorizationService`, `GuildTemplateService` (if exists).
     *   Operates on Domain Entities and uses Repository interfaces.
     *   Does NOT directly interact with the database session (delegates to repositories).

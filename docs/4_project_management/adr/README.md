@@ -1,6 +1,6 @@
 # Architectural Decision Records (ADRs)
 
-This directory logs significant architectural decisions made during the [FoundryCord](../../../1_introduction/glossary.md#foundrycord) project's development. Using [Architectural Decision Records (ADRs)](../../../1_introduction/glossary.md#adr-architectural-decision-record) helps in understanding the reasoning behind choices, especially when looking back at the project's history or when onboarding new team members.
+This directory logs significant architectural decisions made during the [FoundryCord](docs/1_introduction/glossary.md#foundrycord) project's development. Using [Architectural Decision Records (ADRs)](docs/1_introduction/glossary.md#adr-architectural-decision-record) helps in understanding the reasoning behind choices, especially when looking back at the project's history or when onboarding new team members.
 
 ADRs capture the context of a decision, the different options considered, the final decision taken, and its consequences.
 
