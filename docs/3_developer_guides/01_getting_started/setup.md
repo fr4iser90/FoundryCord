@@ -1,6 +1,6 @@
 # Getting Started: Local Development Setup
 
-This guide outlines the steps to set up the FoundryCord project locally for development using Docker. It assumes you are comfortable with the command line and have a basic understanding of Docker.
+This guide outlines the steps to set up the [FoundryCord](../../../1_introduction/glossary.md#foundrycord) project locally for development using Docker. It assumes you are comfortable with the command line and have a basic understanding of Docker.
 
 ## Prerequisites
 

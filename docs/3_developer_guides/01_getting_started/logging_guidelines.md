@@ -1,6 +1,6 @@
 # Logging Guidelines
 
-This document provides comprehensive guidelines for implementing logging within the FoundryCord Bot, Web Application, and related infrastructure components. Consistent and effective logging is crucial for development, debugging, monitoring, and auditing the system.
+This document provides comprehensive guidelines for implementing logging within the [FoundryCord](../../../1_introduction/glossary.md#foundrycord) Bot, Web Application, and related infrastructure components. Consistent and effective logging is crucial for development, debugging, monitoring, and auditing the system.
 
 ---
 
@@ -15,11 +15,11 @@ This document provides comprehensive guidelines for implementing logging within 
 Use the standard Python logging levels with the following semantics:
 
 -   **`DEBUG`:** Detailed information for diagnosing specific problems during development or troubleshooting. Suitable for high-volume, low-level details.
-    -   *Examples:* Repetitive loop iterations (dashboard refresh, collector steps), detailed diagnostic messages (`[DIAGNOSTIC ...]`), function entry/exit points for complex flows, intermediate calculation results, data structures being passed between components (use sparingly).
+    -   *Examples:* Repetitive loop iterations ([dashboard](../1_introduction/glossary.md#dashboard) refresh, collector steps), detailed diagnostic messages (`[DIAGNOSTIC ...]`), function entry/exit points for complex flows, intermediate calculation results, data structures being passed between components (use sparingly).
     -   *Goal:* Provide fine-grained tracing when needed, but expect these to be filtered out in production by default.
 
 -   **`INFO`:** High-level information about the bot's normal operation and key lifecycle events. Should be relatively low volume in production.
-    -   *Examples:* Bot started/stopped/reconnected, workflow started/completed successfully (e.g., "Dashboard activation complete for ID: 1", "User sync started for Guild 123", "User sync finished for Guild 123"), significant configuration changes loaded, user actions successfully processed (e.g., "Command /xyz executed successfully by User 123"), service initialization/startup messages.
+    -   *Examples:* Bot started/stopped/reconnected, workflow started/completed successfully (e.g., "Dashboard activation complete for ID: 1", "User sync started for [Guild](../1_introduction/glossary.md#guild) 123", "User sync finished for Guild 123"), significant configuration changes loaded, user actions successfully processed (e.g., "Command /xyz executed successfully by User 123"), service initialization/startup messages.
     -   *Goal:* Provide a general overview of the bot's state and major activities.
 
 -   **`WARNING`:** Indicates potential issues or unexpected situations that don't necessarily prevent the current operation from completing but might require attention or indicate a potential future problem.
@@ -76,7 +76,7 @@ Use the standard Python logging levels with the following semantics specific to 
     -   *Goal:* Provide fine-grained tracing for web request handling and background tasks triggered via web, filtered out in production by default.
 
 -   **`INFO`:** High-level information about the web server's operation and key events.
-    -   *Web Examples:* Web server started/stopped, successful user authentication/login/logout, significant user actions completed via API (e.g., "Dashboard config saved by User 123 for Guild 456", "Template X applied by User 123"), critical service initialization (e.g., LifecycleManager stages), successful completion of background tasks initiated via web (if applicable). *Maybe* log successful request completion (e.g., `Request completed: GET /path -> 200`) but consider sampling or using DEBUG for high-volume endpoints in production.
+    -   *Web Examples:* Web server started/stopped, successful user authentication/login/logout, significant user actions completed via API (e.g., "[Dashboard](../1_introduction/glossary.md#dashboard) config saved by User 123 for [Guild](../1_introduction/glossary.md#guild) 456", "Template X applied by User 123"), critical service initialization (e.g., LifecycleManager stages), successful completion of background tasks initiated via web (if applicable). *Maybe* log successful request completion (e.g., `Request completed: GET /path -> 200`) but consider sampling or using DEBUG for high-volume endpoints in production.
     -   *Goal:* Provide an overview of server state, user activity, and major API interactions.
 
 -   **`WARNING`:** Indicates potential issues or expected client-side errors that don't indicate a server failure.

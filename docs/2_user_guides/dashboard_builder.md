@@ -1,18 +1,18 @@
 # User Guide: Dashboard Builder
 
-Welcome to the FoundryCord Dashboard Builder! This tool empowers you to design and customize interactive dashboards that your bot can display in specific Discord channels. Move beyond static messages and create dynamic, engaging content with buttons, auto-updating embeds, and more, all through a visual interface.
+Welcome to the [FoundryCord](../1_introduction/glossary.md#foundrycord) [Dashboard](../1_introduction/glossary.md#dashboard) Builder! This tool empowers you to design and customize interactive dashboards that your bot can display in specific Discord channels. Move beyond static messages and create dynamic, engaging content with buttons, auto-updating embeds, and more, all through a visual interface.
 
 This guide will help you understand how to use the Dashboard Builder to create rich channel experiences.
 
 ## Purpose
 
-The Dashboard Builder allows you to create and customize interactive dashboards that can be displayed within specific channels of your Discord guild template. Instead of just sending static messages, dashboards provide dynamic content, buttons, embeds, and other components that can update automatically or react to user interactions.
+The Dashboard Builder allows you to create and customize interactive dashboards that can be displayed within specific channels of your Discord [guild](../1_introduction/glossary.md#guild) template. Instead of just sending static messages, dashboards provide dynamic content, buttons, embeds, and other components that can update automatically or react to user interactions.
 
 This builder provides a visual interface to assemble these dashboards without needing to write complex code.
 
 ## Key Concepts
 
-*   **Dashboard Instance:** A specific dashboard you design and attach to a particular channel (or a channel within a guild template). Each instance typically has a name, a type (which might influence available components or data sources), and its unique configuration.
+*   **Dashboard Instance:** A specific [dashboard](../1_introduction/glossary.md#dashboard) you design and attach to a particular channel (or a channel within a guild template). Each instance typically has a name, a type (which might influence available components or data sources), and its unique configuration.
 *   **Components:** These are the visual and interactive building blocks of your dashboard (e.g., Text Blocks, Rich Embeds, Buttons, Select Menus, User Info Displays, Server Statistics). You select, arrange, and configure these to create the dashboard\'s content and layout.
 *   **Configuration (`config`):** The saved JSON data that represents how you\'ve arranged and set up the components for a specific Dashboard Instance.
 *   **Variables/Placeholders:** Special text snippets (often like `{{user_name}}`, `{{guild_member_count}}`, or `{{server_status.some_metric}}`) that you can insert into component configurations (e.g., in an embed\'s title or a text block). These are dynamically replaced with live data when the bot displays or updates the dashboard in Discord.
@@ -22,7 +22,7 @@ This builder provides a visual interface to assemble these dashboards without ne
     `[SCREENSHOT: Dashboard Builder interface highlighting the Preview Widget]`
 *   **Toolbox Panel:** Lists all available **Components** that you can drag onto the Editor Widget/Canvas.
     `[SCREENSHOT: Dashboard Builder interface highlighting the Toolbox Panel with component examples]`
-*   **Properties Panel (Channel Context):** When you select a channel in the main Guild Designer structure tree, this panel (often on the right side of the Guild Designer UI) will show existing Dashboard Instances attached to that channel. It provides buttons to create new instances or edit/delete existing ones for that specific channel.
+*   **Properties Panel (Channel Context):** When you select a channel in the main [Guild Designer](../1_introduction/glossary.md#guild-designer) structure tree, this panel (often on the right side of the Guild Designer UI) will show existing Dashboard Instances attached to that channel. It provides buttons to create new instances or edit/delete existing ones for that specific channel.
     `[SCREENSHOT: Guild Designer Properties Panel showing a list of Dashboard Instances for a selected channel]`
 *   **Component Properties Editor:** When a component is selected on the Editor Widget/Canvas, its specific configuration options (text fields, color pickers, choices for data sources, etc.) will appear, usually within the Editor Widget itself or in a dedicated properties area.
     `[SCREENSHOT: A selected Embed component on the canvas, with its properties (title, description, color fields) shown in an editor area]`
@@ -32,7 +32,7 @@ This builder provides a visual interface to assemble these dashboards without ne
 The typical process for creating and managing a channel dashboard is as follows:
 
 1.  **Select Target Channel:**
-    *   In the main **Guild Designer** interface, click on the channel template (e.g., `#announcements`, `#welcome`) in the server structure tree where you want to add or manage a dashboard.
+    *   In the main **[Guild Designer](../1_introduction/glossary.md#guild-designer)** interface, click on the channel template (e.g., `#announcements`, `#welcome`) in the server structure tree where you want to add or manage a dashboard.
 2.  **Manage Dashboard Instances (via Channel Properties Panel):**
     *   The **Properties Panel** (for the selected channel) will display a list of any Dashboard Instances already configured for this channel.
     *   **To Create a New Dashboard:**
@@ -63,7 +63,7 @@ The typical process for creating and managing a channel dashboard is as follows:
 
 Let\'s walk through creating a basic welcome message for a `#general` channel.
 
-1.  In the Guild Designer, select your `#general` channel template.
+1.  In the [Guild Designer](../1_introduction/glossary.md#guild-designer), select your `#general` channel template.
 2.  In its Properties Panel, click "New Dashboard."
 3.  Name it "Welcome Message" and choose a relevant type (e.g., 'Generic' or 'Welcome'). The Editor Widget opens.
 4.  From the **Toolbox**, drag an **Embed Component** onto the canvas.

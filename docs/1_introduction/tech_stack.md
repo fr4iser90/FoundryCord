@@ -1,6 +1,6 @@
 # 7. Technology Stack
 
-This document outlines the core technologies, languages, frameworks, and significant libraries used in the FoundryCord project.
+This document outlines the core technologies, languages, frameworks, and significant libraries used in the [FoundryCord](./glossary.md#foundrycord) project.
 
 ## Backend
 

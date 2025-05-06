@@ -1,6 +1,6 @@
 # 8. Coding Conventions & Patterns
 
-This document outlines the coding style, naming conventions, design patterns, and other best practices to be followed when contributing to the FoundryCord project. Adhering to these conventions ensures code consistency, readability, and maintainability.
+This document outlines the coding style, naming conventions, design patterns, and other best practices to be followed when contributing to the [FoundryCord](../../../1_introduction/glossary.md#foundrycord) project. Adhering to these conventions ensures code consistency, readability, and maintainability.
 
 ## Code Style
 

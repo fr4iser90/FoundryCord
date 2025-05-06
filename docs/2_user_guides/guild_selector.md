@@ -2,19 +2,19 @@
 
 ## Purpose
 
-The Guild Selector is a key navigation component in the FoundryCord web interface. It allows you, as an authenticated user, to easily switch the application's context to a specific Discord server (guild) that you have access to through FoundryCord. This is essential for managing guild-specific settings, designing server structures, viewing dashboards, or using any other feature that operates on a per-guild basis.
+The Guild Selector is a key navigation component in the [FoundryCord](../1_introduction/glossary.md#foundrycord) web interface. It allows you, as an authenticated user, to easily switch the application's context to a specific Discord server ([guild](../1_introduction/glossary.md#guild)) that you have access to through FoundryCord. This is essential for managing guild-specific settings, designing server structures, viewing [dashboards](../1_introduction/glossary.md#dashboard), or using any other feature that operates on a per-guild basis.
 
 This guide explains how the Guild Selector works and how to use it.
 
 ## Location
 
-The Guild Selector component is usually found in the main navigation bar of the FoundryCord web interface, often towards the top or on the left side.
+The Guild Selector component is usually found in the main navigation bar of the [FoundryCord](../1_introduction/glossary.md#foundrycord) web interface, often towards the top or on the left side.
 `[SCREENSHOT: Main FoundryCord web interface with an arrow pointing to the Guild Selector in the navbar]`
 
 ## How the Guild Selector Works & What You See
 
 1.  **Initial Display:** When you first load a page or log in:
-    *   The selector button will prominently display the name and icon of the Discord guild you last selected in FoundryCord. This is remembered to make it convenient for you to continue where you left off.
+    *   The selector button will prominently display the name and icon of the Discord [guild](../1_introduction/glossary.md#guild) you last selected in FoundryCord. This is remembered to make it convenient for you to continue where you left off.
         `[SCREENSHOT: Guild Selector button displaying a previously selected guild name and icon]`
     *   If you haven\'t selected a guild before, or if your previous selection is no longer valid, it might show a default message like "Select Guild" or similar.
         `[SCREENSHOT: Guild Selector button showing a default 'Select Guild' state]`

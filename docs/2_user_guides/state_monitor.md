@@ -33,7 +33,7 @@ The State Monitor is a powerful diagnostic tool for developers and application o
 
 ## Usage Workflow
 
-1.  **Navigation:** Access the State Monitor tool via the owner-specific section of the web interface, typically at a URL like `/owner/state-monitor/`.
+1.  **Navigation:** Access the State Monitor tool via the owner-specific section of the [FoundryCord](../1_introduction/glossary.md#foundrycord) web interface, typically at a URL like `/owner/state-monitor/`.
 2.  **View Recent Snapshots (Right Panel):**
     *   The "Recent Snapshots" panel lists previously captured snapshots.
     *   Click the **"Load"** button next to a snapshot entry to view its details in the Main Display Area.
@@ -113,7 +113,7 @@ The State Monitor is a powerful diagnostic tool for developers and application o
 *   **Q: The `computedStyles` collector isn\'t showing any data or gives an error.**
     *   A: This collector typically requires a valid CSS selector for an element currently present on the page. Ensure the element exists and the selector is correct. Some versions might prompt for this selector or have a default target.
 *   **Q: A JavaScript error occurred on a page, but I don\'t see a `js_error` snapshot.**
-    *   A: Automatic snapshots on JS errors are typically only saved if an application owner is currently logged into the FoundryCord web interface. This is a security/privacy measure to prevent arbitrary client-side errors from unknown users from filling up server storage.
+    *   A: Automatic snapshots on JS errors are typically only saved if an application owner is currently logged into the [FoundryCord](../1_introduction/glossary.md#foundrycord) web interface. This is a security/privacy measure to prevent arbitrary client-side errors from unknown users from filling up server storage.
 
 ## Future Enhancements (Ideas)
 

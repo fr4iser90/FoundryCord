@@ -1,8 +1,8 @@
 # User Guide: Guild Structure Designer
 
-Welcome to the FoundryCord Guild Structure Designer! This powerful tool allows you to visualize, create, manage, and apply templates to define the structure of your Discord servers (guilds), including categories and channels.
+Welcome to the [FoundryCord](../1_introduction/glossary.md#foundrycord) [Guild Structure Designer](../1_introduction/glossary.md#guild-designer)! This powerful tool allows you to visualize, create, manage, and apply templates to define the structure of your Discord servers ([guilds](../1_introduction/glossary.md#guild)), including categories and channels.
 
-**With the Guild Designer, you can:**
+**With the [Guild Designer](../1_introduction/glossary.md#guild-designer), you can:**
 
 *   Visualize your current server setup.
 *   Create reusable templates from your existing server or from scratch (future enhancement).
@@ -15,7 +15,7 @@ This guide will walk you through how to use the Guild Designer effectively.
 ## Accessing the Guild Designer
 
 1.  Log in to the FoundryCord web interface.
-2.  Select the Discord server (guild) you wish to manage from the Guild Selector (usually at the top of the page or in the navigation bar).
+2.  Select the Discord server ([guild](../1_introduction/glossary.md#guild)) you wish to manage from the Guild Selector (usually at the top of the page or in the navigation bar).
 3.  Navigate to the "Guild Designer" or "Structure Designer" section. This is typically found in the main navigation menu for your selected guild.
     `[SCREENSHOT: Main navigation menu highlighting Guild Designer link after guild selection]`
 

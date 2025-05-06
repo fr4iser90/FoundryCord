@@ -1,6 +1,6 @@
 # 5. API Specification
 
-This document provides a high-level overview of the FoundryCord REST API, which serves as the primary interface for the frontend web application and any external clients. It details how to access the auto-generated interactive documentation, outlines key endpoint groups, and explains authentication and authorization mechanisms.
+This document provides a high-level overview of the [FoundryCord](../../../1_introduction/glossary.md#foundrycord) REST API, which serves as the primary interface for the frontend web application and any external clients. It details how to access the auto-generated interactive documentation, outlines key endpoint groups, and explains authentication and authorization mechanisms.
 
 ## Overview
 
@@ -26,14 +26,14 @@ Listed below are the main functional groups (tags) of the API, typically corresp
     *   **Domain Relevance:** Manages user authentication via OAuth2 (likely with Discord), session creation, and retrieval of the current authenticated user\'s details. Relies on `AuthenticationService` and `SessionRepository` (from `app/shared/`).
 
 *   **Guilds (various controllers under `guild/`):**
-    *   **Domain Relevance:** Facilitates all guild-related operations, from selecting a guild to managing its configuration and designing its structure using templates. These endpoints heavily interact with `GuildService`, `TemplateService`, `GuildConfigService`, and related repositories.
+    *   **Domain Relevance:** Facilitates all [guild](../../../1_introduction/glossary.md#guild)-related operations, from selecting a guild to managing its configuration and designing its structure using templates. These endpoints heavily interact with `GuildService`, `TemplateService`, `GuildConfigService`, and related repositories.
     *   **Sub-Groups (Examples):**
         *   *Guild Selection (`guild_selector_controller.py`):* Allows users to list and select the active guild they are managing.
-        *   *Guild Admin (`guild/admin/*_controller.py`):* Provides endpoints for guild administrators to manage users within the guild context of FoundryCord and configure guild-specific settings.
-        *   *Guild Template Designer (`guild_template_controller.py`, `structure_controller.py`, etc.):* Core of the Guild Designer feature. Endpoints for creating, reading, updating, deleting, and applying guild templates. Also handles import/export or sharing of templates.
+        *   *Guild Admin (`guild/admin/*_controller.py`):* Provides endpoints for guild administrators to manage users within the guild context of [FoundryCord](../../../1_introduction/glossary.md#foundrycord) and configure guild-specific settings.
+        *   *Guild Template Designer (`guild_template_controller.py`, `structure_controller.py`, etc.):* Core of the [Guild Designer](../../../1_introduction/glossary.md#guild-designer) feature. Endpoints for creating, reading, updating, deleting, and applying guild templates. Also handles import/export or sharing of templates.
 
 *   **Dashboards (various controllers under `dashboards/`):**
-    *   **Domain Relevance:** Manages the creation, configuration, and data retrieval for custom web dashboards. Interacts with `DashboardConfigurationService`, `DashboardComponentService`, and UI layout services.
+    *   **Domain Relevance:** Manages the creation, configuration, and data retrieval for custom web [dashboards](../../../1_introduction/glossary.md#dashboard). Interacts with `DashboardConfigurationService`, `DashboardComponentService`, and UI layout services.
     *   **Endpoints (Examples):** CRUD for dashboard configurations, CRUD for dashboard components/widgets, retrieving data for dashboard widgets.
 
 *   **UI Layouts (`ui/layout_controller.py`):**
@@ -41,7 +41,7 @@ Listed below are the main functional groups (tags) of the API, typically corresp
     *   **Endpoints:** `POST /ui/layouts`, `GET /ui/layouts/{page_identifier}`.
 
 *   **Owner (various controllers under `owner/`):**
-    *   **Domain Relevance:** Provides superuser-level control over the FoundryCord application, including bot lifecycle management, viewing system logs, managing all guilds/users, and accessing system-wide monitoring or state snapshots. These endpoints are heavily restricted and interact with various core services.
+    *   **Domain Relevance:** Provides superuser-level control over the [FoundryCord](../../../1_introduction/glossary.md#foundrycord) application, including bot lifecycle management, viewing system logs, managing all guilds/users, and accessing system-wide monitoring or state snapshots. These endpoints are heavily restricted and interact with various core services.
     *   **Endpoints (Examples):** Bot control (start/stop/restart signals), log viewing, global guild management, system state monitoring.
 
 *   **System (`system/health_controller.py`):**
@@ -56,7 +56,7 @@ Listed below are the main functional groups (tags) of the API, typically corresp
 
 ## WebSocket API
 
-*   **Current Status:** FoundryCord does **not** currently utilize WebSocket APIs for client-server communication.
+*   **Current Status:** [FoundryCord](../../../1_introduction/glossary.md#foundrycord) does **not** currently utilize WebSocket APIs for client-server communication.
 *   **Future Consideration:** WebSocket support was considered (e.g., for real-time log streaming in the `BotLoggerController`) and might be implemented in the future if specific real-time, bidirectional communication needs arise.
 
 ## Authentication & Authorization
