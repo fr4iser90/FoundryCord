@@ -11,6 +11,15 @@
 *   Dependency Inversion Principle (DIP)
 *   Interface Segregation Principle (ISP)
 *   Dependency Injection (DI)
+**Affected:**
+*    /app/bot/application/services/dashboard/dashboard_data_service.py
+*    /app/bot/infrastructure/config/registries/component_registry.py
+*    /app/bot/infrastructure/factories/composite/bot_factory.py
+*    /app/bot/infrastructure/startup/bot.py
+*    /app/bot/infrastructure/startup/setup_hooks.py
+*    /app/bot/interfaces/dashboards/components/base_component.py
+*    /app/bot/interfaces/dashboards/components/common/embeds/dashboard_embed.py
+*    /app/bot/interfaces/dashboards/components/common/selectors/generic_selector.py
 
 ## Phase 1: Define Core Interfaces (ABCs)
 
