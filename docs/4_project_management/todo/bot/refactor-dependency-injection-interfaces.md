@@ -2,6 +2,11 @@
 
 **Goal:** Resolve circular import dependencies involving core components like `ComponentRegistry`, `ServiceFactory`, `FoundryCord`, Components, and Controllers by consistently applying the Interface Segregation Principle (using ABCs) and Dependency Injection (DI). This will eliminate the need for `TYPE_CHECKING` workarounds for these specific cycles and improve overall architecture, testability, and maintainability.
 
+**Design Decisions & Rationale:**
+
+*   **Interface Placement:** Interfaces defining the *internal management contracts* of the bot (like `ComponentRegistry`, `ServiceFactory`, `Bot`) reside in `app/bot/application/interfaces/`. This maintains separation of concerns; these interfaces describe *how the bot works internally*. Interfaces for *shared data or services* consumed by multiple parts (e.g., `app/web`) would belong in `app/shared`. The web layer should interact with the bot via dedicated shared interfaces/services, not its internal management interfaces.
+*   **Interface Naming:** Interfaces are named using simple, descriptive names (e.g., `ComponentRegistry`, `ServiceFactory`) without prefixes like `I`. This follows modern Python conventions. The use of `abc.ABC` (or potentially `typing.Protocol`) and placement within an `interfaces` module clearly indicates their purpose.
+
 **Related Architectural Concepts:**
 *   Dependency Inversion Principle (DIP)
 *   Interface Segregation Principle (ISP)
@@ -10,61 +15,61 @@
 ## Phase 1: Define Core Interfaces (ABCs)
 
 *   [ ] **Task 1.1:** Create a new directory for application-level interfaces: `app/bot/application/interfaces/`.
-*   [ ] **Task 1.2:** Define `IComponentRegistry` in `app/bot/application/interfaces/registry.py`.
+*   [ ] **Task 1.2:** Define the `ComponentRegistry` interface in `app/bot/application/interfaces/component_registry.py`.
     *   Include abstract methods for all public methods currently used by other classes (e.g., `get_component_class`, `get_type_by_key`, `get_definition_by_key`, `register_component`, `initialize`, `get_all_component_types`, `has_component`). Use `abc.ABC` and `@abstractmethod`.
-*   [ ] **Task 1.3:** Define `IServiceFactory` in `app/bot/application/interfaces/factory.py`.
+*   [ ] **Task 1.3:** Define the `ServiceFactory` interface in `app/bot/application/interfaces/service_factory.py`.
     *   Include abstract methods for its public interface (e.g., `get_service`, `has_service`, `register_service`, `initialize_services`, `create_or_get`, `get_services`).
-*   [ ] **Task 1.4:** Define `IBot` (or potentially more granular interfaces like `IBotCore`, `IBotServices`) in `app/bot/application/interfaces/bot.py`.
+*   [ ] **Task 1.4:** Define the `Bot` interface (or potentially more granular interfaces like `BotCore`, `BotServices`) in `app/bot/application/interfaces/bot.py`.
     *   Identify the minimal set of bot attributes/methods needed by dependencies (e.g., `service_factory` attribute, maybe `user` attribute, `get_channel`). Start minimal and add as needed during Phase 3.
 
 ## Phase 2: Implement Interfaces
 
 *   [ ] **Task 2.1:** Modify `app/bot/infrastructure/config/registries/component_registry.py`:
-    *   Import `IComponentRegistry`.
-    *   Make `ComponentRegistry` inherit from `IComponentRegistry`.
+    *   Import `ComponentRegistry` as `ComponentRegistryInterface` from `....application.interfaces.component_registry`. (Use alias to avoid name clash with the class itself).
+    *   Make `ComponentRegistry` inherit from `ComponentRegistryInterface`.
     *   Ensure all abstract methods are implemented.
 *   [ ] **Task 2.2:** Modify `app/bot/infrastructure/factories/service_factory.py`:
-    *   Import `IServiceFactory`.
-    *   Make `ServiceFactory` inherit from `IServiceFactory`.
+    *   Import `ServiceFactory` as `ServiceFactoryInterface` from `....application.interfaces.service_factory`.
+    *   Make `ServiceFactory` inherit from `ServiceFactoryInterface`.
     *   Ensure all abstract methods are implemented.
 *   [ ] **Task 2.3:** Modify `app/bot/infrastructure/startup/bot.py`:
-    *   Import `IBot` (or relevant bot interfaces).
-    *   Make `FoundryCord` inherit from `IBot`.
+    *   Import `Bot` as `BotInterface` (or relevant bot interfaces) from `....application.interfaces.bot`.
+    *   Make `FoundryCord` inherit from `BotInterface`.
     *   Ensure all abstract methods are implemented.
 
 ## Phase 3: Update Dependencies & Type Hints
 
 *   [ ] **Task 3.1:** Update `app/bot/infrastructure/factories/component_factory.py`:
-    *   Import `IComponentRegistry` from `...interfaces.registry`.
-    *   Change `__init__` type hint: `component_registry: IComponentRegistry`.
-    *   Remove direct import of `ComponentRegistry`.
+    *   Import `ComponentRegistry` interface from `....application.interfaces.component_registry`.
+    *   Change `__init__` type hint: `component_registry: ComponentRegistry`.
+    *   Remove direct import of the concrete `ComponentRegistry` class (if different).
 *   [ ] **Task 3.2:** Update `app/bot/infrastructure/factories/composite/bot_factory.py`:
-    *   Import `IComponentRegistry`, `IServiceFactory`, `IBot`.
-    *   Change `__init__` type hint: `bot: IBot`.
-    *   Change attribute type hints: `component_registry: Optional[IComponentRegistry]`, `service_factory: Optional[IServiceFactory]`.
-    *   Remove direct imports of `ComponentRegistry`, `ServiceFactory`, `FoundryCord`.
+    *   Import `ComponentRegistry`, `ServiceFactory`, `Bot` interfaces.
+    *   Change `__init__` type hint: `bot: Bot`.
+    *   Change attribute type hints: `component_registry: Optional[ComponentRegistry]`, `service_factory: Optional[ServiceFactory]`.
+    *   Remove direct imports of concrete `ComponentRegistry`, `ServiceFactory`, `FoundryCord` classes.
 *   [ ] **Task 3.3:** Update `app/bot/interfaces/dashboards/controller/dashboard_controller.py`:
-    *   Import `IComponentRegistry`, `IServiceFactory`, `IBot`.
-    *   Modify `__init__` to accept dependencies via parameters: `def __init__(..., bot: IBot, component_registry: IComponentRegistry, data_service: DashboardDataService, ...):` (adjust exact params as needed).
+    *   Import `ComponentRegistry`, `ServiceFactory`, `Bot` interfaces.
+    *   Modify `__init__` to accept dependencies via parameters: `def __init__(..., bot: Bot, component_registry: ComponentRegistry, data_service: DashboardDataService, ...):` (adjust exact params as needed).
     *   Remove logic fetching services via `bot.service_factory` inside methods; use the injected instances.
-    *   Change type hints using `FoundryCord` or `ServiceFactory` to use the interfaces.
+    *   Change type hints using concrete `FoundryCord` or `ServiceFactory` to use the interfaces.
 *   [ ] **Task 3.4:** Update `app/bot/interfaces/dashboards/components/base_component.py`:
-    *   Import `IBot`.
-    *   Change `deserialize` type hint: `bot: Optional[IBot] = None`.
-    *   Remove direct import of `FoundryCord`.
+    *   Import `Bot` interface.
+    *   Change `deserialize` type hint: `bot: Optional[Bot] = None`.
+    *   Remove direct import of concrete `FoundryCord` class.
 *   [ ] **Task 3.5:** Update `app/bot/application/services/dashboard/dashboard_data_service.py`:
-    *   Import `IBot`, `IServiceFactory`.
-    *   Change `__init__` type hint: `bot: IBot`, `service_factory: IServiceFactory`.
-    *   Remove direct imports of `FoundryCord`, `ServiceFactory`.
+    *   Import `Bot`, `ServiceFactory` interfaces.
+    *   Change `__init__` type hint: `bot: Bot`, `service_factory: ServiceFactory`.
+    *   Remove direct imports of concrete `FoundryCord`, `ServiceFactory` classes.
 *   [ ] **Task 3.6:** Update `app/bot/infrastructure/config/registries/component_registry.py`:
-    *   Import `IBot`.
-    *   Change `initialize` type hint: `bot: IBot`.
-    *   Change attribute type hint: `bot: Optional[IBot]`.
-    *   Remove direct import of `FoundryCord`.
+    *   Import `Bot` interface.
+    *   Change `initialize` type hint: `bot: Bot`.
+    *   Change attribute type hint: `bot: Optional[Bot]`.
+    *   Remove direct import of concrete `FoundryCord` class.
 *   [ ] **Task 3.7:** Update `app/bot/infrastructure/startup/bot.py`:
-    *   Import `IServiceFactory`.
-    *   Change attribute type hint: `service_factory: Optional[IServiceFactory]`.
-    *   Remove direct import of `ServiceFactory`.
+    *   Import `ServiceFactory` interface.
+    *   Change attribute type hint: `service_factory: Optional[ServiceFactory]`.
+    *   Remove direct import of concrete `ServiceFactory` class.
 *   [ ] **Task 3.8:** Review other potentially affected files (e.g., other factories, services, workflows) and update imports/type hints to use interfaces where appropriate.
 
 ## Phase 4: Solidify Dependency Injection Wiring
