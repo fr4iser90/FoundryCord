@@ -43,7 +43,7 @@
 *   [x] **Task 2.1:** Audit `docs/3_developer_guides/01_getting_started/`.
     *   **Focus:** Ensure `setup.md` is 100% accurate and tested by a "new user" perspective. Verify `coding_conventions.md`, `contribution.md`, `logging_guidelines.md`, and `testing_guidelines.md` are comprehensive, up-to-date, and actionable.
     *   **Affected Files:** All files in `docs/3_developer_guides/01_getting_started/`
-*   [ ] **Task 2.2:** Deep dive into `docs/3_developer_guides/02_architecture/` (excluding `overview.md`).
+*   [x] **Task 2.2:** Deep dive into `docs/3_developer_guides/02_architecture/` (excluding `overview.md`).
     *   **Sub-Task 2.2.1:** Review `project_structure.md`.
         *   **Focus:** Ensure it accurately reflects the current layout and explains the purpose of top-level directories and key sub-directories.
         *   **Affected Files:** `docs/3_developer_guides/02_architecture/project_structure.md`
@@ -59,7 +59,7 @@
     *   **Sub-Task 2.2.5:** Review `backend_design.md` and `frontend_design.md`.
         *   **Focus:** High-level design patterns used, state management (frontend), key libraries/frameworks and their roles, communication patterns.
         *   **Affected Files:** `docs/3_developer_guides/02_architecture/backend_design.md`, `docs/3_developer_guides/02_architecture/frontend_design.md`
-*   [ ] **Task 2.3:** Audit `docs/3_developer_guides/03_core_components/`.
+*   [x] **Task 2.3:** Audit `docs/3_developer_guides/03_core_components/`.
     *   **Focus:** For `bot_internals.md`, `shared_components.md`, `web_internals.md`:
         *   Identify key classes/modules representing DDD Aggregates, Entities, Value Objects, Domain Services, Repositories.
         *   Document their responsibilities and collaborations.

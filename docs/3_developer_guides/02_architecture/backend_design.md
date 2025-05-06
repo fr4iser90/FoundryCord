@@ -1,4 +1,6 @@
-# 3. Backend Architecture
+# 3. Backend Architecture Design
+
+This document outlines the architectural design of the FoundryCord backend system, which powers the REST API and serves the web interface. It details the layered approach, key components, design patterns, and communication strategies employed.
 
 ## Overview
 
@@ -6,7 +8,7 @@ Describe the overall approach for the backend API.
 *   **Framework:** FastAPI
 *   **Language:** Python 3.x
 *   **Database ORM:** SQLAlchemy (async with asyncio, v2.x)
-*   **Key Principles:** Layered architecture (Controller -> Service -> Repository), Dependency Injection (FastAPI's Depends), Async operations, Shared Core library (`app/shared`).
+*   **Key Principles:** Layered architecture (Controller -> Application Service -> Domain Service -> Repository), Dependency Injection (FastAPI's `Depends`), Asynchronous operations (`async/await`), extensive use of the Shared Core library (`app/shared`).
 
 ## Layers
 
@@ -36,8 +38,15 @@ Describe the responsibilities of each layer:
     *   Defines SQLAlchemy ORM models representing database tables.
     *   Includes table definitions, columns, relationships, and constraints.
 *   **Schema Layer (`app/web/interfaces/api/rest/v1/schemas/`):**
-    *   Defines Pydantic models used specifically for API request validation and response serialization.
-    *   Ensures a clear contract for the API, decoupling API structure from internal domain models.
+    *   Defines Pydantic models used specifically for API request validation, response serialization, and ensuring a clear data contract for the API. This decouples the API's public interface from internal domain model structures.
+
+## Configuration Loading
+
+Backend configuration is sourced from:
+1.  Environment variables (managed in `docker/.env` and loaded via `python-dotenv`).
+2.  Shared configuration modules and utilities within `app/shared/infrastructure/config/`.
+3.  Web-specific configuration loading in `app/web/infrastructure/config/`.
+FastAPI settings management (e.g., Pydantic `BaseSettings`) may also be used to consolidate and provide access to these configurations.
 
 ## Database Interaction
 
@@ -47,8 +56,8 @@ Describe the responsibilities of each layer:
 
 ## Bot Communication
 
-*   **Backend -> Bot:** The mechanism for the Backend API to trigger actions in the Discord Bot worker needs clarification. Potential options: Database flags, dedicated message queue (e.g., Redis Pub/Sub, RabbitMQ), or an internal RPC/API call. **[Needs Clarification]**
-*   **Bot -> Backend/Data:** The Bot worker primarily accesses data via the Shared Core's Repositories, directly interacting with the database. It may potentially call specific, secured Backend API endpoints if needed, but direct DB access via shared modules seems primary.
+*   **Backend -> Bot:** The primary mechanism for the Backend API to trigger actions in the Discord Bot worker is via **internal HTTP API calls**. The Backend (FastAPI application) uses an HTTP client like `httpx` to make requests to an internal API exposed by the Bot (e.g., as defined in `app/bot/interfaces/api/internal/`). This allows for direct, synchronous or asynchronous command/task invocation on the bot from web user actions. Other methods like database flags or message queues might be used for less direct or more decoupled inter-process communication if needed in specific scenarios.
+*   **Bot -> Backend/Data:** The Bot worker primarily accesses data and shared business logic via the Shared Core library\'s Repositories and Services, directly interacting with the database or shared functionalities. It generally does not call back to the main public-facing Backend API unless for very specific, isolated use cases.
 
 ## Error Handling
 
