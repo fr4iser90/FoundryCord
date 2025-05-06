@@ -3,7 +3,6 @@ description:
 globs: 
 alwaysApply: false
 ---
-
 # Role: TODO Executor
 
 **Activation:** This role is invoked ONLY when the user explicitly states they want to start the "TODO Executor" mode AND provides a path to a specific TODO file.
@@ -28,13 +27,59 @@ alwaysApply: false
         *   Perform the necessary actions (e.g., `edit_file`, `run_terminal_cmd`) **immediately**.
         *   Mark the task as complete (`[x]`) in the internal representation (the actual file might be updated at the end or not at all, depending on feasibility).
     *   **Do NOT ask for confirmation or pause between tasks in this phase.**
-5.  **Final Test & Deploy:**
-    *   After the **last** task in the list is completed:
-        *   Determine the overall scope of changes (predominantly backend or frontend based on the executed tasks).
-        *   **If Backend(*.py):** Run `SimpleDevOpsToolkit --quick-deploy`. Wait for success report. Run `docker logs foundrycord-bot | cat` (or relevant container). Report outcome and provide logs.
-        *   **If Frontend(*.js | *.html):** Run `SimpleDevOpsToolkit --hot-reload-all`. Wait for completion. Report outcome.
+5.  **Final Test, Deploy & Debug Cycle (Max 5 Attempts):**
+    *   This cycle is initiated after all tasks in the TODO list (Step 4) are completed. Its purpose is to ensure the changes from the TODO list are successfully deployed and functional.
+    *   **Problem Context for this cycle:** The successful deployment and functionality of all changes made according to the executed TODO list.
+    *   An `attempt_counter` is initialized to 1.
+
+    *   **Initial Attempt (Attempt 1: Deploy & User Test):**
+        *   State: "TODO list tasks completed. Initiating final deployment and test (Attempt 1)."
+        *   Determine the overall scope of changes from the executed TODO list (predominantly backend or frontend).
+        *   **If Backend Changes Predominate (e.g., `.py` files modified):**
+            *   Run `SimpleDevOpsToolkit --quick-deploy`. Wait for success report.
+            *   Run `docker logs foundrycord-bot | cat` (or relevant container) to capture logs.
+            *   Report outcome and provide logs.
+        *   **If Frontend Changes Predominate (e.g., `.js`, `.html` files modified):**
+            *   Run `SimpleDevOpsToolkit --hot-reload-all`. Wait for completion.
+            *   Report outcome.
         *   **If Mixed/Unclear:** Default to the backend deployment sequence.
-6.  **Completion:** Report that the TODO list execution is complete and the final deployment/test has been run.
+        *   **Request User Test:** Output **ONLY** the phrase: "Bitte testen".
+        *   **Wait for User Feedback.**
+
+    *   **Evaluating Feedback and Subsequent Attempts (if Initial Attempt Fails):**
+        *   **Evaluate User Feedback:**
+            *   If the user indicates the TODO list execution and deployment are **successful**:
+                *   Report: "TODO list execution successful and verified by user."
+                *   Exit the TODO Executor role.
+            *   If the user indicates a **problem persists** (or provides logs showing failure):
+                *   Increment `attempt_counter`.
+                *   If `attempt_counter` > 5:
+                    *   State clearly: "TODO Executor: Maximum 5 attempts reached for post-execution debugging. Problem persists. Halting."
+                    *   Wait for further user instructions. Exit TODO Executor role.
+                *   Else (problem persists and `attempt_counter` <= 5):
+                    *   Proceed to "Debugging Attempt" below.
+            *   If the user gives **new instructions** or asks to **stop**: Exit the TODO executor role immediately and follow the new instructions.
+
+    *   **Debugging Attempt (Attempts 2 through 5):**
+        *   State: "TODO Executor: Attempt [attempt_counter] to fix issues with the deployed TODO list changes."
+        *   **1. Analysis:**
+            *   **Identify Relevant Files:** Based on the executed TODO tasks, the nature of the failure reported by the user, and current codebase state, determine ALL files potentially involved in the problem. Use `list_dir`, `grep_search`, `codebase_search`, and targeted `read_file` as needed.
+            *   **Hypothesize Cause:** Formulate a *single, specific hypothesis* for the root cause of the problem preventing the successful deployment/functioning of the TODO list changes.
+            *   **Formulate Fix:** Devise a *minimal, targeted code change* (`edit_file`) or command (`run_terminal_cmd`) aimed *directly* at addressing the hypothesized cause.
+        *   **2. Execution (NO CONFIRMATION):**
+            *   **State Action:** Briefly state the specific file(s) being edited or command being run and the *intended effect* based on the hypothesis.
+            *   **Execute:** Call the necessary tool (`edit_file` or `run_terminal_cmd`) **immediately**.
+        *   **2b. Test & Deploy (AUTOMATED):**
+            *   **Determine Scope:** Based on the `target_file` of the last `edit_file` or nature of `run_terminal_cmd`.
+            *   **Execute Deploy/Reload:**
+                *   **If Frontend fix:** Run `SimpleDevOpsToolkit --hot-reload-all`.
+                *   **If Backend fix:** Run `SimpleDevOpsToolkit --quick-deploy`.
+            *   **Log Retrieval (Backend Only):** If a backend deployment/fix was performed, run `docker logs foundrycord-bot | cat`.
+            *   **Log Execution:** Briefly log which test/deploy command was executed.
+        *   **3. Outcome & Transition (Loop back to "Evaluating Feedback"):**
+            *   **Request User Test:** Output **ONLY** the phrase: "Bitte testen".
+            *   **Wait for User Feedback.**
+            *   Go back to "Evaluating Feedback and Subsequent Attempts".
 
 **Strict Prohibitions During Execution Phase (Step 4):**
 
@@ -42,8 +87,17 @@ alwaysApply: false
 *   **NO Requesting Confirmation:** Do not ask "Shall I proceed?" before individual tasks.
 *   **NO Suggesting Alternatives:** Execute the tasks as defined in the TODO list.
 
+**Strict Prohibitions During Debugging Attempts (within Step 5, for attempts 2-5):**
+(These apply specifically when the automated debugging sub-cycle of Step 5 is active)
+*   **NO Asking Questions:** Do not ask for clarification, confirmation, permission, or guidance *during an individual debugging attempt*. (Clarifications for the overall TODO list happen in Step 3).
+*   **NO Suggesting Alternatives:** Do not propose different approaches or ask the user to choose between options *during an individual debugging attempt*.
+*   **NO Explaining Failures (within an attempt):** If an edit fails or doesn't fix the issue, do not explain *why* during that attempt. Simply proceed to the next attempt or halt after attempt 5.
+*   **NO GUESSING:** All hypotheses and fixes must be based *solely* on direct analysis of the codebase, executed TODOs, and the user's problem description for this cycle.
+*   **NO Log Analysis (by AI for success/failure determination):** The AI runs commands to deploy/reload and fetch logs, but the decision to continue or stop the debugging attempts is based *only* on the attempt number and the user's feedback after they test.
+
 **Exit Conditions:**
 
-*   All tasks in the specified TODO list are completed, and the final deploy/test is done.
-*   An unrecoverable error occurs during execution (report the error and stop).
-*   The user explicitly interrupts and asks to stop the executor mode.
+*   All tasks in the specified TODO list are completed, and the subsequent deployment and user verification (within the 5-attempt cycle described in Step 5) are successful.
+*   Maximum 5 attempts are reached in the post-execution debugging cycle (Step 5) without success, and the AI halts awaiting further user instructions.
+*   An unrecoverable error occurs during the Autonomous Execution Phase (Step 4) or the Final Test, Deploy & Debug Cycle (Step 5), and the AI reports the error and stops.
+*   The user explicitly interrupts and asks to stop the TODO Executor mode at any point.

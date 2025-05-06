@@ -4,6 +4,12 @@ import logging
 import asyncio
 from datetime import datetime
 
+# Interface Imports
+from app.bot.application.interfaces.bot import Bot as BotInterface
+from app.bot.application.interfaces.service_factory import ServiceFactory as ServiceFactoryInterface
+from app.bot.application.interfaces.component_registry import ComponentRegistry as ComponentRegistryInterface
+from app.bot.application.services.dashboard.dashboard_data_service import DashboardDataService
+
 from app.shared.interfaces.logging.api import get_bot_logger
 logger = get_bot_logger()
 
@@ -16,7 +22,14 @@ class DashboardController:
     through configuration rather than inheritance
     """
     
-    def __init__(self, dashboard_id: str, channel_id: int, dashboard_type: str, **kwargs):
+    def __init__(self, 
+                 dashboard_id: str, 
+                 channel_id: int, 
+                 dashboard_type: str,
+                 bot, # No type hint for BotInterface
+                 component_registry, # No type hint for ComponentRegistryInterface
+                 data_service: 'DashboardDataService', # Type hint for data_service can remain as per TODO
+                 **kwargs):
         """Initialize the dashboard controller from configuration"""
         # Dashboard identification
         self.dashboard_id = dashboard_id
@@ -36,78 +49,44 @@ class DashboardController:
         self.registered_handlers = {}
         
         # State tracking
-        self.bot = kwargs.get('bot')
+        self.bot = bot # Injected
         self.message_id = kwargs.get('message_id', None)
         self.message: Optional[nextcord.Message] = None
         self.initialized = False
         self.rate_limits = {}
         
-        # Dependencies (to be initialized)
-        self.component_registry = None 
-        self.data_service = None # Renamed from builder service
+        # Dependencies (Injected)
+        self.component_registry = component_registry
+        self.data_service = data_service
         
-        logger.debug(f"Initialized dashboard controller for {dashboard_type} dashboard {self.dashboard_id}")
+        logger.debug(f"Initialized dashboard controller for {dashboard_type} dashboard {self.dashboard_id} with injected dependencies.")
     
-    async def initialize(self, bot):
+    async def initialize(self): # Removed bot parameter, as it's injected in __init__
         """Initialize the dashboard controller"""
-        self.bot = bot
+        # self.bot is already set from __init__
         
-        bot_id = getattr(bot.user, 'id', 'N/A')
-        has_factory = hasattr(bot, 'service_factory')
-        factory_obj = getattr(bot, 'service_factory', None)
-        factory_type = type(factory_obj).__name__
-        logger.debug(f"[DEBUG controller.initialize] Received bot. Bot ID: {bot_id}, Has service_factory attr: {has_factory}, Factory Object Type: {factory_type}")
-        
+        # Dependencies (component_registry, data_service) are now injected via __init__
+        # So, no need to fetch them from bot.service_factory here.
 
-        # Get Component Registry & Data Service
-        try:
-            # Use more specific check and logging
-            if has_factory and factory_obj is not None:
-                 logger.debug(f"[DEBUG controller.initialize] Trying to get services from factory: {factory_obj}")
-                 self.component_registry = factory_obj.get_service('component_registry')
-                 self.data_service = factory_obj.get_service('dashboard_data_service') 
-
-                 if not self.component_registry:
-                     logger.warning("[DEBUG controller.initialize] Component Registry service IS NONE within Service Factory.")
-                 else:
-                     logger.debug(f"[DEBUG controller.initialize] Component Registry obtained: {type(self.component_registry).__name__}")
-
-                 if not self.data_service:
-                     logger.warning("[DEBUG controller.initialize] DashboardDataService service IS NONE within Service Factory.")
-                 else:
-                     logger.debug(f"[DEBUG controller.initialize] Data Service obtained: {type(self.data_service).__name__}")
-
-            elif has_factory and factory_obj is None:
-                 logger.error(f"[{self.dashboard_id}] [DEBUG controller.initialize] Service factory attribute EXISTS but IS NONE on bot instance.")
-                 return False # Explicitly return False
-            else: # Attribute doesn't exist
-                 logger.error(f"[{self.dashboard_id}] [DEBUG controller.initialize] Service factory attribute DOES NOT EXIST on bot instance.")
-                 return False # Explicitly return False
-
-            # Check if services were actually retrieved
-            if not self.component_registry:
-                logger.error(f"[{self.dashboard_id}] Component Registry not available for DashboardController after factory check.")
-                # return False # Decide handling - maybe allow init but log error? For now, let it proceed with error logs.
-            if not self.data_service:
-                 logger.error(f"[{self.dashboard_id}] DashboardDataService not available for DashboardController after factory check.")
-                 # return False # Decide handling
-
-        except AttributeError as ae:
-             # Catch if factory_obj doesn't have get_service
-             logger.error(f"[{self.dashboard_id}] [DEBUG controller.initialize] Service Factory ({factory_type}) missing 'get_service' method? Error: {ae}", exc_info=True)
-             return False
-        except Exception as e:
-            logger.error(f"[{self.dashboard_id}] [DEBUG controller.initialize] Error getting services/registries: {e}", exc_info=True)
+        if not self.bot:
+            logger.error(f"[{self.dashboard_id}] Bot instance not available during initialization.")
             return False
-            
-        # Load dashboard definition from database
-        # await self.load_dashboard_definition() # This loads self.config, self.title etc.
+        if not self.component_registry:
+            logger.error(f"[{self.dashboard_id}] Component Registry not available during initialization.")
+            # Decide handling - for now, let it proceed but log error.
+            # Depending on strictness, could return False here.
+        if not self.data_service:
+            logger.error(f"[{self.dashboard_id}] DashboardDataService not available during initialization.")
+            # Decide handling
+
+        # Load dashboard definition from database (if this logic is still needed here)
+        # await self.load_dashboard_definition() 
         
         # Register standard handlers
         self.register_standard_handlers()
         
         self.initialized = True
-        logger.debug(f"Dashboard {self.dashboard_id} initialization complete (Services might be missing).") # Adjusted log
+        logger.debug(f"Dashboard {self.dashboard_id} initialization complete.")
         return True
     
     

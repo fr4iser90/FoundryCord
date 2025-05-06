@@ -1,14 +1,12 @@
 """Base component for dashboard UI elements."""
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, Callable, Awaitable, Union, List, ClassVar, TYPE_CHECKING
+from typing import Dict, Any, Optional, Callable, Awaitable, Union, List, ClassVar
 import nextcord
 import copy
 
+from app.bot.application.interfaces.bot import Bot as BotInterface
 from app.shared.interfaces.logging.api import get_bot_logger
 logger = get_bot_logger()
-
-if TYPE_CHECKING:
-    from app.bot.core.main import FoundryCord # For type hinting bot
 
 class BaseComponent(ABC):
     """Base class for all dashboard components.
@@ -20,7 +18,7 @@ class BaseComponent(ABC):
     # Class variables that should be overridden by subclasses
     COMPONENT_TYPE: ClassVar[str] = "base"
     
-    def __init__(self, bot: 'FoundryCord', instance_config: Dict[str, Any]):
+    def __init__(self, bot, instance_config: Dict[str, Any]):
         """
         Initialize the component using instance config and base definition from registry.
 

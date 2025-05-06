@@ -1,14 +1,10 @@
 import nextcord
-from typing import Optional, Dict, Any, List, ClassVar, TYPE_CHECKING
+from typing import Optional, Dict, Any, List, ClassVar
 from abc import ABC, abstractmethod
 from typing import Coroutine
 
 from app.shared.interfaces.logging.api import get_bot_logger
 from app.bot.interfaces.dashboards.components.base_component import BaseComponent
-
-# Use TYPE_CHECKING to avoid circular import during runtime
-if TYPE_CHECKING:
-    from app.bot.infrastructure.startup.bot import FoundryCord
 
 logger = get_bot_logger()
 
@@ -18,7 +14,7 @@ class GenericSelectorComponent(BaseComponent):
     """
     COMPONENT_TYPE: ClassVar[str] = "selector" # Matches the type string from DB
 
-    def __init__(self, bot: 'FoundryCord', instance_config: Dict[str, Any]):
+    def __init__(self, bot, instance_config: Dict[str, Any]):
         """
         Initializes the generic selector component.
 

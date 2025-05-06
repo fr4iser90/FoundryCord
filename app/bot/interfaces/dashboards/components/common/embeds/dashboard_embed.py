@@ -1,14 +1,10 @@
 """Dashboard embed component for displaying dashboard content."""
 
 import nextcord
-from typing import Optional, Dict, Any, ClassVar, List, Union, TYPE_CHECKING
+from typing import Optional, Dict, Any, ClassVar, List, Union
 
 from app.shared.interfaces.logging.api import get_bot_logger
 from app.bot.interfaces.dashboards.components.base_component import BaseComponent
-
-# Use TYPE_CHECKING to avoid circular import during runtime
-if TYPE_CHECKING:
-    from app.bot.infrastructure.startup.bot import FoundryCord
 
 logger = get_bot_logger()
 
@@ -65,7 +61,7 @@ class DashboardEmbed(BaseComponent):
     # Class variables
     COMPONENT_TYPE: ClassVar[str] = "dashboard_embed"
     
-    def __init__(self, bot: 'FoundryCord', instance_config: Dict[str, Any]):
+    def __init__(self, bot, instance_config: Dict[str, Any]):
         """
         Initialize the dashboard embed.
 

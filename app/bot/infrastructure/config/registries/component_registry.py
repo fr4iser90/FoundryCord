@@ -1,19 +1,16 @@
 """Registry for dashboard components."""
 import logging
 import json
-from typing import Dict, Type, Any, Optional, TYPE_CHECKING
+from typing import Dict, Type, Any, Optional
 from dataclasses import dataclass
 
+from app.bot.application.interfaces.component_registry import ComponentRegistry as ComponentRegistryInterface
+from app.bot.application.interfaces.bot import Bot as BotInterface
 from app.bot.interfaces.dashboards.components.base_component import BaseComponent
 from app.shared.infrastructure.database.session.context import session_context
 from app.shared.infrastructure.repositories.dashboards import DashboardComponentDefinitionRepositoryImpl
 from app.shared.infrastructure.models.dashboards import DashboardComponentDefinitionEntity
 
-# Use TYPE_CHECKING to avoid circular import during runtime
-if TYPE_CHECKING:
-    from app.bot.infrastructure.startup.bot import FoundryCord
-
-# Use shared logger if available, otherwise default
 try:
     from app.shared.interfaces.logging.api import get_bot_logger
     logger = get_bot_logger()
@@ -33,17 +30,17 @@ class ComponentDefinition:
         if self.default_config is None:
             self.default_config = {}
 
-class ComponentRegistry:
+class ComponentRegistry(ComponentRegistryInterface):
     """Registry for dashboard UI components, loading definitions from DB."""
     
     def __init__(self):
         self._components: Dict[str, ComponentDefinition] = {}
         self._definitions_by_key: Dict[str, Dict[str, Any]] = {}
-        self.bot: Optional['FoundryCord'] = None
+        self.bot = None
         self._db_definitions_loaded = False
         logger.debug("Component registry initialized")
         
-    async def initialize(self, bot: 'FoundryCord'):
+    async def initialize(self, bot):
         """Loads component definitions from the database."""
         self.bot = bot
         if self._db_definitions_loaded:
@@ -88,10 +85,10 @@ class ComponentRegistry:
             return False
 
     def register_component(self, 
-                         component_type: str, 
-                         component_class: Type[BaseComponent],
-                         description: str,
-                         default_config: Optional[Dict[str, Any]] = None) -> None:
+                         component_type, 
+                         component_class,
+                         description,
+                         default_config = None):
         """
         Register a component's IMPLEMENTATION CLASS by its type.
         This is needed so the registry knows which Python class to instantiate for a given type.
@@ -108,7 +105,7 @@ class ComponentRegistry:
         )
         logger.debug(f"Registered component implementation class for type: {component_type} -> {component_class.__name__}")
     
-    def get_component_class(self, component_type: str) -> Optional[Type[BaseComponent]]:
+    def get_component_class(self, component_type):
         """Get a component's implementation class by its type."""
         definition = self._components.get(component_type)
         if not definition:
@@ -116,7 +113,7 @@ class ComponentRegistry:
             return None
         return definition.component_class
 
-    def get_type_by_key(self, component_key: str) -> Optional[str]:
+    def get_type_by_key(self, component_key):
         """Get the component type ('embed', 'button', etc.) by its unique key."""
         definition = self._definitions_by_key.get(component_key)
         if definition and 'type' in definition:
@@ -124,17 +121,17 @@ class ComponentRegistry:
         logger.warning(f"Component type not found in loaded DB definitions for key: '{component_key}'")
         return None
 
-    def get_definition_by_key(self, component_key: str) -> Optional[Dict[str, Any]]:
+    def get_definition_by_key(self, component_key):
         """Get the full definition dictionary loaded from the DB by its unique key."""
         definition = self._definitions_by_key.get(component_key)
         if not definition:
             logger.warning(f"Component definition not found in loaded DB definitions for key: '{component_key}'")
         return definition
     
-    def get_all_component_types(self) -> list[str]:
+    def get_all_component_types(self):
         """Get all registered component implementation types."""
         return list(self._components.keys())
     
-    def has_component(self, component_type: str) -> bool:
+    def has_component(self, component_type):
         """Check if a component implementation class is registered for a type."""
         return component_type in self._components 

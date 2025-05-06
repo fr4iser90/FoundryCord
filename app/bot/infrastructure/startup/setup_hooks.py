@@ -1,9 +1,10 @@
 from app.shared.interfaces.logging.api import get_bot_logger
 import nextcord
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 import functools # Added for partial
-
-# Updated import paths
+from app.bot.application.interfaces.bot import Bot as BotInterface
+from app.bot.application.interfaces.service_factory import ServiceFactory as ServiceFactoryInterface
+from app.bot.application.interfaces.component_registry import ComponentRegistry as ComponentRegistryInterface
 from app.bot.infrastructure.startup.lifecycle_manager import BotLifecycleManager
 from app.bot.infrastructure.startup.shutdown_handler import ShutdownHandler
 from app.bot.application.workflows.database_workflow import DatabaseWorkflow
@@ -17,10 +18,8 @@ from app.bot.application.workflows.guild_template_workflow import GuildTemplateW
 from app.bot.application.services.bot_control_service import BotControlService
 from app.bot.application.services.dashboard.component_loader_service import ComponentLoaderService
 from app.bot.application.services.dashboard.dashboard_data_service import DashboardDataService
-from app.bot.infrastructure.factories.service_factory import ServiceFactory
 from app.bot.infrastructure.factories.task_factory import TaskFactory
 from app.bot.interfaces.api.internal.routes import setup_internal_routes
-from app.bot.infrastructure.config.registries.component_registry import ComponentRegistry
 from app.bot.infrastructure.factories.component_factory import ComponentFactory
 from app.bot.interfaces.api.internal.server import InternalAPIServer
 from app.bot.interfaces.dashboards.components.common.embeds.dashboard_embed import DashboardEmbed
@@ -29,8 +28,6 @@ from app.bot.interfaces.dashboards.components.common.buttons.generic_button impo
 from app.bot.interfaces.dashboards.components.common.selectors.generic_selector import GenericSelectorComponent
 from app.bot.infrastructure.monitoring.collectors.system.impl import SystemCollector
 from app.bot.infrastructure.monitoring.collectors.service.impl import ServiceCollector
-
-# Imports for State Collector Registration
 from app.shared.infrastructure.state.secure_state_snapshot import get_state_snapshot_service
 from app.bot.infrastructure.state.collectors.basic_info import collect_basic_info_func
 from app.shared.infrastructure.state.collectors.system_info import get_system_info as collect_system_info_func
@@ -43,9 +40,9 @@ from app.bot.infrastructure.state.collectors.discord_api import (
 from app.bot.infrastructure.state.collectors.database_status import collect_database_connection_info_func
 from app.bot.infrastructure.state.collectors.listeners import collect_active_listeners_func
 from app.bot.infrastructure.state.collectors.cog_status import collect_cog_status_func
-
-# Import BotWorkflowManager
 from app.bot.application.workflow_manager import BotWorkflowManager
+from app.bot.infrastructure.config.registries.component_registry import ComponentRegistry # For instantiation in setup_core_components
+from app.bot.infrastructure.factories.service_factory import ServiceFactory # For instantiation in setup_service_factory_and_register_core_services
 
 logger = get_bot_logger()
 
@@ -287,30 +284,65 @@ def register_default_components(bot):
     except Exception as e:
         logger.error(f"Error registering default/generic components: {e}", exc_info=True)
 
-def register_core_services(service_factory: ServiceFactory, bot):
-    """Synchronously register essential core services needed early.
+# --- Service Creation Helpers ---
+def _create_dashboard_data_service(bot):
+    # DashboardDataService expects bot and service_factory (now as interfaces on bot)
+    return DashboardDataService(bot=bot, service_factory=bot.service_factory)
 
-    Args:
-        service_factory (ServiceFactory): The factory instance.
-        bot: The bot instance.
-    """
-    logger.debug("Registering core services with Service Factory (synchronous)...")
+# --- Service Registration ---
+def register_core_services(service_factory, bot):
+    """Registers core services with the service factory."""
+    logger.debug(f"Registering core services with service factory: {type(service_factory).__name__}")
+    
     try:
-        # Register Component Registry instance (already created)
+        # Register ComponentRegistry (concrete instance already created in setup_core_components)
         if hasattr(bot, 'component_registry') and bot.component_registry:
-            if hasattr(service_factory, 'register_service'):
-                service_factory.register_service(
-                    'component_registry',
-                    bot.component_registry,
-                    overwrite=True
-                )
-                logger.debug("Registered service: component_registry")
-            else:
-                logger.error("service_factory is missing register_service method (ComponentRegistry).")
+            service_factory.register_service(
+                name='component_registry',
+                instance=bot.component_registry, # Pass the concrete instance
+                overwrite=True
+            )
+            logger.debug("ComponentRegistry (concrete) registered with ServiceFactory.")
         else:
-            logger.error("bot.component_registry not found. Cannot register.")
+            logger.error("bot.component_registry not found, cannot register with ServiceFactory.")
 
-        # 2. Instantiate and Register SystemCollector (Moved Up)
+        # Register ComponentFactory (concrete instance already created)
+        if hasattr(bot, 'component_factory') and bot.component_factory:
+            service_factory.register_service(
+                name='component_factory',
+                instance=bot.component_factory, # Pass the concrete instance
+                overwrite=True
+            )
+            logger.debug("ComponentFactory (concrete) registered with ServiceFactory.")
+        else:
+            logger.error("bot.component_factory not found, cannot register with ServiceFactory.")
+
+        # Register TaskFactory by creator
+        service_factory.register_service_creator(
+            name='task_factory',
+            creator=lambda b: TaskFactory(b), # Takes bot instance
+            overwrite=True
+        )
+        logger.debug("TaskFactory creator registered.")
+
+        # Register DashboardDataService by creator (using helper)
+        service_factory.register_service_creator(
+            name='dashboard_data_service',
+            creator=_create_dashboard_data_service, # Helper takes bot instance
+            overwrite=True
+        )
+        logger.debug("DashboardDataService creator registered.")
+
+        # Register ComponentLoaderService by creator
+        # Its __init__ takes bot, so lambda b: ComponentLoaderService(b) is correct.
+        service_factory.register_service_creator(
+            name='component_loader_service',
+            creator=lambda b: ComponentLoaderService(b), 
+            overwrite=True
+        )
+        logger.debug("ComponentLoaderService creator registered.")
+
+        # Register SystemCollector and ServiceCollector (they don't take bot in constructor)
         logger.debug("Instantiating SystemCollector...")
         system_collector_instance = SystemCollector()
         if hasattr(service_factory, 'register_service') and hasattr(service_factory, 'has_service'):
@@ -341,35 +373,6 @@ def register_core_services(service_factory: ServiceFactory, bot):
                 logger.info("ServiceCollector already registered.")
         else:
             logger.error("service_factory is missing register_service/has_service method (ServiceCollector).")
-
-        # 4. Instantiate and Register DashboardDataService (Now depends on SystemCollector being registered)
-        logger.debug("Instantiating DashboardDataService...")
-        dashboard_data_service_instance = DashboardDataService(bot, service_factory)
-        if hasattr(service_factory, 'register_service'):
-            service_factory.register_service(
-                'dashboard_data_service',
-                dashboard_data_service_instance,
-                overwrite=True
-            )
-            logger.debug("Registered service: dashboard_data_service")
-        else:
-            logger.error("service_factory is missing register_service method (DashboardDataService).")
-
-        # 5. Instantiate and Register ComponentLoaderService
-        logger.debug("Instantiating ComponentLoaderService...")
-        component_loader_instance = ComponentLoaderService(bot)
-        if hasattr(service_factory, 'register_service') and hasattr(service_factory, 'has_service'):
-            if not service_factory.has_service('component_loader'):
-                service_factory.register_service(
-                    'component_loader',
-                    component_loader_instance,
-                    overwrite=True
-                )
-                logger.debug("Registered service: component_loader")
-            else:
-                logger.info("ComponentLoaderService already registered.")
-        else:
-            logger.error("service_factory is missing register_service method (ComponentLoaderService).")
 
         # 6. Register State Collectors (New)
         register_state_collectors(bot) # Call the new registration function

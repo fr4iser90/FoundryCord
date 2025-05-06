@@ -2,7 +2,7 @@ import logging
 import nextcord
 from nextcord.ext import commands
 import sys
-from typing import Dict, Any, Optional, List, TYPE_CHECKING
+from typing import Dict, Any, Optional, List
 
 # Import necessary components used within FoundryCord
 from app.shared.interfaces.logging.api import get_bot_logger
@@ -12,10 +12,8 @@ from .setup_hooks import (
     setup_hook
 )
 from app.bot.interfaces.commands.checks import check_guild_approval
-
-# Forward declaration for type hints if ServiceFactory is used in signatures
-if TYPE_CHECKING:
-    from app.bot.infrastructure.factories.service_factory import ServiceFactory
+from app.bot.application.interfaces.bot import Bot as BotInterface
+from app.bot.application.interfaces.service_factory import ServiceFactory as ServiceFactoryInterface
 
 logger = get_bot_logger()
 
@@ -24,7 +22,7 @@ logging.getLogger("nextcord.gateway").setLevel(logging.WARNING)
 logging.getLogger("nextcord.client").setLevel(logging.WARNING)
 logging.getLogger("nextcord.http").setLevel(logging.WARNING)
 
-class FoundryCord(commands.Bot):
+class FoundryCord(commands.Bot, BotInterface):
     """Main bot class for the Homelab Discord Bot"""
 
     def __init__(self, command_prefix="!", intents=None):
@@ -36,7 +34,7 @@ class FoundryCord(commands.Bot):
         super().__init__(command_prefix=command_prefix, intents=intents)
 
         # Initialize service_factory as None *before* setup calls
-        self.service_factory: Optional['ServiceFactory'] = None # Use forward reference
+        self._service_factory_instance = None
 
         # Setup components that DON'T depend on service factory first
         setup_core_components(self)
@@ -71,6 +69,17 @@ class FoundryCord(commands.Bot):
 
         logger.debug("FoundryCord __init__ complete.")
 
+    @property
+    def service_factory(self):
+        # This property will now return the interface type, 
+        # but internally it refers to the concrete _service_factory_instance
+        return self._service_factory_instance
+    
+    # service_factory setter if direct assignment is needed post-init, 
+    # though it's set by setup_service_factory_and_register_core_services
+    @service_factory.setter
+    def service_factory(self, value):
+        self._service_factory_instance = value
 
     async def on_ready(self):
         """Called when the bot is ready"""

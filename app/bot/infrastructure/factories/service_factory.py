@@ -6,10 +6,11 @@ import asyncio
 import os
 import logging
 
+from app.bot.application.interfaces.service_factory import ServiceFactory as ServiceFactoryInterface
 from app.shared.interfaces.logging.api import get_bot_logger
 logger = get_bot_logger()
 
-class ServiceFactory:
+class ServiceFactory(ServiceFactoryInterface):
     """Factory for creating and managing services."""
     
     def __init__(self, bot):
@@ -24,7 +25,7 @@ class ServiceFactory:
         self._creators: Dict[str, Callable] = {} 
         logger.debug(f"[DEBUG ServiceFactory.__init__ SIMPLIFIED] Initialization complete. Bot ID: {bot_id}")
 
-    def register_service_creator(self, name: str, creator: Callable, overwrite: bool = False):
+    def register_service_creator(self, name, creator, overwrite = False):
         """Registers a function that creates a service instance (lazy loading)."""
         if name in self._creators and not overwrite:
             logger.warning(f"Service creator '{name}' already registered. Set overwrite=True to replace.")
@@ -32,7 +33,7 @@ class ServiceFactory:
         self._creators[name] = creator
         logger.debug(f"Registered service creator for '{name}'.")
 
-    def register_service(self, name: str, instance: Any, overwrite: bool = False):
+    def register_service(self, name, instance, overwrite = False):
         """Registers an already created service instance."""
         if name in self._services and not overwrite:
              logger.warning(f"Service instance '{name}' already registered. Set overwrite=True to replace.")
@@ -40,7 +41,7 @@ class ServiceFactory:
         self._services[name] = instance
         logger.debug(f"Registered service instance '{name}' of type {type(instance).__name__}.")
 
-    def get_service(self, name: str) -> Optional[Any]:
+    def get_service(self, name):
         """Gets a service instance, creating it if necessary using a registered creator."""
         if name in self._services:
             return self._services[name]
@@ -66,7 +67,7 @@ class ServiceFactory:
             logger.error(f"Service '{name}' not found. No instance registered and no creator available.")
             return None
 
-    def has_service(self, name: str) -> bool:
+    def has_service(self, name):
         """Checks if a service instance or creator is registered."""
         return name in self._services or name in self._creators
 

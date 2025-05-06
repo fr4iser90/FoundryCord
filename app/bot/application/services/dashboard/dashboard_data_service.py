@@ -1,23 +1,16 @@
 """Service for fetching data for dashboard instances."""
 from typing import Dict, Any, List, Optional, TYPE_CHECKING
 import nextcord
-from datetime import datetime
-
-# Added imports for data fetching logic
 import platform
 import psutil
 from datetime import datetime, timedelta
-
 from app.shared.interfaces.logging.api import get_bot_logger
 from app.shared.infrastructure.database.session import get_session
 from app.shared.infrastructure.repositories.projects.project_repository_impl import ProjectRepositoryImpl
 
-# --- REMOVE INCORRECT IMPORT ---
-# from app.bot.infrastructure.factories.data_source_registry_factory import DataSourceRegistryFactory # OLD AND DELETED
+from app.bot.application.interfaces.bot import Bot as BotInterface
+from app.bot.application.interfaces.service_factory import ServiceFactory as ServiceFactoryInterface
 
-if TYPE_CHECKING:
-    from app.bot.core.main import FoundryCord
-    from app.bot.infrastructure.factories.service_factory import ServiceFactory
 
 
 logger = get_bot_logger()
@@ -25,7 +18,7 @@ logger = get_bot_logger()
 class DashboardDataService:
     """Service focused on fetching data for dashboard configurations."""
     
-    def __init__(self, bot: 'FoundryCord', service_factory: 'ServiceFactory'):
+    def __init__(self, bot, service_factory):
         self.bot = bot
         self.service_factory = service_factory
         # --- Remove obsolete attribute --- 

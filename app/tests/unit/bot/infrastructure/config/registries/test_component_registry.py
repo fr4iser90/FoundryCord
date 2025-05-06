@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, AsyncMock, patch
 
 # Import the class to test
 from app.bot.infrastructure.config.registries.component_registry import ComponentRegistry, ComponentDefinition
+from app.bot.application.interfaces.component_registry import ComponentRegistry as ComponentRegistryInterface
 from app.bot.interfaces.dashboards.components.base_component import BaseComponent
 from app.shared.infrastructure.models.dashboards import DashboardComponentDefinitionEntity
 from app.shared.infrastructure.repositories.dashboards import DashboardComponentDefinitionRepositoryImpl
@@ -29,14 +30,14 @@ def registry():
 
 # --- Test Cases ---
 
-def test_initialization(registry: ComponentRegistry):
+def test_initialization(registry: ComponentRegistryInterface):
     """Test that the registry initializes with empty dictionaries."""
     assert registry._components == {}
     assert registry._definitions_by_key == {}
     assert registry.bot is None
     assert not registry._db_definitions_loaded
 
-def test_register_component_success(registry: ComponentRegistry):
+def test_register_component_success(registry: ComponentRegistryInterface):
     """Test successful registration of a component implementation class."""
     registry.register_component(
         component_type="embed",
@@ -59,7 +60,7 @@ def test_register_component_success(registry: ComponentRegistry):
     assert registry._components["button"].component_class == MockButtonComponent
     assert registry._components["button"].default_config == {} # Test default empty dict
 
-def test_register_component_overwrite(registry: ComponentRegistry, mocker):
+def test_register_component_overwrite(registry: ComponentRegistryInterface, mocker):
     """Test that registering the same type overwrites the previous one (with a warning)."""
     mock_logger_warning = mocker.patch("app.bot.infrastructure.config.registries.component_registry.logger.warning")
     
@@ -71,14 +72,14 @@ def test_register_component_overwrite(registry: ComponentRegistry, mocker):
     assert registry._components["embed"].description == "Overwrite Embed"
     mock_logger_warning.assert_called_once_with("Component implementation class for type 'embed' already registered, overwriting.")
 
-def test_get_component_class_success(registry: ComponentRegistry):
+def test_get_component_class_success(registry: ComponentRegistryInterface):
     """Test retrieving a registered component class."""
     registry.register_component("embed", MockEmbedComponent, "Test Embed")
     
     component_class = registry.get_component_class("embed")
     assert component_class == MockEmbedComponent
 
-def test_get_component_class_not_registered(registry: ComponentRegistry, mocker):
+def test_get_component_class_not_registered(registry: ComponentRegistryInterface, mocker):
     """Test retrieving a non-existent component class."""
     mock_logger_error = mocker.patch("app.bot.infrastructure.config.registries.component_registry.logger.error")
     
@@ -87,7 +88,7 @@ def test_get_component_class_not_registered(registry: ComponentRegistry, mocker)
     mock_logger_error.assert_called_once_with("Component implementation class for type 'nonexistent' not found in registry. Ensure it was registered.")
 
 @pytest.mark.asyncio
-async def test_initialize_loads_definitions_success(registry: ComponentRegistry, mocker):
+async def test_initialize_loads_definitions_success(registry: ComponentRegistryInterface, mocker):
     """Test successful loading of definitions from the mocked database."""
     # Mock DB entities
     mock_def_1 = DashboardComponentDefinitionEntity(
@@ -146,7 +147,7 @@ async def test_initialize_loads_definitions_success(registry: ComponentRegistry,
     }
 
 @pytest.mark.asyncio
-async def test_initialize_already_loaded(registry: ComponentRegistry, mocker):
+async def test_initialize_already_loaded(registry: ComponentRegistryInterface, mocker):
     """Test that initialize doesn't reload if already loaded."""
     mock_session_context = mocker.patch("app.bot.infrastructure.config.registries.component_registry.session_context")
     mock_logger_debug = mocker.patch("app.bot.infrastructure.config.registries.component_registry.logger.debug")
@@ -163,7 +164,7 @@ async def test_initialize_already_loaded(registry: ComponentRegistry, mocker):
 
 
 @pytest.mark.asyncio
-async def test_initialize_handles_db_error(registry: ComponentRegistry, mocker):
+async def test_initialize_handles_db_error(registry: ComponentRegistryInterface, mocker):
     """Test that initialize returns False and logs error on DB repository failure."""
     mock_repo_instance = AsyncMock(spec=DashboardComponentDefinitionRepositoryImpl)
     mock_repo_instance.list_definitions.side_effect = Exception("DB Connection Failed")
@@ -190,7 +191,7 @@ async def test_initialize_handles_db_error(registry: ComponentRegistry, mocker):
     )
 
 @pytest.mark.asyncio
-async def test_initialize_handles_json_error(registry: ComponentRegistry, mocker):
+async def test_initialize_handles_json_error(registry: ComponentRegistryInterface, mocker):
     """Test that initialize logs error and continues if one definition has bad JSON."""
     # Mock DB entities - one good, one bad
     mock_def_good = DashboardComponentDefinitionEntity(
@@ -243,7 +244,7 @@ async def test_initialize_handles_json_error(registry: ComponentRegistry, mocker
     )
 
 @pytest.mark.asyncio
-async def test_get_definition_and_type_by_key(registry: ComponentRegistry, mocker):
+async def test_get_definition_and_type_by_key(registry: ComponentRegistryInterface, mocker):
     """Test get_definition_by_key and get_type_by_key after successful initialize."""
     # Use the successful initialize mock setup
     mock_def_1 = DashboardComponentDefinitionEntity(
@@ -277,53 +278,41 @@ async def test_get_definition_and_type_by_key(registry: ComponentRegistry, mocke
     assert comp_type == "embed"
 
 @pytest.mark.asyncio
-async def test_get_definition_and_type_by_key_not_found(registry: ComponentRegistry, mocker):
-    """Test get_definition_by_key and get_type_by_key when the key is not found."""
+async def test_get_definition_and_type_by_key_not_found(registry: ComponentRegistryInterface, mocker):
+    """Test get_definition_by_key and get_type_by_key for non-existent keys (after empty init)."""
     mock_logger_warning = mocker.patch("app.bot.infrastructure.config.registries.component_registry.logger.warning")
-    # Initialize with empty DB result
-    mock_repo_instance = AsyncMock(spec=DashboardComponentDefinitionRepositoryImpl)
-    mock_repo_instance.list_definitions.return_value = []
-    mocker.patch(
-        "app.bot.infrastructure.config.registries.component_registry.DashboardComponentDefinitionRepositoryImpl",
-        return_value=mock_repo_instance
-    )
-    mock_session = AsyncMock()
-    mocker.patch(
-        "app.bot.infrastructure.config.registries.component_registry.session_context",
-        return_value=mock_session
-    )
-    mock_session.__aenter__.return_value = mock_session
-    mock_bot = MagicMock()
-    await registry.initialize(mock_bot)
+    
+    # Setup: Ensure registry is initialized (default fixture state) but _definitions_by_key is empty
+    # No need to call registry.initialize if we want to test the empty state for DB definitions
 
-    # --- Test get_definition_by_key ---
-    definition = registry.get_definition_by_key("nonexistent_key")
-    assert definition is None
+    assert registry.get_definition_by_key("nonexistent_key") is None
     mock_logger_warning.assert_any_call("Component definition not found in loaded DB definitions for key: 'nonexistent_key'")
     
-    # --- Test get_type_by_key ---
-    comp_type = registry.get_type_by_key("nonexistent_key")
-    assert comp_type is None
+    assert registry.get_type_by_key("nonexistent_key") is None
     mock_logger_warning.assert_any_call("Component type not found in loaded DB definitions for key: 'nonexistent_key'")
     
-    assert mock_logger_warning.call_count == 2 # Called once for each get_*
+    assert mock_logger_warning.call_count == 2 # Called for both get_type and get_definition
 
+def test_get_all_component_types(registry: ComponentRegistryInterface):
+    """Test getting all registered component implementation types."""
+    # Test with an empty registry first
+    assert registry.get_all_component_types() == []
 
-def test_get_all_component_types(registry: ComponentRegistry):
-    """Test retrieving all registered component types."""
     registry.register_component("embed", MockEmbedComponent, "Test Embed")
     registry.register_component("button", MockButtonComponent, "Test Button")
     
     types = registry.get_all_component_types()
-    assert isinstance(types, list)
+    assert isinstance(types, list) # Should return a list
+    # Order is not guaranteed by dict.keys(), so sort for comparison
+    assert sorted(types) == sorted(["button", "embed"])
     assert len(types) == 2
-    assert "embed" in types
-    assert "button" in types
 
-def test_has_component(registry: ComponentRegistry):
-    """Test checking if a component type is registered."""
+def test_has_component(registry: ComponentRegistryInterface):
+    """Test checking for component registration."""
+    assert not registry.has_component("embed") # Test before registration
+    
     registry.register_component("embed", MockEmbedComponent, "Test Embed")
     
     assert registry.has_component("embed") is True
-    assert registry.has_component("button") is False
+    assert not registry.has_component("button") # Test for a different, unregistered type
     

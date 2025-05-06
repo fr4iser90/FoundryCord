@@ -7,9 +7,14 @@ logger = get_bot_logger()
 
 from app.bot.interfaces.dashboards.controller.dashboard_controller import DashboardController
 from app.bot.interfaces.dashboards.components.base_component import BaseComponent
-from app.bot.infrastructure.config.registries.component_registry import ComponentRegistry
-from app.bot.infrastructure.factories.service_factory import ServiceFactory
+# from app.bot.infrastructure.config.registries.component_registry import ComponentRegistry # Removed
+# from app.bot.infrastructure.factories.service_factory import ServiceFactory # Removed
 from nextcord.ext import tasks
+
+# Interface Imports
+from app.bot.application.interfaces.bot import Bot as BotInterface
+from app.bot.application.interfaces.service_factory import ServiceFactory as ServiceFactoryInterface
+from app.bot.application.interfaces.component_registry import ComponentRegistry as ComponentRegistryInterface
 
 class DashboardRegistry:
     """Registry for managing active dashboard controller instances."""
@@ -24,7 +29,20 @@ class DashboardRegistry:
         # -------------------------
         self.active_dashboards: Dict[int, DashboardController] = {}  # channel_id -> dashboard controller
         self.dashboard_types: Dict[str, Type[DashboardController]] = {}  # Maps type string to controller class (adjust if needed)
-        self.component_registry = None  # Will be fetched
+        
+        # Fetch component_registry and service_factory from bot
+        if hasattr(bot, 'component_registry'):
+            self.component_registry = bot.component_registry # No type hint, as per rule
+        else:
+            self.component_registry = None
+            logger.error("[DashboardRegistry.__init__] Bot has no 'component_registry' attribute!")
+            
+        if hasattr(bot, 'service_factory'):
+            self.service_factory = bot.service_factory # No type hint, as per rule
+        else:
+            self.service_factory = None
+            logger.error("[DashboardRegistry.__init__] Bot has no 'service_factory' attribute!")
+            
         self.initialized = False
         self.logger = logger
         self._refresh_active_dashboards_loop.start()
@@ -134,25 +152,43 @@ class DashboardRegistry:
         else:
             logger.debug(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] No existing controller. Activating new one...")
             try:
+                # Fetch data_service from self.service_factory
+                data_service = None
+                if self.service_factory:
+                    data_service = self.service_factory.get_service('dashboard_data_service')
+                
+                if not self.component_registry:
+                    logger.error(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Cannot create DashboardController: self.component_registry is missing.")
+                    return False
+                if not data_service:
+                    logger.error(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Cannot create DashboardController: data_service not found via service_factory.")
+                    return False
+
+                # ADDED CHECK AND INITIALIZATION CALL
+                if not hasattr(data_service, 'initialized') or not data_service.initialized:
+                    logger.debug(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Initializing DashboardDataService as it's not initialized.")
+                    await data_service.initialize()
+
                 # Create dashboard controller using the new parameters
-                # Get title/description from config_data or use defaults
                 title = config_data.get('metadata', {}).get('title', dashboard_type.replace('_', ' ').title())
                 description = config_data.get('metadata', {}).get('description', '')
 
                 controller = DashboardController(
-                    dashboard_id=active_dashboard_id, # Use ActiveDashboardEntity ID
+                    dashboard_id=active_dashboard_id,
                     channel_id=channel_id,
                     dashboard_type=dashboard_type,
                     guild_id=guild_id,
-                    message_id=message_id, # Pass initial message_id (might be None)
-                    config=config_data, # Pass loaded config
+                    message_id=message_id,
+                    config=config_data,
                     title=title,
                     description=description,
-                    bot=self.bot # Pass bot instance
+                    bot=self.bot, 
+                    component_registry=self.component_registry, # Pass component_registry
+                    data_service=data_service # Pass data_service
                 )
 
-                # Initialize controller
-                init_success = await controller.initialize(bot=self.bot)
+                # Initialize controller - DashboardController.initialize NO LONGER takes bot argument
+                init_success = await controller.initialize() # Removed bot=self.bot
                 if not init_success:
                      logger.error(f"[Activate/Update AD_ID:{active_dashboard_id} Ch:{channel_id}] Failed to initialize new controller.")
                      # Decide if we should still register it? Probably not.

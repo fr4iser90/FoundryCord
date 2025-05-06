@@ -4,6 +4,11 @@ import asyncio
 from app.shared.interfaces.logging.api import get_bot_logger
 logger = get_bot_logger()
 
+# Interface Imports
+from app.bot.application.interfaces.bot import Bot as BotInterface
+# from app.bot.application.interfaces.service_factory import ServiceFactory as ServiceFactoryInterface # Not directly typed here
+from app.bot.application.interfaces.component_registry import ComponentRegistry as ComponentRegistryInterface
+
 # Import domain models
 from app.shared.infrastructure.models.dashboards.dashboard_entity import DashboardEntity
 from app.shared.domain.repositories import ActiveDashboardRepository
@@ -15,7 +20,7 @@ from app.bot import debug_component_registry, debug_component_factory
 from app.bot.application.services.config import BotConfigService
 from app.shared.domain.auth.services import AuthenticationService
 from app.bot.application.services.project_management import ProjectManagementService
-from app.bot.infrastructure.config.registries.component_registry import ComponentRegistry
+# from app.bot.infrastructure.config.registries.component_registry import ComponentRegistry # Removed concrete import
 from app.bot.interfaces.api.internal.websocket_manager import WebsocketManager
 
 class WorkflowFactory:
@@ -57,16 +62,17 @@ class WorkflowFactory:
                 self.repository = None
                 self.dashboard_controllers = {}
                 
-                # Ensure component factory exists
+                # Ensure component factory and registry are accessed via self.bot, assuming they are pre-initialized
                 if not hasattr(self.bot, 'component_registry'):
-                    from app.bot.infrastructure.factories.component_registry import ComponentRegistry
-                    self.bot.component_registry = ComponentRegistry()
-                    logger.info("Created component registry directly in workflow")
+                    # This indicates a setup issue if bot is not fully prepped.
+                    # Forcing instantiation here is not ideal for this factory's role.
+                    logger.error("CRITICAL: bot.component_registry not found during DashboardWorkflow init in WorkflowFactory. Bot should be pre-configured.")
+                    # Fallback or raise error, rather than local import/creation.
+                    # For now, this will likely fail if not present.
                     
                 if not hasattr(self.bot, 'component_factory'):
-                    from app.bot.infrastructure.factories.component_factory import ComponentFactory
-                    self.bot.component_factory = ComponentFactory(self.bot.component_registry)
-                    logger.info("Created component factory directly in workflow")
+                    logger.error("CRITICAL: bot.component_factory not found during DashboardWorkflow init in WorkflowFactory. Bot should be pre-configured.")
+                    # Fallback or raise error.
                     
             async def initialize(self):
                 logger.info("Initializing dashboard workflow with domain model")
@@ -107,10 +113,12 @@ class WorkflowFactory:
                         
                     # Use component factory to create dashboard controller
                     if not hasattr(self.bot, 'component_factory'):
-                        logger.warning("Bot missing component factory, using debug instance")
+                        logger.warning("Bot missing component factory during create_dashboard_controller, using debug instance")
+                        # This debug fallback is also questionable in a production factory.
                         self.bot.component_factory = debug_component_factory
-                        self.bot.component_registry = debug_component_registry
-                        
+                        # self.bot.component_registry = debug_component_registry # This line was problematic, registry should be on bot
+                    
+                    # Access component_factory from bot, assuming it holds an instance that uses ComponentRegistryInterface
                     controller = await self.bot.component_factory.create(
                         'dashboard', 
                         dashboard_id=dashboard.id,

@@ -4,7 +4,7 @@ from typing import Dict, Any, Optional, List, Type
 import nextcord
 
 from app.bot.interfaces.dashboards.components.base_component import BaseComponent
-from app.bot.infrastructure.config.registries.component_registry import ComponentRegistry
+from app.bot.application.interfaces.component_registry import ComponentRegistry as ComponentRegistryInterface
 from app.shared.interfaces.logging.api import get_bot_logger
 
 logger = get_bot_logger()
@@ -12,7 +12,7 @@ logger = get_bot_logger()
 class ComponentFactory:
     """Factory for creating dashboard UI components"""
     
-    def __init__(self, component_registry: ComponentRegistry):
+    def __init__(self, component_registry):
         self.registry = component_registry
         logger.debug("Component factory initialized with registry")
     

@@ -1,17 +1,19 @@
 import logging
 import importlib
 from collections.abc import Awaitable
-from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
-from app.bot.infrastructure.factories.service_factory import ServiceFactory
+from typing import Any, Callable, Dict, List, Optional
+
 from app.shared.interfaces.logging.api import get_bot_logger
 
-from app.bot.infrastructure.config.registries.component_registry import ComponentRegistry
-from app.bot.infrastructure.factories.component_factory import ComponentFactory
-from app.bot.infrastructure.factories.task_factory import TaskFactory
+# from app.bot.infrastructure.config.registries.component_registry import ComponentRegistry # Removed direct import
+from app.bot.infrastructure.factories.component_factory import ComponentFactory # This might be okay if not one of the core 3
+from app.bot.infrastructure.factories.task_factory import TaskFactory # This might be okay
 
-# Use TYPE_CHECKING to avoid circular import during runtime
-if TYPE_CHECKING:
-    from app.bot.infrastructure.startup.bot import FoundryCord
+from app.bot.application.interfaces.bot import Bot as BotInterface
+from app.bot.application.interfaces.service_factory import ServiceFactory as ServiceFactoryInterface
+from app.bot.application.interfaces.component_registry import ComponentRegistry as ComponentRegistryInterface
+
+
 
 
 logger = get_bot_logger()
@@ -22,17 +24,17 @@ class BotComponentFactory:
     Consider if its role overlaps too much with ServiceFactory.
     """
 
-    def __init__(self, bot: 'FoundryCord'):
+    def __init__(self, bot): # Removed type hint: BotInterface (or 'FoundryCord')
         """Initialize the factory with a bot instance."""
-        self.bot = bot
+        self.bot = bot # Type hint removed based on rule for 'Bot'
         self.initialized = False
         self.settings = {}
         self._load_settings()
 
-        self.component_registry: Optional[ComponentRegistry] = None
+        self.component_registry = None # Type hint removed: ComponentRegistryInterface
         self.data_source_registry = None
-        self.service_factory: Optional[ServiceFactory] = None
-        self.task_factory: Optional[TaskFactory] = None
+        self.service_factory = None # Type hint removed: ServiceFactoryInterface
+        self.task_factory: Optional[TaskFactory] = None # Kept as TaskFactory is not one of the 3 core interfaces
         self.workflow_factory = None
         self.manager_factory = None
         self.repository_factory = None
