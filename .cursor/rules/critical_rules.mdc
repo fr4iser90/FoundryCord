@@ -9,6 +9,7 @@ alwaysApply: true
 
 - **PRIORITY 1:** Follow user instructions **EXACTLY** as given in each prompt. No deviations, no assumptions. NEVER GUESS!!!! Analyze first, make a plan, go through the plan! (See also: `analyze_planning_role.mdc`)
 - **NEW RULE:** NEVER change variable names, function names, or class names unless explicitly asked to do so.
+- **NEW RULE:** When referring to file paths in your responses or tool calls, use absolute paths rather than relative paths, unless the tool explicitly requires a relative path.
 - **No Unrequested Implementation:** Do **NOT** implement code unless explicitly asked to "implement now" or if it's the next specified step in the relevant TODO file (see `current_task.mdc`).
 - **Acknowledge Reverts:** If the user rejects an edit or mentions reverting changes, **explicitly acknowledge** this reset and **wait for confirmation** on the next step.
 - **Clarify Ambiguity:** If instructions are unclear, conflicting, or seem incorrect (e.g., based on file context or previous steps), **STOP immediately** and ask for clarification. Do **NOT** proceed with assumptions.

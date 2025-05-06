@@ -20,24 +20,36 @@ class GuildSelectionService:
         logger.debug("GuildSelectionService initialized.")
 
     async def get_current_guild(self, request: Request, user: AppUserEntity) -> Optional[GuildEntity]:
-        """Get the currently selected guild from the user's session or last selection."""
-        selected_guild_data = request.session.get('selected_guild')
-        guild_id_to_fetch = None
+        """Get the currently selected guild, prioritizing DB then Session."""
+        guild_id_from_db = user.last_selected_guild_id
+        session_payload = request.session.get('selected_guild')
+        guild_id_from_session = session_payload.get('guild_id') if session_payload else None
 
-        if selected_guild_data and 'guild_id' in selected_guild_data:
-            guild_id_to_fetch = selected_guild_data['guild_id']
-            logger.debug(f"Found guild {guild_id_to_fetch} in session for user {user.id}")
-        elif user.last_selected_guild_id:
-            guild_id_to_fetch = user.last_selected_guild_id
-            logger.debug(f"No guild in session, checking last selected: {guild_id_to_fetch} for user {user.id}")
+        guild_id_to_fetch = None
+        # This flag will determine if the session needs an update *after* a successful guild fetch.
+        # It's true if DB was the source AND (session was empty OR session had a different guild_id).
+        session_needs_update_post_fetch = False
+
+        if guild_id_from_db:
+            guild_id_to_fetch = guild_id_from_db
+            logger.debug(f"DB preference: last_selected_guild_id {guild_id_to_fetch} for user {user.id}")
+            if guild_id_from_db != guild_id_from_session:
+                logger.debug(f"Session guild_id ({guild_id_from_session}) differs from DB or is missing. Session will be updated if DB fetch is valid.")
+                session_needs_update_post_fetch = True
+            else:
+                logger.debug(f"Session guild_id ({guild_id_from_session}) matches DB. Session is consistent with DB preference.")
+        elif guild_id_from_session:
+            guild_id_to_fetch = guild_id_from_session
+            logger.debug(f"No DB preference. Using guild_id from session: {guild_id_to_fetch} for user {user.id}")
+            # session_needs_update_post_fetch remains False as session is the source and presumed current.
         else:
-            logger.debug(f"No guild in session and no last selection for user {user.id}")
+            logger.debug(f"No guild_id in DB or session for user {user.id}")
             return None
 
-        if not guild_id_to_fetch:
-            return None # Should not happen if logic above is correct, but defensive check
+        if not guild_id_to_fetch: # Should be redundant due to logic above, but for safety.
+            return None
 
-        logger.debug(f"Attempting to fetch current/last guild {guild_id_to_fetch} from DB for user {user.id}")
+        logger.debug(f"Attempting to fetch guild {guild_id_to_fetch} from DB for user {user.id}")
         try:
              async with session_context() as session:
                 # Fetch the full GuildEntity
@@ -56,38 +68,47 @@ class GuildSelectionService:
                 guild = result.scalar_one_or_none()
 
                 if not guild:
-                     logger.warning(f"Guild {guild_id_to_fetch} (from session or last_selected) not found, not approved, or user {user.id} lost access.")
-                     # Clear invalid session data if it came from there
-                     if selected_guild_data and selected_guild_data.get('guild_id') == guild_id_to_fetch:
-                         request.session.pop('selected_guild', None)
-                         logger.debug(f"Removed invalid guild {guild_id_to_fetch} from session.")
-                     # Clear invalid last_selected_guild_id if it came from there and user still exists
-                     if not selected_guild_data and user.last_selected_guild_id == guild_id_to_fetch:
+                     source_info = 'Unknown'
+                     if guild_id_from_db == guild_id_to_fetch:
+                         source_info = 'DB'
+                     elif guild_id_from_session == guild_id_to_fetch:
+                         source_info = 'Session'
+                     
+                     logger.warning(f"Guild {guild_id_to_fetch} (source: {source_info}) not found, not approved, or user {user.id} lost access.")
+                     
+                     # If the guild_id_to_fetch came from the DB, it's invalid there.
+                     if guild_id_from_db == guild_id_to_fetch:
                          try:
-                            update_stmt = (
+                            update_stmt_clear_db = (
                                 update(AppUserEntity)
                                 .where(AppUserEntity.id == user.id)
                                 .values(last_selected_guild_id=None)
                             )
-                            await session.execute(update_stmt)
-                            await session.commit() # Commit this specific change immediately
-                            user.last_selected_guild_id = None # Update in-memory object too
+                            await session.execute(update_stmt_clear_db)
+                            await session.commit() 
+                            user.last_selected_guild_id = None 
                             logger.debug(f"Cleared invalid last_selected_guild_id {guild_id_to_fetch} for user {user.id}")
                          except Exception as db_exc:
                              logger.error(f"Failed to clear invalid last_selected_guild_id for user {user.id}: {db_exc}", exc_info=True)
-                             await session.rollback() # Rollback only the failed update
-
+                             await session.rollback() # Rollback only this clear attempt
+                     
+                     # If the guild_id_to_fetch was present in session (either as source or matching an invalid DB one), clear it.
+                     if guild_id_from_session == guild_id_to_fetch: 
+                         if request.session.get('selected_guild'): # Check if it's actually there before popping
+                            request.session.pop('selected_guild', None)
+                            logger.debug(f"Removed invalid guild {guild_id_to_fetch} from session.")
+                     
                      return None
 
-                # If we fetched based on last_selected_guild_id, update the session now
-                if not selected_guild_data and guild:
+                # If guild is successfully fetched, and session_needs_update_post_fetch is true:
+                if session_needs_update_post_fetch and guild:
                     selected_data = {
                         "guild_id": guild.guild_id,
                         "name": guild.name,
                         "icon_url": str(guild.icon_url) if guild.icon_url else None
                     }
                     request.session['selected_guild'] = selected_data
-                    logger.info(f"Updated session with last selected guild {guild.guild_id} for user {user.id}")
+                    logger.info(f"Session updated with guild {guild.guild_id} (from DB preference) for user {user.id}")
 
                 return guild # Return the ORM object
         except Exception as e:

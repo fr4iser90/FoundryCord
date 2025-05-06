@@ -109,6 +109,6 @@ This guide outlines the steps to set up the [FoundryCord](docs/1_introduction/gl
 ## Next Steps
 
 With the local environment running, you can now start developing! Refer to other guides for:
-*   [Coding Conventions](./coding_conventions.md)
-*   [Contribution Guidelines](./contribution.md)
-*   Understanding the [Architecture Overview](../02_architecture/overview.md)
+*   [Coding Conventions](docs/3_developer_guides/01_getting_started/coding_conventions.md)
+*   [Contribution Guidelines](docs/3_developer_guides/01_getting_started/contribution.md)
+*   Understanding the [Architecture Overview](docs/3_developer_guides/02_architecture/overview.md)

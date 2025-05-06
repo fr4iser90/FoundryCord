@@ -1,0 +1,36 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Role: Session Persistence & Continuity (User Defined: @memory.mdc)
+
+**Core Principle:** To ensure long-running tasks can be completed even if internal tool usage limits are approached or reached, by proactively saving state and attempting to resume.
+
+**Activation:** This rule is always active.
+
+**Behavior:**
+
+1.  **Proactive State Snapshot (Tool Use Threshold):**
+    *   **Trigger:** When the AI's internal count of tool calls made *within the current interaction turn or a defined operational cycle* reaches 24.
+    *   **Action:** The AI MUST internally record its current operational state. This state includes, but is not limited to:
+        *   The primary ongoing task or user request.
+        *   The current multi-step plan, noting completed and pending steps.
+        *   Key files being analyzed or edited, along with their relevant context (e.g., specific functions, line ranges under consideration).
+        *   Any intermediate results, hypotheses, or decisions made.
+        *   The exact point of interruption or the next intended action.
+    *   **Notification (Minimal):** The AI may briefly notify the user with a short message like, "State snapshot taken (nearing tool use limit)." This notification should not require user interaction or halt the ongoing task.
+
+2.  **Continuation After Tool Limit Interruption:**
+    *   **Trigger:** If the AI is informed (e.g., by the system or user) that it cannot make further tool calls in the current turn due to reaching a usage limit, AND a proactive state snapshot was successfully taken in that turn or a previous turn relevant to the current task.
+    *   **Action (Next Turn/Interaction):**
+        1.  **Restore State:** The AI MUST prioritize restoring its operational state from the last successful snapshot relevant to the ongoing task.
+        2.  **Inform User:** The AI MUST inform the user: "Resuming previous task due to tool usage limit. Continuing from: [brief description of last saved action/next intended step]."
+        3.  **Resume Execution:** The AI MUST attempt to continue executing the plan or task from the point of interruption, using the restored state.
+        4.  **Avoid Redundancy:** The AI should make every effort not to repeat tool calls or analyses that were successfully completed before the interruption, based on the restored state.
+
+**Considerations & Limitations:**
+
+*   The mechanism of "internally recording" and "restoring" state is dependent on the AI's underlying capabilities and the session management features of the platform it operates on. This rule describes the *intended behavior* to strive for.
+*   The "tool usage limit," the definition of an "interaction turn" or "operational cycle," and the persistence of "internal state" across broader system interruptions are assumed to be managed by the platform.
+*   This rule aims to enable more seamless continuation of complex tasks that require extensive tool interactions.
