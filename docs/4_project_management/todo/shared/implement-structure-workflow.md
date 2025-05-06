@@ -20,7 +20,7 @@
     *   **Affected Files:**
         *   `app/shared/infrastructure/database/migrations/alembic/versions/` (new migration file to be created here)
   - [ ] **1.3: Implement Repository Layer**
-    - [ ] Define `IChannelFollowRepository` interface in `app/shared/domain/repositories/discord/channel_follow_repository.py` (or a suitable path like `app/shared/domain/repositories/channel_follow_repository.py`).
+    - [ ] Define `ChannelFollowRepository` interface in `app/shared/domain/repositories/discord/channel_follow_repository.py`.
       - Methods: `add_follow(follow_entity: ChannelFollowEntity) -> ChannelFollowEntity`
       - `get_follow(source_channel_id: str, target_channel_id: str) -> Optional[ChannelFollowEntity]`
       - `list_follows_by_source(source_channel_id: str) -> List[ChannelFollowEntity]`
@@ -28,38 +28,38 @@
       - `remove_follow(source_channel_id: str, target_channel_id: str) -> bool`
       - `update_webhook_details(follow_id: int, webhook_id: str, webhook_token: str) -> Optional[ChannelFollowEntity]`
     *   **Affected Files:**
-        *   `app/shared/domain/repositories/discord/channel_follow_repository.py` (or chosen path)
+        *   `app/shared/domain/repositories/discord/channel_follow_repository.py`
     - [ ] Implement `ChannelFollowRepositoryImpl` in `app/shared/infrastructure/repositories/discord/channel_follow_repository_impl.py`.
-      - Implement all methods from `IChannelFollowRepository` using SQLAlchemy and database session.
+      - Implement all methods from `ChannelFollowRepository` using SQLAlchemy and database session.
     *   **Affected Files:**
         *   `app/shared/infrastructure/repositories/discord/channel_follow_repository_impl.py`
   - [ ] **1.4: Implement Service Layer**
     - [ ] Create `ChannelFollowService` in `app/bot/application/services/channel/channel_follow_service.py`.
     *   **Affected Files:**
         *   `app/bot/application/services/channel/channel_follow_service.py`
-    - [ ] Constructor should accept `IChannelFollowRepository` and a Discord interaction service (e.g., `DiscordQueryService`).
+    - [ ] Constructor should accept `ChannelFollowRepository` and `DiscordQueryService` (from `app.bot.application.services.discord.discord_query_service`).
     - [ ] Implement `setup_follow(guild_id: str, source_channel_id: str, target_channel_id: str) -> ChannelFollowEntity`.
       - Validate source channel is announcement type (using Discord service).
       - Validate target channel and bot permissions (using Discord service).
       - Check if follow already exists (using repository).
       - Call Discord API (`POST /channels/{source_channel_id}/followers`) via Discord service to create the follow (Discord handles webhook creation).
       - Persist `ChannelFollowEntity` (potentially with placeholder/null webhook details if not directly returned by Discord API for this call).
-    - [ ] Implement `remove_follow_logic(guild_id: str, source_channel_id: str, target_channel_id: str) -> bool`. (Note: Renamed from `remove_follow` to avoid clash if service method has same name as repo, adjust as per actual service design)
+    - [ ] Implement `unfollow_channel(guild_id: str, source_channel_id: str, target_channel_id: str) -> bool`.
       - Call Discord API to unfollow (e.g., might involve deleting the webhook or using a specific unfollow endpoint if available).
       - Remove `ChannelFollowEntity` from DB via repository.
     - [ ] Add helper methods as needed (e.g., for listing follows, checking status if required by UI/API).
 
 - [ ] **Phase 2: Bot Integration**
   - [ ] **2.1: Create Discord Bot Commands**
-    - [ ] Create `FollowCommands` Cog in `app/bot/interfaces/commands/channel/follow_commands.py` (or similar path).
+    - [ ] Create `FollowCommands` Cog in `app/bot/interfaces/commands/channel/follow_commands.py`. (Create `channel` subdirectory if needed)
     *   **Affected Files:**
-        *   `app/bot/interfaces/commands/channel/follow_commands.py` (or chosen path)
+        *   `app/bot/interfaces/commands/channel/follow_commands.py`
     - [ ] Implement `/follow add source_channel target_channel` slash command.
       - Use `ChannelFollowService.setup_follow`.
       - Perform initial client-side validation (e.g., `source_channel.type == nextcord.ChannelType.news`).
       - Defer interaction and send followup messages.
     - [ ] Implement `/follow remove source_channel target_channel` slash command.
-      - Use `ChannelFollowService.remove_follow_logic` (or appropriate service method).
+      - Use `ChannelFollowService.unfollow_channel`.
     - [ ] Implement `/follow list [source_channel_optional]` slash command to list active follows.
       - Use `ChannelFollowService` or `ChannelFollowRepository` to fetch data.
     - [ ] Ensure appropriate permission checks for commands.
@@ -74,10 +74,10 @@
       - Uses `ChannelFollowService.setup_follow`.
     - [ ] Endpoint: `DELETE /api/v1/guilds/{guild_id}/channel-follows`
       - Request Body/Params: `{ "source_channel_id": "...", "target_channel_id": "..." }`
-      - Uses `ChannelFollowService.remove_follow_logic` (or appropriate service method).
+      - Uses `ChannelFollowService.unfollow_channel`.
     - [ ] Endpoint: `GET /api/v1/guilds/{guild_id}/channel-follows?source_channel_id=...`
       - Uses `ChannelFollowService` or `ChannelFollowRepository` to list follows for a source channel.
-    - [ ] Endpoint: `GET /api/v1/guilds/{guild_id}/channels/{target_channel_id}/followed-by` (or similar)
+    - [ ] Endpoint: `GET /api/v1/guilds/{guild_id}/channel-follows?target_channel_id=...`
       - Uses `ChannelFollowService` or `ChannelFollowRepository` to list sources following a target channel.
     - [ ] Implement authentication and authorization (e.g., guild admin permissions).
   - [ ] **3.2: UI Implementation in Guild Designer**
@@ -108,17 +108,17 @@
   - [ ] **4.1: Unit Tests**
     - [ ] Write unit tests for `ChannelFollowRepositoryImpl` methods (mocking DB session).
     *   **Affected Files:**
-        *   Test file for `ChannelFollowRepositoryImpl` (e.g., `tests/unit/shared/infrastructure/repositories/discord/test_channel_follow_repository_impl.py`)
+        *   `app/tests/unit/shared/infrastructure/repositories/discord/test_channel_follow_repository_impl.py`
     - [ ] Write unit tests for `ChannelFollowService` methods (mocking repository and Discord service).
     *   **Affected Files:**
-        *   Test file for `ChannelFollowService` (e.g., `tests/unit/bot/application/services/channel/test_channel_follow_service.py`)
+        *   `app/tests/unit/bot/application/services/channel/test_channel_follow_service.py`
   - [ ] **4.2: Integration Tests**
     - [ ] Write integration tests for `ChannelFollowService` (with a test database).
     *   **Affected Files:**
-        *   Integration test file for `ChannelFollowService` (e.g., `tests/integration/bot/services/test_channel_follow_service_int.py`)
+        *   `app/tests/integration/bot/application/services/channel/test_channel_follow_service_integration.py`
     - [ ] Test API endpoints (e.g., using a test client like `httpx`).
     *   **Affected Files:**
-        *   API integration test file (e.g., `tests/integration/web/api/v1/guild/test_channel_follows_api.py`)
+        *   `app/tests/integration/web/api/v1/guild/test_channel_follows_api.py`
   - [ ] **4.3: E2E / Manual Testing**
     - [ ] Manually test Discord bot commands (`/follow add`, `/follow remove`, `/follow list`).
     - [ ] Manually test UI interactions in the guild designer for adding, listing, and removing follows.

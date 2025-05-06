@@ -1,0 +1,29 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Rules Strategy and Development Philosophy
+
+This document summarizes key strategies and philosophical points for developing and managing the AI interaction rules.
+
+## Core Principles:
+
+*   **Modularity:** Keep rules in separate, focused files for easier management, updates, and debugging.
+*   **Naming Consistency:** Maintain consistent and meaningful naming conventions (e.g., `_role.mdc`, `_context.mdc`) for clarity.
+*   **Explicit Attachment & Core Set:** Use explicit `@` attachment for task-specific rules. Identify and consistently include a "core set" of foundational rules (e.g., for critical behaviors, analysis, memory) in most prompts.
+*   **Goal Elaboration & Ideation Phase:** To enhance autonomy in idea generation and human-centric planning, consider adding a structured phase *before* detailed planning. This phase should involve:
+    *   AI rephrasing the goal to confirm understanding.
+    *   Identifying ambiguities and information gaps.
+    *   Brainstorming 2-3 high-level strategies with pros/cons.
+    *   AI recommending an approach with justification.
+    This forces the AI to "think out loud" and discuss strategy with you before committing to a plan.
+*   **Human Perspective as Guiding Principle:** Explicitly encode a "human perspective" in relevant rules. Solutions, code, and documentation should prioritize:
+    *   Clarity for human understanding.
+    *   Ease of use for the end-user.
+    *   Maintainability for developers.
+    *   Consideration of User Experience (UX) implications.
+
+## Path to Increased Autonomy:
+
+The key to increased autonomy lies in carefully structuring the AI's thinking process through these roles and rules. Guide it from high-level understanding to detailed execution, incorporating checkpoints for your input and course correction throughout the process.
