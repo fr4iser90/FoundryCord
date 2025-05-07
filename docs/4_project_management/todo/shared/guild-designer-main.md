@@ -111,9 +111,10 @@
 ## Phase 3: Full Designer Editing Capabilities
 
 *   [ ] **Add Elements (Toolbox):**
-    *   [ ] **Toolbox UI:** Create draggable elements for new categories/channels.
-    *   [ ] **Tree Drag-and-Drop:** Configure jsTree to accept drop from Toolbox.
-    *   [ ] **Input Modal:** Create/use modal for naming new elements.
+    *   [x] **Toolbox UI:** Create draggable elements for new categories/channels.
+    *   [ ] **Tree Drag-and-Drop:** Configure jsTree to accept drop Dashboards from Toolbox. (Also update PropertiesJs instantly then)
+    *   [x] **Input Modal:** Create/use modal for naming new Dashboard.
+    *   [x?] **Component Dashboard-Builder Drag-and-Drop:** Configure dashboardEditor to accept drop Component from Toolbox.
     *   [ ] **Frontend State:** Add temporary node, track in `state.pendingAdditions`, set dirty.
     *   [ ] **Backend API (POST):** Define endpoints for adding elements (or use `from_structure`?).
     *   [ ] **Backend Logic:** Implement service/repo methods to create DB entities.
@@ -165,7 +166,7 @@
         *   `app/shared/infrastructure/repositories/dashboards/dashboard_configuration_repository.py` (Verify name)
         *   `app/shared/infrastructure/models/dashboards/dashboard_template.py` (Verify name/entity)
 *   [ ] **Frontend - Toolbox Refactoring:**
-    *   [ ] **Implement Tabs:** Update HTML/JS for tabs ("Structure", "Dashboard Components", "Dashboards").
+    *   [x] **Implement Tabs:** Update HTML/JS for tabs ("Structure", "Dashboards").
     *   [x] **Fetch Components:** Load component definitions (`GET /api/v1/dashboards/components`).
     *   [x] **Display Components:** Show components in tab as draggable items.
     *   [ ] **Define Shared Cache:** Create mechanism (e.g., `designerComponentCache.js`).
