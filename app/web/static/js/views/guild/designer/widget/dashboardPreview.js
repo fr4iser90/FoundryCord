@@ -64,15 +64,30 @@ export function initializeDashboardPreview(contentElement, initialData = null) {
                     embedHtml += `<div class="alert alert-warning small">Unknown component: ${componentKey}</div>`;
                     continue;
                 }
-                if (definition.component_type === 'embed') {
-                    embedHtml += renderEmbedPreview(definition, settings);
-                } else if (definition.component_type === 'button') {
-                    const rendered = renderButtonPreview(definition, settings);
-                    const buttonRow = row || 0;
-                    if (!buttonRows[buttonRow]) buttonRows[buttonRow] = [];
-                    buttonRows[buttonRow].push(rendered);
-                } else {
-                    embedHtml += `<div class="alert alert-info small">Unsupported component type: ${definition.component_type}</div>`;
+                switch (definition.component_type) {
+                    case 'embed':
+                        embedHtml += renderEmbedPreview(definition, settings);
+                        break;
+                    case 'button':
+                        const renderedBtn = renderButtonPreview(definition, settings);
+                        const buttonRow = row || 0;
+                        if (!buttonRows[buttonRow]) buttonRows[buttonRow] = [];
+                        buttonRows[buttonRow].push(renderedBtn);
+                        break;
+                    case 'selector':
+                        embedHtml += renderSelectorPreview(definition, settings);
+                        break;
+                    case 'modal':
+                        embedHtml += renderModalPreview(definition, settings);
+                        break;
+                    case 'view':
+                        embedHtml += renderViewPreview(definition, settings);
+                        break;
+                    case 'message':
+                        embedHtml += renderMessagePreview(definition, settings);
+                        break;
+                    default:
+                        embedHtml += `<div class="alert alert-info small">Unsupported component type: ${definition.component_type}</div>`;
                 }
             }
 
@@ -142,6 +157,57 @@ function renderButtonPreview(definition, instanceSettings) {
             <span class="button-label">${label}</span>
         </button>
     `;
+}
+
+// --- Additional renderers for more component types ---
+function renderSelectorPreview(definition, instanceSettings) {
+    const placeholder = instanceSettings.placeholder || definition.metadata?.placeholder || 'Select an option';
+    const options = instanceSettings.options || definition.metadata?.options || [];
+    let optionsHtml = '';
+    if (Array.isArray(options) && options.length > 0) {
+        for (const opt of options) {
+            optionsHtml += `<option>${opt.emoji ? opt.emoji + ' ' : ''}${opt.label || opt.value}</option>`;
+        }
+    } else {
+        optionsHtml = '<option>Option 1</option>';
+    }
+    return `
+        <div class="discord-selector-preview mb-2">
+            <select class="form-select form-select-sm">
+                <option disabled selected>${placeholder}</option>
+                ${optionsHtml}
+            </select>
+        </div>
+    `;
+}
+
+function renderModalPreview(definition, instanceSettings) {
+    const title = instanceSettings.title || definition.metadata?.title || 'Modal Title';
+    const fields = instanceSettings.fields || definition.metadata?.fields || [];
+    let fieldsHtml = '';
+    if (Array.isArray(fields) && fields.length > 0) {
+        for (const field of fields) {
+            fieldsHtml += `<div class="modal-field mb-1"><label class="form-label">${field.label || field.name}</label><input class="form-control form-control-sm" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''}></div>`;
+        }
+    }
+    return `
+        <div class="discord-modal-preview card p-2 mb-2">
+            <div class="modal-title fw-bold mb-1">${title}</div>
+            ${fieldsHtml}
+            <div class="modal-footer mt-2"><button class="btn btn-primary btn-sm" disabled>Submit</button></div>
+        </div>
+    `;
+}
+
+function renderViewPreview(definition, instanceSettings) {
+    // Views are containers for buttons/selectors, so just show a placeholder for now
+    const timeout = instanceSettings.timeout || definition.metadata?.timeout;
+    return `<div class="discord-view-preview card p-2 mb-2"><div class="small text-muted">[View: timeout ${timeout || 'none'}]</div></div>`;
+}
+
+function renderMessagePreview(definition, instanceSettings) {
+    const content = instanceSettings.content || definition.metadata?.content || 'Message content';
+    return `<div class="discord-message-preview alert alert-info p-2 mb-2">${content}</div>`;
 }
 
 // Make sure the module indicates it's loaded.
