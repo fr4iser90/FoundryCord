@@ -23,13 +23,14 @@ STATUS: New / Needs Refinement
             *   Add `data-component-key` set to the config ID
             *   Add `data-component-type` set to `saved_dashboard_config`
             *   Store full configuration object as JSON string in `data-config-object`
+        *   **WICHTIG:** Beim Draggen wird die Dashboard-Konfiguration als Data-Attribut am Helper-Element gespeichert (z.B. `ui.helper.data('dashboardConfig', configObj)`).
         *   Visual styling makes saved configurations appear as distinct, interactive objects:
             *   Add CSS styles to make them visually distinct from regular list items
             *   Include hover states and visual affordances indicating they are interactive
             *   Style should suggest both draggability and clickability
         *   Maintain existing click-to-load functionality while adding drag capability:
             *   Ensure click event listener in `initializeToolbox` still works with new class structure
-            *   Verify no conflicts between click and drag initialization
+            *   Verify no conflicts between click and drag initialization (nutze z.B. distance-Threshold)
             *   Test that both clicking to load and starting a drag operation work correctly
 
 *   [ ] **Task 1.2:** Update `makeItemsDraggable` in `toolbox.js` for `dragstart`.
@@ -37,9 +38,9 @@ STATUS: New / Needs Refinement
     *   **Affected Files (Optional):**
         *   `app/web/static/js/views/guild/designer/panel/toolbox.js`
     *   **Definition of Done (DoD) (Optional):**
-        *   The `start` function within the draggable options checks for `componentType === 'saved_dashboard_config'`.
-        *   It retrieves and parses the `data-config-object`.
-        *   It correctly sets `event.originalEvent.dataTransfer` with `application/json` type and a stringified object containing `{ dragSourceType, id, name, dashboardType, config }`.
+        *   Der Helper für Saved Configs speichert die Dashboard-Daten als Data-Attribut (`ui.helper.data('dashboardConfig', ...)`).
+        *   Click und Drag sind sauber getrennt (z.B. mit distance: 5).
+        *   Helper-Objekt zeigt nur Icon + Name.
 
 ## Phase 2: Implement Drop Target Logic (Channels List & Structure Tree)
 
@@ -57,13 +58,10 @@ STATUS: New / Needs Refinement
     *   **Affected Files (Optional):**
         *   `app/web/static/js/views/guild/designer/widget/channelsList.js`
     *   **Definition of Done (DoD) (Optional):**
-        *   The `drop` handler prevents default, retrieves and parses `dataTransfer` JSON.
-        *   It verifies the `dragSourceType` is `saved_dashboard_config`.
-        *   It verifies the target channel type is `text`.
-        *   It updates `designerState` (`is_dashboard_enabled`, `dashboard_config_snapshot`).
-        *   It sets state to dirty and updates toolbar buttons.
-        *   It dispatches `designerNodeSelected` for the target channel.
-        *   A success toast is shown.
+        *   Der Drop-Handler liest die Dashboard-Daten aus `ui.helper.data('dashboardConfig')` aus.
+        *   Es wird geprüft, ob der Drop auf einem Text-Channel erfolgt.
+        *   State wird aktualisiert, UI und Toolbar werden geupdated, Success-Toast wird angezeigt.
+        *   Drop-Highlight und Fehler-Feedback sind implementiert.
 
 *   [ ] **Task 2.3:** Configure Drop Handling in **Structure Tree** (`structureTree.js`).
     *   **Depends on (Optional):** N/A
@@ -79,13 +77,10 @@ STATUS: New / Needs Refinement
     *   **Affected Files (Optional):**
         *   `app/web/static/js/views/guild/designer/widget/structureTree.js`
     *   **Definition of Done (DoD) (Optional):**
-        *   The drop event handler retrieves dropped data (`dataTransfer`) and target node information (ID, type).
-        *   It verifies the dropped item is `saved_dashboard_config`.
-        *   It verifies the target tree node represents a `text` channel.
-        *   It updates `designerState` (`is_dashboard_enabled`, `dashboard_config_snapshot` using the channel's DB ID from the node data).
-        *   It sets state to dirty and updates toolbar buttons.
-        *   It dispatches `designerNodeSelected` for the target channel.
-        *   A success toast is shown.
+        *   Der Drop-Handler liest die Dashboard-Daten aus `ui.helper.data('dashboardConfig')` aus.
+        *   Es wird geprüft, ob der Drop auf einem Text-Channel erfolgt.
+        *   State wird aktualisiert, UI und Toolbar werden geupdated, Success-Toast wird angezeigt.
+        *   Drop-Highlight und Fehler-Feedback sind implementiert.
 
 *   [ ] **Task 2.5:** Add/Update CSS Styles for Drop Target Highlight (Tree & List).
     *   **Depends on (Optional):** Task 2.1, Task 2.3
