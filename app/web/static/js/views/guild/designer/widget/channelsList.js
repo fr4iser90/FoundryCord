@@ -50,6 +50,10 @@ export function initializeChannelsList(templateData, contentElement, guildId) {
 
             const listItem = document.createElement('li');
             listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+            
+            // Add data attributes for drop target identification
+            listItem.setAttribute('data-channel-id', chan.id);
+            listItem.setAttribute('data-channel-type', chan.type);
 
             const nameSpan = document.createElement('span');
             const icon = document.createElement('i');
@@ -59,8 +63,15 @@ export function initializeChannelsList(templateData, contentElement, guildId) {
             const rawChannelType = chan.type;
             const channelType = rawChannelType ? rawChannelType.trim().toLowerCase() : '';
             // console.log(`[ChannelList Icon Check] ID=${chan.id}, Raw Type='${rawChannelType}', Processed Type='${channelType}'`); // ENTFERNT
-            if (channelType === 'text') channelIconClass = 'fas fa-hashtag';
-            else if (channelType === 'voice') channelIconClass = 'fas fa-volume-up';
+            if (channelType === 'text') {
+                channelIconClass = 'fas fa-hashtag';
+                // Add drop target functionality for text channels
+                listItem.addEventListener('dragover', handleDragOver);
+                listItem.addEventListener('dragleave', handleDragLeave);
+                listItem.addEventListener('drop', handleDrop);
+            } else if (channelType === 'voice') {
+                channelIconClass = 'fas fa-volume-up';
+            }
 
             icon.className = `${channelIconClass} me-2`;
             nameSpan.appendChild(icon);
@@ -96,4 +107,45 @@ export function initializeChannelsList(templateData, contentElement, guildId) {
      } else {
         contentElement.innerHTML = '<p class="panel-placeholder">No channels defined.</p>';
      }
+}
+
+// Drop target event handlers
+function handleDragOver(event) {
+    event.preventDefault();
+    const channelType = event.currentTarget.getAttribute('data-channel-type');
+    if (channelType === 'text') {
+        event.currentTarget.classList.add('drop-target-active');
+    }
+}
+
+function handleDragLeave(event) {
+    event.currentTarget.classList.remove('drop-target-active');
+}
+
+function handleDrop(event) {
+    event.preventDefault();
+    const target = event.currentTarget;
+    target.classList.remove('drop-target-active');
+
+    const channelId = target.getAttribute('data-channel-id');
+    const channelType = target.getAttribute('data-channel-type');
+
+    // Only handle drops on text channels
+    if (channelType !== 'text') {
+        showToast('Dashboard configurations can only be assigned to text channels.', 'error');
+        return;
+    }
+
+    // Get the dashboard configuration from the helper
+    const $helper = $('.toolbox-drag-helper');
+    const dashboardConfig = $helper.data('dashboardConfig');
+
+    if (!dashboardConfig) {
+        showToast('Invalid dashboard configuration.', 'error');
+        return;
+    }
+
+    // TODO: Call API to associate dashboard with channel
+    // For now, just show a success message
+    showToast(`Dashboard "${dashboardConfig.name}" assigned to channel.`, 'success');
 } 

@@ -129,11 +129,14 @@ async function renderToolboxComponents() {
     } else {
         savedConfigs.forEach(config => {
             const li = document.createElement('li');
-            // Make these clickable, not draggable
-            li.className = 'list-group-item list-group-item-action toolbox-load-config-item'; // Use distinct class
-            li.setAttribute('data-config-id', config.id);
-            li.innerHTML = `<i class="bi bi-file-earmark-text me-2"></i> ${config.name} <span class="text-muted small">(${config.dashboard_type})</span>`;
-            li.style.cursor = 'pointer'; // Indicate clickability
+            // Add both toolbox-item and toolbox-load-config-item classes for draggability and click-to-load
+            li.className = 'list-group-item list-group-item-action toolbox-item toolbox-load-config-item';
+            li.setAttribute('data-component-key', config.id);
+            li.setAttribute('data-component-type', 'saved_dashboard_config');
+            // Speichere nur id und name als data-config-object
+            li.setAttribute('data-config-object', JSON.stringify({ id: config.id, name: config.name }));
+            li.innerHTML = `<i class=\"bi bi-file-earmark-text me-2\"></i> ${config.name} <span class=\"text-muted small\">(${config.dashboard_type})</span>`;
+            li.style.cursor = 'move'; // Indicate draggability
             dashboardsList.appendChild(li);
         });
         console.log(`[Toolbox] Rendered ${savedConfigs.length} saved configurations.`);
@@ -248,20 +251,22 @@ function renderComponentItem(listElement, comp) {
 
 // Function to make list items draggable (Updated Selector for specific items)
 function makeItemsDraggable() {
-    // Select only items intended to be draggable components
-    $("#toolbox-tab-content .toolbox-item").draggable({
-        helper: "clone",
-        revert: "invalid",
-        containment: "document",
-        cursor: "move",
-        opacity: 0.7,
-        zIndex: 1000,
+    $('.toolbox-item').draggable({
+        helper: 'clone',
+        appendTo: 'body',
+        distance: 5, // Require 5px movement before drag starts to distinguish from click
         start: function(event, ui) {
-            console.log("[Draggable] Start dragging:", $(this).data('component-key'));
-            ui.helper.addClass("toolbox-item-dragging");
-        },
-        stop: function(event, ui) {
-            console.log("[Draggable] Stop dragging:", $(this).data('component-key'));
+            const $item = $(this);
+            const componentType = $item.data('component-type');
+            
+            // Für saved_dashboard_config nur id und name ins Helper-Objekt
+            if (componentType === 'saved_dashboard_config') {
+                const configObj = JSON.parse($item.attr('data-config-object'));
+                ui.helper.data('dashboardConfig', configObj); // Nur {id, name}
+                // Customize helper appearance
+                ui.helper.html(`<i class=\"bi bi-file-earmark-text me-2\"></i> ${configObj.name}`);
+                ui.helper.addClass('toolbox-drag-helper');
+            }
         }
     });
     // Do NOT make .toolbox-load-config-item draggable here
