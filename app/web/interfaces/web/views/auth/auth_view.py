@@ -32,8 +32,9 @@ class AuthView(BaseView):
     
     async def login_page(self, request: Request):
         """Render login page"""
-        if "user" in request.session:
-            return RedirectResponse(url="/home")
+        session = request.scope.get("session", {})
+        if session.get("user"):
+            return RedirectResponse(url="/home", status_code=status.HTTP_303_SEE_OTHER)
             
         return self.render_template(
             "auth/login.html",
@@ -61,36 +62,40 @@ class AuthView(BaseView):
             user_data = await self.auth_service.handle_oauth_callback(code)
             
             if not user_data:
-                return RedirectResponse(url="/auth/login", status_code=303)
+                return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
             
-            # Store only basic user data in session
-            request.session["user"] = {
-                "id": user_data["id"],
-                "username": user_data["username"],
-                "discord_id": user_data["discord_id"],
-                "is_owner": user_data.get("is_owner", False),
-                "avatar": user_data.get("avatar")
-                # Permissions removed as they are not directly available here
+            # Store user data in session
+            session_data = {
+                "user": {
+                    "id": user_data["id"],
+                    "username": user_data["username"],
+                    "discord_id": user_data["discord_id"],
+                    "is_owner": user_data.get("is_owner", False),
+                    "avatar": user_data.get("avatar")
+                }
             }
             
-            self.logger.info(f"User {user_data['username']} logged in.") # Simplified log message
-            return RedirectResponse(url="/home", status_code=303)
+            # Set in scope
+            request.scope["session"] = session_data
+            
+            self.logger.info(f"User {user_data['username']} logged in.")
+            return RedirectResponse(url="/home", status_code=status.HTTP_303_SEE_OTHER)
                 
         except HTTPException as e:
             self.logger.error(f"OAuth callback failed with HTTP error: {e}")
-            return RedirectResponse(url="/auth/login", status_code=303)
+            return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
         except Exception as e:
             self.logger.error(f"OAuth callback failed with unexpected error: {e}")
-            return RedirectResponse(url="/auth/login", status_code=303)
+            return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
     
     async def logout_page(self, request: Request):
         """Handle web logout and render logout page"""
         try:
-            request.session.clear()
-            return RedirectResponse(url="/", status_code=303)
+            request.scope["session"] = {}
+            return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
         except Exception as e:
             self.logger.error(f"Logout failed: {e}")
-            return RedirectResponse(url="/", status_code=303)
+            return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
 # View instance und Export
 auth_view = AuthView()

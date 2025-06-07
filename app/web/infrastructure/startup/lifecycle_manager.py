@@ -15,7 +15,7 @@ class WebLifecycleManager:
         """Initialize the lifecycle manager."""
         self.app = None
         self.service_factory = None
-        self.state = "initializing"
+        self.state = "initialized"
         self.shutdown_hooks = []
         self.startup_hooks = []
         self.components = {}
@@ -121,20 +121,6 @@ class WebLifecycleManager:
     async def setup_infrastructure(self):
         """Setup core infrastructure components."""
         try:
-            # Setup CORS
-            from fastapi.middleware.cors import CORSMiddleware
-            self.app.add_middleware(
-                CORSMiddleware,
-                allow_origins=["*"],
-                allow_credentials=True,
-                allow_methods=["*"],
-                allow_headers=["*"],
-            )
-            
-            # Setup session middleware
-            from app.web.infrastructure.middleware import setup_session_middleware
-            await setup_session_middleware(self.app)
-            
             # Register routers
             from app.web.infrastructure.startup.router_registry import register_routers
             register_routers(self.app)

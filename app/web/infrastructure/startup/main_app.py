@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from app.shared.interfaces.logging.api import get_web_logger
-from app.web.infrastructure.startup.middleware_registry import register_core_middleware
+from app.web.infrastructure.middleware import setup_middleware
 from app.web.infrastructure.extensions import init_extensions
 from app.web.infrastructure.startup.router_registry import register_routers
 from app.web.infrastructure.startup.lifecycle_manager import WebLifecycleManager
@@ -59,8 +59,11 @@ class WebApplication:
             version="1.0.0",
             lifespan=lifespan
         )
-        # Centralized middleware registration
-        register_core_middleware(self.app)
+        
+        # Setup middleware first
+        setup_middleware(self.app)
+        
+        # Setup exception handlers
         self._setup_exception_handlers()
 
     def _setup_exception_handlers(self):

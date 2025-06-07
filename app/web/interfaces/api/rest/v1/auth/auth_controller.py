@@ -18,7 +18,6 @@ class AuthController(BaseController):
         self.router.get("/me")(self.get_current_user_info)
         self.router.post("/refresh")(self.refresh_token)
         self.router.get("/login")(self.login)
-        self.router.get("/callback")(self.auth_callback)
         self.router.get("/logout")(self.logout)
         self.router.get("/me")(self.get_current_user_info)
 
@@ -27,23 +26,6 @@ class AuthController(BaseController):
         # Build the Discord authorization URL
         auth_url = await self.auth_service.get_authorization_url()
         return RedirectResponse(url=auth_url)
-
-    async def auth_callback(self, request: Request, code: str):
-        """Handles the callback from Discord after authentication."""
-        try:
-            # Exchange code for token and get user info
-            user_info = await self.auth_service.handle_callback(code)
-            
-            # Store user info in session
-            request.session["user"] = user_info
-            self.logger.info(f"User {user_info.get('username')} logged in.")
-            
-            # Redirect to home page or intended destination
-            return RedirectResponse(url="/home", status_code=status.HTTP_303_SEE_OTHER)
-            
-        except Exception as e:
-            self.logger.error(f"Authentication callback failed: {e}")
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Authentication failed")
 
     async def get_current_user_info(self, current_user: AppUserEntity = Depends(get_current_user)):
         """Get current user information"""

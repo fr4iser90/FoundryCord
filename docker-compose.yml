@@ -7,7 +7,7 @@ services:
     container_name: foundrycord-bot
     restart: unless-stopped
     env_file:
-      - .env
+      - ./docker/.env
     deploy:
       resources:
         limits:
@@ -43,7 +43,7 @@ services:
     container_name: foundrycord-web
     restart: unless-stopped
     env_file:
-      - .env
+      - ./docker/.env
     ports:
       - "8000:8000"
     volumes:
@@ -68,7 +68,7 @@ services:
     container_name: foundrycord-db
     restart: unless-stopped
     env_file:
-      - .env
+      - ./docker/.env
     command: ["postgres", "-c", "listen_addresses=*"]
     volumes:
       - postgres_data:/var/lib/postgresql/data
